@@ -11,27 +11,26 @@ export function useTechnicians() {
   return useQuery({
     queryKey: ['technicians'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // First get technician user_ids
+      const { data: roles, error: rolesError } = await supabase
         .from('user_roles')
-        .select(`
-          user_id,
-          profiles:user_id (
-            id,
-            full_name,
-            email
-          )
-        `)
+        .select('user_id')
         .eq('role', 'technician');
 
-      if (error) throw error;
-      
-      return data
-        .filter(item => item.profiles)
-        .map(item => ({
-          id: (item.profiles as any).id,
-          full_name: (item.profiles as any).full_name,
-          email: (item.profiles as any).email,
-        })) as Technician[];
+      if (rolesError) throw rolesError;
+      if (!roles || roles.length === 0) return [];
+
+      const technicianIds = roles.map(r => r.user_id);
+
+      // Then get their profiles
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', technicianIds);
+
+      if (profilesError) throw profilesError;
+
+      return (profiles || []) as Technician[];
     },
   });
 }
