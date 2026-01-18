@@ -7,7 +7,6 @@ import {
   LayoutDashboard, 
   ClipboardList, 
   Users, 
-  Package, 
   LogOut, 
   Menu, 
   X,
@@ -20,7 +19,6 @@ const navigation = [
   { name: 'Tableau de bord', href: '/admin', icon: LayoutDashboard },
   { name: 'Interventions', href: '/admin/interventions', icon: ClipboardList },
   { name: 'Clients', href: '/admin/clients', icon: Users },
-  { name: 'Équipements', href: '/admin/equipment', icon: Package },
 ];
 
 export default function AdminLayout() {

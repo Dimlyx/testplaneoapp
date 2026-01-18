@@ -1,11 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useIntervention, useCreateIntervention, useUpdateIntervention } from "@/hooks/useInterventions";
 import { useClients } from "@/hooks/useClients";
-import { useClientEquipment } from "@/hooks/useEquipment";
 import { useTechnicians } from "@/hooks/useTechnicians";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,7 +32,6 @@ const interventionSchema = z.object({
   title: z.string().min(1, "Le titre est requis"),
   description: z.string().optional(),
   client_id: z.string().min(1, "Le client est requis"),
-  equipment_id: z.string().optional(),
   technician_id: z.string().optional(),
   intervention_type: z.enum(["sav", "maintenance", "installation"]),
   status: z.enum(["to_plan", "planned", "in_progress", "completed"]),
@@ -56,16 +54,12 @@ const InterventionForm = () => {
   const createIntervention = useCreateIntervention();
   const updateIntervention = useUpdateIntervention();
 
-  const [selectedClientId, setSelectedClientId] = useState<string>("");
-  const { data: clientEquipment = [] } = useClientEquipment(selectedClientId);
-
   const form = useForm<InterventionFormValues>({
     resolver: zodResolver(interventionSchema),
     defaultValues: {
       title: "",
       description: "",
       client_id: "",
-      equipment_id: "",
       technician_id: "",
       intervention_type: "sav",
       status: "to_plan",
@@ -82,7 +76,6 @@ const InterventionForm = () => {
         title: intervention.title,
         description: intervention.description || "",
         client_id: intervention.client_id,
-        equipment_id: intervention.equipment_id || "",
         technician_id: intervention.technician_id || "",
         intervention_type: intervention.intervention_type,
         status: intervention.status,
@@ -91,7 +84,6 @@ const InterventionForm = () => {
         report: intervention.report || "",
         technical_comments: intervention.technical_comments || "",
       });
-      setSelectedClientId(intervention.client_id);
     }
   }, [intervention, isEditing, form]);
 
@@ -102,7 +94,6 @@ const InterventionForm = () => {
         client_id: values.client_id,
         intervention_type: values.intervention_type,
         status: values.status,
-        equipment_id: values.equipment_id || null,
         technician_id: values.technician_id || null,
         scheduled_date: values.scheduled_date || null,
         scheduled_time: values.scheduled_time || null,
@@ -253,11 +244,7 @@ const InterventionForm = () => {
                     <FormItem>
                       <FormLabel>Client *</FormLabel>
                       <Select 
-                        onValueChange={(value) => {
-                          field.onChange(value);
-                          setSelectedClientId(value);
-                          form.setValue("equipment_id", "");
-                        }} 
+                        onValueChange={field.onChange} 
                         value={field.value}
                       >
                         <FormControl>
@@ -269,35 +256,6 @@ const InterventionForm = () => {
                           {clients.map((client) => (
                             <SelectItem key={client.id} value={client.id}>
                               {client.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="equipment_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Équipement</FormLabel>
-                      <Select 
-                        onValueChange={field.onChange} 
-                        value={field.value}
-                        disabled={!selectedClientId}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder={selectedClientId ? "Sélectionner un équipement" : "Sélectionnez d'abord un client"} />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {clientEquipment.map((eq) => (
-                            <SelectItem key={eq.id} value={eq.id}>
-                              {eq.brand} {eq.model} - {eq.equipment_type}
                             </SelectItem>
                           ))}
                         </SelectContent>

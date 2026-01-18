@@ -21,8 +21,6 @@ import InterventionDetail from "@/pages/admin/InterventionDetail";
 import Clients from "@/pages/admin/Clients";
 import ClientForm from "@/pages/admin/ClientForm";
 import ClientDetail from "@/pages/admin/ClientDetail";
-import Equipment from "@/pages/admin/Equipment";
-import EquipmentForm from "@/pages/admin/EquipmentForm";
 
 // Technician pages
 import TechnicianInterventions from "@/pages/technician/TechnicianInterventions";
@@ -113,9 +111,6 @@ const AppRoutes = () => {
         <Route path="clients/new" element={<ClientForm />} />
         <Route path="clients/:id" element={<ClientDetail />} />
         <Route path="clients/:id/edit" element={<ClientForm />} />
-        <Route path="equipment" element={<Equipment />} />
-        <Route path="equipment/new" element={<EquipmentForm />} />
-        <Route path="equipment/:id/edit" element={<EquipmentForm />} />
       </Route>
 
       {/* Technician routes */}
