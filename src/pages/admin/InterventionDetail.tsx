@@ -2,6 +2,7 @@ import { useNavigate, useParams, Link } from "react-router-dom";
 import { useIntervention } from "@/hooks/useInterventions";
 import { useClient } from "@/hooks/useClients";
 import { useInterventionPhotos, PhotoType } from "@/hooks/useInterventionPhotos";
+import { useInterventionEquipment } from "@/hooks/useInterventionEquipment";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge, TypeBadge } from "@/components/ui/status-badge";
@@ -28,6 +29,7 @@ const InterventionDetail = () => {
   const { data: intervention, isLoading } = useIntervention(id || "");
   const { data: client } = useClient(intervention?.client_id || "");
   const { data: photos = [] } = useInterventionPhotos(id || "");
+  const { data: interventionEquipments = [] } = useInterventionEquipment(id || "");
 
   const getPhotosOfType = (type: PhotoType) => photos.filter(p => p.photo_type === type);
 
@@ -47,7 +49,8 @@ const InterventionDetail = () => {
         client, 
         intervention.equipment as any,
         intervention.profiles?.full_name || undefined,
-        photos
+        photos,
+        interventionEquipments
       );
       toast({ title: "PDF généré avec succès" });
     }
