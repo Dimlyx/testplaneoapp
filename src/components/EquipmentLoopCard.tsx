@@ -171,12 +171,13 @@ const EquipmentLoopCard = ({ interventionEquipment, interventionId, index }: Equ
                 <div>
                   <CardTitle className="text-base flex items-center gap-2">
                     <Wrench className="h-4 w-4" />
-                    {equipment?.brand} {equipment?.model}
+                    {equipment?.equipment_type || "Équipement"}
                   </CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    {equipment?.equipment_type}
-                    {equipment?.serial_number && ` • ${equipment.serial_number}`}
-                  </p>
+                  {equipment?.serial_number && (
+                    <p className="text-sm text-muted-foreground">
+                      {equipment.serial_number}
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-2">
