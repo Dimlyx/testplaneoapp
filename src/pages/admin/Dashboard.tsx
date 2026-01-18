@@ -1,13 +1,11 @@
 import { useInterventions } from "@/hooks/useInterventions";
 import { useClients } from "@/hooks/useClients";
-import { useEquipment } from "@/hooks/useEquipment";
 import { useTechnicians } from "@/hooks/useTechnicians";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge, TypeBadge } from "@/components/ui/status-badge";
 import { 
   ClipboardList, 
   Users, 
-  Wrench, 
   UserCheck, 
   Calendar,
   AlertTriangle,
@@ -21,7 +19,6 @@ import { Link } from "react-router-dom";
 const Dashboard = () => {
   const { data: interventions = [], isLoading: loadingInterventions } = useInterventions();
   const { data: clients = [], isLoading: loadingClients } = useClients();
-  const { data: equipment = [], isLoading: loadingEquipment } = useEquipment();
   const { data: technicians = [], isLoading: loadingTechnicians } = useTechnicians();
 
   const stats = {
@@ -38,7 +35,7 @@ const Dashboard = () => {
 
   const urgentInterventions = interventions.filter(i => i.status === 'to_plan');
 
-  if (loadingInterventions || loadingClients || loadingEquipment || loadingTechnicians) {
+  if (loadingInterventions || loadingClients || loadingTechnicians) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -54,7 +51,7 @@ const Dashboard = () => {
       </div>
 
       {/* Statistiques principales */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Interventions</CardTitle>
@@ -76,18 +73,6 @@ const Dashboard = () => {
             <div className="text-2xl font-bold">{clients.length}</div>
             <p className="text-xs text-muted-foreground">
               Particuliers et professionnels
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Équipements</CardTitle>
-            <Wrench className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{equipment.length}</div>
-            <p className="text-xs text-muted-foreground">
-              Équipements enregistrés
             </p>
           </CardContent>
         </Card>
