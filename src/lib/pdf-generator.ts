@@ -348,9 +348,9 @@ export const generateInterventionPDF = async (
   doc.rect(15, yPos, 80, 35);
   
   // Try to load client signature image if available
-  if ((intervention as any).client_signature_url) {
+  if (intervention.client_signature_url) {
     try {
-      const signatureBase64 = await loadImageAsBase64((intervention as any).client_signature_url);
+      const signatureBase64 = await loadImageAsBase64(intervention.client_signature_url);
       if (signatureBase64) {
         doc.addImage(signatureBase64, 'PNG', 17, yPos + 2, 76, 31);
       }
