@@ -79,7 +79,7 @@ const TechnicianInterventionDetail = () => {
       setObservations(intervention.observations || "");
       setEquipmentFunctional(intervention.equipment_functional !== false);
       setClientSignatureName(intervention.client_signature_name || "");
-      setClientSignatureUrl((intervention as any).client_signature_url || null);
+      setClientSignatureUrl(intervention.client_signature_url || null);
     }
   }, [intervention]);
 
@@ -114,7 +114,7 @@ const TechnicianInterventionDetail = () => {
       await updateIntervention.mutateAsync({
         id,
         client_signature_name: signerName,
-        // Note: client_signature_url needs to be added to the database
+        client_signature_url: signatureUrl,
       });
       
       setClientSignatureUrl(signatureUrl);

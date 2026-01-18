@@ -24,6 +24,7 @@ export interface Intervention {
   observations: string | null;
   equipment_functional: boolean | null;
   client_signature_name: string | null;
+  client_signature_url: string | null;
   created_at: string;
   updated_at: string;
   clients?: {
@@ -80,6 +81,7 @@ export interface UpdateInterventionData {
   observations?: string;
   equipment_functional?: boolean;
   client_signature_name?: string;
+  client_signature_url?: string;
 }
 
 export function useInterventions() {

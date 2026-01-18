@@ -140,6 +140,7 @@ export type Database = {
           arrival_time: string | null
           client_id: string
           client_signature_name: string | null
+          client_signature_url: string | null
           created_at: string
           departure_time: string | null
           description: string | null
@@ -162,6 +163,7 @@ export type Database = {
           arrival_time?: string | null
           client_id: string
           client_signature_name?: string | null
+          client_signature_url?: string | null
           created_at?: string
           departure_time?: string | null
           description?: string | null
@@ -184,6 +186,7 @@ export type Database = {
           arrival_time?: string | null
           client_id?: string
           client_signature_name?: string | null
+          client_signature_url?: string | null
           created_at?: string
           departure_time?: string | null
           description?: string | null
