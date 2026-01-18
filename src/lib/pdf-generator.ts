@@ -328,31 +328,38 @@ export const generateInterventionPDF = async (
     console.log('No photos to add to PDF');
   }
 
-  // Check if we need a new page for signatures
-  checkNewPage(50);
+  // Check if we need a new page for signature
+  checkNewPage(70);
 
-  // Signatures Section
-  yPos = addSection("SIGNATURES", yPos);
+  // Signature Section (Client only)
+  yPos = addSection("SIGNATURE DU CLIENT", yPos);
   yPos += 5;
-  
-  // Two columns for signatures
-  doc.setFontSize(9);
-  doc.setFont("helvetica", "bold");
-  doc.text("Technicien", 30, yPos);
-  doc.text("Client", 130, yPos);
-  doc.setFont("helvetica", "normal");
-  yPos += 25;
-  
-  // Signature boxes
-  doc.setDrawColor(200, 200, 200);
-  doc.rect(15, yPos - 20, 70, 20);
-  doc.rect(115, yPos - 20, 70, 20);
   
   // Client signature name
   if (intervention.client_signature_name) {
-    doc.setFontSize(8);
-    doc.text(`Nom: ${intervention.client_signature_name}`, 115, yPos + 5);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Signataire : ${intervention.client_signature_name}`, 15, yPos);
+    yPos += 8;
   }
+  
+  // Signature box
+  doc.setDrawColor(200, 200, 200);
+  doc.rect(15, yPos, 80, 35);
+  
+  // Try to load client signature image if available
+  if ((intervention as any).client_signature_url) {
+    try {
+      const signatureBase64 = await loadImageAsBase64((intervention as any).client_signature_url);
+      if (signatureBase64) {
+        doc.addImage(signatureBase64, 'PNG', 17, yPos + 2, 76, 31);
+      }
+    } catch (err) {
+      console.error('Error loading signature:', err);
+    }
+  }
+  
+  yPos += 40;
 
   // Footer
   const footerY = doc.internal.pageSize.getHeight() - 15;
