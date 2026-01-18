@@ -9,15 +9,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Plus, Wrench } from "lucide-react";
-import { useClientEquipment, useAddInterventionEquipment, ClientEquipment } from "@/hooks/useInterventionEquipment";
+import { useAddInterventionEquipment } from "@/hooks/useInterventionEquipment";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -29,57 +22,24 @@ interface AddEquipmentDialogProps {
 
 const AddEquipmentDialog = ({ clientId, interventionId, existingEquipmentIds }: AddEquipmentDialogProps) => {
   const [open, setOpen] = useState(false);
-  const [mode, setMode] = useState<"select" | "create">("select");
-  const [selectedEquipmentId, setSelectedEquipmentId] = useState<string>("");
-  
-  // New equipment form
-  const [newEquipmentType, setNewEquipmentType] = useState("");
-  const [newBrand, setNewBrand] = useState("");
-  const [newModel, setNewModel] = useState("");
-  const [newSerialNumber, setNewSerialNumber] = useState("");
+  const [equipmentType, setEquipmentType] = useState("");
   const [isCreating, setIsCreating] = useState(false);
 
-  const { data: clientEquipment = [] } = useClientEquipment(clientId);
   const addEquipment = useAddInterventionEquipment();
 
-  // Filter out already added equipment
-  const availableEquipment = clientEquipment.filter(
-    eq => !existingEquipmentIds.includes(eq.id)
-  );
-
-  const handleAddExisting = async () => {
-    if (!selectedEquipmentId) return;
-    
-    await addEquipment.mutateAsync({
-      interventionId,
-      equipmentId: selectedEquipmentId,
-    });
-    
-    setSelectedEquipmentId("");
-    setOpen(false);
-  };
-
   const handleCreateAndAdd = async () => {
-    if (!newEquipmentType || !newBrand || !newModel) {
-      toast({
-        title: "Erreur",
-        description: "Veuillez remplir les champs obligatoires.",
-        variant: "destructive",
-      });
-      return;
-    }
-
+    const type = equipmentType.trim() || "Équipement";
+    
     setIsCreating(true);
     try {
-      // Create new equipment
+      // Create new equipment with minimal info
       const { data: newEquipment, error } = await supabase
         .from('equipment')
         .insert({
           client_id: clientId,
-          equipment_type: newEquipmentType,
-          brand: newBrand,
-          model: newModel,
-          serial_number: newSerialNumber || null,
+          equipment_type: type,
+          brand: "À identifier",
+          model: "À identifier",
         })
         .select()
         .single();
@@ -93,12 +53,13 @@ const AddEquipmentDialog = ({ clientId, interventionId, existingEquipmentIds }: 
       });
 
       // Reset form
-      setNewEquipmentType("");
-      setNewBrand("");
-      setNewModel("");
-      setNewSerialNumber("");
-      setMode("select");
+      setEquipmentType("");
       setOpen(false);
+      
+      toast({
+        title: "Équipement ajouté",
+        description: "Prenez les photos pour documenter l'équipement.",
+      });
     } catch (error: any) {
       toast({
         title: "Erreur",
@@ -118,7 +79,7 @@ const AddEquipmentDialog = ({ clientId, interventionId, existingEquipmentIds }: 
           Ajouter un équipement
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Wrench className="h-5 w-5" />
@@ -127,102 +88,27 @@ const AddEquipmentDialog = ({ clientId, interventionId, existingEquipmentIds }: 
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Mode selector */}
-          <div className="flex gap-2">
-            <Button
-              variant={mode === "select" ? "default" : "outline"}
-              className="flex-1"
-              onClick={() => setMode("select")}
-              size="sm"
-            >
-              Existant
-            </Button>
-            <Button
-              variant={mode === "create" ? "default" : "outline"}
-              className="flex-1"
-              onClick={() => setMode("create")}
-              size="sm"
-            >
-              Nouveau
-            </Button>
+          <p className="text-sm text-muted-foreground">
+            Ajoutez un équipement rapidement. Vous pourrez le documenter avec des photos.
+          </p>
+          
+          <div>
+            <Label>Type d'équipement (optionnel)</Label>
+            <Input
+              placeholder="Ex: Climatiseur, Chaudière..."
+              value={equipmentType}
+              onChange={(e) => setEquipmentType(e.target.value)}
+            />
           </div>
-
-          {mode === "select" ? (
-            <>
-              {availableEquipment.length > 0 ? (
-                <div className="space-y-3">
-                  <Label>Sélectionner un équipement</Label>
-                  <Select value={selectedEquipmentId} onValueChange={setSelectedEquipmentId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choisir un équipement..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableEquipment.map((eq) => (
-                        <SelectItem key={eq.id} value={eq.id}>
-                          {eq.brand} {eq.model} ({eq.equipment_type})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button 
-                    onClick={handleAddExisting} 
-                    disabled={!selectedEquipmentId || addEquipment.isPending}
-                    className="w-full"
-                  >
-                    Ajouter
-                  </Button>
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  Aucun équipement disponible pour ce client.
-                  <br />
-                  Créez-en un nouveau.
-                </p>
-              )}
-            </>
-          ) : (
-            <div className="space-y-3">
-              <div>
-                <Label>Type d'équipement *</Label>
-                <Input
-                  placeholder="Ex: Climatiseur, Chaudière..."
-                  value={newEquipmentType}
-                  onChange={(e) => setNewEquipmentType(e.target.value)}
-                />
-              </div>
-              <div>
-                <Label>Marque *</Label>
-                <Input
-                  placeholder="Ex: Daikin, Atlantic..."
-                  value={newBrand}
-                  onChange={(e) => setNewBrand(e.target.value)}
-                />
-              </div>
-              <div>
-                <Label>Modèle *</Label>
-                <Input
-                  placeholder="Ex: FTXM35..."
-                  value={newModel}
-                  onChange={(e) => setNewModel(e.target.value)}
-                />
-              </div>
-              <div>
-                <Label>Numéro de série</Label>
-                <Input
-                  placeholder="Optionnel"
-                  value={newSerialNumber}
-                  onChange={(e) => setNewSerialNumber(e.target.value)}
-                />
-              </div>
-              <Button 
-                onClick={handleCreateAndAdd} 
-                disabled={isCreating || addEquipment.isPending}
-                className="w-full"
-              >
-                Créer et ajouter
-              </Button>
-            </div>
-          )}
+          
+          <Button 
+            onClick={handleCreateAndAdd} 
+            disabled={isCreating || addEquipment.isPending}
+            className="w-full"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Ajouter
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
