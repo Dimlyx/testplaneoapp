@@ -1,14 +1,12 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useIntervention, useUpdateIntervention } from "@/hooks/useInterventions";
 import { useClient } from "@/hooks/useClients";
-import { useInterventionPhotos, useUploadInterventionPhoto, useDeleteInterventionPhoto, PhotoType } from "@/hooks/useInterventionPhotos";
+import { useInterventionEquipment } from "@/hooks/useInterventionEquipment";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { StatusBadge, TypeBadge } from "@/components/ui/status-badge";
 import {
   Select,
@@ -31,30 +29,25 @@ import {
   CheckCircle,
   Play,
   Pause,
-  Camera,
-  X,
-  Image as ImageIcon
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "@/hooks/use-toast";
 import { generateInterventionPDF } from "@/lib/pdf-generator";
 import SignaturePad from "@/components/SignaturePad";
+import EquipmentLoopCard from "@/components/EquipmentLoopCard";
+import AddEquipmentDialog from "@/components/AddEquipmentDialog";
 import { supabase } from "@/integrations/supabase/client";
+import { useInterventionPhotos } from "@/hooks/useInterventionPhotos";
 
 const TechnicianInterventionDetail = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const { data: intervention, isLoading } = useIntervention(id || "");
   const { data: client } = useClient(intervention?.client_id || "");
+  const { data: interventionEquipment = [] } = useInterventionEquipment(id || "");
   const { data: photos = [] } = useInterventionPhotos(id || "");
-  const uploadPhoto = useUploadInterventionPhoto();
-  const deletePhoto = useDeleteInterventionPhoto();
   const updateIntervention = useUpdateIntervention();
-
-  const serialNumberInputRef = useRef<HTMLInputElement>(null);
-  const duringInputRef = useRef<HTMLInputElement>(null);
-  const afterInputRef = useRef<HTMLInputElement>(null);
 
   const [status, setStatus] = useState<string>("");
   const [report, setReport] = useState<string>("");
@@ -62,7 +55,6 @@ const TechnicianInterventionDetail = () => {
   const [arrivalTime, setArrivalTime] = useState<string>("");
   const [departureTime, setDepartureTime] = useState<string>("");
   const [observations, setObservations] = useState<string>("");
-  const [equipmentFunctional, setEquipmentFunctional] = useState<boolean>(true);
   const [clientSignatureName, setClientSignatureName] = useState<string>("");
   const [clientSignatureUrl, setClientSignatureUrl] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -77,7 +69,6 @@ const TechnicianInterventionDetail = () => {
       setArrivalTime(intervention.arrival_time || "");
       setDepartureTime(intervention.departure_time || "");
       setObservations(intervention.observations || "");
-      setEquipmentFunctional(intervention.equipment_functional !== false);
       setClientSignatureName(intervention.client_signature_name || "");
       setClientSignatureUrl(intervention.client_signature_url || null);
     }
@@ -128,30 +119,6 @@ const TechnicianInterventionDetail = () => {
     }
   };
 
-  const handlePhotoCapture = async (photoType: PhotoType, file: File) => {
-    if (!id) return;
-    await uploadPhoto.mutateAsync({
-      interventionId: id,
-      photoType,
-      file,
-    });
-  };
-
-  const handleFileChange = (photoType: PhotoType) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      handlePhotoCapture(photoType, file);
-    }
-    e.target.value = '';
-  };
-
-  const handleDeletePhoto = async (photoId: string, photoUrl: string) => {
-    if (!id) return;
-    await deletePhoto.mutateAsync({ id: photoId, photoUrl, interventionId: id });
-  };
-
-  const getPhotosOfType = (type: PhotoType) => photos.filter(p => p.photo_type === type);
-
   const handleStartIntervention = async () => {
     if (!id) return;
     const now = format(new Date(), 'HH:mm');
@@ -181,7 +148,6 @@ const TechnicianInterventionDetail = () => {
         departure_time: now,
         report,
         observations,
-        equipment_functional: equipmentFunctional,
         client_signature_name: clientSignatureName,
         technical_comments: technicalComments,
       });
@@ -203,7 +169,6 @@ const TechnicianInterventionDetail = () => {
         arrival_time: arrivalTime || null,
         departure_time: departureTime || null,
         observations,
-        equipment_functional: equipmentFunctional,
         client_signature_name: clientSignatureName,
       });
       toast({ title: "Intervention mise à jour" });
@@ -249,72 +214,7 @@ const TechnicianInterventionDetail = () => {
   const currentStatus = status || intervention.status;
   const canStart = currentStatus === 'planned' || currentStatus === 'to_plan';
   const canEnd = currentStatus === 'in_progress';
-
-  const PhotoSection = ({ 
-    title, 
-    type, 
-    inputRef 
-  }: { 
-    title: string; 
-    type: PhotoType; 
-    inputRef: React.RefObject<HTMLInputElement>;
-  }) => {
-    const typePhotos = getPhotosOfType(type);
-    return (
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2">
-            <ImageIcon className="h-4 w-4" />
-            {title}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {/* Hidden file input with camera capture */}
-          <input
-            ref={inputRef}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            className="hidden"
-            onChange={handleFileChange(type)}
-          />
-          
-          {/* Photo grid */}
-          {typePhotos.length > 0 && (
-            <div className="grid grid-cols-3 gap-2">
-              {typePhotos.map((photo) => (
-                <div key={photo.id} className="relative aspect-square">
-                  <img
-                    src={photo.photo_url}
-                    alt={title}
-                    className="w-full h-full object-cover rounded-lg"
-                  />
-                  <button
-                    onClick={() => handleDeletePhoto(photo.id, photo.photo_url)}
-                    className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full p-1"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-          
-          {/* Add photo button */}
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full"
-            onClick={() => inputRef.current?.click()}
-            disabled={uploadPhoto.isPending}
-          >
-            <Camera className="h-4 w-4 mr-2" />
-            {uploadPhoto.isPending ? "Envoi en cours..." : "Prendre une photo"}
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  };
+  const existingEquipmentIds = interventionEquipment.map(ie => ie.equipment_id);
 
   return (
     <div className="space-y-4 pb-20">
@@ -424,31 +324,51 @@ const TechnicianInterventionDetail = () => {
         </Card>
       )}
 
-      {/* Photos sections */}
-      <PhotoSection 
-        title="Photo du numéro de série" 
-        type="serial_number" 
-        inputRef={serialNumberInputRef}
-      />
-      
-      <PhotoSection 
-        title="Photos pendant intervention" 
-        type="during" 
-        inputRef={duringInputRef}
-      />
-      
-      <PhotoSection 
-        title="Photos après intervention" 
-        type="after" 
-        inputRef={afterInputRef}
-      />
-
-      {/* Rapport d'intervention */}
+      {/* Equipment Loop Section */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
             <Wrench className="h-4 w-4" />
-            Rapport d'intervention
+            Équipements traités ({interventionEquipment.length})
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {interventionEquipment.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              Aucun équipement traité pour le moment.
+              <br />
+              Ajoutez le premier équipement pour commencer.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {interventionEquipment.map((ie, index) => (
+                <EquipmentLoopCard
+                  key={ie.id}
+                  interventionEquipment={ie}
+                  interventionId={id || ""}
+                  index={index}
+                />
+              ))}
+            </div>
+          )}
+          
+          {/* Add Equipment Button */}
+          {client && (
+            <AddEquipmentDialog
+              clientId={client.id}
+              interventionId={id || ""}
+              existingEquipmentIds={existingEquipmentIds}
+            />
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Rapport d'intervention global */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Rapport global
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -521,20 +441,6 @@ const TechnicianInterventionDetail = () => {
                 setIsEditing(true);
               }}
               className="min-h-[80px]"
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <Label htmlFor="equipment-functional" className="text-sm font-medium">
-              L'équipement fonctionne correctement
-            </Label>
-            <Switch
-              id="equipment-functional"
-              checked={equipmentFunctional}
-              onCheckedChange={(checked) => {
-                setEquipmentFunctional(checked);
-                setIsEditing(true);
-              }}
             />
           </div>
 

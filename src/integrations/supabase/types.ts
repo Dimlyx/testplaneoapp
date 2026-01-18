@@ -103,9 +103,55 @@ export type Database = {
           },
         ]
       }
+      intervention_equipment: {
+        Row: {
+          created_at: string
+          equipment_functional: boolean | null
+          equipment_id: string
+          id: string
+          intervention_id: string
+          technical_comments: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          equipment_functional?: boolean | null
+          equipment_id: string
+          id?: string
+          intervention_id: string
+          technical_comments?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          equipment_functional?: boolean | null
+          equipment_id?: string
+          id?: string
+          intervention_id?: string
+          technical_comments?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intervention_equipment_equipment_id_fkey"
+            columns: ["equipment_id"]
+            isOneToOne: false
+            referencedRelation: "equipment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "intervention_equipment_intervention_id_fkey"
+            columns: ["intervention_id"]
+            isOneToOne: false
+            referencedRelation: "interventions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       intervention_photos: {
         Row: {
           created_at: string
+          equipment_id: string | null
           id: string
           intervention_id: string
           photo_type: string
@@ -113,6 +159,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          equipment_id?: string | null
           id?: string
           intervention_id: string
           photo_type: string
@@ -120,12 +167,20 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          equipment_id?: string | null
           id?: string
           intervention_id?: string
           photo_type?: string
           photo_url?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "intervention_photos_equipment_id_fkey"
+            columns: ["equipment_id"]
+            isOneToOne: false
+            referencedRelation: "equipment"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "intervention_photos_intervention_id_fkey"
             columns: ["intervention_id"]

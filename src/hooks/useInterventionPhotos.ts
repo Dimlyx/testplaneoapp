@@ -7,6 +7,7 @@ export type PhotoType = 'serial_number' | 'during' | 'after';
 export interface InterventionPhoto {
   id: string;
   intervention_id: string;
+  equipment_id: string | null;
   photo_type: PhotoType;
   photo_url: string;
   created_at: string;
@@ -37,14 +38,16 @@ export function useUploadInterventionPhoto() {
     mutationFn: async ({ 
       interventionId, 
       photoType, 
-      file 
+      file,
+      equipmentId,
     }: { 
       interventionId: string; 
       photoType: PhotoType; 
       file: File;
+      equipmentId?: string;
     }) => {
       // Upload to storage
-      const fileName = `${interventionId}/${photoType}_${Date.now()}.jpg`;
+      const fileName = `${interventionId}/${equipmentId || 'general'}/${photoType}_${Date.now()}.jpg`;
       const { error: uploadError } = await supabase.storage
         .from('intervention-photos')
         .upload(fileName, file, {
@@ -66,6 +69,7 @@ export function useUploadInterventionPhoto() {
           intervention_id: interventionId,
           photo_type: photoType,
           photo_url: publicUrl,
+          equipment_id: equipmentId || null,
         })
         .select()
         .single();
