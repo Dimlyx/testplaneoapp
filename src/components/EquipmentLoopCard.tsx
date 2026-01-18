@@ -104,10 +104,22 @@ const EquipmentLoopCard = ({ interventionEquipment, interventionId, index }: Equ
   }) => {
     const typePhotos = getPhotosOfType(type);
     return (
-      <div className="space-y-2">
-        <div className="flex items-center gap-2 text-sm font-medium">
-          <ImageIcon className="h-3 w-3" />
-          {title}
+      <div className="space-y-3 p-3 bg-muted/30 rounded-lg">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <ImageIcon className="h-4 w-4 text-primary" />
+            {title}
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => inputRef.current?.click()}
+            disabled={uploadPhoto.isPending}
+          >
+            <Camera className="h-3 w-3 mr-1" />
+            {uploadPhoto.isPending ? "Envoi..." : "Ajouter"}
+          </Button>
         </div>
         
         <input
@@ -119,37 +131,29 @@ const EquipmentLoopCard = ({ interventionEquipment, interventionId, index }: Equ
           onChange={handleFileChange(type)}
         />
         
-        {typePhotos.length > 0 && (
-          <div className="grid grid-cols-4 gap-2">
+        {typePhotos.length > 0 ? (
+          <div className="grid grid-cols-2 gap-2">
             {typePhotos.map((photo) => (
-              <div key={photo.id} className="relative aspect-square">
+              <div key={photo.id} className="relative aspect-video rounded-lg overflow-hidden border">
                 <img
                   src={photo.photo_url}
                   alt={title}
-                  className="w-full h-full object-cover rounded"
+                  className="w-full h-full object-cover"
                 />
                 <button
                   onClick={() => handleDeletePhoto(photo.id, photo.photo_url)}
-                  className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full p-0.5"
+                  className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 shadow-md"
                 >
-                  <X className="h-2.5 w-2.5" />
+                  <X className="h-3 w-3" />
                 </button>
               </div>
             ))}
           </div>
+        ) : (
+          <div className="flex items-center justify-center h-16 border-2 border-dashed rounded-lg text-muted-foreground text-sm">
+            Aucune photo
+          </div>
         )}
-        
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="w-full"
-          onClick={() => inputRef.current?.click()}
-          disabled={uploadPhoto.isPending}
-        >
-          <Camera className="h-3 w-3 mr-1" />
-          {uploadPhoto.isPending ? "Envoi..." : "Photo"}
-        </Button>
       </div>
     );
   };
@@ -189,20 +193,20 @@ const EquipmentLoopCard = ({ interventionEquipment, interventionId, index }: Equ
 
         <CollapsibleContent>
           <CardContent className="space-y-4 pt-2">
-            {/* Photos Grid */}
-            <div className="grid grid-cols-3 gap-3">
+            {/* Photos - Layout vertical */}
+            <div className="space-y-3">
               <PhotoSection 
-                title="N° série" 
+                title="Photo N° de série" 
                 type="serial_number" 
                 inputRef={serialNumberInputRef}
               />
               <PhotoSection 
-                title="Pendant" 
+                title="Photos pendant intervention" 
                 type="during" 
                 inputRef={duringInputRef}
               />
               <PhotoSection 
-                title="Après" 
+                title="Photos après intervention" 
                 type="after" 
                 inputRef={afterInputRef}
               />

@@ -153,7 +153,8 @@ const TechnicianInterventionDetail = () => {
         client, 
         intervention.equipment as any,
         intervention.profiles?.full_name || undefined,
-        photos
+        photos,
+        interventionEquipment
       );
       toast({ title: "Rapport téléchargé" });
     }
