@@ -1,7 +1,8 @@
 import { useParams } from "react-router-dom";
 import { usePublicIntervention } from "@/hooks/useInterventions";
+import { useInterventionPhotos } from "@/hooks/useInterventionPhotos";
+import { useInterventionEquipment } from "@/hooks/useInterventionEquipment";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { StatusBadge, TypeBadge } from "@/components/ui/status-badge";
 import { 
   User, 
@@ -10,7 +11,8 @@ import {
   FileText, 
   CheckCircle,
   AlertTriangle,
-  Wrench
+  Wrench,
+  Image as ImageIcon
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -18,6 +20,8 @@ import { fr } from "date-fns/locale";
 const PublicIntervention = () => {
   const { token } = useParams();
   const { data: intervention, isLoading, error } = usePublicIntervention(token || "");
+  const { data: photos = [] } = useInterventionPhotos(intervention?.id || "");
+  const { data: interventionEquipments = [] } = useInterventionEquipment(intervention?.id || "");
 
   if (isLoading) {
     return (
@@ -113,6 +117,32 @@ const PublicIntervention = () => {
           </CardContent>
         </Card>
 
+        {/* Chronométrage */}
+        {(intervention.arrival_time || intervention.departure_time) && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                Chronométrage
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {intervention.arrival_time && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Arrivée</span>
+                  <span className="font-medium">{intervention.arrival_time}</span>
+                </div>
+              )}
+              {intervention.departure_time && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Départ</span>
+                  <span className="font-medium">{intervention.departure_time}</span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         {/* Compte rendu */}
         {intervention.report && (
           <Card>
@@ -124,6 +154,151 @@ const PublicIntervention = () => {
             </CardHeader>
             <CardContent>
               <p className="whitespace-pre-wrap">{intervention.report}</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Observations */}
+        {intervention.observations && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Observations</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="whitespace-pre-wrap">{intervention.observations}</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Équipements */}
+        {interventionEquipments.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Wrench className="h-5 w-5" />
+                Équipements ({interventionEquipments.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {interventionEquipments.map((ie, index) => {
+                const equipmentPhotos = photos.filter(p => p.equipment_id === ie.equipment_id);
+                const serialPhotos = equipmentPhotos.filter(p => p.photo_type === 'serial_number');
+                const duringPhotos = equipmentPhotos.filter(p => p.photo_type === 'during');
+                const afterPhotos = equipmentPhotos.filter(p => p.photo_type === 'after');
+                
+                return (
+                  <div key={ie.id} className="border rounded-lg p-3 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-medium">
+                        {index + 1}. {ie.equipment?.equipment_type || "Équipement"}
+                      </h4>
+                      <span className={`px-2 py-0.5 rounded text-xs ${ie.equipment_functional ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                        {ie.equipment_functional ? 'Fonctionnel' : 'Non fonctionnel'}
+                      </span>
+                    </div>
+
+                    {ie.equipment?.serial_number && (
+                      <p className="text-sm text-muted-foreground">
+                        N° série : {ie.equipment.serial_number}
+                      </p>
+                    )}
+
+                    {ie.technical_comments && (
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground mb-1">Commentaires techniques</p>
+                        <p className="text-sm whitespace-pre-wrap">{ie.technical_comments}</p>
+                      </div>
+                    )}
+
+                    {/* Photos de l'équipement */}
+                    {equipmentPhotos.length > 0 && (
+                      <div className="space-y-2">
+                        {serialPhotos.length > 0 && (
+                          <div>
+                            <p className="text-xs font-medium text-muted-foreground mb-1">N° série</p>
+                            <div className="grid grid-cols-3 gap-2">
+                              {serialPhotos.map(photo => (
+                                <a key={photo.id} href={photo.photo_url} target="_blank" rel="noopener noreferrer">
+                                  <img src={photo.photo_url} alt="Série" className="w-full aspect-square object-cover rounded-lg" />
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {duringPhotos.length > 0 && (
+                          <div>
+                            <p className="text-xs font-medium text-muted-foreground mb-1">Pendant</p>
+                            <div className="grid grid-cols-3 gap-2">
+                              {duringPhotos.map(photo => (
+                                <a key={photo.id} href={photo.photo_url} target="_blank" rel="noopener noreferrer">
+                                  <img src={photo.photo_url} alt="Pendant" className="w-full aspect-square object-cover rounded-lg" />
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {afterPhotos.length > 0 && (
+                          <div>
+                            <p className="text-xs font-medium text-muted-foreground mb-1">Après</p>
+                            <div className="grid grid-cols-3 gap-2">
+                              {afterPhotos.map(photo => (
+                                <a key={photo.id} href={photo.photo_url} target="_blank" rel="noopener noreferrer">
+                                  <img src={photo.photo_url} alt="Après" className="w-full aspect-square object-cover rounded-lg" />
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Photos générales */}
+        {photos.filter(p => !p.equipment_id).length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <ImageIcon className="h-5 w-5" />
+                Photos
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-3 gap-2">
+                {photos.filter(p => !p.equipment_id).map(photo => (
+                  <a key={photo.id} href={photo.photo_url} target="_blank" rel="noopener noreferrer">
+                    <img src={photo.photo_url} alt="Photo" className="w-full aspect-square object-cover rounded-lg" />
+                  </a>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Signature client */}
+        {intervention.client_signature_url && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <User className="h-5 w-5" />
+                Signature client
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {intervention.client_signature_name && (
+                <p className="text-sm text-muted-foreground">
+                  Signataire : <span className="font-medium text-foreground">{intervention.client_signature_name}</span>
+                </p>
+              )}
+              <img 
+                src={intervention.client_signature_url} 
+                alt="Signature client" 
+                className="max-w-full border rounded-lg bg-white p-2"
+              />
             </CardContent>
           </Card>
         )}
