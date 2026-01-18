@@ -1,5 +1,5 @@
-import { ReactNode, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -14,15 +14,11 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-interface TechnicianLayoutProps {
-  children: ReactNode;
-}
-
 const navigation = [
   { name: 'Mes Interventions', href: '/technician', icon: ClipboardList },
 ];
 
-export default function TechnicianLayout({ children }: TechnicianLayoutProps) {
+export default function TechnicianLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
@@ -140,7 +136,7 @@ export default function TechnicianLayout({ children }: TechnicianLayoutProps) {
 
         {/* Page content */}
         <main className="p-4 lg:p-8">
-          {children}
+          <Outlet />
         </main>
       </div>
     </div>

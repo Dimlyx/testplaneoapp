@@ -1,5 +1,5 @@
-import { ReactNode, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -16,10 +16,6 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-interface AdminLayoutProps {
-  children: ReactNode;
-}
-
 const navigation = [
   { name: 'Tableau de bord', href: '/admin', icon: LayoutDashboard },
   { name: 'Interventions', href: '/admin/interventions', icon: ClipboardList },
@@ -27,7 +23,7 @@ const navigation = [
   { name: 'Équipements', href: '/admin/equipment', icon: Package },
 ];
 
-export default function AdminLayout({ children }: AdminLayoutProps) {
+export default function AdminLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
@@ -147,7 +143,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
         {/* Page content */}
         <main className="p-4 lg:p-8">
-          {children}
+          <Outlet />
         </main>
       </div>
     </div>
