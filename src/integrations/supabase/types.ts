@@ -105,12 +105,17 @@ export type Database = {
       }
       interventions: {
         Row: {
+          arrival_time: string | null
           client_id: string
+          client_signature_name: string | null
           created_at: string
+          departure_time: string | null
           description: string | null
+          equipment_functional: boolean | null
           equipment_id: string | null
           id: string
           intervention_type: Database["public"]["Enums"]["intervention_type"]
+          observations: string | null
           public_token: string | null
           report: string | null
           scheduled_date: string | null
@@ -122,12 +127,17 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          arrival_time?: string | null
           client_id: string
+          client_signature_name?: string | null
           created_at?: string
+          departure_time?: string | null
           description?: string | null
+          equipment_functional?: boolean | null
           equipment_id?: string | null
           id?: string
           intervention_type: Database["public"]["Enums"]["intervention_type"]
+          observations?: string | null
           public_token?: string | null
           report?: string | null
           scheduled_date?: string | null
@@ -139,12 +149,17 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          arrival_time?: string | null
           client_id?: string
+          client_signature_name?: string | null
           created_at?: string
+          departure_time?: string | null
           description?: string | null
+          equipment_functional?: boolean | null
           equipment_id?: string | null
           id?: string
           intervention_type?: Database["public"]["Enums"]["intervention_type"]
+          observations?: string | null
           public_token?: string | null
           report?: string | null
           scheduled_date?: string | null

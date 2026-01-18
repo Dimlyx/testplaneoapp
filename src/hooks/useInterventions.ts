@@ -19,6 +19,11 @@ export interface Intervention {
   scheduled_time: string | null;
   report: string | null;
   technical_comments: string | null;
+  arrival_time: string | null;
+  departure_time: string | null;
+  observations: string | null;
+  equipment_functional: boolean | null;
+  client_signature_name: string | null;
   created_at: string;
   updated_at: string;
   clients?: {
@@ -28,6 +33,8 @@ export interface Intervention {
     phone: string | null;
     address: string | null;
     city: string | null;
+    postal_code?: string | null;
+    client_type?: string;
   };
   equipment?: {
     id: string;
@@ -35,6 +42,7 @@ export interface Intervention {
     model: string;
     equipment_type: string;
     serial_number: string | null;
+    installation_date?: string | null;
   } | null;
   profiles?: {
     id: string;
@@ -67,6 +75,11 @@ export interface UpdateInterventionData {
   scheduled_time?: string | null;
   report?: string;
   technical_comments?: string;
+  arrival_time?: string | null;
+  departure_time?: string | null;
+  observations?: string;
+  equipment_functional?: boolean;
+  client_signature_name?: string;
 }
 
 export function useInterventions() {

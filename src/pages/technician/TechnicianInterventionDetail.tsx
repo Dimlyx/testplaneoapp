@@ -1,10 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useIntervention, useUpdateIntervention } from "@/hooks/useInterventions";
 import { useClient } from "@/hooks/useClients";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { StatusBadge, TypeBadge } from "@/components/ui/status-badge";
 import {
   Select,
@@ -23,7 +26,10 @@ import {
   Mail,
   FileText,
   Save,
-  Wrench
+  Wrench,
+  CheckCircle,
+  Play,
+  Pause
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -40,16 +46,66 @@ const TechnicianInterventionDetail = () => {
   const [status, setStatus] = useState<string>("");
   const [report, setReport] = useState<string>("");
   const [technicalComments, setTechnicalComments] = useState<string>("");
+  const [arrivalTime, setArrivalTime] = useState<string>("");
+  const [departureTime, setDepartureTime] = useState<string>("");
+  const [observations, setObservations] = useState<string>("");
+  const [equipmentFunctional, setEquipmentFunctional] = useState<boolean>(true);
+  const [clientSignatureName, setClientSignatureName] = useState<string>("");
   const [isEditing, setIsEditing] = useState(false);
 
   // Initialize form when data loads
-  useState(() => {
+  useEffect(() => {
     if (intervention) {
       setStatus(intervention.status);
       setReport(intervention.report || "");
       setTechnicalComments(intervention.technical_comments || "");
+      setArrivalTime(intervention.arrival_time || "");
+      setDepartureTime(intervention.departure_time || "");
+      setObservations(intervention.observations || "");
+      setEquipmentFunctional(intervention.equipment_functional !== false);
+      setClientSignatureName(intervention.client_signature_name || "");
     }
-  });
+  }, [intervention]);
+
+  const handleStartIntervention = async () => {
+    if (!id) return;
+    const now = format(new Date(), 'HH:mm');
+    setArrivalTime(now);
+    setStatus('in_progress');
+    try {
+      await updateIntervention.mutateAsync({
+        id,
+        status: 'in_progress',
+        arrival_time: now,
+      });
+      toast({ title: "Intervention démarrée" });
+    } catch (error) {
+      toast({ title: "Erreur", variant: "destructive" });
+    }
+  };
+
+  const handleEndIntervention = async () => {
+    if (!id) return;
+    const now = format(new Date(), 'HH:mm');
+    setDepartureTime(now);
+    setStatus('completed');
+    try {
+      await updateIntervention.mutateAsync({
+        id,
+        status: 'completed',
+        departure_time: now,
+        report,
+        observations,
+        equipment_functional: equipmentFunctional,
+        client_signature_name: clientSignatureName,
+        technical_comments: technicalComments,
+      });
+      toast({ title: "Intervention terminée" });
+      setIsEditing(false);
+    } catch (error) {
+      toast({ title: "Erreur", variant: "destructive" });
+    }
+  };
 
   const handleSave = async () => {
     if (!id) return;
@@ -59,6 +115,11 @@ const TechnicianInterventionDetail = () => {
         status: status as any,
         report,
         technical_comments: technicalComments,
+        arrival_time: arrivalTime || null,
+        departure_time: departureTime || null,
+        observations,
+        equipment_functional: equipmentFunctional,
+        client_signature_name: clientSignatureName,
       });
       toast({ title: "Intervention mise à jour" });
       setIsEditing(false);
@@ -69,7 +130,12 @@ const TechnicianInterventionDetail = () => {
 
   const handleDownloadPDF = () => {
     if (intervention && client) {
-      generateInterventionPDF(intervention, client);
+      generateInterventionPDF(
+        intervention, 
+        client, 
+        intervention.equipment as any,
+        intervention.profiles?.full_name || undefined
+      );
       toast({ title: "Rapport téléchargé" });
     }
   };
@@ -94,11 +160,11 @@ const TechnicianInterventionDetail = () => {
   }
 
   const currentStatus = status || intervention.status;
-  const currentReport = isEditing ? report : (intervention.report || "");
-  const currentComments = isEditing ? technicalComments : (intervention.technical_comments || "");
+  const canStart = currentStatus === 'planned' || currentStatus === 'to_plan';
+  const canEnd = currentStatus === 'in_progress';
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pb-20">
       {/* Header */}
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
@@ -112,6 +178,21 @@ const TechnicianInterventionDetail = () => {
           </div>
         </div>
       </div>
+
+      {/* Quick Actions */}
+      {canStart && (
+        <Button onClick={handleStartIntervention} className="w-full" size="lg">
+          <Play className="h-5 w-5 mr-2" />
+          Démarrer l'intervention
+        </Button>
+      )}
+      
+      {canEnd && (
+        <Button onClick={handleEndIntervention} variant="default" className="w-full bg-green-600 hover:bg-green-700" size="lg">
+          <CheckCircle className="h-5 w-5 mr-2" />
+          Terminer l'intervention
+        </Button>
+      )}
 
       {/* Planification */}
       <Card>
@@ -127,7 +208,19 @@ const TechnicianInterventionDetail = () => {
           {intervention.scheduled_time && (
             <div className="flex items-center gap-3">
               <Clock className="h-4 w-4 text-muted-foreground" />
-              <span>{intervention.scheduled_time}</span>
+              <span>RDV: {intervention.scheduled_time}</span>
+            </div>
+          )}
+          {arrivalTime && (
+            <div className="flex items-center gap-3 text-green-600">
+              <Play className="h-4 w-4" />
+              <span>Arrivée: {arrivalTime}</span>
+            </div>
+          )}
+          {departureTime && (
+            <div className="flex items-center gap-3 text-blue-600">
+              <Pause className="h-4 w-4" />
+              <span>Départ: {departureTime}</span>
             </div>
           )}
         </CardContent>
@@ -178,12 +271,12 @@ const TechnicianInterventionDetail = () => {
         </Card>
       )}
 
-      {/* Actions */}
+      {/* Rapport d'intervention */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
             <Wrench className="h-4 w-4" />
-            Mise à jour
+            Rapport d'intervention
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -208,11 +301,36 @@ const TechnicianInterventionDetail = () => {
             </Select>
           </div>
 
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Heure d'arrivée</label>
+              <Input
+                type="time"
+                value={arrivalTime}
+                onChange={(e) => {
+                  setArrivalTime(e.target.value);
+                  setIsEditing(true);
+                }}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Heure de départ</label>
+              <Input
+                type="time"
+                value={departureTime}
+                onChange={(e) => {
+                  setDepartureTime(e.target.value);
+                  setIsEditing(true);
+                }}
+              />
+            </div>
+          </div>
+
           <div>
-            <label className="text-sm font-medium mb-2 block">Compte rendu</label>
+            <label className="text-sm font-medium mb-2 block">Travaux effectués / Compte rendu</label>
             <Textarea
-              placeholder="Décrivez l'intervention réalisée..."
-              value={isEditing ? report : (intervention.report || "")}
+              placeholder="Décrivez les travaux réalisés..."
+              value={report}
               onChange={(e) => {
                 setReport(e.target.value);
                 setIsEditing(true);
@@ -222,15 +340,54 @@ const TechnicianInterventionDetail = () => {
           </div>
 
           <div>
-            <label className="text-sm font-medium mb-2 block">Commentaires techniques</label>
+            <label className="text-sm font-medium mb-2 block">Observations</label>
+            <Textarea
+              placeholder="Observations, recommandations..."
+              value={observations}
+              onChange={(e) => {
+                setObservations(e.target.value);
+                setIsEditing(true);
+              }}
+              className="min-h-[80px]"
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <Label htmlFor="equipment-functional" className="text-sm font-medium">
+              L'équipement fonctionne correctement
+            </Label>
+            <Switch
+              id="equipment-functional"
+              checked={equipmentFunctional}
+              onCheckedChange={(checked) => {
+                setEquipmentFunctional(checked);
+                setIsEditing(true);
+              }}
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium mb-2 block">Commentaires techniques (interne)</label>
             <Textarea
               placeholder="Notes techniques internes..."
-              value={isEditing ? technicalComments : (intervention.technical_comments || "")}
+              value={technicalComments}
               onChange={(e) => {
                 setTechnicalComments(e.target.value);
                 setIsEditing(true);
               }}
-              className="min-h-[80px]"
+              className="min-h-[60px]"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium mb-2 block">Nom du client (signature)</label>
+            <Input
+              placeholder="Nom du client pour validation"
+              value={clientSignatureName}
+              onChange={(e) => {
+                setClientSignatureName(e.target.value);
+                setIsEditing(true);
+              }}
             />
           </div>
 
@@ -250,7 +407,7 @@ const TechnicianInterventionDetail = () => {
       {/* PDF */}
       <Button variant="outline" className="w-full" onClick={handleDownloadPDF}>
         <FileText className="h-4 w-4 mr-2" />
-        Télécharger le rapport
+        Télécharger le rapport PDF
       </Button>
     </div>
   );

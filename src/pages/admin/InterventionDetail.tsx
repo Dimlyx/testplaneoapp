@@ -36,7 +36,12 @@ const InterventionDetail = () => {
 
   const handleDownloadPDF = () => {
     if (intervention && client) {
-      generateInterventionPDF(intervention, client);
+      generateInterventionPDF(
+        intervention, 
+        client, 
+        intervention.equipment as any,
+        intervention.profiles?.full_name || undefined
+      );
       toast({ title: "PDF généré avec succès" });
     }
   };
