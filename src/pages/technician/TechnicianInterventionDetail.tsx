@@ -4,41 +4,15 @@ import { useIntervention, useUpdateIntervention } from "@/hooks/useInterventions
 import { useClient } from "@/hooks/useClients";
 import { useInterventionEquipment } from "@/hooks/useInterventionEquipment";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import { StatusBadge, TypeBadge } from "@/components/ui/status-badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { 
-  ArrowLeft, 
-  User, 
-  Calendar, 
-  Clock, 
-  MapPin, 
-  Phone, 
-  Mail,
-  FileText,
-  Save,
-  Wrench,
-  CheckCircle,
-  Play,
-  Pause,
-} from "lucide-react";
+import { ArrowLeft, Calendar, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "@/hooks/use-toast";
 import { generateInterventionPDF } from "@/lib/pdf-generator";
-import SignaturePad from "@/components/SignaturePad";
-import EquipmentLoopCard from "@/components/EquipmentLoopCard";
-import AddEquipmentDialog from "@/components/AddEquipmentDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useInterventionPhotos } from "@/hooks/useInterventionPhotos";
+import InterventionWorkflow from "@/components/technician/InterventionWorkflow";
 
 const TechnicianInterventionDetail = () => {
   const navigate = useNavigate();
@@ -57,7 +31,6 @@ const TechnicianInterventionDetail = () => {
   const [observations, setObservations] = useState<string>("");
   const [clientSignatureName, setClientSignatureName] = useState<string>("");
   const [clientSignatureUrl, setClientSignatureUrl] = useState<string | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
   const [isUploadingSignature, setIsUploadingSignature] = useState(false);
 
   // Initialize form when data loads
@@ -79,11 +52,9 @@ const TechnicianInterventionDetail = () => {
     
     setIsUploadingSignature(true);
     try {
-      // Convert data URL to blob
       const response = await fetch(signatureDataUrl);
       const blob = await response.blob();
       
-      // Upload to storage
       const fileName = `signatures/${id}-${Date.now()}.png`;
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('intervention-photos')
@@ -94,14 +65,12 @@ const TechnicianInterventionDetail = () => {
       
       if (uploadError) throw uploadError;
       
-      // Get public URL
       const { data: urlData } = supabase.storage
         .from('intervention-photos')
         .getPublicUrl(fileName);
       
       const signatureUrl = urlData.publicUrl;
       
-      // Update intervention with signature URL and name
       await updateIntervention.mutateAsync({
         id,
         client_signature_name: signerName,
@@ -145,14 +114,13 @@ const TechnicianInterventionDetail = () => {
       await updateIntervention.mutateAsync({
         id,
         status: 'completed',
-        departure_time: now,
+        departure_time: departureTime || now,
         report,
         observations,
         client_signature_name: clientSignatureName,
         technical_comments: technicalComments,
       });
       toast({ title: "Intervention terminée" });
-      setIsEditing(false);
     } catch (error) {
       toast({ title: "Erreur", variant: "destructive" });
     }
@@ -172,7 +140,6 @@ const TechnicianInterventionDetail = () => {
         client_signature_name: clientSignatureName,
       });
       toast({ title: "Intervention mise à jour" });
-      setIsEditing(false);
     } catch (error) {
       toast({ title: "Erreur lors de la mise à jour", variant: "destructive" });
     }
@@ -211,11 +178,6 @@ const TechnicianInterventionDetail = () => {
     );
   }
 
-  const currentStatus = status || intervention.status;
-  const canStart = currentStatus === 'planned' || currentStatus === 'to_plan';
-  const canEnd = currentStatus === 'in_progress';
-  const existingEquipmentIds = interventionEquipment.map(ie => ie.equipment_id);
-
   return (
     <div className="space-y-4 pb-20">
       {/* Header */}
@@ -227,262 +189,54 @@ const TechnicianInterventionDetail = () => {
           <h1 className="text-xl font-bold">{intervention.title}</h1>
           <div className="flex items-center gap-2 mt-1">
             <TypeBadge type={intervention.intervention_type} />
-            <StatusBadge status={currentStatus as any} />
+            <StatusBadge status={status as any || intervention.status} />
           </div>
         </div>
       </div>
 
-      {/* Quick Actions */}
-      {canStart && (
-        <Button onClick={handleStartIntervention} className="w-full" size="lg">
-          <Play className="h-5 w-5 mr-2" />
-          Démarrer l'intervention
-        </Button>
-      )}
-      
-      {canEnd && (
-        <Button onClick={handleEndIntervention} variant="default" className="w-full bg-green-600 hover:bg-green-700" size="lg">
-          <CheckCircle className="h-5 w-5 mr-2" />
-          Terminer l'intervention
-        </Button>
-      )}
-
-      {/* Planification */}
-      <Card>
-        <CardContent className="p-4 space-y-3">
+      {/* Schedule info */}
+      {(intervention.scheduled_date || intervention.scheduled_time) && (
+        <div className="flex items-center gap-4 text-sm text-muted-foreground bg-muted/50 rounded-lg p-3">
           {intervention.scheduled_date && (
-            <div className="flex items-center gap-3">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
               <span>
-                {format(new Date(intervention.scheduled_date), 'EEEE dd MMMM yyyy', { locale: fr })}
+                {format(new Date(intervention.scheduled_date), 'dd/MM/yyyy', { locale: fr })}
               </span>
             </div>
           )}
           {intervention.scheduled_time && (
-            <div className="flex items-center gap-3">
-              <Clock className="h-4 w-4 text-muted-foreground" />
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4" />
               <span>RDV: {intervention.scheduled_time}</span>
             </div>
           )}
-          {arrivalTime && (
-            <div className="flex items-center gap-3 text-green-600">
-              <Play className="h-4 w-4" />
-              <span>Arrivée: {arrivalTime}</span>
-            </div>
-          )}
-          {departureTime && (
-            <div className="flex items-center gap-3 text-blue-600">
-              <Pause className="h-4 w-4" />
-              <span>Départ: {departureTime}</span>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Client */}
-      {client && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <User className="h-4 w-4" />
-              Client
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <p className="font-medium">{client.name}</p>
-            {client.address && (
-              <div className="flex items-start gap-2 text-sm text-muted-foreground">
-                <MapPin className="h-4 w-4 mt-0.5 shrink-0" />
-                <span>{client.address}, {client.postal_code} {client.city}</span>
-              </div>
-            )}
-            {client.phone && (
-              <a href={`tel:${client.phone}`} className="flex items-center gap-2 text-sm text-primary">
-                <Phone className="h-4 w-4" />
-                {client.phone}
-              </a>
-            )}
-            {client.email && (
-              <a href={`mailto:${client.email}`} className="flex items-center gap-2 text-sm text-primary">
-                <Mail className="h-4 w-4" />
-                {client.email}
-              </a>
-            )}
-          </CardContent>
-        </Card>
+        </div>
       )}
 
-      {/* Description */}
-      {intervention.description && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Description</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">{intervention.description}</p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Equipment Loop Section */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Wrench className="h-4 w-4" />
-            Équipements traités ({interventionEquipment.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {interventionEquipment.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              Aucun équipement traité pour le moment.
-              <br />
-              Ajoutez le premier équipement pour commencer.
-            </p>
-          ) : (
-            <div className="space-y-3">
-              {interventionEquipment.map((ie, index) => (
-                <EquipmentLoopCard
-                  key={ie.id}
-                  interventionEquipment={ie}
-                  interventionId={id || ""}
-                  index={index}
-                />
-              ))}
-            </div>
-          )}
-          
-          {/* Add Equipment Button */}
-          {client && (
-            <AddEquipmentDialog
-              clientId={client.id}
-              interventionId={id || ""}
-              existingEquipmentIds={existingEquipmentIds}
-            />
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Rapport d'intervention global */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            Rapport global
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <label className="text-sm font-medium mb-2 block">Statut</label>
-            <Select 
-              value={currentStatus} 
-              onValueChange={(value) => {
-                setStatus(value);
-                setIsEditing(true);
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="to_plan">À planifier</SelectItem>
-                <SelectItem value="planned">Planifiée</SelectItem>
-                <SelectItem value="in_progress">En cours</SelectItem>
-                <SelectItem value="completed">Terminée</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">Heure d'arrivée</label>
-              <Input
-                type="time"
-                value={arrivalTime}
-                onChange={(e) => {
-                  setArrivalTime(e.target.value);
-                  setIsEditing(true);
-                }}
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-2 block">Heure de départ</label>
-              <Input
-                type="time"
-                value={departureTime}
-                onChange={(e) => {
-                  setDepartureTime(e.target.value);
-                  setIsEditing(true);
-                }}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium mb-2 block">Travaux effectués / Compte rendu</label>
-            <Textarea
-              placeholder="Décrivez les travaux réalisés..."
-              value={report}
-              onChange={(e) => {
-                setReport(e.target.value);
-                setIsEditing(true);
-              }}
-              className="min-h-[100px]"
-            />
-          </div>
-
-          <div>
-            <label className="text-sm font-medium mb-2 block">Observations</label>
-            <Textarea
-              placeholder="Observations, recommandations..."
-              value={observations}
-              onChange={(e) => {
-                setObservations(e.target.value);
-                setIsEditing(true);
-              }}
-              className="min-h-[80px]"
-            />
-          </div>
-
-          <div>
-            <label className="text-sm font-medium mb-2 block">Commentaires techniques (interne)</label>
-            <Textarea
-              placeholder="Notes techniques internes..."
-              value={technicalComments}
-              onChange={(e) => {
-                setTechnicalComments(e.target.value);
-                setIsEditing(true);
-              }}
-              className="min-h-[60px]"
-            />
-          </div>
-
-          {isEditing && (
-            <Button 
-              onClick={handleSave} 
-              className="w-full"
-              disabled={updateIntervention.isPending}
-            >
-              <Save className="h-4 w-4 mr-2" />
-              Enregistrer
-            </Button>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Signature du client */}
-      <SignaturePad
+      {/* Workflow Steps */}
+      <InterventionWorkflow
+        intervention={intervention}
+        client={client}
+        interventionEquipment={interventionEquipment}
+        arrivalTime={arrivalTime}
+        departureTime={departureTime}
+        report={report}
+        observations={observations}
+        clientSignatureName={clientSignatureName}
+        clientSignatureUrl={clientSignatureUrl}
+        onStartIntervention={handleStartIntervention}
+        onEndIntervention={handleEndIntervention}
+        onSave={handleSave}
         onSignatureComplete={handleSignatureComplete}
-        signerName={clientSignatureName}
-        onSignerNameChange={setClientSignatureName}
-        existingSignature={clientSignatureUrl}
+        onArrivalTimeChange={(v) => setArrivalTime(v)}
+        onDepartureTimeChange={(v) => setDepartureTime(v)}
+        onReportChange={(v) => setReport(v)}
+        onObservationsChange={(v) => setObservations(v)}
+        onClientSignatureNameChange={setClientSignatureName}
+        onDownloadPDF={handleDownloadPDF}
+        isUpdating={updateIntervention.isPending}
       />
-
-      {/* PDF */}
-      <Button variant="outline" className="w-full" onClick={handleDownloadPDF}>
-        <FileText className="h-4 w-4 mr-2" />
-        Télécharger le rapport PDF
-      </Button>
     </div>
   );
 };
