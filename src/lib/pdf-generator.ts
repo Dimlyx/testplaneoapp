@@ -20,36 +20,67 @@ interface PDFInterventionData {
   technicianName?: string;
 }
 
+const MAX_IMAGE_WIDTH = 400;
+const MAX_IMAGE_HEIGHT = 300;
+const JPEG_QUALITY = 0.6;
+
 const loadImageAsBase64 = async (url: string): Promise<string | null> => {
   return new Promise((resolve) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
     
+    const timeout = setTimeout(() => {
+      console.warn('Image load timeout:', url);
+      resolve(null);
+    }, 10000); // 10 second timeout
+    
     img.onload = () => {
+      clearTimeout(timeout);
       try {
+        // Calculate scaled dimensions to compress the image
+        let width = img.naturalWidth;
+        let height = img.naturalHeight;
+        
+        if (width > MAX_IMAGE_WIDTH) {
+          height = (height * MAX_IMAGE_WIDTH) / width;
+          width = MAX_IMAGE_WIDTH;
+        }
+        if (height > MAX_IMAGE_HEIGHT) {
+          width = (width * MAX_IMAGE_HEIGHT) / height;
+          height = MAX_IMAGE_HEIGHT;
+        }
+        
         const canvas = document.createElement('canvas');
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
+        canvas.width = width;
+        canvas.height = height;
         const ctx = canvas.getContext('2d');
+        
         if (ctx) {
-          ctx.drawImage(img, 0, 0);
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+          // Use better image smoothing for compression
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'medium';
+          ctx.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL('image/jpeg', JPEG_QUALITY);
+          console.log('Image loaded and compressed:', url.substring(0, 50) + '...');
           resolve(dataUrl);
         } else {
+          console.error('Could not get canvas context');
           resolve(null);
         }
-      } catch {
+      } catch (err) {
+        console.error('Error processing image:', err);
         resolve(null);
       }
     };
     
-    img.onerror = () => {
-      console.error('Failed to load image:', url);
+    img.onerror = (err) => {
+      clearTimeout(timeout);
+      console.error('Failed to load image:', url, err);
       resolve(null);
     };
     
-    // Add cache buster to avoid CORS caching issues
-    img.src = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
+    // Try loading without cache buster first (simpler approach)
+    img.src = url;
   });
 };
 
@@ -220,14 +251,18 @@ export const generateInterventionPDF = async (
 
   // Photos Section
   if (photos && photos.length > 0) {
+    console.log('Adding photos to PDF, count:', photos.length);
+    
     const photoTypes = {
       serial_number: { title: "PHOTO DU NUMÉRO DE SÉRIE", photos: photos.filter(p => p.photo_type === 'serial_number') },
       during: { title: "PHOTOS PENDANT INTERVENTION", photos: photos.filter(p => p.photo_type === 'during') },
       after: { title: "PHOTOS APRÈS INTERVENTION", photos: photos.filter(p => p.photo_type === 'after') },
     };
 
-    for (const [, { title, photos: typePhotos }] of Object.entries(photoTypes)) {
+    for (const [photoType, { title, photos: typePhotos }] of Object.entries(photoTypes)) {
       if (typePhotos.length === 0) continue;
+      
+      console.log(`Processing ${photoType} photos:`, typePhotos.length);
 
       checkNewPage(60);
       yPos = addSection(title, yPos);
@@ -237,10 +272,14 @@ export const generateInterventionPDF = async (
       const photosPerRow = 3;
       let xPos = 15;
       let photoCount = 0;
+      let successCount = 0;
 
       for (const photo of typePhotos) {
+        console.log('Loading photo:', photo.photo_url.substring(0, 80) + '...');
         const base64 = await loadImageAsBase64(photo.photo_url);
+        
         if (base64) {
+          console.log('Photo loaded successfully, adding to PDF');
           if (photoCount > 0 && photoCount % photosPerRow === 0) {
             xPos = 15;
             yPos += photoHeight + 5;
@@ -249,20 +288,44 @@ export const generateInterventionPDF = async (
 
           try {
             doc.addImage(base64, 'JPEG', xPos, yPos, photoWidth, photoHeight);
-          } catch {
-            // If image fails to load, add a placeholder
+            successCount++;
+          } catch (imgErr) {
+            console.error('Error adding image to PDF:', imgErr);
+            // Add placeholder for failed image
             doc.setDrawColor(200, 200, 200);
             doc.rect(xPos, yPos, photoWidth, photoHeight);
             doc.setFontSize(8);
-            doc.text("Image non disponible", xPos + 5, yPos + photoHeight / 2);
+            doc.setTextColor(150, 150, 150);
+            doc.text("Erreur image", xPos + 10, yPos + photoHeight / 2);
+            doc.setTextColor(0, 0, 0);
           }
           
           xPos += photoWidth + 5;
           photoCount++;
+        } else {
+          console.warn('Failed to load photo, skipping:', photo.photo_url.substring(0, 50));
+          // Add placeholder for failed load
+          if (photoCount > 0 && photoCount % photosPerRow === 0) {
+            xPos = 15;
+            yPos += photoHeight + 5;
+            checkNewPage(photoHeight + 10);
+          }
+          doc.setDrawColor(200, 200, 200);
+          doc.rect(xPos, yPos, photoWidth, photoHeight);
+          doc.setFontSize(8);
+          doc.setTextColor(150, 150, 150);
+          doc.text("Photo non chargée", xPos + 5, yPos + photoHeight / 2);
+          doc.setTextColor(0, 0, 0);
+          xPos += photoWidth + 5;
+          photoCount++;
         }
       }
+      
+      console.log(`${photoType}: ${successCount}/${typePhotos.length} photos added successfully`);
       yPos += photoHeight + 10;
     }
+  } else {
+    console.log('No photos to add to PDF');
   }
 
   // Check if we need a new page for signatures
