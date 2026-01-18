@@ -7,6 +7,12 @@ import { fr } from "date-fns/locale";
 type Client = Tables<"clients">;
 type Equipment = Tables<"equipment"> | null;
 
+interface InterventionPhoto {
+  id: string;
+  photo_url: string;
+  photo_type: 'serial_number' | 'during' | 'after';
+}
+
 interface PDFInterventionData {
   intervention: Intervention;
   client: Client;
@@ -14,14 +20,31 @@ interface PDFInterventionData {
   technicianName?: string;
 }
 
-export const generateInterventionPDF = (
+const loadImageAsBase64 = async (url: string): Promise<string | null> => {
+  try {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+};
+
+export const generateInterventionPDF = async (
   intervention: Intervention, 
   client: Client, 
   equipment?: Equipment,
-  technicianName?: string
+  technicianName?: string,
+  photos?: InterventionPhoto[]
 ) => {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
   let yPos = 20;
   
   // Helper functions
@@ -48,6 +71,15 @@ export const generateInterventionPDF = (
     doc.setFont("helvetica", "normal");
     doc.text(value || "N/C", x + doc.getTextWidth(label + ": "), y);
     return y + 6;
+  };
+
+  const checkNewPage = (neededHeight: number) => {
+    if (yPos + neededHeight > pageHeight - 20) {
+      doc.addPage();
+      yPos = 20;
+      return true;
+    }
+    return false;
   };
 
   // Header
@@ -168,11 +200,55 @@ export const generateInterventionPDF = (
   yPos = addField("L'équipement fonctionne correctement", funcStatus, yPos);
   yPos += 10;
 
-  // Check if we need a new page for signatures
-  if (yPos > 240) {
-    doc.addPage();
-    yPos = 20;
+  // Photos Section
+  if (photos && photos.length > 0) {
+    const photoTypes = {
+      serial_number: { title: "PHOTO DU NUMÉRO DE SÉRIE", photos: photos.filter(p => p.photo_type === 'serial_number') },
+      during: { title: "PHOTOS PENDANT INTERVENTION", photos: photos.filter(p => p.photo_type === 'during') },
+      after: { title: "PHOTOS APRÈS INTERVENTION", photos: photos.filter(p => p.photo_type === 'after') },
+    };
+
+    for (const [, { title, photos: typePhotos }] of Object.entries(photoTypes)) {
+      if (typePhotos.length === 0) continue;
+
+      checkNewPage(60);
+      yPos = addSection(title, yPos);
+
+      const photoWidth = 55;
+      const photoHeight = 40;
+      const photosPerRow = 3;
+      let xPos = 15;
+      let photoCount = 0;
+
+      for (const photo of typePhotos) {
+        const base64 = await loadImageAsBase64(photo.photo_url);
+        if (base64) {
+          if (photoCount > 0 && photoCount % photosPerRow === 0) {
+            xPos = 15;
+            yPos += photoHeight + 5;
+            checkNewPage(photoHeight + 10);
+          }
+
+          try {
+            doc.addImage(base64, 'JPEG', xPos, yPos, photoWidth, photoHeight);
+          } catch {
+            // If image fails to load, add a placeholder
+            doc.setDrawColor(200, 200, 200);
+            doc.rect(xPos, yPos, photoWidth, photoHeight);
+            doc.setFontSize(8);
+            doc.text("Image non disponible", xPos + 5, yPos + photoHeight / 2);
+          }
+          
+          xPos += photoWidth + 5;
+          photoCount++;
+        }
+      }
+      yPos += photoHeight + 10;
+    }
   }
+
+  // Check if we need a new page for signatures
+  checkNewPage(50);
 
   // Signatures Section
   yPos = addSection("SIGNATURES", yPos);

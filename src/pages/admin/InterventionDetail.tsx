@@ -39,13 +39,15 @@ const InterventionDetail = () => {
     }
   };
 
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = async () => {
     if (intervention && client) {
-      generateInterventionPDF(
+      toast({ title: "Génération du PDF en cours..." });
+      await generateInterventionPDF(
         intervention, 
         client, 
         intervention.equipment as any,
-        intervention.profiles?.full_name || undefined
+        intervention.profiles?.full_name || undefined,
+        photos
       );
       toast({ title: "PDF généré avec succès" });
     }
