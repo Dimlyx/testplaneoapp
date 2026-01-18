@@ -103,6 +103,38 @@ export type Database = {
           },
         ]
       }
+      intervention_photos: {
+        Row: {
+          created_at: string
+          id: string
+          intervention_id: string
+          photo_type: string
+          photo_url: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          intervention_id: string
+          photo_type: string
+          photo_url: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          intervention_id?: string
+          photo_type?: string
+          photo_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intervention_photos_intervention_id_fkey"
+            columns: ["intervention_id"]
+            isOneToOne: false
+            referencedRelation: "interventions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       interventions: {
         Row: {
           arrival_time: string | null

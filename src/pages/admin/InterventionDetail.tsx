@@ -1,6 +1,7 @@
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { useIntervention } from "@/hooks/useInterventions";
 import { useClient } from "@/hooks/useClients";
+import { useInterventionPhotos, PhotoType } from "@/hooks/useInterventionPhotos";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge, TypeBadge } from "@/components/ui/status-badge";
@@ -13,7 +14,8 @@ import {
   Calendar,
   Clock,
   ExternalLink,
-  Copy
+  Copy,
+  Image as ImageIcon
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -25,6 +27,9 @@ const InterventionDetail = () => {
   const { id } = useParams();
   const { data: intervention, isLoading } = useIntervention(id || "");
   const { data: client } = useClient(intervention?.client_id || "");
+  const { data: photos = [] } = useInterventionPhotos(id || "");
+
+  const getPhotosOfType = (type: PhotoType) => photos.filter(p => p.photo_type === type);
 
   const handleCopyLink = () => {
     if (intervention?.public_token) {
@@ -237,6 +242,77 @@ const InterventionDetail = () => {
             <p className="whitespace-pre-wrap">
               {intervention.report || "Aucun compte rendu pour le moment"}
             </p>
+          </CardContent>
+        </Card>
+
+        {/* Photos */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ImageIcon className="h-5 w-5" />
+              Photos de l'intervention
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Photo numéro de série */}
+            <div>
+              <h4 className="font-medium mb-3">Photo du numéro de série</h4>
+              {getPhotosOfType('serial_number').length > 0 ? (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {getPhotosOfType('serial_number').map((photo) => (
+                    <a key={photo.id} href={photo.photo_url} target="_blank" rel="noopener noreferrer">
+                      <img
+                        src={photo.photo_url}
+                        alt="Numéro de série"
+                        className="w-full aspect-square object-cover rounded-lg hover:opacity-90 transition-opacity"
+                      />
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">Aucune photo</p>
+              )}
+            </div>
+
+            {/* Photos pendant intervention */}
+            <div>
+              <h4 className="font-medium mb-3">Photos pendant intervention</h4>
+              {getPhotosOfType('during').length > 0 ? (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {getPhotosOfType('during').map((photo) => (
+                    <a key={photo.id} href={photo.photo_url} target="_blank" rel="noopener noreferrer">
+                      <img
+                        src={photo.photo_url}
+                        alt="Pendant intervention"
+                        className="w-full aspect-square object-cover rounded-lg hover:opacity-90 transition-opacity"
+                      />
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">Aucune photo</p>
+              )}
+            </div>
+
+            {/* Photos après intervention */}
+            <div>
+              <h4 className="font-medium mb-3">Photos après intervention</h4>
+              {getPhotosOfType('after').length > 0 ? (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {getPhotosOfType('after').map((photo) => (
+                    <a key={photo.id} href={photo.photo_url} target="_blank" rel="noopener noreferrer">
+                      <img
+                        src={photo.photo_url}
+                        alt="Après intervention"
+                        className="w-full aspect-square object-cover rounded-lg hover:opacity-90 transition-opacity"
+                      />
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">Aucune photo</p>
+              )}
+            </div>
           </CardContent>
         </Card>
 
