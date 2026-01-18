@@ -39,6 +39,8 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "@/hooks/use-toast";
 import { generateInterventionPDF } from "@/lib/pdf-generator";
+import SignaturePad from "@/components/SignaturePad";
+import { supabase } from "@/integrations/supabase/client";
 
 const TechnicianInterventionDetail = () => {
   const navigate = useNavigate();
@@ -62,7 +64,9 @@ const TechnicianInterventionDetail = () => {
   const [observations, setObservations] = useState<string>("");
   const [equipmentFunctional, setEquipmentFunctional] = useState<boolean>(true);
   const [clientSignatureName, setClientSignatureName] = useState<string>("");
+  const [clientSignatureUrl, setClientSignatureUrl] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [isUploadingSignature, setIsUploadingSignature] = useState(false);
 
   // Initialize form when data loads
   useEffect(() => {
@@ -75,8 +79,54 @@ const TechnicianInterventionDetail = () => {
       setObservations(intervention.observations || "");
       setEquipmentFunctional(intervention.equipment_functional !== false);
       setClientSignatureName(intervention.client_signature_name || "");
+      setClientSignatureUrl((intervention as any).client_signature_url || null);
     }
   }, [intervention]);
+
+  const handleSignatureComplete = async (signatureDataUrl: string, signerName: string) => {
+    if (!id) return;
+    
+    setIsUploadingSignature(true);
+    try {
+      // Convert data URL to blob
+      const response = await fetch(signatureDataUrl);
+      const blob = await response.blob();
+      
+      // Upload to storage
+      const fileName = `signatures/${id}-${Date.now()}.png`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('intervention-photos')
+        .upload(fileName, blob, {
+          contentType: 'image/png',
+          upsert: true
+        });
+      
+      if (uploadError) throw uploadError;
+      
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('intervention-photos')
+        .getPublicUrl(fileName);
+      
+      const signatureUrl = urlData.publicUrl;
+      
+      // Update intervention with signature URL and name
+      await updateIntervention.mutateAsync({
+        id,
+        client_signature_name: signerName,
+        // Note: client_signature_url needs to be added to the database
+      });
+      
+      setClientSignatureUrl(signatureUrl);
+      setClientSignatureName(signerName);
+      toast({ title: "Signature enregistrée" });
+    } catch (error) {
+      console.error('Error uploading signature:', error);
+      toast({ title: "Erreur lors de l'enregistrement de la signature", variant: "destructive" });
+    } finally {
+      setIsUploadingSignature(false);
+    }
+  };
 
   const handlePhotoCapture = async (photoType: PhotoType, file: File) => {
     if (!id) return;
@@ -501,18 +551,6 @@ const TechnicianInterventionDetail = () => {
             />
           </div>
 
-          <div>
-            <label className="text-sm font-medium mb-2 block">Nom du client (signature)</label>
-            <Input
-              placeholder="Nom du client pour validation"
-              value={clientSignatureName}
-              onChange={(e) => {
-                setClientSignatureName(e.target.value);
-                setIsEditing(true);
-              }}
-            />
-          </div>
-
           {isEditing && (
             <Button 
               onClick={handleSave} 
@@ -525,6 +563,14 @@ const TechnicianInterventionDetail = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Signature du client */}
+      <SignaturePad
+        onSignatureComplete={handleSignatureComplete}
+        signerName={clientSignatureName}
+        onSignerNameChange={setClientSignatureName}
+        existingSignature={clientSignatureUrl}
+      />
 
       {/* PDF */}
       <Button variant="outline" className="w-full" onClick={handleDownloadPDF}>
