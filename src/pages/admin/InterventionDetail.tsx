@@ -235,6 +235,32 @@ const InterventionDetail = () => {
           </CardContent>
         </Card>
 
+        {/* Chronométrage */}
+        {(intervention.arrival_time || intervention.departure_time) && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                Chronométrage
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {intervention.arrival_time && (
+                <div>
+                  <p className="text-sm text-muted-foreground">Heure d'arrivée</p>
+                  <p className="font-medium">{intervention.arrival_time}</p>
+                </div>
+              )}
+              {intervention.departure_time && (
+                <div>
+                  <p className="text-sm text-muted-foreground">Heure de départ</p>
+                  <p className="font-medium">{intervention.departure_time}</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         {/* Rapport */}
         <Card className="lg:col-span-2">
           <CardHeader>
@@ -250,88 +276,176 @@ const InterventionDetail = () => {
           </CardContent>
         </Card>
 
-        {/* Photos */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ImageIcon className="h-5 w-5" />
-              Photos de l'intervention
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Photo numéro de série */}
-            <div>
-              <h4 className="font-medium mb-3">Photo du numéro de série</h4>
-              {getPhotosOfType('serial_number').length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {getPhotosOfType('serial_number').map((photo) => (
-                    <a key={photo.id} href={photo.photo_url} target="_blank" rel="noopener noreferrer">
-                      <img
-                        src={photo.photo_url}
-                        alt="Numéro de série"
-                        className="w-full aspect-square object-cover rounded-lg hover:opacity-90 transition-opacity"
-                      />
-                    </a>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">Aucune photo</p>
-              )}
-            </div>
+        {/* Observations */}
+        {intervention.observations && (
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle>Observations</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="whitespace-pre-wrap">{intervention.observations}</p>
+            </CardContent>
+          </Card>
+        )}
 
-            {/* Photos pendant intervention */}
-            <div>
-              <h4 className="font-medium mb-3">Photos pendant intervention</h4>
-              {getPhotosOfType('during').length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {getPhotosOfType('during').map((photo) => (
-                    <a key={photo.id} href={photo.photo_url} target="_blank" rel="noopener noreferrer">
-                      <img
-                        src={photo.photo_url}
-                        alt="Pendant intervention"
-                        className="w-full aspect-square object-cover rounded-lg hover:opacity-90 transition-opacity"
-                      />
-                    </a>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">Aucune photo</p>
-              )}
-            </div>
-
-            {/* Photos après intervention */}
-            <div>
-              <h4 className="font-medium mb-3">Photos après intervention</h4>
-              {getPhotosOfType('after').length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {getPhotosOfType('after').map((photo) => (
-                    <a key={photo.id} href={photo.photo_url} target="_blank" rel="noopener noreferrer">
-                      <img
-                        src={photo.photo_url}
-                        alt="Après intervention"
-                        className="w-full aspect-square object-cover rounded-lg hover:opacity-90 transition-opacity"
-                      />
-                    </a>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">Aucune photo</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Commentaires techniques */}
-        {intervention.technical_comments && (
+        {/* Équipements */}
+        {interventionEquipments.length > 0 && (
           <Card className="lg:col-span-2">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Wrench className="h-5 w-5" />
-                Commentaires techniques
+                Équipements ({interventionEquipments.length})
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className="whitespace-pre-wrap">{intervention.technical_comments}</p>
+            <CardContent className="space-y-6">
+              {interventionEquipments.map((ie, index) => {
+                const equipmentPhotos = photos.filter(p => p.equipment_id === ie.equipment_id);
+                const serialPhotos = equipmentPhotos.filter(p => p.photo_type === 'serial_number');
+                const duringPhotos = equipmentPhotos.filter(p => p.photo_type === 'during');
+                const afterPhotos = equipmentPhotos.filter(p => p.photo_type === 'after');
+                
+                return (
+                  <div key={ie.id} className="border rounded-lg p-4 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-semibold text-lg">
+                        {index + 1}. {ie.equipment?.equipment_type || "Équipement"}
+                      </h4>
+                      <span className={`px-2 py-1 rounded text-sm ${ie.equipment_functional ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                        {ie.equipment_functional ? 'Fonctionnel' : 'Non fonctionnel'}
+                      </span>
+                    </div>
+
+                    {ie.equipment?.serial_number && (
+                      <p className="text-sm text-muted-foreground">
+                        N° série : {ie.equipment.serial_number}
+                      </p>
+                    )}
+
+                    {ie.technical_comments && (
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground mb-1">Commentaires techniques</p>
+                        <p className="whitespace-pre-wrap">{ie.technical_comments}</p>
+                      </div>
+                    )}
+
+                    {/* Photos de l'équipement */}
+                    {equipmentPhotos.length > 0 && (
+                      <div className="space-y-3">
+                        {serialPhotos.length > 0 && (
+                          <div>
+                            <p className="text-sm font-medium mb-2">Photos numéro de série</p>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                              {serialPhotos.map(photo => (
+                                <a key={photo.id} href={photo.photo_url} target="_blank" rel="noopener noreferrer">
+                                  <img src={photo.photo_url} alt="Série" className="w-full aspect-square object-cover rounded-lg hover:opacity-90 transition-opacity" />
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {duringPhotos.length > 0 && (
+                          <div>
+                            <p className="text-sm font-medium mb-2">Photos pendant intervention</p>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                              {duringPhotos.map(photo => (
+                                <a key={photo.id} href={photo.photo_url} target="_blank" rel="noopener noreferrer">
+                                  <img src={photo.photo_url} alt="Pendant" className="w-full aspect-square object-cover rounded-lg hover:opacity-90 transition-opacity" />
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {afterPhotos.length > 0 && (
+                          <div>
+                            <p className="text-sm font-medium mb-2">Photos après intervention</p>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                              {afterPhotos.map(photo => (
+                                <a key={photo.id} href={photo.photo_url} target="_blank" rel="noopener noreferrer">
+                                  <img src={photo.photo_url} alt="Après" className="w-full aspect-square object-cover rounded-lg hover:opacity-90 transition-opacity" />
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Photos sans équipement spécifique */}
+        {photos.filter(p => !p.equipment_id).length > 0 && (
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ImageIcon className="h-5 w-5" />
+                Photos générales
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {getPhotosOfType('serial_number').filter(p => !p.equipment_id).length > 0 && (
+                <div>
+                  <h4 className="font-medium mb-3">Photo du numéro de série</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {getPhotosOfType('serial_number').filter(p => !p.equipment_id).map((photo) => (
+                      <a key={photo.id} href={photo.photo_url} target="_blank" rel="noopener noreferrer">
+                        <img src={photo.photo_url} alt="Numéro de série" className="w-full aspect-square object-cover rounded-lg hover:opacity-90 transition-opacity" />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {getPhotosOfType('during').filter(p => !p.equipment_id).length > 0 && (
+                <div>
+                  <h4 className="font-medium mb-3">Photos pendant intervention</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {getPhotosOfType('during').filter(p => !p.equipment_id).map((photo) => (
+                      <a key={photo.id} href={photo.photo_url} target="_blank" rel="noopener noreferrer">
+                        <img src={photo.photo_url} alt="Pendant intervention" className="w-full aspect-square object-cover rounded-lg hover:opacity-90 transition-opacity" />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {getPhotosOfType('after').filter(p => !p.equipment_id).length > 0 && (
+                <div>
+                  <h4 className="font-medium mb-3">Photos après intervention</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {getPhotosOfType('after').filter(p => !p.equipment_id).map((photo) => (
+                      <a key={photo.id} href={photo.photo_url} target="_blank" rel="noopener noreferrer">
+                        <img src={photo.photo_url} alt="Après intervention" className="w-full aspect-square object-cover rounded-lg hover:opacity-90 transition-opacity" />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Signature client */}
+        {intervention.client_signature_url && (
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <User className="h-5 w-5" />
+                Signature client
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {intervention.client_signature_name && (
+                <p className="text-sm text-muted-foreground">
+                  Signataire : <span className="font-medium text-foreground">{intervention.client_signature_name}</span>
+                </p>
+              )}
+              <img 
+                src={intervention.client_signature_url} 
+                alt="Signature client" 
+                className="max-w-xs border rounded-lg bg-white p-2"
+              />
             </CardContent>
           </Card>
         )}
