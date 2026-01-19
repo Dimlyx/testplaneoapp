@@ -225,14 +225,23 @@ export const generateInterventionPDF = async (
       checkNewPage(80);
       
       // Equipment header with blue background
-      yPos = addSection(`ÉQUIPEMENT ${i + 1}: ${eqInfo?.brand || ''} ${eqInfo?.model || ''}`, yPos, [0, 80, 150]);
+      // Build equipment header - exclude "À identifier" values
+      const brandDisplay = eqInfo?.brand && eqInfo.brand !== 'À identifier' ? eqInfo.brand : '';
+      const modelDisplay = eqInfo?.model && eqInfo.model !== 'À identifier' ? eqInfo.model : '';
+      const headerLabel = [brandDisplay, modelDisplay].filter(Boolean).join(' ') || eqInfo?.equipment_type || '';
+      
+      yPos = addSection(`ÉQUIPEMENT ${i + 1}: ${headerLabel}`, yPos, [0, 80, 150]);
       doc.setTextColor(0, 0, 0);
       
-      // Equipment details
+      // Equipment details - exclude "À identifier" values
       if (eqInfo) {
         yPos = addField("Type", eqInfo.equipment_type, yPos);
-        yPos = addField("Marque", eqInfo.brand, yPos);
-        yPos = addField("Modèle", eqInfo.model, yPos);
+        if (eqInfo.brand && eqInfo.brand !== 'À identifier') {
+          yPos = addField("Marque", eqInfo.brand, yPos);
+        }
+        if (eqInfo.model && eqInfo.model !== 'À identifier') {
+          yPos = addField("Modèle", eqInfo.model, yPos);
+        }
         if (eqInfo.serial_number) yPos = addField("N° Série", eqInfo.serial_number, yPos);
       }
       yPos += 3;
@@ -357,8 +366,12 @@ export const generateInterventionPDF = async (
     // Legacy: single equipment mode
     yPos = addSection("ÉQUIPEMENT", yPos);
     yPos = addField("Type", equipment.equipment_type, yPos);
-    yPos = addField("Marque", equipment.brand, yPos);
-    yPos = addField("Modèle", equipment.model, yPos);
+    if (equipment.brand && equipment.brand !== 'À identifier') {
+      yPos = addField("Marque", equipment.brand, yPos);
+    }
+    if (equipment.model && equipment.model !== 'À identifier') {
+      yPos = addField("Modèle", equipment.model, yPos);
+    }
     if (equipment.serial_number) yPos = addField("N° Série", equipment.serial_number, yPos);
     yPos += 5;
     

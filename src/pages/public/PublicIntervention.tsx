@@ -179,36 +179,7 @@ const PublicIntervention = () => {
           </CardContent>
         </Card>
 
-        {/* Horaires d'intervention */}
-        {(intervention.arrival_time || intervention.departure_time) && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Clock className="h-5 w-5" />
-                Horaires d'intervention
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4 mb-3">
-                <div className="bg-muted/50 rounded-lg p-3 text-center">
-                  <p className="text-xs text-muted-foreground mb-1">Arrivée</p>
-                  <p className="text-lg font-semibold">{intervention.arrival_time || "N/C"}</p>
-                </div>
-                <div className="bg-muted/50 rounded-lg p-3 text-center">
-                  <p className="text-xs text-muted-foreground mb-1">Départ</p>
-                  <p className="text-lg font-semibold">{intervention.departure_time || "N/C"}</p>
-                </div>
-              </div>
-              {duration && (
-                <div className="text-center">
-                  <p className="text-sm text-muted-foreground">
-                    Durée totale : <span className="font-semibold text-foreground">{duration}</span>
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
+        {/* Horaires d'intervention - Hidden from public extranet */}
 
         {/* Travaux effectués - Compte rendu */}
         <Card>
