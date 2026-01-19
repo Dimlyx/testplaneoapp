@@ -11,12 +11,14 @@ import {
   Menu, 
   X,
   Wrench,
-  ChevronRight
+  ChevronRight,
+  CalendarDays
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navigation = [
   { name: 'Tableau de bord', href: '/admin', icon: LayoutDashboard },
+  { name: 'Calendrier', href: '/admin/calendar', icon: CalendarDays },
   { name: 'Interventions', href: '/admin/interventions', icon: ClipboardList },
   { name: 'Clients', href: '/admin/clients', icon: Users },
 ];

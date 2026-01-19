@@ -15,6 +15,7 @@ import NotFound from "@/pages/NotFound";
 
 // Admin pages
 import Dashboard from "@/pages/admin/Dashboard";
+import AdminCalendar from "@/pages/admin/Calendar";
 import Interventions from "@/pages/admin/Interventions";
 import InterventionForm from "@/pages/admin/InterventionForm";
 import InterventionDetail from "@/pages/admin/InterventionDetail";
@@ -103,6 +104,7 @@ const AppRoutes = () => {
         }
       >
         <Route index element={<Dashboard />} />
+        <Route path="calendar" element={<AdminCalendar />} />
         <Route path="interventions" element={<Interventions />} />
         <Route path="interventions/new" element={<InterventionForm />} />
         <Route path="interventions/:id" element={<InterventionDetail />} />
