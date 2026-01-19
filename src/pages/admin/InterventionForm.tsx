@@ -34,7 +34,7 @@ const interventionSchema = z.object({
   client_id: z.string().min(1, "Le client est requis"),
   technician_id: z.string().optional(),
   intervention_type: z.enum(["sav", "maintenance", "installation"]),
-  status: z.enum(["to_plan", "planned", "in_progress", "completed"]),
+  status: z.enum(["to_plan", "planned", "in_progress", "completed", "to_invoice", "archived"]),
   scheduled_date: z.string().optional(),
   scheduled_time: z.string().optional(),
   report: z.string().optional(),
@@ -222,6 +222,8 @@ const InterventionForm = () => {
                             <SelectItem value="planned">Planifiée</SelectItem>
                             <SelectItem value="in_progress">En cours</SelectItem>
                             <SelectItem value="completed">Terminée</SelectItem>
+                            <SelectItem value="to_invoice">À facturer</SelectItem>
+                            <SelectItem value="archived">Archivée</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
