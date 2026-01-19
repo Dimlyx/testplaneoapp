@@ -202,6 +202,9 @@ export type Database = {
           equipment_functional: boolean | null
           equipment_id: string | null
           id: string
+          intervention_address: string | null
+          intervention_city: string | null
+          intervention_postal_code: string | null
           intervention_type: Database["public"]["Enums"]["intervention_type"]
           observations: string | null
           public_token: string | null
@@ -225,6 +228,9 @@ export type Database = {
           equipment_functional?: boolean | null
           equipment_id?: string | null
           id?: string
+          intervention_address?: string | null
+          intervention_city?: string | null
+          intervention_postal_code?: string | null
           intervention_type: Database["public"]["Enums"]["intervention_type"]
           observations?: string | null
           public_token?: string | null
@@ -248,6 +254,9 @@ export type Database = {
           equipment_functional?: boolean | null
           equipment_id?: string | null
           id?: string
+          intervention_address?: string | null
+          intervention_city?: string | null
+          intervention_postal_code?: string | null
           intervention_type?: Database["public"]["Enums"]["intervention_type"]
           observations?: string | null
           public_token?: string | null
