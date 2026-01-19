@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils';
 
-type InterventionStatus = 'to_plan' | 'planned' | 'in_progress' | 'completed';
+type InterventionStatus = 'to_plan' | 'planned' | 'in_progress' | 'completed' | 'to_invoice' | 'archived';
 
 const statusConfig: Record<InterventionStatus, { label: string; className: string }> = {
   to_plan: {
@@ -18,6 +18,14 @@ const statusConfig: Record<InterventionStatus, { label: string; className: strin
   completed: {
     label: 'Terminée',
     className: 'status-completed',
+  },
+  to_invoice: {
+    label: 'À facturer',
+    className: 'status-to-invoice',
+  },
+  archived: {
+    label: 'Archivée',
+    className: 'status-archived',
   },
 };
 

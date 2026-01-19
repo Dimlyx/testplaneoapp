@@ -345,7 +345,13 @@ export type Database = {
     Enums: {
       app_role: "admin" | "technician"
       client_type: "individual" | "professional"
-      intervention_status: "to_plan" | "planned" | "in_progress" | "completed"
+      intervention_status:
+        | "to_plan"
+        | "planned"
+        | "in_progress"
+        | "completed"
+        | "to_invoice"
+        | "archived"
       intervention_type: "sav" | "maintenance" | "installation"
     }
     CompositeTypes: {
@@ -476,7 +482,14 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "technician"],
       client_type: ["individual", "professional"],
-      intervention_status: ["to_plan", "planned", "in_progress", "completed"],
+      intervention_status: [
+        "to_plan",
+        "planned",
+        "in_progress",
+        "completed",
+        "to_invoice",
+        "archived",
+      ],
       intervention_type: ["sav", "maintenance", "installation"],
     },
   },
