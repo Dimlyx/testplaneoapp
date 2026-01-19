@@ -28,6 +28,8 @@ export interface Intervention {
   intervention_address: string | null;
   intervention_city: string | null;
   intervention_postal_code: string | null;
+  intervention_phone: string | null;
+  intervention_email: string | null;
   created_at: string;
   updated_at: string;
   clients?: {
@@ -67,6 +69,8 @@ export interface CreateInterventionData {
   intervention_address?: string | null;
   intervention_city?: string | null;
   intervention_postal_code?: string | null;
+  intervention_phone?: string | null;
+  intervention_email?: string | null;
 }
 
 export interface UpdateInterventionData {
@@ -91,6 +95,8 @@ export interface UpdateInterventionData {
   intervention_address?: string | null;
   intervention_city?: string | null;
   intervention_postal_code?: string | null;
+  intervention_phone?: string | null;
+  intervention_email?: string | null;
 }
 
 export function useInterventions() {
