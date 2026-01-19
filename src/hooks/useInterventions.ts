@@ -182,7 +182,7 @@ export function usePublicIntervention(token: string) {
         .from('interventions')
         .select(`
           *,
-          clients (id, name, email, phone, address, city, postal_code),
+          clients (id, name, email, phone, address, city, postal_code, client_type),
           equipment (id, brand, model, equipment_type, serial_number)
         `)
         .eq('public_token', token)
@@ -191,6 +191,7 @@ export function usePublicIntervention(token: string) {
       if (error) throw error;
       return data as Intervention | null;
     },
+    enabled: !!token,
   });
 }
 
