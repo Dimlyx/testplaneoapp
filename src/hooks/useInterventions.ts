@@ -25,6 +25,9 @@ export interface Intervention {
   equipment_functional: boolean | null;
   client_signature_name: string | null;
   client_signature_url: string | null;
+  intervention_address: string | null;
+  intervention_city: string | null;
+  intervention_postal_code: string | null;
   created_at: string;
   updated_at: string;
   clients?: {
@@ -61,6 +64,9 @@ export interface CreateInterventionData {
   description?: string;
   scheduled_date?: string | null;
   scheduled_time?: string | null;
+  intervention_address?: string | null;
+  intervention_city?: string | null;
+  intervention_postal_code?: string | null;
 }
 
 export interface UpdateInterventionData {
@@ -82,6 +88,9 @@ export interface UpdateInterventionData {
   equipment_functional?: boolean;
   client_signature_name?: string;
   client_signature_url?: string;
+  intervention_address?: string | null;
+  intervention_city?: string | null;
+  intervention_postal_code?: string | null;
 }
 
 export function useInterventions() {

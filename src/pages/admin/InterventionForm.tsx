@@ -39,6 +39,9 @@ const interventionSchema = z.object({
   scheduled_time: z.string().optional(),
   report: z.string().optional(),
   technical_comments: z.string().optional(),
+  intervention_address: z.string().optional(),
+  intervention_city: z.string().optional(),
+  intervention_postal_code: z.string().optional(),
 });
 
 type InterventionFormValues = z.infer<typeof interventionSchema>;
@@ -67,6 +70,9 @@ const InterventionForm = () => {
       scheduled_time: "",
       report: "",
       technical_comments: "",
+      intervention_address: "",
+      intervention_city: "",
+      intervention_postal_code: "",
     },
   });
 
@@ -83,6 +89,9 @@ const InterventionForm = () => {
         scheduled_time: intervention.scheduled_time || "",
         report: intervention.report || "",
         technical_comments: intervention.technical_comments || "",
+        intervention_address: intervention.intervention_address || "",
+        intervention_city: intervention.intervention_city || "",
+        intervention_postal_code: intervention.intervention_postal_code || "",
       });
     }
   }, [intervention, isEditing, form]);
@@ -100,6 +109,9 @@ const InterventionForm = () => {
         description: values.description || null,
         report: values.report || null,
         technical_comments: values.technical_comments || null,
+        intervention_address: values.intervention_address || null,
+        intervention_city: values.intervention_city || null,
+        intervention_postal_code: values.intervention_postal_code || null,
       };
 
       if (isEditing && id) {
@@ -315,6 +327,58 @@ const InterventionForm = () => {
                         <FormLabel>Heure prévue</FormLabel>
                         <FormControl>
                           <Input type="time" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle>Adresse d'intervention</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Si l'intervention a lieu à une adresse différente de celle du client
+                </p>
+                <FormField
+                  control={form.control}
+                  name="intervention_address"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Adresse</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Adresse de l'intervention" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name="intervention_city"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Ville</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Ville" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="intervention_postal_code"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Code postal</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Code postal" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
