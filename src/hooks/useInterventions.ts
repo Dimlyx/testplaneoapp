@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
-export type InterventionStatus = 'to_plan' | 'planned' | 'in_progress' | 'completed';
+export type InterventionStatus = 'to_plan' | 'planned' | 'in_progress' | 'completed' | 'to_invoice' | 'archived';
 export type InterventionType = 'sav' | 'maintenance' | 'installation';
 
 export interface Intervention {

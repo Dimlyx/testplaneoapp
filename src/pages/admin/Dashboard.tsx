@@ -10,7 +10,9 @@ import {
   Calendar,
   AlertTriangle,
   CheckCircle,
-  Clock
+  Clock,
+  Receipt,
+  Archive
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -27,6 +29,8 @@ const Dashboard = () => {
     planned: interventions.filter(i => i.status === 'planned').length,
     inProgress: interventions.filter(i => i.status === 'in_progress').length,
     completed: interventions.filter(i => i.status === 'completed').length,
+    toInvoice: interventions.filter(i => i.status === 'to_invoice').length,
+    archived: interventions.filter(i => i.status === 'archived').length,
   };
 
   const recentInterventions = interventions
@@ -91,49 +95,71 @@ const Dashboard = () => {
       </div>
 
       {/* Statuts des interventions */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card className="border-l-4 border-l-status-to-plan">
+      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
+        <Card className="border-l-4 border-l-amber-500">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-status-to-plan" />
+              <AlertTriangle className="h-4 w-4 text-amber-500" />
               À planifier
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-status-to-plan">{stats.toPlan}</div>
+            <div className="text-2xl font-bold text-amber-600">{stats.toPlan}</div>
           </CardContent>
         </Card>
-        <Card className="border-l-4 border-l-status-planned">
+        <Card className="border-l-4 border-l-blue-500">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-status-planned" />
+              <Calendar className="h-4 w-4 text-blue-500" />
               Planifiées
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-status-planned">{stats.planned}</div>
+            <div className="text-2xl font-bold text-blue-600">{stats.planned}</div>
           </CardContent>
         </Card>
-        <Card className="border-l-4 border-l-status-in-progress">
+        <Card className="border-l-4 border-l-purple-500">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Clock className="h-4 w-4 text-status-in-progress" />
+              <Clock className="h-4 w-4 text-purple-500" />
               En cours
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-status-in-progress">{stats.inProgress}</div>
+            <div className="text-2xl font-bold text-purple-600">{stats.inProgress}</div>
           </CardContent>
         </Card>
-        <Card className="border-l-4 border-l-status-completed">
+        <Card className="border-l-4 border-l-green-500">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-status-completed" />
+              <CheckCircle className="h-4 w-4 text-green-500" />
               Terminées
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-status-completed">{stats.completed}</div>
+            <div className="text-2xl font-bold text-green-600">{stats.completed}</div>
+          </CardContent>
+        </Card>
+        <Card className="border-l-4 border-l-orange-500">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Receipt className="h-4 w-4 text-orange-500" />
+              À facturer
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-orange-600">{stats.toInvoice}</div>
+          </CardContent>
+        </Card>
+        <Card className="border-l-4 border-l-gray-500">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Archive className="h-4 w-4 text-gray-500" />
+              Archivées
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-gray-600">{stats.archived}</div>
           </CardContent>
         </Card>
       </div>
