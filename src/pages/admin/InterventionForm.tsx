@@ -42,6 +42,8 @@ const interventionSchema = z.object({
   intervention_address: z.string().optional(),
   intervention_city: z.string().optional(),
   intervention_postal_code: z.string().optional(),
+  intervention_phone: z.string().optional(),
+  intervention_email: z.string().optional(),
 });
 
 type InterventionFormValues = z.infer<typeof interventionSchema>;
@@ -73,6 +75,8 @@ const InterventionForm = () => {
       intervention_address: "",
       intervention_city: "",
       intervention_postal_code: "",
+      intervention_phone: "",
+      intervention_email: "",
     },
   });
 
@@ -92,6 +96,8 @@ const InterventionForm = () => {
         intervention_address: intervention.intervention_address || "",
         intervention_city: intervention.intervention_city || "",
         intervention_postal_code: intervention.intervention_postal_code || "",
+        intervention_phone: intervention.intervention_phone || "",
+        intervention_email: intervention.intervention_email || "",
       });
     }
   }, [intervention, isEditing, form]);
@@ -112,6 +118,8 @@ const InterventionForm = () => {
         intervention_address: values.intervention_address || null,
         intervention_city: values.intervention_city || null,
         intervention_postal_code: values.intervention_postal_code || null,
+        intervention_phone: values.intervention_phone || null,
+        intervention_email: values.intervention_email || null,
       };
 
       if (isEditing && id) {
@@ -379,6 +387,34 @@ const InterventionForm = () => {
                         <FormLabel>Code postal</FormLabel>
                         <FormControl>
                           <Input placeholder="Code postal" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name="intervention_phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Téléphone</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Téléphone de contact" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="intervention_email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input type="email" placeholder="Email de contact" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
