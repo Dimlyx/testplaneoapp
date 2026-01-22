@@ -10,12 +10,15 @@ import {
   TrendingUp,
   Car,
   Calendar,
-  CheckCircle
+  CheckCircle,
+  RefreshCw
 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, isWithinInterval, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 
 // Helper to calculate duration in minutes between two time strings
 const getMinutesBetween = (start: string | null, end: string | null): number => {
@@ -38,9 +41,36 @@ const formatDuration = (minutes: number): string => {
 };
 
 export default function Statistics() {
+  const queryClient = useQueryClient();
   const { data: interventions = [], isLoading: loadingInterventions } = useInterventions();
   const { data: clients = [] } = useClients();
   const { data: technicians = [] } = useTechnicians();
+  const [isRealtime, setIsRealtime] = useState(true);
+
+  // Subscribe to realtime updates for interventions
+  useEffect(() => {
+    const channel = supabase
+      .channel('statistics-interventions')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'interventions'
+        },
+        () => {
+          // Refresh interventions data when any change occurs
+          queryClient.invalidateQueries({ queryKey: ['interventions'] });
+        }
+      )
+      .subscribe((status) => {
+        setIsRealtime(status === 'SUBSCRIBED');
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
   
   const [selectedMonth, setSelectedMonth] = useState(() => format(new Date(), 'yyyy-MM'));
   
@@ -160,7 +190,15 @@ export default function Statistics() {
           </div>
           <div>
             <h1 className="text-2xl font-bold">Statistiques</h1>
-            <p className="text-muted-foreground">Analyse des interventions</p>
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <span>Analyse des interventions</span>
+              {isRealtime && (
+                <span className="flex items-center gap-1 text-xs text-green-600">
+                  <RefreshCw className="h-3 w-3 animate-spin" style={{ animationDuration: '3s' }} />
+                  Temps réel
+                </span>
+              )}
+            </div>
           </div>
         </div>
         
