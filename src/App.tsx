@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
+import { OfflineProvider } from "@/hooks/useOfflineSync";
 
 // Layouts
 import AdminLayout from "@/components/layout/AdminLayout";
@@ -32,6 +33,7 @@ import TechnicianInterventions from "@/pages/technician/TechnicianInterventions"
 import TechnicianInterventionDetail from "@/pages/technician/TechnicianInterventionDetail";
 import TechnicianHistory from "@/pages/technician/TechnicianHistory";
 import PublicIntervention from "@/pages/public/PublicIntervention";
+import InstallApp from "@/pages/InstallApp";
 
 const queryClient = new QueryClient();
 
@@ -122,12 +124,14 @@ const AppRoutes = () => {
         <Route path="clients/:id/edit" element={<ClientForm />} />
       </Route>
 
-      {/* Technician routes */}
+      {/* Technician routes - wrapped with OfflineProvider */}
       <Route
         path="/technician"
         element={
           <ProtectedRoute requiredRole="technician">
-            <TechnicianLayout />
+            <OfflineProvider>
+              <TechnicianLayout />
+            </OfflineProvider>
           </ProtectedRoute>
         }
       >
@@ -138,6 +142,9 @@ const AppRoutes = () => {
 
       {/* Public intervention page (no auth required) */}
       <Route path="/intervention/:token" element={<PublicIntervention />} />
+      
+      {/* Install PWA page */}
+      <Route path="/install" element={<InstallApp />} />
 
       {/* 404 */}
       <Route path="*" element={<NotFound />} />

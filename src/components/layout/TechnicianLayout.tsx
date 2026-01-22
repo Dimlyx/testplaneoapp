@@ -14,6 +14,7 @@ import {
   History
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { OfflineIndicator } from '@/components/technician/OfflineIndicator';
 
 const navigation = [
   { name: 'Mes Interventions', href: '/technician', icon: ClipboardList },
@@ -133,6 +134,9 @@ export default function TechnicianLayout() {
           <div className="flex items-center gap-2">
             <Wrench className="h-5 w-5 text-primary" />
             <span className="font-semibold">MobileInt</span>
+          </div>
+          <div className="ml-auto">
+            <OfflineIndicator />
           </div>
         </header>
 
