@@ -360,6 +360,63 @@ export type Database = {
           },
         ]
       }
+      maintenance_alerts: {
+        Row: {
+          alert_date: string
+          client_id: string | null
+          created_at: string
+          description: string | null
+          equipment_id: string | null
+          id: string
+          last_triggered_at: string | null
+          recurrence: Database["public"]["Enums"]["alert_recurrence"]
+          status: Database["public"]["Enums"]["alert_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          alert_date: string
+          client_id?: string | null
+          created_at?: string
+          description?: string | null
+          equipment_id?: string | null
+          id?: string
+          last_triggered_at?: string | null
+          recurrence?: Database["public"]["Enums"]["alert_recurrence"]
+          status?: Database["public"]["Enums"]["alert_status"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          alert_date?: string
+          client_id?: string | null
+          created_at?: string
+          description?: string | null
+          equipment_id?: string | null
+          id?: string
+          last_triggered_at?: string | null
+          recurrence?: Database["public"]["Enums"]["alert_recurrence"]
+          status?: Database["public"]["Enums"]["alert_status"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_alerts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_alerts_equipment_id_fkey"
+            columns: ["equipment_id"]
+            isOneToOne: false
+            referencedRelation: "equipment"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -426,6 +483,8 @@ export type Database = {
       }
     }
     Enums: {
+      alert_recurrence: "once" | "weekly" | "monthly" | "quarterly" | "yearly"
+      alert_status: "pending" | "acknowledged" | "completed" | "dismissed"
       app_role: "admin" | "technician"
       client_type: "individual" | "professional"
       intervention_status:
@@ -563,6 +622,8 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      alert_recurrence: ["once", "weekly", "monthly", "quarterly", "yearly"],
+      alert_status: ["pending", "acknowledged", "completed", "dismissed"],
       app_role: ["admin", "technician"],
       client_type: ["individual", "professional"],
       intervention_status: [
