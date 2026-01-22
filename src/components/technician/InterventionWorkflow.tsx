@@ -1,21 +1,15 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { 
   Play, 
   MapPin, 
-  Camera, 
   Wrench, 
   CheckCircle, 
   FileText, 
   PenTool,
-  Plus,
   User,
-  Clock,
   Save,
-  Image,
   MessageSquare,
   AlertCircle,
-  Car,
-  Home,
 } from "lucide-react";
 import WorkflowStep from "./WorkflowStep";
 import { Button } from "@/components/ui/button";
@@ -37,22 +31,16 @@ interface InterventionWorkflowProps {
   interventionEquipment: InterventionEquipment[];
   arrivalTime: string;
   departureTime: string;
-  travelDepartureTime: string;
-  travelReturnTime: string;
   report: string;
   observations: string;
   clientSignatureName: string;
   clientSignatureUrl: string | null;
   onStartIntervention: () => Promise<void>;
   onEndIntervention: () => Promise<void>;
-  onStartTravel: () => Promise<void>;
-  onEndTravel: () => Promise<void>;
   onSave: () => Promise<void>;
   onSignatureComplete: (signatureDataUrl: string, signerName: string) => Promise<void>;
   onArrivalTimeChange: (value: string) => void;
   onDepartureTimeChange: (value: string) => void;
-  onTravelDepartureTimeChange: (value: string) => void;
-  onTravelReturnTimeChange: (value: string) => void;
   onReportChange: (value: string) => void;
   onObservationsChange: (value: string) => void;
   onClientSignatureNameChange: (value: string) => void;
@@ -66,22 +54,16 @@ const InterventionWorkflow = ({
   interventionEquipment,
   arrivalTime,
   departureTime,
-  travelDepartureTime,
-  travelReturnTime,
   report,
   observations,
   clientSignatureName,
   clientSignatureUrl,
   onStartIntervention,
   onEndIntervention,
-  onStartTravel,
-  onEndTravel,
   onSave,
   onSignatureComplete,
   onArrivalTimeChange,
   onDepartureTimeChange,
-  onTravelDepartureTimeChange,
-  onTravelReturnTimeChange,
   onReportChange,
   onObservationsChange,
   onClientSignatureNameChange,
@@ -141,42 +123,6 @@ const InterventionWorkflow = ({
           </CardContent>
         </Card>
       )}
-
-      {/* Step 0: Travel Departure (before intervention) */}
-      <WorkflowStep
-        icon={Car}
-        label="Départ du domicile/hôtel"
-        isActive={activeStep === 'travel_start'}
-        isCompleted={!!travelDepartureTime}
-        onClick={() => handleStepClick('travel_start')}
-      >
-        {!travelDepartureTime ? (
-          <Button onClick={onStartTravel} className="w-full" size="lg" disabled={isLocked}>
-            <Car className="h-5 w-5 mr-2" />
-            Démarrer le trajet
-          </Button>
-        ) : (
-          <Card>
-            <CardContent className="p-4 space-y-2">
-              <div className="flex items-center gap-2 text-green-600">
-                <CheckCircle className="h-4 w-4" />
-                <span>Départ enregistré: {travelDepartureTime}</span>
-              </div>
-              {!isLocked && (
-                <div>
-                  <label className="text-sm text-muted-foreground">Modifier l'heure de départ</label>
-                  <Input
-                    type="time"
-                    value={travelDepartureTime}
-                    onChange={(e) => onTravelDepartureTimeChange(e.target.value)}
-                    className="mt-1"
-                  />
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
-      </WorkflowStep>
 
       {/* Step 1: Start Intervention */}
       <WorkflowStep
@@ -364,6 +310,7 @@ const InterventionWorkflow = ({
         label="Terminer l'intervention"
         isActive={activeStep === 'finish'}
         isCompleted={isCompleted}
+        isLast
         onClick={() => handleStepClick('finish')}
       >
         <Card>
@@ -404,43 +351,6 @@ const InterventionWorkflow = ({
             )}
           </CardContent>
         </Card>
-      </WorkflowStep>
-
-      {/* Step 8: Travel Return (end of day) */}
-      <WorkflowStep
-        icon={Home}
-        label="Retour au domicile/hôtel"
-        isActive={activeStep === 'travel_end'}
-        isCompleted={!!travelReturnTime}
-        isLast
-        onClick={() => handleStepClick('travel_end')}
-      >
-        {!travelReturnTime ? (
-          <Button onClick={onEndTravel} className="w-full" size="lg" disabled={isLocked}>
-            <Home className="h-5 w-5 mr-2" />
-            Confirmer le retour
-          </Button>
-        ) : (
-          <Card>
-            <CardContent className="p-4 space-y-2">
-              <div className="flex items-center gap-2 text-green-600">
-                <CheckCircle className="h-4 w-4" />
-                <span>Retour enregistré: {travelReturnTime}</span>
-              </div>
-              {!isLocked && (
-                <div>
-                  <label className="text-sm text-muted-foreground">Modifier l'heure de retour</label>
-                  <Input
-                    type="time"
-                    value={travelReturnTime}
-                    onChange={(e) => onTravelReturnTimeChange(e.target.value)}
-                    className="mt-1"
-                  />
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
       </WorkflowStep>
     </div>
   );

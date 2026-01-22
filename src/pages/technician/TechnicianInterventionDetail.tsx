@@ -28,8 +28,6 @@ const TechnicianInterventionDetail = () => {
   const [technicalComments, setTechnicalComments] = useState<string>("");
   const [arrivalTime, setArrivalTime] = useState<string>("");
   const [departureTime, setDepartureTime] = useState<string>("");
-  const [travelDepartureTime, setTravelDepartureTime] = useState<string>("");
-  const [travelReturnTime, setTravelReturnTime] = useState<string>("");
   const [observations, setObservations] = useState<string>("");
   const [clientSignatureName, setClientSignatureName] = useState<string>("");
   const [clientSignatureUrl, setClientSignatureUrl] = useState<string | null>(null);
@@ -43,8 +41,6 @@ const TechnicianInterventionDetail = () => {
       setTechnicalComments(intervention.technical_comments || "");
       setArrivalTime(intervention.arrival_time || "");
       setDepartureTime(intervention.departure_time || "");
-      setTravelDepartureTime(intervention.travel_departure_time || "");
-      setTravelReturnTime(intervention.travel_return_time || "");
       setObservations(intervention.observations || "");
       setClientSignatureName(intervention.client_signature_name || "");
       setClientSignatureUrl(intervention.client_signature_url || null);
@@ -130,36 +126,6 @@ const TechnicianInterventionDetail = () => {
     }
   };
 
-  const handleStartTravel = async () => {
-    if (!id) return;
-    const now = format(new Date(), 'HH:mm');
-    setTravelDepartureTime(now);
-    try {
-      await updateIntervention.mutateAsync({
-        id,
-        travel_departure_time: now,
-      });
-      toast({ title: "Départ enregistré" });
-    } catch (error) {
-      toast({ title: "Erreur", variant: "destructive" });
-    }
-  };
-
-  const handleEndTravel = async () => {
-    if (!id) return;
-    const now = format(new Date(), 'HH:mm');
-    setTravelReturnTime(now);
-    try {
-      await updateIntervention.mutateAsync({
-        id,
-        travel_return_time: now,
-      });
-      toast({ title: "Retour enregistré" });
-    } catch (error) {
-      toast({ title: "Erreur", variant: "destructive" });
-    }
-  };
-
   const handleSave = async () => {
     if (!id) return;
     try {
@@ -170,8 +136,6 @@ const TechnicianInterventionDetail = () => {
         technical_comments: technicalComments,
         arrival_time: arrivalTime || null,
         departure_time: departureTime || null,
-        travel_departure_time: travelDepartureTime || null,
-        travel_return_time: travelReturnTime || null,
         observations,
         client_signature_name: clientSignatureName,
       });
@@ -258,22 +222,16 @@ const TechnicianInterventionDetail = () => {
         interventionEquipment={interventionEquipment}
         arrivalTime={arrivalTime}
         departureTime={departureTime}
-        travelDepartureTime={travelDepartureTime}
-        travelReturnTime={travelReturnTime}
         report={report}
         observations={observations}
         clientSignatureName={clientSignatureName}
         clientSignatureUrl={clientSignatureUrl}
         onStartIntervention={handleStartIntervention}
         onEndIntervention={handleEndIntervention}
-        onStartTravel={handleStartTravel}
-        onEndTravel={handleEndTravel}
         onSave={handleSave}
         onSignatureComplete={handleSignatureComplete}
         onArrivalTimeChange={(v) => setArrivalTime(v)}
         onDepartureTimeChange={(v) => setDepartureTime(v)}
-        onTravelDepartureTimeChange={(v) => setTravelDepartureTime(v)}
-        onTravelReturnTimeChange={(v) => setTravelReturnTime(v)}
         onReportChange={(v) => setReport(v)}
         onObservationsChange={(v) => setObservations(v)}
         onClientSignatureNameChange={setClientSignatureName}

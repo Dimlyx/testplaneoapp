@@ -131,8 +131,8 @@ export default function Auth() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-xl gradient-navy shadow-navy mb-4">
             <Wrench className="h-8 w-8 text-primary-foreground" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">SportTech SAV</h1>
-          <p className="text-muted-foreground mt-1">Gestion des interventions</p>
+          <h1 className="text-2xl font-bold text-foreground">MobileInt</h1>
+          <p className="text-muted-foreground mt-1">Gestion des interventions SAV</p>
         </div>
 
         <Card className="shadow-soft">
