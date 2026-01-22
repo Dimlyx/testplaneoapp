@@ -170,7 +170,7 @@ const InterventionWorkflow = ({
               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3 block">
                 Pièces jointes
               </label>
-              <AttachmentsList interventionId={intervention.id} isReadOnly={isLocked} />
+              <AttachmentsList interventionId={intervention.id} isReadOnly={true} />
             </div>
           </CardContent>
         </Card>
