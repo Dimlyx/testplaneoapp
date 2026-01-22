@@ -12,6 +12,7 @@ import {
   AlertCircle,
   Car,
   Home,
+  Info,
 } from "lucide-react";
 import WorkflowStep from "./WorkflowStep";
 import { Button } from "@/components/ui/button";
@@ -144,7 +145,31 @@ const InterventionWorkflow = ({
         </Card>
       )}
 
-      {/* Step 0: Travel Start */}
+      {/* Step 0: General Info */}
+      <WorkflowStep
+        icon={Info}
+        label="Informations générales"
+        isActive={activeStep === 'general-info'}
+        isCompleted={true}
+        onClick={() => handleStepClick('general-info')}
+      >
+        <Card>
+          <CardContent className="p-4 space-y-3">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Titre</label>
+              <p className="font-medium mt-1">{intervention.title}</p>
+            </div>
+            {intervention.description && (
+              <div>
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Description</label>
+                <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{intervention.description}</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </WorkflowStep>
+
+      {/* Step 1: Travel Start */}
       <WorkflowStep
         icon={Car}
         label="Départ du domicile/hôtel"
