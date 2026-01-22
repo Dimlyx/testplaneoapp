@@ -21,11 +21,50 @@ import {
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
+// Report settings from localStorage
+const REPORT_SETTINGS_KEY = "reportSettings";
+
+interface ReportSettings {
+  companyName: string;
+  companyAddress: string;
+  companyPhone: string;
+  companyEmail: string;
+  primaryColor: string;
+  accentColor: string;
+  footerText: string;
+  logoUrl: string;
+}
+
+const defaultSettings: ReportSettings = {
+  companyName: "",
+  companyAddress: "",
+  companyPhone: "",
+  companyEmail: "",
+  primaryColor: "#003057",
+  accentColor: "#0050A0",
+  footerText: "",
+  logoUrl: "",
+};
+
+const getReportSettings = (): ReportSettings => {
+  try {
+    const stored = localStorage.getItem(REPORT_SETTINGS_KEY);
+    if (stored) {
+      return { ...defaultSettings, ...JSON.parse(stored) };
+    }
+  } catch (e) {
+    console.error("Error loading report settings:", e);
+  }
+  return defaultSettings;
+};
+
 const PublicIntervention = () => {
   const { token } = useParams();
   const { data: intervention, isLoading, error } = usePublicIntervention(token || "");
   const { data: photos = [] } = useInterventionPhotos(intervention?.id || "");
   const { data: interventionEquipments = [] } = useInterventionEquipment(intervention?.id || "");
+  
+  const settings = getReportSettings();
 
   if (isLoading) {
     return (
@@ -80,11 +119,22 @@ const PublicIntervention = () => {
   return (
     <div className="min-h-screen bg-muted/30">
       {/* Header */}
-      <header className="bg-primary text-primary-foreground py-6">
+      <header 
+        className="text-white py-6"
+        style={{ backgroundColor: settings.primaryColor }}
+      >
         <div className="container max-w-2xl mx-auto px-4">
           <div className="flex items-center gap-3 mb-2">
-            <Wrench className="h-6 w-6" />
-            <span className="font-semibold">SportEquip Services</span>
+            {settings.logoUrl ? (
+              <img 
+                src={settings.logoUrl} 
+                alt="Logo" 
+                className="h-10 w-auto object-contain bg-white rounded p-1"
+              />
+            ) : (
+              <Wrench className="h-6 w-6" />
+            )}
+            <span className="font-semibold">{settings.companyName || "Service Intervention"}</span>
           </div>
           <h1 className="text-xl font-bold">Rapport d'intervention</h1>
           <p className="text-sm opacity-80 mt-1">
@@ -355,9 +405,13 @@ const PublicIntervention = () => {
       </main>
 
       {/* Footer */}
-      <footer className="bg-muted py-4 mt-8">
-        <div className="container max-w-2xl mx-auto px-4 text-center text-sm text-muted-foreground">
-          <p>© {new Date().getFullYear()} SportEquip Services</p>
+      <footer 
+        className="py-4 mt-8 text-white"
+        style={{ backgroundColor: settings.accentColor }}
+      >
+        <div className="container max-w-2xl mx-auto px-4 text-center text-sm">
+          <p>{settings.footerText || `© ${new Date().getFullYear()} ${settings.companyName || "Service Intervention"}`}</p>
+          {settings.companyAddress && <p className="opacity-80 mt-1">{settings.companyAddress}</p>}
         </div>
       </footer>
     </div>

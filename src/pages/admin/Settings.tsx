@@ -279,7 +279,7 @@ export default function Settings() {
                       {isUploadingLogo ? "Upload..." : "Choisir un logo"}
                     </Button>
                     <p className="text-xs text-muted-foreground mt-1">
-                      PNG, JPG ou SVG. Max 2 Mo.
+                      PNG, JPG ou SVG. Max 2 Mo. Dimensions recommandées : 200×80 px
                     </p>
                   </div>
                 </div>
