@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Settings as SettingsIcon, Tag, FileText, Palette, Save } from "lucide-react";
+import { useState, useRef } from "react";
+import { Settings as SettingsIcon, Tag, FileText, Palette, Save, Upload, X, Image } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -8,9 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import InterventionTypesSettings from "@/components/settings/InterventionTypesSettings";
+import { supabase } from "@/integrations/supabase/client";
 
 // Report settings stored in localStorage for now
-const REPORT_SETTINGS_KEY = "report_settings";
+const REPORT_SETTINGS_KEY = "reportSettings";
 
 interface ReportSettings {
   companyName: string;
@@ -24,13 +25,13 @@ interface ReportSettings {
 }
 
 const defaultReportSettings: ReportSettings = {
-  companyName: "SportEquip Services",
+  companyName: "",
   companyAddress: "",
   companyPhone: "",
   companyEmail: "",
-  primaryColor: "#1e3a5f",
-  accentColor: "#3b82f6",
-  footerText: "Merci pour votre confiance",
+  primaryColor: "#003057",
+  accentColor: "#0050A0",
+  footerText: "",
   logoUrl: "",
 };
 
@@ -50,6 +51,8 @@ export default function Settings() {
   const { toast } = useToast();
   const [reportSettings, setReportSettings] = useState<ReportSettings>(getStoredSettings);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSaveReportSettings = () => {
     setIsSaving(true);
@@ -68,6 +71,76 @@ export default function Settings() {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez sélectionner une image (PNG, JPG, etc.)",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast({
+        title: "Erreur",
+        description: "L'image ne doit pas dépasser 2 Mo",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUploadingLogo(true);
+    try {
+      const fileName = `company-logo-${Date.now()}.${file.name.split('.').pop()}`;
+      const filePath = `logos/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('intervention-photos')
+        .upload(filePath, file, {
+          contentType: file.type,
+          upsert: true
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from('intervention-photos')
+        .getPublicUrl(filePath);
+
+      updateReportSetting("logoUrl", urlData.publicUrl);
+      toast({
+        title: "Logo uploadé",
+        description: "Le logo a été enregistré avec succès.",
+      });
+    } catch (error) {
+      console.error('Error uploading logo:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'uploader le logo.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploadingLogo(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleRemoveLogo = () => {
+    updateReportSetting("logoUrl", "");
+    toast({
+      title: "Logo supprimé",
+      description: "Le logo a été retiré des paramètres.",
+    });
   };
 
   const updateReportSetting = <K extends keyof ReportSettings>(
@@ -160,6 +233,57 @@ export default function Settings() {
                   placeholder="contact@entreprise.fr"
                 />
               </div>
+
+              {/* Logo Upload */}
+              <div className="space-y-2 pt-4 border-t">
+                <Label>Logo de l'entreprise</Label>
+                <div className="flex items-center gap-4">
+                  {reportSettings.logoUrl ? (
+                    <div className="relative">
+                      <img 
+                        src={reportSettings.logoUrl} 
+                        alt="Logo entreprise" 
+                        className="h-16 w-auto object-contain border rounded-lg p-1 bg-white"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute -top-2 -right-2 h-6 w-6"
+                        onClick={handleRemoveLogo}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="h-16 w-24 border-2 border-dashed rounded-lg flex items-center justify-center bg-muted/50">
+                      <Image className="h-6 w-6 text-muted-foreground" />
+                    </div>
+                  )}
+                  <div>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleLogoUpload}
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploadingLogo}
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      {isUploadingLogo ? "Upload..." : "Choisir un logo"}
+                    </Button>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      PNG, JPG ou SVG. Max 2 Mo.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
 
@@ -239,11 +363,20 @@ export default function Settings() {
               <div className="border rounded-lg overflow-hidden max-w-md">
                 {/* Header Preview */}
                 <div 
-                  className="p-4 text-white"
+                  className="p-4 text-white flex items-center gap-3"
                   style={{ backgroundColor: reportSettings.primaryColor }}
                 >
-                  <p className="font-bold">{reportSettings.companyName || "Nom de l'entreprise"}</p>
-                  <p className="text-sm opacity-80">RAPPORT D'INTERVENTION</p>
+                  {reportSettings.logoUrl && (
+                    <img 
+                      src={reportSettings.logoUrl} 
+                      alt="Logo" 
+                      className="h-10 w-auto object-contain bg-white rounded p-1"
+                    />
+                  )}
+                  <div>
+                    <p className="font-bold">{reportSettings.companyName || "Nom de l'entreprise"}</p>
+                    <p className="text-sm opacity-80">RAPPORT D'INTERVENTION</p>
+                  </div>
                 </div>
                 {/* Body Preview */}
                 <div className="p-4 bg-white space-y-2">
