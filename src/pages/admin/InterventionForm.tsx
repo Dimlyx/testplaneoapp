@@ -25,8 +25,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Save, Paperclip } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import AttachmentsList from "@/components/technician/AttachmentsList";
 
 const interventionSchema = z.object({
   title: z.string().min(1, "Le titre est requis"),
@@ -466,6 +467,23 @@ const InterventionForm = () => {
                 />
               </CardContent>
             </Card>
+
+            {isEditing && id && (
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Paperclip className="h-5 w-5" />
+                    Pièces jointes
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Ajoutez des documents pour le technicien (notices, plans, etc.)
+                  </p>
+                  <AttachmentsList interventionId={id} isReadOnly={false} />
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           <div className="flex justify-end gap-4">
