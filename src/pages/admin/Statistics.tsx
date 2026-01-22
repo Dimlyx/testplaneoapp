@@ -11,7 +11,11 @@ import {
   Car,
   Calendar,
   CheckCircle,
-  RefreshCw
+  RefreshCw,
+  Target,
+  Award,
+  Timer,
+  UserCheck
 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, isWithinInterval, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -19,6 +23,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
+import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Helper to calculate duration in minutes between two time strings
 const getMinutesBetween = (start: string | null, end: string | null): number => {
@@ -39,6 +45,16 @@ const formatDuration = (minutes: number): string => {
   if (mins === 0) return `${hours}h`;
   return `${hours}h${mins.toString().padStart(2, '0')}`;
 };
+
+interface TechnicianStats {
+  id: string;
+  name: string;
+  totalInterventions: number;
+  completedInterventions: number;
+  avgDuration: number;
+  avgTravelTime: number;
+  resolutionRate: number;
+}
 
 export default function Statistics() {
   const queryClient = useQueryClient();
@@ -160,6 +176,64 @@ export default function Statistics() {
       count
     }));
 
+  // === NEW KPIs ===
+  
+  // Resolution rate (completed vs total assigned)
+  const assignedInterventions = monthInterventions.filter(i => i.technician_id);
+  const resolutionRate = assignedInterventions.length > 0
+    ? (completedInterventions.length / assignedInterventions.length) * 100
+    : 0;
+
+  // First-time fix rate (interventions resolved without follow-up - approximation: completed on same day)
+  const firstTimeFixRate = completedInterventions.length > 0
+    ? (completedInterventions.filter(i => {
+        const duration = getMinutesBetween(i.arrival_time, i.departure_time);
+        return duration > 0 && duration < 240; // Less than 4 hours = likely first-time fix
+      }).length / completedInterventions.length) * 100
+    : 0;
+
+  // Performance by technician
+  const technicianStats: TechnicianStats[] = technicians.map(tech => {
+    const techInterventions = monthInterventions.filter(i => i.technician_id === tech.id);
+    const techCompleted = techInterventions.filter(i => 
+      ['completed', 'to_invoice', 'archived'].includes(i.status)
+    );
+    
+    const durations = techCompleted
+      .map(i => getMinutesBetween(i.arrival_time, i.departure_time))
+      .filter(d => d > 0);
+    
+    const travelTimes = techCompleted
+      .flatMap(i => [
+        getMinutesBetween(i.travel_departure_time, i.arrival_time),
+        getMinutesBetween(i.departure_time, i.travel_return_time)
+      ])
+      .filter(d => d > 0);
+
+    return {
+      id: tech.id,
+      name: tech.full_name || tech.email,
+      totalInterventions: techInterventions.length,
+      completedInterventions: techCompleted.length,
+      avgDuration: durations.length > 0 
+        ? durations.reduce((a, b) => a + b, 0) / durations.length 
+        : 0,
+      avgTravelTime: travelTimes.length > 0 
+        ? travelTimes.reduce((a, b) => a + b, 0) / travelTimes.length 
+        : 0,
+      resolutionRate: techInterventions.length > 0 
+        ? (techCompleted.length / techInterventions.length) * 100 
+        : 0
+    };
+  }).filter(t => t.totalInterventions > 0).sort((a, b) => b.completedInterventions - a.completedInterventions);
+
+  // Best performer
+  const bestPerformer = technicianStats.length > 0 
+    ? technicianStats.reduce((best, current) => 
+        current.resolutionRate > best.resolutionRate ? current : best
+      )
+    : null;
+
   const typeLabels: Record<string, string> = {
     sav: 'SAV',
     maintenance: 'Maintenance',
@@ -219,187 +293,472 @@ export default function Statistics() {
         </Select>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Interventions du mois</CardTitle>
-            <Wrench className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{monthInterventions.length}</div>
-            <p className="text-xs text-muted-foreground">
-              {completedInterventions.length} terminées
-            </p>
-          </CardContent>
-        </Card>
+      <Tabs defaultValue="overview" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
+          <TabsTrigger value="kpi">KPI avancés</TabsTrigger>
+          <TabsTrigger value="technicians">Performance techniciens</TabsTrigger>
+        </TabsList>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Durée moyenne</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatDuration(avgInterventionDuration)}</div>
-            <p className="text-xs text-muted-foreground">
-              par intervention
-            </p>
-          </CardContent>
-        </Card>
+        {/* Overview Tab */}
+        <TabsContent value="overview" className="space-y-6">
+          {/* Summary Cards */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Interventions du mois</CardTitle>
+                <Wrench className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{monthInterventions.length}</div>
+                <p className="text-xs text-muted-foreground">
+                  {completedInterventions.length} terminées
+                </p>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Temps de route moyen</CardTitle>
-            <Car className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {formatDuration((avgTravelToTime + avgTravelReturnTime) / 2)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Aller: {formatDuration(avgTravelToTime)} / Retour: {formatDuration(avgTravelReturnTime)}
-            </p>
-          </CardContent>
-        </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Durée moyenne</CardTitle>
+                <Clock className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatDuration(avgInterventionDuration)}</div>
+                <p className="text-xs text-muted-foreground">
+                  par intervention
+                </p>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total temps de route</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatDuration(totalTravelTime)}</div>
-            <p className="text-xs text-muted-foreground">
-              sur le mois
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Interventions par type */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Wrench className="h-5 w-5" />
-              Par type d'intervention
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {Object.entries(interventionsByType).map(([type, count]) => (
-                <div key={type} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-3 h-3 rounded-full ${
-                      type === 'sav' ? 'bg-red-500' : 
-                      type === 'maintenance' ? 'bg-blue-500' : 'bg-green-500'
-                    }`} />
-                    <span className="font-medium">{typeLabels[type] || type}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xl font-bold">{count}</span>
-                    <span className="text-sm text-muted-foreground">
-                      ({Math.round(count / monthInterventions.length * 100)}%)
-                    </span>
-                  </div>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Temps de route moyen</CardTitle>
+                <Car className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {formatDuration((avgTravelToTime + avgTravelReturnTime) / 2)}
                 </div>
-              ))}
-              {Object.keys(interventionsByType).length === 0 && (
-                <p className="text-muted-foreground text-center py-4">Aucune donnée</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+                <p className="text-xs text-muted-foreground">
+                  Aller: {formatDuration(avgTravelToTime)} / Retour: {formatDuration(avgTravelReturnTime)}
+                </p>
+              </CardContent>
+            </Card>
 
-        {/* Interventions par statut */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5" />
-              Par statut
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {Object.entries(interventionsByStatus).map(([status, count]) => (
-                <div key={status} className="flex items-center justify-between">
-                  <span className="text-sm">{statusLabels[status] || status}</span>
-                  <div className="flex items-center gap-2">
-                    <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-primary rounded-full"
-                        style={{ width: `${(count / monthInterventions.length) * 100}%` }}
-                      />
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Taux de résolution</CardTitle>
+                <Target className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{Math.round(resolutionRate)}%</div>
+                <Progress value={resolutionRate} className="h-2 mt-2" />
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* Interventions par type */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Wrench className="h-5 w-5" />
+                  Par type d'intervention
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {Object.entries(interventionsByType).map(([type, count]) => (
+                    <div key={type} className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-3 h-3 rounded-full ${
+                          type === 'sav' ? 'bg-red-500' : 
+                          type === 'maintenance' ? 'bg-blue-500' : 'bg-green-500'
+                        }`} />
+                        <span className="font-medium">{typeLabels[type] || type}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl font-bold">{count}</span>
+                        <span className="text-sm text-muted-foreground">
+                          ({Math.round(count / monthInterventions.length * 100)}%)
+                        </span>
+                      </div>
                     </div>
-                    <span className="font-medium w-8 text-right">{count}</span>
+                  ))}
+                  {Object.keys(interventionsByType).length === 0 && (
+                    <p className="text-muted-foreground text-center py-4">Aucune donnée</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Interventions par statut */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5" />
+                  Par statut
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {Object.entries(interventionsByStatus).map(([status, count]) => (
+                    <div key={status} className="flex items-center justify-between">
+                      <span className="text-sm">{statusLabels[status] || status}</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-primary rounded-full"
+                            style={{ width: `${(count / monthInterventions.length) * 100}%` }}
+                          />
+                        </div>
+                        <span className="font-medium w-8 text-right">{count}</span>
+                      </div>
+                    </div>
+                  ))}
+                  {Object.keys(interventionsByStatus).length === 0 && (
+                    <p className="text-muted-foreground text-center py-4">Aucune donnée</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Top clients */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Top clients
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {topClients.map(({ client, count }, index) => (
+                    <div key={client?.id || index} className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-medium text-muted-foreground w-5">
+                          {index + 1}.
+                        </span>
+                        <span className="font-medium">{client?.name || 'Client inconnu'}</span>
+                      </div>
+                      <span className="text-xl font-bold">{count}</span>
+                    </div>
+                  ))}
+                  {topClients.length === 0 && (
+                    <p className="text-muted-foreground text-center py-4">Aucune donnée</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Moyennes */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5" />
+                  Moyennes
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                    <span className="text-sm">Interventions par client</span>
+                    <span className="text-xl font-bold">{avgInterventionsPerClient.toFixed(1)}</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                    <span className="text-sm">Clients actifs</span>
+                    <span className="text-xl font-bold">{Object.keys(interventionsByClient).length}</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                    <span className="text-sm">Total temps de route</span>
+                    <span className="text-xl font-bold">{formatDuration(totalTravelTime)}</span>
                   </div>
                 </div>
-              ))}
-              {Object.keys(interventionsByStatus).length === 0 && (
-                <p className="text-muted-foreground text-center py-4">Aucune donnée</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
 
-        {/* Top clients */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Top clients
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {topClients.map(({ client, count }, index) => (
-                <div key={client?.id || index} className="flex items-center justify-between">
+        {/* KPI Tab */}
+        <TabsContent value="kpi" className="space-y-6">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Card className="border-l-4 border-l-green-500">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Taux de résolution</CardTitle>
+                <Target className="h-4 w-4 text-green-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-green-600">{Math.round(resolutionRate)}%</div>
+                <Progress value={resolutionRate} className="h-2 mt-2" />
+                <p className="text-xs text-muted-foreground mt-2">
+                  {completedInterventions.length} / {assignedInterventions.length} assignées
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-l-4 border-l-blue-500">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Résolution 1ère visite</CardTitle>
+                <CheckCircle className="h-4 w-4 text-blue-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-blue-600">{Math.round(firstTimeFixRate)}%</div>
+                <Progress value={firstTimeFixRate} className="h-2 mt-2" />
+                <p className="text-xs text-muted-foreground mt-2">
+                  Interventions résolues en moins de 4h
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-l-4 border-l-amber-500">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Temps moyen intervention</CardTitle>
+                <Timer className="h-4 w-4 text-amber-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-amber-600">{formatDuration(avgInterventionDuration)}</div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Basé sur {interventionDurations.length} interventions
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-l-4 border-l-purple-500">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Meilleur technicien</CardTitle>
+                <Award className="h-4 w-4 text-purple-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-lg font-bold text-purple-600 truncate">
+                  {bestPerformer?.name || '-'}
+                </div>
+                {bestPerformer && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {Math.round(bestPerformer.resolutionRate)}% résolution • {bestPerformer.completedInterventions} terminées
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* KPI Details */}
+          <div className="grid gap-6 lg:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="h-5 w-5" />
+                  Temps moyens détaillés
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
                   <div className="flex items-center gap-3">
-                    <span className="text-sm font-medium text-muted-foreground w-5">
-                      {index + 1}.
-                    </span>
-                    <span className="font-medium">{client?.name || 'Client inconnu'}</span>
+                    <Car className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <p className="font-medium">Trajet aller</p>
+                      <p className="text-xs text-muted-foreground">Départ → Arrivée client</p>
+                    </div>
                   </div>
-                  <span className="text-xl font-bold">{count}</span>
+                  <span className="text-2xl font-bold">{formatDuration(avgTravelToTime)}</span>
                 </div>
-              ))}
-              {topClients.length === 0 && (
-                <p className="text-muted-foreground text-center py-4">Aucune donnée</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+                <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Wrench className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <p className="font-medium">Intervention</p>
+                      <p className="text-xs text-muted-foreground">Sur site client</p>
+                    </div>
+                  </div>
+                  <span className="text-2xl font-bold">{formatDuration(avgInterventionDuration)}</span>
+                </div>
+                <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Car className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <p className="font-medium">Trajet retour</p>
+                      <p className="text-xs text-muted-foreground">Départ client → Retour</p>
+                    </div>
+                  </div>
+                  <span className="text-2xl font-bold">{formatDuration(avgTravelReturnTime)}</span>
+                </div>
+                <div className="flex items-center justify-between p-4 bg-primary/10 rounded-lg border-2 border-primary/20">
+                  <div className="flex items-center gap-3">
+                    <Timer className="h-5 w-5 text-primary" />
+                    <div>
+                      <p className="font-medium">Temps total moyen</p>
+                      <p className="text-xs text-muted-foreground">Par intervention complète</p>
+                    </div>
+                  </div>
+                  <span className="text-2xl font-bold text-primary">
+                    {formatDuration(avgTravelToTime + avgInterventionDuration + avgTravelReturnTime)}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
 
-        {/* Moyennes */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Moyennes
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                <span className="text-sm">Interventions par client</span>
-                <span className="text-xl font-bold">{avgInterventionsPerClient.toFixed(1)}</span>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5" />
+                  Indicateurs de performance
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Productivité</span>
+                    <span className="text-sm text-muted-foreground">
+                      {technicianStats.length > 0 
+                        ? (monthInterventions.length / technicianStats.length).toFixed(1) 
+                        : 0} int./tech
+                    </span>
+                  </div>
+                  <Progress 
+                    value={Math.min((monthInterventions.length / (technicianStats.length * 20)) * 100, 100)} 
+                    className="h-2" 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Efficacité route</span>
+                    <span className="text-sm text-muted-foreground">
+                      {avgInterventionDuration > 0 
+                        ? Math.round((avgInterventionDuration / (avgInterventionDuration + avgTravelToTime + avgTravelReturnTime)) * 100)
+                        : 0}% temps utile
+                    </span>
+                  </div>
+                  <Progress 
+                    value={avgInterventionDuration > 0 
+                      ? (avgInterventionDuration / (avgInterventionDuration + avgTravelToTime + avgTravelReturnTime)) * 100
+                      : 0} 
+                    className="h-2" 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Taux d'assignation</span>
+                    <span className="text-sm text-muted-foreground">
+                      {monthInterventions.length > 0 
+                        ? Math.round((assignedInterventions.length / monthInterventions.length) * 100)
+                        : 0}% assignées
+                    </span>
+                  </div>
+                  <Progress 
+                    value={monthInterventions.length > 0 
+                      ? (assignedInterventions.length / monthInterventions.length) * 100
+                      : 0} 
+                    className="h-2" 
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* Technicians Tab */}
+        <TabsContent value="technicians" className="space-y-6">
+          {technicianStats.length === 0 ? (
+            <Card>
+              <CardContent className="py-8 text-center text-muted-foreground">
+                <UserCheck className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>Aucune intervention assignée à un technicien ce mois-ci</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              {/* Summary row */}
+              <div className="grid gap-4 md:grid-cols-3">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Techniciens actifs</CardTitle>
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{technicianStats.length}</div>
+                    <p className="text-xs text-muted-foreground">sur {technicians.length} total</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Interventions / technicien</CardTitle>
+                    <Wrench className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {(monthInterventions.length / technicianStats.length).toFixed(1)}
+                    </div>
+                    <p className="text-xs text-muted-foreground">moyenne mensuelle</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Résolution moyenne</CardTitle>
+                    <Target className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {Math.round(technicianStats.reduce((a, b) => a + b.resolutionRate, 0) / technicianStats.length)}%
+                    </div>
+                    <p className="text-xs text-muted-foreground">tous techniciens</p>
+                  </CardContent>
+                </Card>
               </div>
-              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                <span className="text-sm">Clients actifs</span>
-                <span className="text-xl font-bold">{Object.keys(interventionsByClient).length}</span>
+
+              {/* Technician cards */}
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {technicianStats.map((tech, index) => (
+                  <Card key={tech.id} className={index === 0 ? 'border-2 border-amber-400' : ''}>
+                    <CardHeader className="pb-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          {index === 0 && <Award className="h-5 w-5 text-amber-500" />}
+                          <CardTitle className="text-base truncate">{tech.name}</CardTitle>
+                        </div>
+                        <span className="text-xs bg-muted px-2 py-1 rounded-full">
+                          #{index + 1}
+                        </span>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div className="bg-muted/50 p-2 rounded">
+                          <p className="text-muted-foreground text-xs">Total</p>
+                          <p className="font-bold">{tech.totalInterventions}</p>
+                        </div>
+                        <div className="bg-muted/50 p-2 rounded">
+                          <p className="text-muted-foreground text-xs">Terminées</p>
+                          <p className="font-bold">{tech.completedInterventions}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">Taux résolution</span>
+                          <span className="font-medium">{Math.round(tech.resolutionRate)}%</span>
+                        </div>
+                        <Progress value={tech.resolutionRate} className="h-2" />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <Clock className="h-3 w-3" />
+                          <span className="text-xs">Moy. int:</span>
+                          <span className="font-medium text-foreground">{formatDuration(tech.avgDuration)}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <Car className="h-3 w-3" />
+                          <span className="text-xs">Moy. route:</span>
+                          <span className="font-medium text-foreground">{formatDuration(tech.avgTravelTime)}</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
-              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                <span className="text-sm">Taux de complétion</span>
-                <span className="text-xl font-bold">
-                  {monthInterventions.length > 0 
-                    ? Math.round(completedInterventions.length / monthInterventions.length * 100)
-                    : 0}%
-                </span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            </>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
