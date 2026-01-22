@@ -13,7 +13,8 @@ import {
   Wrench,
   ChevronRight,
   CalendarDays,
-  Tag
+  Tag,
+  BarChart3
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -23,6 +24,7 @@ const navigation = [
   { name: 'Interventions', href: '/admin/interventions', icon: ClipboardList },
   { name: 'Types d\'intervention', href: '/admin/intervention-types', icon: Tag },
   { name: 'Clients', href: '/admin/clients', icon: Users },
+  { name: 'Statistiques', href: '/admin/statistics', icon: BarChart3 },
 ];
 
 export default function AdminLayout() {

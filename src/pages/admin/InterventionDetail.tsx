@@ -23,6 +23,22 @@ import { fr } from "date-fns/locale";
 import { toast } from "@/hooks/use-toast";
 import { generateInterventionPDF } from "@/lib/pdf-generator";
 
+// Helper function to calculate duration between two times
+const calculateDuration = (start: string, end: string): string => {
+  const [startHours, startMinutes] = start.split(':').map(Number);
+  const [endHours, endMinutes] = end.split(':').map(Number);
+  
+  let totalMinutes = (endHours * 60 + endMinutes) - (startHours * 60 + startMinutes);
+  if (totalMinutes < 0) totalMinutes += 24 * 60; // Handle overnight
+  
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  
+  if (hours === 0) return `${minutes}min`;
+  if (minutes === 0) return `${hours}h`;
+  return `${hours}h${minutes.toString().padStart(2, '0')}`;
+};
+
 const InterventionDetail = () => {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -236,7 +252,7 @@ const InterventionDetail = () => {
         </Card>
 
         {/* Chronométrage */}
-        {(intervention.arrival_time || intervention.departure_time) && (
+        {(intervention.arrival_time || intervention.departure_time || intervention.travel_departure_time || intervention.travel_return_time) && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -245,16 +261,53 @@ const InterventionDetail = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
+              {intervention.travel_departure_time && (
+                <div>
+                  <p className="text-sm text-muted-foreground">Départ domicile/hôtel</p>
+                  <p className="font-medium">{intervention.travel_departure_time}</p>
+                </div>
+              )}
               {intervention.arrival_time && (
                 <div>
-                  <p className="text-sm text-muted-foreground">Heure d'arrivée</p>
+                  <p className="text-sm text-muted-foreground">Arrivée chez le client</p>
                   <p className="font-medium">{intervention.arrival_time}</p>
                 </div>
               )}
               {intervention.departure_time && (
                 <div>
-                  <p className="text-sm text-muted-foreground">Heure de départ</p>
+                  <p className="text-sm text-muted-foreground">Départ du client</p>
                   <p className="font-medium">{intervention.departure_time}</p>
+                </div>
+              )}
+              {intervention.travel_return_time && (
+                <div>
+                  <p className="text-sm text-muted-foreground">Retour domicile/hôtel</p>
+                  <p className="font-medium">{intervention.travel_return_time}</p>
+                </div>
+              )}
+              {/* Calcul des durées */}
+              {intervention.travel_departure_time && intervention.arrival_time && (
+                <div className="pt-2 border-t">
+                  <p className="text-sm text-muted-foreground">Temps de trajet aller</p>
+                  <p className="font-medium text-primary">
+                    {calculateDuration(intervention.travel_departure_time, intervention.arrival_time)}
+                  </p>
+                </div>
+              )}
+              {intervention.arrival_time && intervention.departure_time && (
+                <div>
+                  <p className="text-sm text-muted-foreground">Durée intervention</p>
+                  <p className="font-medium text-primary">
+                    {calculateDuration(intervention.arrival_time, intervention.departure_time)}
+                  </p>
+                </div>
+              )}
+              {intervention.departure_time && intervention.travel_return_time && (
+                <div>
+                  <p className="text-sm text-muted-foreground">Temps de trajet retour</p>
+                  <p className="font-medium text-primary">
+                    {calculateDuration(intervention.departure_time, intervention.travel_return_time)}
+                  </p>
                 </div>
               )}
             </CardContent>
