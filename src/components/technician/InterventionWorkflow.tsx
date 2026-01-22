@@ -84,10 +84,17 @@ const InterventionWorkflow = ({
   const hasObservations = !!observations.trim();
   const hasSignature = !!clientSignatureUrl;
   const isCompleted = intervention.status === 'completed';
+  const isToInvoice = intervention.status === 'to_invoice';
+  const isArchived = intervention.status === 'archived';
+  
+  // Check if intervention is locked (completed, to_invoice, or archived)
+  const isLocked = isCompleted || isToInvoice || isArchived;
 
   // Auto-open first incomplete step
   useEffect(() => {
-    if (!isStarted) {
+    if (isLocked) {
+      setActiveStep('finish');
+    } else if (!isStarted) {
       setActiveStep('start');
     } else if (!hasEquipment) {
       setActiveStep('equipment');
@@ -98,7 +105,7 @@ const InterventionWorkflow = ({
     } else {
       setActiveStep('finish');
     }
-  }, [isStarted, hasEquipment, hasReport, hasSignature]);
+  }, [isStarted, hasEquipment, hasReport, hasSignature, isLocked]);
 
   const handleStepClick = (step: string) => {
     setActiveStep(activeStep === step ? null : step);
@@ -106,6 +113,21 @@ const InterventionWorkflow = ({
 
   return (
     <div className="space-y-0">
+      {/* Locked banner for completed interventions */}
+      {isLocked && (
+        <Card className="mb-4 border-amber-200 bg-amber-50">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-amber-700">
+              <AlertCircle className="h-5 w-5" />
+              <span className="font-medium">Intervention terminée - Modification impossible</span>
+            </div>
+            <p className="text-sm text-amber-600 mt-1">
+              Cette intervention est clôturée. Seul un administrateur peut la modifier.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Step 1: Start Intervention */}
       <WorkflowStep
         icon={Play}
@@ -115,7 +137,7 @@ const InterventionWorkflow = ({
         onClick={() => handleStepClick('start')}
       >
         {!isStarted ? (
-          <Button onClick={onStartIntervention} className="w-full" size="lg">
+          <Button onClick={onStartIntervention} className="w-full" size="lg" disabled={isLocked}>
             <Play className="h-5 w-5 mr-2" />
             Confirmer l'arrivée
           </Button>
@@ -126,15 +148,17 @@ const InterventionWorkflow = ({
                 <CheckCircle className="h-4 w-4" />
                 <span>Arrivée enregistrée: {arrivalTime}</span>
               </div>
-              <div>
-                <label className="text-sm text-muted-foreground">Modifier l'heure d'arrivée</label>
-                <Input
-                  type="time"
-                  value={arrivalTime}
-                  onChange={(e) => onArrivalTimeChange(e.target.value)}
-                  className="mt-1"
-                />
-              </div>
+              {!isLocked && (
+                <div>
+                  <label className="text-sm text-muted-foreground">Modifier l'heure d'arrivée</label>
+                  <Input
+                    type="time"
+                    value={arrivalTime}
+                    onChange={(e) => onArrivalTimeChange(e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
@@ -193,11 +217,12 @@ const InterventionWorkflow = ({
                 interventionEquipment={ie}
                 interventionId={intervention.id}
                 index={index}
+                isReadOnly={isLocked}
               />
             ))
           )}
           
-          {client && (
+          {client && !isLocked && (
             <AddEquipmentDialog
               clientId={client.id}
               interventionId={intervention.id}
@@ -224,12 +249,15 @@ const InterventionWorkflow = ({
                 value={report}
                 onChange={(e) => onReportChange(e.target.value)}
                 className="min-h-[120px]"
+                disabled={isLocked}
               />
             </div>
-            <Button onClick={onSave} disabled={isUpdating} className="w-full">
-              <Save className="h-4 w-4 mr-2" />
-              Enregistrer
-            </Button>
+            {!isLocked && (
+              <Button onClick={onSave} disabled={isUpdating} className="w-full">
+                <Save className="h-4 w-4 mr-2" />
+                Enregistrer
+              </Button>
+            )}
           </CardContent>
         </Card>
       </WorkflowStep>
@@ -251,12 +279,15 @@ const InterventionWorkflow = ({
                 value={observations}
                 onChange={(e) => onObservationsChange(e.target.value)}
                 className="min-h-[100px]"
+                disabled={isLocked}
               />
             </div>
-            <Button onClick={onSave} disabled={isUpdating} className="w-full">
-              <Save className="h-4 w-4 mr-2" />
-              Enregistrer
-            </Button>
+            {!isLocked && (
+              <Button onClick={onSave} disabled={isUpdating} className="w-full">
+                <Save className="h-4 w-4 mr-2" />
+                Enregistrer
+              </Button>
+            )}
           </CardContent>
         </Card>
       </WorkflowStep>

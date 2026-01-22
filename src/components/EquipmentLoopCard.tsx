@@ -27,9 +27,10 @@ interface EquipmentLoopCardProps {
   interventionEquipment: InterventionEquipment;
   interventionId: string;
   index: number;
+  isReadOnly?: boolean;
 }
 
-const EquipmentLoopCard = ({ interventionEquipment, interventionId, index }: EquipmentLoopCardProps) => {
+const EquipmentLoopCard = ({ interventionEquipment, interventionId, index, isReadOnly = false }: EquipmentLoopCardProps) => {
   const [isOpen, setIsOpen] = useState(index === 0);
   const [technicalComments, setTechnicalComments] = useState(interventionEquipment.technical_comments || "");
   const [equipmentFunctional, setEquipmentFunctional] = useState(interventionEquipment.equipment_functional !== false);
@@ -110,16 +111,18 @@ const EquipmentLoopCard = ({ interventionEquipment, interventionId, index }: Equ
             <ImageIcon className="h-4 w-4 text-primary" />
             {title}
           </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => inputRef.current?.click()}
-            disabled={uploadPhoto.isPending}
-          >
-            <Camera className="h-3 w-3 mr-1" />
-            {uploadPhoto.isPending ? "Envoi..." : "Ajouter"}
-          </Button>
+          {!isReadOnly && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => inputRef.current?.click()}
+              disabled={uploadPhoto.isPending}
+            >
+              <Camera className="h-3 w-3 mr-1" />
+              {uploadPhoto.isPending ? "Envoi..." : "Ajouter"}
+            </Button>
+          )}
         </div>
         
         <input
@@ -140,12 +143,14 @@ const EquipmentLoopCard = ({ interventionEquipment, interventionId, index }: Equ
                   alt={title}
                   className="w-full h-full object-cover"
                 />
-                <button
-                  onClick={() => handleDeletePhoto(photo.id, photo.photo_url)}
-                  className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 shadow-md"
-                >
-                  <X className="h-3 w-3" />
-                </button>
+                {!isReadOnly && (
+                  <button
+                    onClick={() => handleDeletePhoto(photo.id, photo.photo_url)}
+                    className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 shadow-md"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
               </div>
             ))}
           </div>
@@ -226,6 +231,7 @@ const EquipmentLoopCard = ({ interventionEquipment, interventionId, index }: Equ
                   setIsEditing(true);
                 }}
                 className="min-h-[60px]"
+                disabled={isReadOnly}
               />
             </div>
 
@@ -241,31 +247,34 @@ const EquipmentLoopCard = ({ interventionEquipment, interventionId, index }: Equ
                   setEquipmentFunctional(checked);
                   setIsEditing(true);
                 }}
+                disabled={isReadOnly}
               />
             </div>
 
             {/* Actions */}
-            <div className="flex gap-2">
-              {isEditing && (
+            {!isReadOnly && (
+              <div className="flex gap-2">
+                {isEditing && (
+                  <Button 
+                    onClick={handleSave} 
+                    className="flex-1"
+                    disabled={updateEquipment.isPending}
+                    size="sm"
+                  >
+                    <Save className="h-3 w-3 mr-1" />
+                    Enregistrer
+                  </Button>
+                )}
                 <Button 
-                  onClick={handleSave} 
-                  className="flex-1"
-                  disabled={updateEquipment.isPending}
+                  variant="outline" 
                   size="sm"
+                  onClick={handleRemove}
+                  disabled={removeEquipment.isPending}
                 >
-                  <Save className="h-3 w-3 mr-1" />
-                  Enregistrer
+                  <Trash2 className="h-3 w-3" />
                 </Button>
-              )}
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={handleRemove}
-                disabled={removeEquipment.isPending}
-              >
-                <Trash2 className="h-3 w-3" />
-              </Button>
-            </div>
+              </div>
+            )}
           </CardContent>
         </CollapsibleContent>
       </Collapsible>
