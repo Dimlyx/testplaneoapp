@@ -1,6 +1,8 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 
+// Status and Type badges with forwardRef support
+
 type InterventionStatus = 'to_plan' | 'planned' | 'in_progress' | 'completed' | 'to_invoice' | 'archived';
 
 const statusConfig: Record<InterventionStatus, { label: string; className: string }> = {
