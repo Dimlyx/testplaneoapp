@@ -21,6 +21,7 @@ import InterventionForm from "@/pages/admin/InterventionForm";
 import InterventionDetail from "@/pages/admin/InterventionDetail";
 import InterventionTypes from "@/pages/admin/InterventionTypes";
 import Statistics from "@/pages/admin/Statistics";
+import Settings from "@/pages/admin/Settings";
 import Clients from "@/pages/admin/Clients";
 import ClientForm from "@/pages/admin/ClientForm";
 import ClientDetail from "@/pages/admin/ClientDetail";
@@ -112,6 +113,7 @@ const AppRoutes = () => {
         <Route path="interventions/:id/edit" element={<InterventionForm />} />
         <Route path="intervention-types" element={<InterventionTypes />} />
         <Route path="statistics" element={<Statistics />} />
+        <Route path="settings" element={<Settings />} />
         <Route path="clients" element={<Clients />} />
         <Route path="clients/new" element={<ClientForm />} />
         <Route path="clients/:id" element={<ClientDetail />} />
