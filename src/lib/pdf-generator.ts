@@ -43,6 +43,7 @@ interface ReportSettings {
   primaryColor: string;
   accentColor: string;
   footerText: string;
+  logoUrl: string;
 }
 
 const DEFAULT_SETTINGS: ReportSettings = {
@@ -53,6 +54,7 @@ const DEFAULT_SETTINGS: ReportSettings = {
   primaryColor: '#003057',
   accentColor: '#0050A0',
   footerText: '',
+  logoUrl: '',
 };
 
 const getReportSettings = (): ReportSettings => {
@@ -193,34 +195,60 @@ export const generateInterventionPDF = async (
   };
 
   // ================== HEADER ==================
+  const headerHeight = 45;
   doc.setFillColor(primaryRgb[0], primaryRgb[1], primaryRgb[2]);
-  doc.rect(0, 0, pageWidth, 45, 'F');
+  doc.rect(0, 0, pageWidth, headerHeight, 'F');
   
   doc.setTextColor(255, 255, 255);
+  
+  let logoWidth = 0;
+  const logoMargin = 15;
+  
+  // Add logo if available
+  if (settings.logoUrl) {
+    try {
+      const logoBase64 = await loadImageAsBase64(settings.logoUrl);
+      if (logoBase64) {
+        const logoHeight = 25;
+        logoWidth = 30;
+        doc.addImage(logoBase64, 'JPEG', logoMargin, 10, logoWidth, logoHeight);
+        logoWidth += 10; // Add spacing after logo
+      }
+    } catch (err) {
+      console.error('Error loading logo:', err);
+    }
+  }
+  
+  const textStartX = logoMargin + logoWidth;
+  
   doc.setFontSize(18);
   doc.setFont("helvetica", "bold");
   
   // Company name or default title
   if (settings.companyName) {
-    centerText(settings.companyName, 12, 14);
-    centerText("RAPPORT D'INTERVENTION", 22, 16);
+    doc.setFontSize(12);
+    doc.text(settings.companyName, textStartX, 15);
+    doc.setFontSize(14);
+    doc.text("RAPPORT D'INTERVENTION", textStartX, 25);
   } else {
-    centerText("RAPPORT D'INTERVENTION", 15, 18);
+    doc.setFontSize(16);
+    doc.text("RAPPORT D'INTERVENTION", textStartX, 20);
   }
   
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
-  centerText(client.name, 32, 10);
+  doc.text(client.name, textStartX, 35);
   
-  // Company contact info in header
+  // Company contact info in header (right aligned)
   if (settings.companyPhone || settings.companyEmail) {
     doc.setFontSize(8);
     const contactInfo = [settings.companyPhone, settings.companyEmail].filter(Boolean).join(' | ');
-    centerText(contactInfo, 40, 8);
+    const contactWidth = doc.getTextWidth(contactInfo);
+    doc.text(contactInfo, pageWidth - contactWidth - 15, 40);
   }
   
   doc.setTextColor(0, 0, 0);
-  yPos = 55;
+  yPos = headerHeight + 10;
 
   // Reference & Date
   doc.setFontSize(10);
