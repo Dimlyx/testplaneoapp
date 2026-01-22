@@ -1,6 +1,8 @@
+import { useEffect } from "react";
 import { useTechnicianInterventions } from "@/hooks/useInterventions";
 import { useClients } from "@/hooks/useClients";
 import { useAuth } from "@/lib/auth-context";
+import { useOffline } from "@/hooks/useOfflineSync";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge, TypeBadge } from "@/components/ui/status-badge";
 import { ClipboardList, Calendar, Clock, MapPin } from "lucide-react";
@@ -13,6 +15,14 @@ const TechnicianInterventions = () => {
   const { user } = useAuth();
   const { data: interventions = [], isLoading } = useTechnicianInterventions(user?.id);
   const { data: clients = [] } = useClients();
+  const { cacheInterventions, isOnline } = useOffline();
+
+  // Cache interventions for offline use
+  useEffect(() => {
+    if (interventions.length > 0) {
+      cacheInterventions(interventions);
+    }
+  }, [interventions, cacheInterventions]);
 
   const getClientName = (clientId: string) => {
     const client = clients.find(c => c.id === clientId);
