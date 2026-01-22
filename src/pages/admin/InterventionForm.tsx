@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -6,6 +6,7 @@ import { z } from "zod";
 import { useIntervention, useCreateIntervention, useUpdateIntervention } from "@/hooks/useInterventions";
 import { useClients } from "@/hooks/useClients";
 import { useTechnicians } from "@/hooks/useTechnicians";
+import { useAddInterventionAttachment } from "@/hooks/useInterventionAttachments";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -28,6 +29,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Save, Paperclip } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import AttachmentsList from "@/components/technician/AttachmentsList";
+import PendingAttachmentsList from "@/components/admin/PendingAttachmentsList";
 
 const interventionSchema = z.object({
   title: z.string().min(1, "Le titre est requis"),
@@ -53,12 +55,14 @@ const InterventionForm = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const isEditing = !!id;
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
 
   const { data: intervention, isLoading: loadingIntervention } = useIntervention(id || "");
   const { data: clients = [], isLoading: loadingClients } = useClients();
   const { data: technicians = [], isLoading: loadingTechnicians } = useTechnicians();
   const createIntervention = useCreateIntervention();
   const updateIntervention = useUpdateIntervention();
+  const addAttachment = useAddInterventionAttachment();
 
   const form = useForm<InterventionFormValues>({
     resolver: zodResolver(interventionSchema),
@@ -127,7 +131,15 @@ const InterventionForm = () => {
         await updateIntervention.mutateAsync({ id, ...data });
         toast({ title: "Intervention mise à jour avec succès" });
       } else {
-        await createIntervention.mutateAsync(data);
+        const result = await createIntervention.mutateAsync(data);
+        
+        // Upload pending attachments after intervention is created
+        if (pendingFiles.length > 0 && result?.id) {
+          for (const file of pendingFiles) {
+            await addAttachment.mutateAsync({ interventionId: result.id, file });
+          }
+        }
+        
         toast({ title: "Intervention créée avec succès" });
       }
       navigate("/admin/interventions");
@@ -468,22 +480,24 @@ const InterventionForm = () => {
               </CardContent>
             </Card>
 
-            {isEditing && id && (
-              <Card className="lg:col-span-2">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Paperclip className="h-5 w-5" />
-                    Pièces jointes
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Ajoutez des documents pour le technicien (notices, plans, etc.)
-                  </p>
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Paperclip className="h-5 w-5" />
+                  Pièces jointes
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Ajoutez des documents pour le technicien (notices, plans, etc.)
+                </p>
+                {isEditing && id ? (
                   <AttachmentsList interventionId={id} isReadOnly={false} />
-                </CardContent>
-              </Card>
-            )}
+                ) : (
+                  <PendingAttachmentsList files={pendingFiles} onFilesChange={setPendingFiles} />
+                )}
+              </CardContent>
+            </Card>
           </div>
 
           <div className="flex justify-end gap-4">
