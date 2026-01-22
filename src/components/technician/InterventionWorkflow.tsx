@@ -22,6 +22,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import SignaturePad from "@/components/SignaturePad";
 import AddEquipmentDialog from "@/components/AddEquipmentDialog";
 import EquipmentLoopCard from "@/components/EquipmentLoopCard";
+import AttachmentsList from "@/components/technician/AttachmentsList";
 import { InterventionEquipment } from "@/hooks/useInterventionEquipment";
 import { Tables } from "@/integrations/supabase/types";
 
@@ -154,7 +155,7 @@ const InterventionWorkflow = ({
         onClick={() => handleStepClick('general-info')}
       >
         <Card>
-          <CardContent className="p-4 space-y-3">
+          <CardContent className="p-4 space-y-4">
             <div>
               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Titre</label>
               <p className="font-medium mt-1">{intervention.title}</p>
@@ -165,6 +166,12 @@ const InterventionWorkflow = ({
                 <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{intervention.description}</p>
               </div>
             )}
+            <div className="border-t pt-4">
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3 block">
+                Pièces jointes
+              </label>
+              <AttachmentsList interventionId={intervention.id} isReadOnly={isLocked} />
+            </div>
           </CardContent>
         </Card>
       </WorkflowStep>
