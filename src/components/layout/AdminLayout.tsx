@@ -14,7 +14,8 @@ import {
   ChevronRight,
   CalendarDays,
   BarChart3,
-  Settings
+  Settings,
+  Bell
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -23,6 +24,7 @@ const navigation = [
   { name: 'Calendrier', href: '/admin/calendar', icon: CalendarDays },
   { name: 'Interventions', href: '/admin/interventions', icon: ClipboardList },
   { name: 'Clients', href: '/admin/clients', icon: Users },
+  { name: 'Alertes Maintenance', href: '/admin/maintenance-alerts', icon: Bell },
   { name: 'Statistiques', href: '/admin/statistics', icon: BarChart3 },
   { name: 'Paramètres', href: '/admin/settings', icon: Settings },
 ];
