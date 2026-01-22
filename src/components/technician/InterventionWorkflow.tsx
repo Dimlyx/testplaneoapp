@@ -146,7 +146,7 @@ const InterventionWorkflow = ({
         </Card>
       )}
 
-      {/* Step 0: General Info */}
+      {/* Step 0: General Info + Client */}
       <WorkflowStep
         icon={Info}
         label="Informations générales"
@@ -166,6 +166,48 @@ const InterventionWorkflow = ({
                 <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{intervention.description}</p>
               </div>
             )}
+            
+            {/* Client info section */}
+            {client && (
+              <div className="border-t pt-4">
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2 block">Client</label>
+                <p className="font-medium">{client.name}</p>
+                
+                {/* Show intervention address if available, otherwise client address */}
+                {(intervention.intervention_address || client.address) && (
+                  <div className="flex items-start gap-2 text-sm text-muted-foreground mt-2">
+                    <MapPin className="h-4 w-4 mt-0.5 shrink-0" />
+                    <span>
+                      {intervention.intervention_address 
+                        ? `${intervention.intervention_address}, ${intervention.intervention_postal_code || ''} ${intervention.intervention_city || ''}`.trim()
+                        : `${client.address}, ${client.postal_code || ''} ${client.city || ''}`.trim()
+                      }
+                    </span>
+                  </div>
+                )}
+                
+                {/* Phone: intervention phone or client phone */}
+                {(intervention.intervention_phone || client.phone) && (
+                  <a 
+                    href={`tel:${intervention.intervention_phone || client.phone}`} 
+                    className="flex items-center gap-2 text-sm text-primary mt-2"
+                  >
+                    📞 {intervention.intervention_phone || client.phone}
+                  </a>
+                )}
+                
+                {/* Email: intervention email or client email */}
+                {(intervention.intervention_email || client.email) && (
+                  <a 
+                    href={`mailto:${intervention.intervention_email || client.email}`} 
+                    className="flex items-center gap-2 text-sm text-primary mt-1"
+                  >
+                    ✉️ {intervention.intervention_email || client.email}
+                  </a>
+                )}
+              </div>
+            )}
+
             <div className="border-t pt-4">
               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3 block">
                 Pièces jointes
@@ -248,33 +290,6 @@ const InterventionWorkflow = ({
         )}
       </WorkflowStep>
 
-      {/* Step 2: Client Info */}
-      <WorkflowStep
-        icon={User}
-        label="Informations client"
-        isActive={activeStep === 'client'}
-        isCompleted={isStarted}
-        onClick={() => handleStepClick('client')}
-      >
-        {client && (
-          <Card>
-            <CardContent className="p-4 space-y-2">
-              <p className="font-medium">{client.name}</p>
-              {client.address && (
-                <div className="flex items-start gap-2 text-sm text-muted-foreground">
-                  <MapPin className="h-4 w-4 mt-0.5 shrink-0" />
-                  <span>{client.address}, {client.postal_code} {client.city}</span>
-                </div>
-              )}
-              {client.phone && (
-                <a href={`tel:${client.phone}`} className="flex items-center gap-2 text-sm text-primary">
-                  📞 {client.phone}
-                </a>
-              )}
-            </CardContent>
-          </Card>
-        )}
-      </WorkflowStep>
 
       {/* Step 3: Equipment */}
       <WorkflowStep
