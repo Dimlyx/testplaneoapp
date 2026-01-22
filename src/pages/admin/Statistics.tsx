@@ -85,12 +85,14 @@ export default function Statistics() {
   });
 
   // Filter interventions for selected month
+  // Use scheduled_date if available, otherwise fall back to created_at
   const monthStart = startOfMonth(new Date(selectedMonth + '-01'));
   const monthEnd = endOfMonth(monthStart);
   
   const monthInterventions = interventions.filter(i => {
-    if (!i.scheduled_date) return false;
-    const date = parseISO(i.scheduled_date);
+    const dateString = i.scheduled_date || i.created_at;
+    if (!dateString) return false;
+    const date = parseISO(dateString);
     return isWithinInterval(date, { start: monthStart, end: monthEnd });
   });
 
