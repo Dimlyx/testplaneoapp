@@ -14,6 +14,8 @@ import {
   Image,
   MessageSquare,
   AlertCircle,
+  Car,
+  Home,
 } from "lucide-react";
 import WorkflowStep from "./WorkflowStep";
 import { Button } from "@/components/ui/button";
@@ -35,6 +37,8 @@ interface InterventionWorkflowProps {
   interventionEquipment: InterventionEquipment[];
   arrivalTime: string;
   departureTime: string;
+  travelDepartureTime: string;
+  travelReturnTime: string;
   report: string;
   observations: string;
   clientSignatureName: string;
@@ -45,6 +49,8 @@ interface InterventionWorkflowProps {
   onSignatureComplete: (signatureDataUrl: string, signerName: string) => Promise<void>;
   onArrivalTimeChange: (value: string) => void;
   onDepartureTimeChange: (value: string) => void;
+  onTravelDepartureTimeChange: (value: string) => void;
+  onTravelReturnTimeChange: (value: string) => void;
   onReportChange: (value: string) => void;
   onObservationsChange: (value: string) => void;
   onClientSignatureNameChange: (value: string) => void;
@@ -58,6 +64,8 @@ const InterventionWorkflow = ({
   interventionEquipment,
   arrivalTime,
   departureTime,
+  travelDepartureTime,
+  travelReturnTime,
   report,
   observations,
   clientSignatureName,
@@ -68,6 +76,8 @@ const InterventionWorkflow = ({
   onSignatureComplete,
   onArrivalTimeChange,
   onDepartureTimeChange,
+  onTravelDepartureTimeChange,
+  onTravelReturnTimeChange,
   onReportChange,
   onObservationsChange,
   onClientSignatureNameChange,
@@ -128,10 +138,49 @@ const InterventionWorkflow = ({
         </Card>
       )}
 
+      {/* Step 0: Travel Departure (before intervention) */}
+      <WorkflowStep
+        icon={Car}
+        label="Départ du domicile/hôtel"
+        isActive={activeStep === 'travel_start'}
+        isCompleted={!!travelDepartureTime}
+        onClick={() => handleStepClick('travel_start')}
+      >
+        <Card>
+          <CardContent className="p-4 space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Enregistrez l'heure à laquelle vous quittez votre point de départ (domicile, hôtel, bureau).
+            </p>
+            {travelDepartureTime ? (
+              <div className="flex items-center gap-2 text-green-600">
+                <CheckCircle className="h-4 w-4" />
+                <span>Départ enregistré: {travelDepartureTime}</span>
+              </div>
+            ) : null}
+            {!isLocked && (
+              <div>
+                <label className="text-sm font-medium mb-2 block">Heure de départ</label>
+                <Input
+                  type="time"
+                  value={travelDepartureTime}
+                  onChange={(e) => onTravelDepartureTimeChange(e.target.value)}
+                />
+              </div>
+            )}
+            {!isLocked && (
+              <Button onClick={onSave} disabled={isUpdating} className="w-full" variant="outline">
+                <Save className="h-4 w-4 mr-2" />
+                Enregistrer
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      </WorkflowStep>
+
       {/* Step 1: Start Intervention */}
       <WorkflowStep
         icon={Play}
-        label="Démarrer l'intervention"
+        label="Arrivée chez le client"
         isActive={activeStep === 'start'}
         isCompleted={isStarted}
         onClick={() => handleStepClick('start')}
@@ -314,7 +363,6 @@ const InterventionWorkflow = ({
         label="Terminer l'intervention"
         isActive={activeStep === 'finish'}
         isCompleted={isCompleted}
-        isLast
         onClick={() => handleStepClick('finish')}
       >
         <Card>
@@ -322,7 +370,7 @@ const InterventionWorkflow = ({
             {!isCompleted && isStarted && (
               <>
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Heure de départ</label>
+                  <label className="text-sm font-medium mb-2 block">Heure de départ du client</label>
                   <Input
                     type="time"
                     value={departureTime}
@@ -352,6 +400,46 @@ const InterventionWorkflow = ({
                   Télécharger le rapport PDF
                 </Button>
               </div>
+            )}
+          </CardContent>
+        </Card>
+      </WorkflowStep>
+
+      {/* Step 8: Travel Return (end of day) */}
+      <WorkflowStep
+        icon={Home}
+        label="Retour au domicile/hôtel"
+        isActive={activeStep === 'travel_end'}
+        isCompleted={!!travelReturnTime}
+        isLast
+        onClick={() => handleStepClick('travel_end')}
+      >
+        <Card>
+          <CardContent className="p-4 space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Enregistrez l'heure d'arrivée à votre domicile ou hôtel (fin de journée).
+            </p>
+            {travelReturnTime ? (
+              <div className="flex items-center gap-2 text-green-600">
+                <CheckCircle className="h-4 w-4" />
+                <span>Retour enregistré: {travelReturnTime}</span>
+              </div>
+            ) : null}
+            {!isLocked && (
+              <div>
+                <label className="text-sm font-medium mb-2 block">Heure de retour</label>
+                <Input
+                  type="time"
+                  value={travelReturnTime}
+                  onChange={(e) => onTravelReturnTimeChange(e.target.value)}
+                />
+              </div>
+            )}
+            {!isLocked && (
+              <Button onClick={onSave} disabled={isUpdating} className="w-full" variant="outline">
+                <Save className="h-4 w-4 mr-2" />
+                Enregistrer
+              </Button>
             )}
           </CardContent>
         </Card>
