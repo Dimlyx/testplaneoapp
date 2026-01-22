@@ -21,6 +21,8 @@ export interface Intervention {
   technical_comments: string | null;
   arrival_time: string | null;
   departure_time: string | null;
+  travel_departure_time: string | null;
+  travel_return_time: string | null;
   observations: string | null;
   equipment_functional: boolean | null;
   client_signature_name: string | null;
@@ -88,6 +90,8 @@ export interface UpdateInterventionData {
   technical_comments?: string;
   arrival_time?: string | null;
   departure_time?: string | null;
+  travel_departure_time?: string | null;
+  travel_return_time?: string | null;
   observations?: string;
   equipment_functional?: boolean;
   client_signature_name?: string;

@@ -241,6 +241,8 @@ export type Database = {
           technical_comments: string | null
           technician_id: string | null
           title: string
+          travel_departure_time: string | null
+          travel_return_time: string | null
           updated_at: string
         }
         Insert: {
@@ -269,6 +271,8 @@ export type Database = {
           technical_comments?: string | null
           technician_id?: string | null
           title: string
+          travel_departure_time?: string | null
+          travel_return_time?: string | null
           updated_at?: string
         }
         Update: {
@@ -297,6 +301,8 @@ export type Database = {
           technical_comments?: string | null
           technician_id?: string | null
           title?: string
+          travel_departure_time?: string | null
+          travel_return_time?: string | null
           updated_at?: string
         }
         Relationships: [
