@@ -35,6 +35,45 @@ interface PDFGeneratorOptions {
   interventionEquipments?: InterventionEquipmentData[];
 }
 
+interface ReportSettings {
+  companyName: string;
+  companyAddress: string;
+  companyPhone: string;
+  companyEmail: string;
+  primaryColor: string;
+  accentColor: string;
+  footerText: string;
+}
+
+const DEFAULT_SETTINGS: ReportSettings = {
+  companyName: '',
+  companyAddress: '',
+  companyPhone: '',
+  companyEmail: '',
+  primaryColor: '#003057',
+  accentColor: '#0050A0',
+  footerText: '',
+};
+
+const getReportSettings = (): ReportSettings => {
+  try {
+    const saved = localStorage.getItem('reportSettings');
+    if (saved) {
+      return { ...DEFAULT_SETTINGS, ...JSON.parse(saved) };
+    }
+  } catch (e) {
+    console.error('Error loading report settings:', e);
+  }
+  return DEFAULT_SETTINGS;
+};
+
+const hexToRgb = (hex: string): [number, number, number] => {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result 
+    ? [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)]
+    : [0, 48, 87]; // Default navy blue
+};
+
 const MAX_IMAGE_WIDTH = 400;
 const MAX_IMAGE_HEIGHT = 300;
 const JPEG_QUALITY = 0.6;
@@ -106,6 +145,11 @@ export const generateInterventionPDF = async (
   const pageHeight = doc.internal.pageSize.getHeight();
   let yPos = 20;
   
+  // Load custom settings
+  const settings = getReportSettings();
+  const primaryRgb = hexToRgb(settings.primaryColor);
+  const accentRgb = hexToRgb(settings.accentColor);
+  
   // Helper functions
   const centerText = (text: string, y: number, fontSize: number = 12) => {
     doc.setFontSize(fontSize);
@@ -113,13 +157,20 @@ export const generateInterventionPDF = async (
     doc.text(text, (pageWidth - textWidth) / 2, y);
   };
   
-  const addSection = (title: string, y: number, bgColor: [number, number, number] = [240, 240, 240]) => {
+  const addSection = (title: string, y: number, useAccent: boolean = false) => {
     doc.setFontSize(11);
     doc.setFont("helvetica", "bold");
-    doc.setFillColor(bgColor[0], bgColor[1], bgColor[2]);
+    if (useAccent) {
+      doc.setFillColor(accentRgb[0], accentRgb[1], accentRgb[2]);
+      doc.setTextColor(255, 255, 255);
+    } else {
+      doc.setFillColor(240, 240, 240);
+      doc.setTextColor(0, 0, 0);
+    }
     doc.rect(10, y - 5, pageWidth - 20, 8, 'F');
     doc.text(title, 15, y);
     doc.setFont("helvetica", "normal");
+    doc.setTextColor(0, 0, 0);
     return y + 10;
   };
   
@@ -142,20 +193,34 @@ export const generateInterventionPDF = async (
   };
 
   // ================== HEADER ==================
-  doc.setFillColor(0, 48, 87);
-  doc.rect(0, 0, pageWidth, 35, 'F');
+  doc.setFillColor(primaryRgb[0], primaryRgb[1], primaryRgb[2]);
+  doc.rect(0, 0, pageWidth, 45, 'F');
   
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(18);
   doc.setFont("helvetica", "bold");
-  centerText("RAPPORT D'INTERVENTION", 15, 18);
+  
+  // Company name or default title
+  if (settings.companyName) {
+    centerText(settings.companyName, 12, 14);
+    centerText("RAPPORT D'INTERVENTION", 22, 16);
+  } else {
+    centerText("RAPPORT D'INTERVENTION", 15, 18);
+  }
   
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
-  centerText(client.name, 25, 10);
+  centerText(client.name, 32, 10);
+  
+  // Company contact info in header
+  if (settings.companyPhone || settings.companyEmail) {
+    doc.setFontSize(8);
+    const contactInfo = [settings.companyPhone, settings.companyEmail].filter(Boolean).join(' | ');
+    centerText(contactInfo, 40, 8);
+  }
   
   doc.setTextColor(0, 0, 0);
-  yPos = 45;
+  yPos = 55;
 
   // Reference & Date
   doc.setFontSize(10);
@@ -224,13 +289,13 @@ export const generateInterventionPDF = async (
       
       checkNewPage(80);
       
-      // Equipment header with blue background
+      // Equipment header with accent color
       // Build equipment header - exclude "À identifier" values
       const brandDisplay = eqInfo?.brand && eqInfo.brand !== 'À identifier' ? eqInfo.brand : '';
       const modelDisplay = eqInfo?.model && eqInfo.model !== 'À identifier' ? eqInfo.model : '';
       const headerLabel = [brandDisplay, modelDisplay].filter(Boolean).join(' ') || eqInfo?.equipment_type || '';
       
-      yPos = addSection(`ÉQUIPEMENT ${i + 1}: ${headerLabel}`, yPos, [0, 80, 150]);
+      yPos = addSection(`ÉQUIPEMENT ${i + 1}: ${headerLabel}`, yPos, true);
       doc.setTextColor(0, 0, 0);
       
       // Equipment details - exclude "À identifier" values
@@ -474,7 +539,19 @@ export const generateInterventionPDF = async (
     const footerY = doc.internal.pageSize.getHeight() - 10;
     doc.setFontSize(8);
     doc.setTextColor(128, 128, 128);
-    centerText(`Document généré le ${format(new Date(), 'dd/MM/yyyy à HH:mm', { locale: fr })} - Page ${i}/${totalPages}`, footerY, 8);
+    
+    // Custom footer text or default
+    const footerContent = settings.footerText 
+      ? `${settings.footerText} - Page ${i}/${totalPages}`
+      : `Document généré le ${format(new Date(), 'dd/MM/yyyy à HH:mm', { locale: fr })} - Page ${i}/${totalPages}`;
+    
+    centerText(footerContent, footerY, 8);
+    
+    // Add company address in footer if configured
+    if (settings.companyAddress) {
+      doc.setFontSize(7);
+      centerText(settings.companyAddress, footerY - 5, 7);
+    }
   }
 
   // Save
