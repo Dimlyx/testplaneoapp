@@ -10,12 +10,14 @@ import {
   X,
   Wrench,
   ChevronRight,
-  User
+  User,
+  History
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navigation = [
   { name: 'Mes Interventions', href: '/technician', icon: ClipboardList },
+  { name: 'Historique', href: '/technician/history', icon: History },
 ];
 
 export default function TechnicianLayout() {
