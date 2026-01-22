@@ -45,6 +45,8 @@ interface InterventionWorkflowProps {
   clientSignatureUrl: string | null;
   onStartIntervention: () => Promise<void>;
   onEndIntervention: () => Promise<void>;
+  onStartTravel: () => Promise<void>;
+  onEndTravel: () => Promise<void>;
   onSave: () => Promise<void>;
   onSignatureComplete: (signatureDataUrl: string, signerName: string) => Promise<void>;
   onArrivalTimeChange: (value: string) => void;
@@ -72,6 +74,8 @@ const InterventionWorkflow = ({
   clientSignatureUrl,
   onStartIntervention,
   onEndIntervention,
+  onStartTravel,
+  onEndTravel,
   onSave,
   onSignatureComplete,
   onArrivalTimeChange,
@@ -146,35 +150,32 @@ const InterventionWorkflow = ({
         isCompleted={!!travelDepartureTime}
         onClick={() => handleStepClick('travel_start')}
       >
-        <Card>
-          <CardContent className="p-4 space-y-3">
-            <p className="text-sm text-muted-foreground">
-              Enregistrez l'heure à laquelle vous quittez votre point de départ (domicile, hôtel, bureau).
-            </p>
-            {travelDepartureTime ? (
+        {!travelDepartureTime ? (
+          <Button onClick={onStartTravel} className="w-full" size="lg" disabled={isLocked}>
+            <Car className="h-5 w-5 mr-2" />
+            Démarrer le trajet
+          </Button>
+        ) : (
+          <Card>
+            <CardContent className="p-4 space-y-2">
               <div className="flex items-center gap-2 text-green-600">
                 <CheckCircle className="h-4 w-4" />
                 <span>Départ enregistré: {travelDepartureTime}</span>
               </div>
-            ) : null}
-            {!isLocked && (
-              <div>
-                <label className="text-sm font-medium mb-2 block">Heure de départ</label>
-                <Input
-                  type="time"
-                  value={travelDepartureTime}
-                  onChange={(e) => onTravelDepartureTimeChange(e.target.value)}
-                />
-              </div>
-            )}
-            {!isLocked && (
-              <Button onClick={onSave} disabled={isUpdating} className="w-full" variant="outline">
-                <Save className="h-4 w-4 mr-2" />
-                Enregistrer
-              </Button>
-            )}
-          </CardContent>
-        </Card>
+              {!isLocked && (
+                <div>
+                  <label className="text-sm text-muted-foreground">Modifier l'heure de départ</label>
+                  <Input
+                    type="time"
+                    value={travelDepartureTime}
+                    onChange={(e) => onTravelDepartureTimeChange(e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </WorkflowStep>
 
       {/* Step 1: Start Intervention */}
@@ -414,35 +415,32 @@ const InterventionWorkflow = ({
         isLast
         onClick={() => handleStepClick('travel_end')}
       >
-        <Card>
-          <CardContent className="p-4 space-y-3">
-            <p className="text-sm text-muted-foreground">
-              Enregistrez l'heure d'arrivée à votre domicile ou hôtel (fin de journée).
-            </p>
-            {travelReturnTime ? (
+        {!travelReturnTime ? (
+          <Button onClick={onEndTravel} className="w-full" size="lg" disabled={isLocked}>
+            <Home className="h-5 w-5 mr-2" />
+            Confirmer le retour
+          </Button>
+        ) : (
+          <Card>
+            <CardContent className="p-4 space-y-2">
               <div className="flex items-center gap-2 text-green-600">
                 <CheckCircle className="h-4 w-4" />
                 <span>Retour enregistré: {travelReturnTime}</span>
               </div>
-            ) : null}
-            {!isLocked && (
-              <div>
-                <label className="text-sm font-medium mb-2 block">Heure de retour</label>
-                <Input
-                  type="time"
-                  value={travelReturnTime}
-                  onChange={(e) => onTravelReturnTimeChange(e.target.value)}
-                />
-              </div>
-            )}
-            {!isLocked && (
-              <Button onClick={onSave} disabled={isUpdating} className="w-full" variant="outline">
-                <Save className="h-4 w-4 mr-2" />
-                Enregistrer
-              </Button>
-            )}
-          </CardContent>
-        </Card>
+              {!isLocked && (
+                <div>
+                  <label className="text-sm text-muted-foreground">Modifier l'heure de retour</label>
+                  <Input
+                    type="time"
+                    value={travelReturnTime}
+                    onChange={(e) => onTravelReturnTimeChange(e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </WorkflowStep>
     </div>
   );

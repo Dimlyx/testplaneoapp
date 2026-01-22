@@ -130,6 +130,36 @@ const TechnicianInterventionDetail = () => {
     }
   };
 
+  const handleStartTravel = async () => {
+    if (!id) return;
+    const now = format(new Date(), 'HH:mm');
+    setTravelDepartureTime(now);
+    try {
+      await updateIntervention.mutateAsync({
+        id,
+        travel_departure_time: now,
+      });
+      toast({ title: "Départ enregistré" });
+    } catch (error) {
+      toast({ title: "Erreur", variant: "destructive" });
+    }
+  };
+
+  const handleEndTravel = async () => {
+    if (!id) return;
+    const now = format(new Date(), 'HH:mm');
+    setTravelReturnTime(now);
+    try {
+      await updateIntervention.mutateAsync({
+        id,
+        travel_return_time: now,
+      });
+      toast({ title: "Retour enregistré" });
+    } catch (error) {
+      toast({ title: "Erreur", variant: "destructive" });
+    }
+  };
+
   const handleSave = async () => {
     if (!id) return;
     try {
@@ -236,6 +266,8 @@ const TechnicianInterventionDetail = () => {
         clientSignatureUrl={clientSignatureUrl}
         onStartIntervention={handleStartIntervention}
         onEndIntervention={handleEndIntervention}
+        onStartTravel={handleStartTravel}
+        onEndTravel={handleEndTravel}
         onSave={handleSave}
         onSignatureComplete={handleSignatureComplete}
         onArrivalTimeChange={(v) => setArrivalTime(v)}
