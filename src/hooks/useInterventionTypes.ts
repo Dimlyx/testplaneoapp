@@ -1,0 +1,72 @@
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+export interface InterventionType {
+  id: string;
+  name: string;
+  label: string;
+  color: string;
+  created_at: string;
+}
+
+export function useInterventionTypes() {
+  return useQuery({
+    queryKey: ["intervention-types"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("intervention_types")
+        .select("*")
+        .order("label", { ascending: true });
+
+      if (error) throw error;
+      return data as InterventionType[];
+    },
+  });
+}
+
+export function useCreateInterventionType() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ name, label, color }: { name: string; label: string; color: string }) => {
+      const { data, error } = await supabase
+        .from("intervention_types")
+        .insert({ name, label, color })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["intervention-types"] });
+      toast.success("Type d'intervention créé");
+    },
+    onError: (error: Error) => {
+      toast.error("Erreur lors de la création: " + error.message);
+    },
+  });
+}
+
+export function useDeleteInterventionType() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("intervention_types")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["intervention-types"] });
+      toast.success("Type d'intervention supprimé");
+    },
+    onError: (error: Error) => {
+      toast.error("Erreur lors de la suppression: " + error.message);
+    },
+  });
+}

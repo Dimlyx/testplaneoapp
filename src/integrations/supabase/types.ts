@@ -190,6 +190,30 @@ export type Database = {
           },
         ]
       }
+      intervention_types: {
+        Row: {
+          color: string | null
+          created_at: string
+          id: string
+          label: string
+          name: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          label: string
+          name: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          label?: string
+          name?: string
+        }
+        Relationships: []
+      }
       interventions: {
         Row: {
           arrival_time: string | null
