@@ -27,8 +27,7 @@ import ClientDetail from "@/pages/admin/ClientDetail";
 // Technician pages
 import TechnicianInterventions from "@/pages/technician/TechnicianInterventions";
 import TechnicianInterventionDetail from "@/pages/technician/TechnicianInterventionDetail";
-
-// Public pages
+import TechnicianHistory from "@/pages/technician/TechnicianHistory";
 import PublicIntervention from "@/pages/public/PublicIntervention";
 
 const queryClient = new QueryClient();
@@ -127,6 +126,7 @@ const AppRoutes = () => {
         }
       >
         <Route index element={<TechnicianInterventions />} />
+        <Route path="history" element={<TechnicianHistory />} />
         <Route path="interventions/:id" element={<TechnicianInterventionDetail />} />
       </Route>
 
