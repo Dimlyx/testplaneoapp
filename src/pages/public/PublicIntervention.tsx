@@ -100,19 +100,6 @@ const PublicIntervention = () => {
   const currentStatus = statusConfig[intervention.status];
   const StatusIcon = currentStatus.icon;
 
-  // Calculate duration
-  let duration = null;
-  if (intervention.arrival_time && intervention.departure_time) {
-    const [arrH, arrM] = intervention.arrival_time.split(':').map(Number);
-    const [depH, depM] = intervention.departure_time.split(':').map(Number);
-    const totalMinutes = (depH * 60 + depM) - (arrH * 60 + arrM);
-    if (totalMinutes > 0) {
-      const hours = Math.floor(totalMinutes / 60);
-      const minutes = totalMinutes % 60;
-      duration = hours > 0 ? `${hours}h ${minutes}min` : `${minutes} minutes`;
-    }
-  }
-
   const client = intervention.clients;
   const fullAddress = client ? [client.address, client.postal_code, client.city].filter(Boolean).join(', ') : null;
 
@@ -352,17 +339,6 @@ const PublicIntervention = () => {
           );
         })}
 
-        {/* Observations générales */}
-        {intervention.observations && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Observations générales</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="whitespace-pre-wrap">{intervention.observations}</p>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Photos générales (sans équipement) */}
         {photos.filter(p => !p.equipment_id).length > 0 && (

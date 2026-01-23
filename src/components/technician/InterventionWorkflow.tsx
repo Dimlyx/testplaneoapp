@@ -1,19 +1,15 @@
 import { useState, useEffect } from "react";
 import { 
-  Play, 
   MapPin, 
   Wrench, 
   CheckCircle, 
   FileText, 
   PenTool,
-  User,
   Save,
-  MessageSquare,
   AlertCircle,
   Info,
 } from "lucide-react";
 import WorkflowStep from "./WorkflowStep";
-import TimelineTracker from "./TimelineTracker";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
@@ -31,26 +27,13 @@ interface InterventionWorkflowProps {
   intervention: Intervention;
   client: Client | undefined;
   interventionEquipment: InterventionEquipment[];
-  arrivalTime: string;
-  departureTime: string;
-  travelDepartureTime: string;
-  travelReturnTime: string;
   report: string;
-  observations: string;
   clientSignatureName: string;
   clientSignatureUrl: string | null;
-  onStartIntervention: () => Promise<void>;
   onEndIntervention: () => Promise<void>;
-  onStartTravel: () => Promise<void>;
-  onEndTravel: () => Promise<void>;
   onSave: () => Promise<void>;
   onSignatureComplete: (signatureDataUrl: string, signerName: string) => Promise<void>;
-  onArrivalTimeChange: (value: string) => void;
-  onDepartureTimeChange: (value: string) => void;
-  onTravelDepartureTimeChange: (value: string) => void;
-  onTravelReturnTimeChange: (value: string) => void;
   onReportChange: (value: string) => void;
-  onObservationsChange: (value: string) => void;
   onClientSignatureNameChange: (value: string) => void;
   onDownloadPDF: () => Promise<void>;
   isUpdating: boolean;
@@ -60,26 +43,13 @@ const InterventionWorkflow = ({
   intervention,
   client,
   interventionEquipment,
-  arrivalTime,
-  departureTime,
-  travelDepartureTime,
-  travelReturnTime,
   report,
-  observations,
   clientSignatureName,
   clientSignatureUrl,
-  onStartIntervention,
   onEndIntervention,
-  onStartTravel,
-  onEndTravel,
   onSave,
   onSignatureComplete,
-  onArrivalTimeChange,
-  onDepartureTimeChange,
-  onTravelDepartureTimeChange,
-  onTravelReturnTimeChange,
   onReportChange,
-  onObservationsChange,
   onClientSignatureNameChange,
   onDownloadPDF,
   isUpdating,
@@ -88,21 +58,18 @@ const InterventionWorkflow = ({
   const existingEquipmentIds = interventionEquipment.map(ie => ie.equipment_id);
   
   // Determine completed steps based on data
-  const hasTravelDeparture = !!travelDepartureTime;
   const isStarted = intervention.status === 'in_progress' || intervention.status === 'completed';
   const hasEquipment = interventionEquipment.length > 0;
   const hasReport = !!report.trim();
-  const hasObservations = !!observations.trim();
   const hasSignature = !!clientSignatureUrl;
   const isCompleted = intervention.status === 'completed';
   const isToInvoice = intervention.status === 'to_invoice';
   const isArchived = intervention.status === 'archived';
-  const hasTravelReturn = !!travelReturnTime;
   
   // Check if intervention is locked (completed, to_invoice, or archived)
   const isLocked = isCompleted || isToInvoice || isArchived;
 
-  // Auto-open first incomplete step (timeline handles chronometry separately)
+  // Auto-open first incomplete step
   useEffect(() => {
     if (isLocked) {
       setActiveStep('finish');
@@ -212,26 +179,7 @@ const InterventionWorkflow = ({
         </Card>
       </WorkflowStep>
 
-      {/* Timeline Tracker - replaces separate travel/arrival steps */}
-      <TimelineTracker
-        travelDepartureTime={travelDepartureTime}
-        arrivalTime={arrivalTime}
-        departureTime={departureTime}
-        travelReturnTime={travelReturnTime}
-        onStartTravel={onStartTravel}
-        onStartIntervention={onStartIntervention}
-        onEndIntervention={onEndIntervention}
-        onEndTravel={onEndTravel}
-        onTravelDepartureTimeChange={onTravelDepartureTimeChange}
-        onArrivalTimeChange={onArrivalTimeChange}
-        onDepartureTimeChange={onDepartureTimeChange}
-        onTravelReturnTimeChange={onTravelReturnTimeChange}
-        isLocked={isLocked}
-        isCompleted={isCompleted}
-      />
-
-
-      {/* Step 3: Equipment */}
+      {/* Step 1: Equipment */}
       <WorkflowStep
         icon={Wrench}
         label={`Équipements (${interventionEquipment.length})`}
@@ -271,7 +219,7 @@ const InterventionWorkflow = ({
         </div>
       </WorkflowStep>
 
-      {/* Step 4: Report */}
+      {/* Step 2: Report */}
       <WorkflowStep
         icon={FileText}
         label="Compte rendu"
@@ -301,37 +249,7 @@ const InterventionWorkflow = ({
         </Card>
       </WorkflowStep>
 
-      {/* Step 5: Observations */}
-      <WorkflowStep
-        icon={MessageSquare}
-        label="Observations"
-        isActive={activeStep === 'observations'}
-        isCompleted={hasObservations}
-        onClick={() => handleStepClick('observations')}
-      >
-        <Card>
-          <CardContent className="p-4 space-y-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">Remarques, recommandations</label>
-              <Textarea
-                placeholder="Observations pour le client..."
-                value={observations}
-                onChange={(e) => onObservationsChange(e.target.value)}
-                className="min-h-[100px]"
-                disabled={isLocked}
-              />
-            </div>
-            {!isLocked && (
-              <Button onClick={onSave} disabled={isUpdating} className="w-full">
-                <Save className="h-4 w-4 mr-2" />
-                Enregistrer
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-      </WorkflowStep>
-
-      {/* Step 6: Signature */}
+      {/* Step 3: Signature */}
       <WorkflowStep
         icon={PenTool}
         label="Signature client"
@@ -347,7 +265,7 @@ const InterventionWorkflow = ({
         />
       </WorkflowStep>
 
-      {/* Step 7: Finish */}
+      {/* Step 4: Finish */}
       <WorkflowStep
         icon={CheckCircle}
         label="Terminer l'intervention"

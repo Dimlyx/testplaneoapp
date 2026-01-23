@@ -6,7 +6,6 @@ import { useInterventionEquipment } from "@/hooks/useInterventionEquipment";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge, TypeBadge } from "@/components/ui/status-badge";
-import TimelineDisplay from "@/components/admin/TimelineDisplay";
 import { 
   ArrowLeft, 
   Edit, 
@@ -23,6 +22,7 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "@/hooks/use-toast";
 import { generateInterventionPDF } from "@/lib/pdf-generator";
+
 const InterventionDetail = () => {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -235,14 +235,6 @@ const InterventionDetail = () => {
           </CardContent>
         </Card>
 
-        {/* Chronométrage - Timeline */}
-        <TimelineDisplay
-          travelDepartureTime={intervention.travel_departure_time}
-          arrivalTime={intervention.arrival_time}
-          departureTime={intervention.departure_time}
-          travelReturnTime={intervention.travel_return_time}
-        />
-
         {/* Rapport */}
         <Card className="lg:col-span-2">
           <CardHeader>
@@ -257,18 +249,6 @@ const InterventionDetail = () => {
             </p>
           </CardContent>
         </Card>
-
-        {/* Observations */}
-        {intervention.observations && (
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle>Observations</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="whitespace-pre-wrap">{intervention.observations}</p>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Équipements */}
         {interventionEquipments.length > 0 && (
