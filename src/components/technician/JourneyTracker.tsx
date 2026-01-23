@@ -1,24 +1,33 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Car, MapPin, Play, Square } from "lucide-react";
+import { Car, MapPin, Play } from "lucide-react";
+import { format } from "date-fns";
 
 type JourneyStatus = "idle" | "traveling" | "arrived" | "working";
 
 interface JourneyTrackerProps {
   interventionStatus: string;
+  travelDepartureTime: string | null;
+  arrivalTime: string | null;
   onStatusChange: (newStatus: string) => Promise<void>;
+  onTimeUpdate: (field: string, value: string) => Promise<void>;
   isUpdating: boolean;
 }
 
 const JourneyTracker = ({
   interventionStatus,
+  travelDepartureTime,
+  arrivalTime,
   onStatusChange,
+  onTimeUpdate,
   isUpdating,
 }: JourneyTrackerProps) => {
-  // Determine initial state based on intervention status
+  // Determine initial state based on intervention status and times
   const getInitialState = (): JourneyStatus => {
     if (interventionStatus === "in_progress") return "working";
     if (interventionStatus === "completed" || interventionStatus === "to_invoice" || interventionStatus === "archived") return "working";
+    if (arrivalTime) return "arrived";
+    if (travelDepartureTime) return "traveling";
     return "idle";
   };
 
@@ -26,13 +35,19 @@ const JourneyTracker = ({
 
   useEffect(() => {
     setJourneyStatus(getInitialState());
-  }, [interventionStatus]);
+  }, [interventionStatus, travelDepartureTime, arrivalTime]);
 
-  const handleStartJourney = () => {
+  const getCurrentTime = () => format(new Date(), 'HH:mm:ss');
+
+  const handleStartJourney = async () => {
+    const time = getCurrentTime();
+    await onTimeUpdate("travel_departure_time", time);
     setJourneyStatus("traveling");
   };
 
-  const handleEndJourney = () => {
+  const handleEndJourney = async () => {
+    const time = getCurrentTime();
+    await onTimeUpdate("arrival_time", time);
     setJourneyStatus("arrived");
   };
 

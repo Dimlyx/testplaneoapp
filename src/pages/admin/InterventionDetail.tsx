@@ -188,6 +188,87 @@ const InterventionDetail = () => {
           </CardContent>
         </Card>
 
+        {/* Temps d'intervention */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              Temps d'intervention
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {/* Temps de trajet */}
+            <div className="p-3 bg-blue-50 rounded-lg">
+              <p className="text-sm font-medium text-blue-800 mb-2">Temps de trajet</p>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <p className="text-blue-600">Départ</p>
+                  <p className="font-medium text-blue-900">{intervention.travel_departure_time || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-blue-600">Arrivée</p>
+                  <p className="font-medium text-blue-900">{intervention.arrival_time || "—"}</p>
+                </div>
+              </div>
+              {intervention.travel_departure_time && intervention.arrival_time && (
+                <div className="mt-2 pt-2 border-t border-blue-200">
+                  <p className="text-xs text-blue-600">Durée trajet</p>
+                  <p className="font-bold text-blue-900">
+                    {(() => {
+                      const [dh, dm] = intervention.travel_departure_time.split(':').map(Number);
+                      const [ah, am] = intervention.arrival_time.split(':').map(Number);
+                      const diffMin = (ah * 60 + am) - (dh * 60 + dm);
+                      if (diffMin < 0) return "—";
+                      const h = Math.floor(diffMin / 60);
+                      const m = diffMin % 60;
+                      return h > 0 ? `${h}h ${m}min` : `${m}min`;
+                    })()}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Temps d'intervention (basé sur arrivée et departure_time si disponible) */}
+            {intervention.arrival_time && (
+              <div className="p-3 bg-green-50 rounded-lg">
+                <p className="text-sm font-medium text-green-800 mb-2">Temps sur site</p>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <p className="text-green-600">Début intervention</p>
+                    <p className="font-medium text-green-900">{intervention.arrival_time}</p>
+                  </div>
+                  <div>
+                    <p className="text-green-600">Fin intervention</p>
+                    <p className="font-medium text-green-900">{intervention.departure_time || "En cours"}</p>
+                  </div>
+                </div>
+                {intervention.departure_time && (
+                  <div className="mt-2 pt-2 border-t border-green-200">
+                    <p className="text-xs text-green-600">Durée intervention</p>
+                    <p className="font-bold text-green-900">
+                      {(() => {
+                        const [ah, am] = intervention.arrival_time!.split(':').map(Number);
+                        const [dh, dm] = intervention.departure_time.split(':').map(Number);
+                        const diffMin = (dh * 60 + dm) - (ah * 60 + am);
+                        if (diffMin < 0) return "—";
+                        const h = Math.floor(diffMin / 60);
+                        const m = diffMin % 60;
+                        return h > 0 ? `${h}h ${m}min` : `${m}min`;
+                      })()}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {!intervention.travel_departure_time && !intervention.arrival_time && (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                Pas encore de données de temps
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Description */}
         <Card>
           <CardHeader>
