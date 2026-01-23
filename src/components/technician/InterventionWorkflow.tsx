@@ -38,6 +38,7 @@ interface InterventionWorkflowProps {
   onClientSignatureNameChange: (value: string) => void;
   onDownloadPDF: () => Promise<void>;
   onStatusChange: (newStatus: string) => Promise<void>;
+  onTimeUpdate: (field: string, value: string) => Promise<void>;
   isUpdating: boolean;
 }
 
@@ -55,6 +56,7 @@ const InterventionWorkflow = ({
   onClientSignatureNameChange,
   onDownloadPDF,
   onStatusChange,
+  onTimeUpdate,
   isUpdating,
 }: InterventionWorkflowProps) => {
   const [activeStep, setActiveStep] = useState<string | null>(null);
@@ -182,7 +184,10 @@ const InterventionWorkflow = ({
             {/* Journey tracker buttons */}
             <JourneyTracker
               interventionStatus={intervention.status}
+              travelDepartureTime={intervention.travel_departure_time}
+              arrivalTime={intervention.arrival_time}
               onStatusChange={onStatusChange}
+              onTimeUpdate={onTimeUpdate}
               isUpdating={isUpdating}
             />
           </CardContent>

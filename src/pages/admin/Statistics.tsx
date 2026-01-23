@@ -12,7 +12,9 @@ import {
   RefreshCw,
   Target,
   Award,
-  UserCheck
+  UserCheck,
+  Clock,
+  Car
 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, isWithinInterval, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -29,6 +31,8 @@ interface TechnicianStats {
   totalInterventions: number;
   completedInterventions: number;
   resolutionRate: number;
+  avgTravelTime: number;
+  avgInterventionTime: number;
 }
 
 export default function Statistics() {
@@ -131,12 +135,61 @@ export default function Statistics() {
     ? (completedInterventions.length / assignedInterventions.length) * 100
     : 0;
 
+  // Calculate time statistics
+  const calculateTimeDiff = (start: string | null, end: string | null): number | null => {
+    if (!start || !end) return null;
+    const [sh, sm] = start.split(':').map(Number);
+    const [eh, em] = end.split(':').map(Number);
+    const diff = (eh * 60 + em) - (sh * 60 + sm);
+    return diff > 0 ? diff : null;
+  };
+
+  // Calculate average travel time
+  const travelTimes = monthInterventions
+    .map(i => calculateTimeDiff(i.travel_departure_time, i.arrival_time))
+    .filter((t): t is number => t !== null);
+  const avgTravelTime = travelTimes.length > 0 
+    ? Math.round(travelTimes.reduce((a, b) => a + b, 0) / travelTimes.length) 
+    : 0;
+
+  // Calculate average intervention time
+  const interventionTimes = monthInterventions
+    .map(i => calculateTimeDiff(i.arrival_time, i.departure_time))
+    .filter((t): t is number => t !== null);
+  const avgInterventionTime = interventionTimes.length > 0 
+    ? Math.round(interventionTimes.reduce((a, b) => a + b, 0) / interventionTimes.length) 
+    : 0;
+
+  // Format minutes to readable time
+  const formatMinutes = (minutes: number): string => {
+    if (minutes === 0) return "—";
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    return h > 0 ? `${h}h ${m}min` : `${m}min`;
+  };
+
   // Performance by technician
   const technicianStats: TechnicianStats[] = technicians.map(tech => {
     const techInterventions = monthInterventions.filter(i => i.technician_id === tech.id);
     const techCompleted = techInterventions.filter(i => 
       ['completed', 'to_invoice', 'archived'].includes(i.status)
     );
+
+    // Calculate tech travel time
+    const techTravelTimes = techInterventions
+      .map(i => calculateTimeDiff(i.travel_departure_time, i.arrival_time))
+      .filter((t): t is number => t !== null);
+    const techAvgTravel = techTravelTimes.length > 0 
+      ? Math.round(techTravelTimes.reduce((a, b) => a + b, 0) / techTravelTimes.length) 
+      : 0;
+
+    // Calculate tech intervention time
+    const techIntTimes = techInterventions
+      .map(i => calculateTimeDiff(i.arrival_time, i.departure_time))
+      .filter((t): t is number => t !== null);
+    const techAvgInt = techIntTimes.length > 0 
+      ? Math.round(techIntTimes.reduce((a, b) => a + b, 0) / techIntTimes.length) 
+      : 0;
 
     return {
       id: tech.id,
@@ -145,7 +198,9 @@ export default function Statistics() {
       completedInterventions: techCompleted.length,
       resolutionRate: techInterventions.length > 0 
         ? (techCompleted.length / techInterventions.length) * 100 
-        : 0
+        : 0,
+      avgTravelTime: techAvgTravel,
+      avgInterventionTime: techAvgInt,
     };
   }).filter(t => t.totalInterventions > 0).sort((a, b) => b.completedInterventions - a.completedInterventions);
 
@@ -224,7 +279,7 @@ export default function Statistics() {
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-6">
           {/* Summary Cards */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Interventions du mois</CardTitle>
@@ -246,6 +301,32 @@ export default function Statistics() {
               <CardContent>
                 <div className="text-2xl font-bold">{Math.round(resolutionRate)}%</div>
                 <Progress value={resolutionRate} className="h-2 mt-2" />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Temps trajet moyen</CardTitle>
+                <Car className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatMinutes(avgTravelTime)}</div>
+                <p className="text-xs text-muted-foreground">
+                  {travelTimes.length} trajets enregistrés
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Temps intervention moyen</CardTitle>
+                <Clock className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatMinutes(avgInterventionTime)}</div>
+                <p className="text-xs text-muted-foreground">
+                  {interventionTimes.length} interventions mesurées
+                </p>
               </CardContent>
             </Card>
 
@@ -462,6 +543,23 @@ export default function Statistics() {
                         <div className="bg-muted/50 p-2 rounded">
                           <p className="text-muted-foreground text-xs">Terminées</p>
                           <p className="font-bold">{tech.completedInterventions}</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div className="bg-blue-50 p-2 rounded">
+                          <p className="text-blue-600 text-xs flex items-center gap-1">
+                            <Car className="h-3 w-3" />
+                            Trajet moy.
+                          </p>
+                          <p className="font-bold text-blue-800">{formatMinutes(tech.avgTravelTime)}</p>
+                        </div>
+                        <div className="bg-green-50 p-2 rounded">
+                          <p className="text-green-600 text-xs flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            Interv. moy.
+                          </p>
+                          <p className="font-bold text-green-800">{formatMinutes(tech.avgInterventionTime)}</p>
                         </div>
                       </div>
                       

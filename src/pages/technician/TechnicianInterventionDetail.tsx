@@ -83,12 +83,14 @@ const TechnicianInterventionDetail = () => {
   const handleEndIntervention = async () => {
     if (!id) return;
     setStatus('completed');
+    const departureTime = format(new Date(), 'HH:mm:ss');
     try {
       await updateIntervention.mutateAsync({
         id,
         status: 'completed',
         report,
         client_signature_name: clientSignatureName,
+        departure_time: departureTime,
       });
       toast({ title: "Intervention terminée" });
     } catch (error) {
@@ -105,6 +107,19 @@ const TechnicianInterventionDetail = () => {
         status: newStatus as any,
       });
       toast({ title: "Statut mis à jour" });
+    } catch (error) {
+      toast({ title: "Erreur", variant: "destructive" });
+    }
+  };
+
+  const handleTimeUpdate = async (field: string, value: string) => {
+    if (!id) return;
+    try {
+      await updateIntervention.mutateAsync({
+        id,
+        [field]: value,
+      });
+      toast({ title: "Temps enregistré" });
     } catch (error) {
       toast({ title: "Erreur", variant: "destructive" });
     }
@@ -210,6 +225,7 @@ const TechnicianInterventionDetail = () => {
         onClientSignatureNameChange={setClientSignatureName}
         onDownloadPDF={handleDownloadPDF}
         onStatusChange={handleStatusChange}
+        onTimeUpdate={handleTimeUpdate}
         isUpdating={updateIntervention.isPending}
       />
     </div>
