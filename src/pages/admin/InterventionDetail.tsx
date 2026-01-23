@@ -196,56 +196,66 @@ const InterventionDetail = () => {
               Temps d'intervention
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-4">
             {/* Temps de trajet */}
-            <div className="p-3 bg-blue-50 rounded-lg">
-              <p className="text-sm font-medium text-blue-800 mb-2">Temps de trajet</p>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div>
-                  <p className="text-blue-600">Départ</p>
-                  <p className="font-medium text-blue-900">{intervention.travel_departure_time || "—"}</p>
-                </div>
-                <div>
-                  <p className="text-blue-600">Arrivée</p>
-                  <p className="font-medium text-blue-900">{intervention.arrival_time || "—"}</p>
-                </div>
-              </div>
-              {intervention.travel_departure_time && intervention.arrival_time && (
-                <div className="mt-2 pt-2 border-t border-blue-200">
-                  <p className="text-xs text-blue-600">Durée trajet</p>
-                  <p className="font-bold text-blue-900">
-                    {(() => {
-                      const [dh, dm] = intervention.travel_departure_time.split(':').map(Number);
-                      const [ah, am] = intervention.arrival_time.split(':').map(Number);
-                      const diffMin = (ah * 60 + am) - (dh * 60 + dm);
-                      if (diffMin < 0) return "—";
-                      const h = Math.floor(diffMin / 60);
-                      const m = diffMin % 60;
-                      return h > 0 ? `${h}h ${m}min` : `${m}min`;
-                    })()}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* Temps d'intervention (basé sur arrivée et departure_time si disponible) */}
-            {intervention.arrival_time && (
-              <div className="p-3 bg-green-50 rounded-lg">
-                <p className="text-sm font-medium text-green-800 mb-2">Temps sur site</p>
-                <div className="grid grid-cols-2 gap-2 text-sm">
+            {(intervention.travel_departure_time || intervention.arrival_time) && (
+              <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg">
+                <p className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">🚗 Trajet</p>
+                <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <p className="text-green-600">Début intervention</p>
-                    <p className="font-medium text-green-900">{intervention.arrival_time}</p>
+                    <p className="text-blue-600 dark:text-blue-400">Départ domicile</p>
+                    <p className="font-bold text-blue-900 dark:text-blue-100 text-lg">
+                      {intervention.travel_departure_time ? intervention.travel_departure_time.substring(0, 5) : "—"}
+                    </p>
                   </div>
                   <div>
-                    <p className="text-green-600">Fin intervention</p>
-                    <p className="font-medium text-green-900">{intervention.departure_time || "En cours"}</p>
+                    <p className="text-blue-600 dark:text-blue-400">Arrivée client</p>
+                    <p className="font-bold text-blue-900 dark:text-blue-100 text-lg">
+                      {intervention.arrival_time ? intervention.arrival_time.substring(0, 5) : "—"}
+                    </p>
+                  </div>
+                </div>
+                {intervention.travel_departure_time && intervention.arrival_time && (
+                  <div className="mt-3 pt-3 border-t border-blue-200 dark:border-blue-800 flex items-center justify-between">
+                    <p className="text-xs text-blue-600 dark:text-blue-400">Durée du trajet</p>
+                    <p className="font-bold text-blue-900 dark:text-blue-100 text-lg">
+                      {(() => {
+                        const [dh, dm] = intervention.travel_departure_time!.split(':').map(Number);
+                        const [ah, am] = intervention.arrival_time!.split(':').map(Number);
+                        const diffMin = (ah * 60 + am) - (dh * 60 + dm);
+                        if (diffMin < 0) return "—";
+                        const h = Math.floor(diffMin / 60);
+                        const m = diffMin % 60;
+                        return h > 0 ? `${h}h ${m}min` : `${m}min`;
+                      })()}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Temps sur site */}
+            {intervention.arrival_time && (
+              <div className="p-3 bg-green-50 dark:bg-green-950 rounded-lg">
+                <p className="text-sm font-medium text-green-800 dark:text-green-200 mb-2">🔧 Intervention</p>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-green-600 dark:text-green-400">Début</p>
+                    <p className="font-bold text-green-900 dark:text-green-100 text-lg">
+                      {intervention.arrival_time.substring(0, 5)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-green-600 dark:text-green-400">Fin</p>
+                    <p className="font-bold text-green-900 dark:text-green-100 text-lg">
+                      {intervention.departure_time ? intervention.departure_time.substring(0, 5) : "En cours..."}
+                    </p>
                   </div>
                 </div>
                 {intervention.departure_time && (
-                  <div className="mt-2 pt-2 border-t border-green-200">
-                    <p className="text-xs text-green-600">Durée intervention</p>
-                    <p className="font-bold text-green-900">
+                  <div className="mt-3 pt-3 border-t border-green-200 dark:border-green-800 flex items-center justify-between">
+                    <p className="text-xs text-green-600 dark:text-green-400">Durée sur site</p>
+                    <p className="font-bold text-green-900 dark:text-green-100 text-lg">
                       {(() => {
                         const [ah, am] = intervention.arrival_time!.split(':').map(Number);
                         const [dh, dm] = intervention.departure_time.split(':').map(Number);
@@ -261,10 +271,35 @@ const InterventionDetail = () => {
               </div>
             )}
 
+            {/* Résumé total */}
+            {intervention.travel_departure_time && intervention.departure_time && (
+              <div className="p-3 bg-purple-50 dark:bg-purple-950 rounded-lg">
+                <p className="text-sm font-medium text-purple-800 dark:text-purple-200 mb-2">📊 Récapitulatif total</p>
+                <div className="flex items-center justify-between">
+                  <p className="text-purple-600 dark:text-purple-400 text-sm">
+                    {intervention.travel_departure_time.substring(0, 5)} → {intervention.departure_time.substring(0, 5)}
+                  </p>
+                  <p className="font-bold text-purple-900 dark:text-purple-100 text-xl">
+                    {(() => {
+                      const [dh, dm] = intervention.travel_departure_time!.split(':').map(Number);
+                      const [eh, em] = intervention.departure_time.split(':').map(Number);
+                      const diffMin = (eh * 60 + em) - (dh * 60 + dm);
+                      if (diffMin < 0) return "—";
+                      const h = Math.floor(diffMin / 60);
+                      const m = diffMin % 60;
+                      return h > 0 ? `${h}h ${m}min` : `${m}min`;
+                    })()}
+                  </p>
+                </div>
+              </div>
+            )}
+
             {!intervention.travel_departure_time && !intervention.arrival_time && (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                Pas encore de données de temps
-              </p>
+              <div className="text-center py-6 text-muted-foreground">
+                <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">Pas encore de données de temps</p>
+                <p className="text-xs mt-1">Le technicien doit démarrer le suivi depuis l'application</p>
+              </div>
             )}
           </CardContent>
         </Card>
