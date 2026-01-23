@@ -310,12 +310,28 @@ const PublicIntervention = () => {
                   </div>
                 )}
 
-                {/* Test de l'équipement */}
+                {/* État de l'équipement */}
                 <div className="flex items-center justify-between bg-muted/30 rounded-lg p-3">
-                  <span className="text-sm font-medium">Test de l'équipement</span>
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${ie.equipment_functional !== false ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                    {ie.equipment_functional !== false ? '✓ Fonctionne correctement' : '✗ Non fonctionnel'}
-                  </span>
+                  <span className="text-sm font-medium">État de l'équipement</span>
+                  {(() => {
+                    const getStatusDisplay = (status: string | null) => {
+                      switch (status) {
+                        case 'not_working':
+                          return { label: '✗ Ne fonctionne pas', className: 'bg-red-100 text-red-800' };
+                        case 'needs_intervention':
+                          return { label: '⚠ Pièces ou intervention nécessaire', className: 'bg-orange-100 text-orange-800' };
+                        case 'working':
+                        default:
+                          return { label: '✓ Fonctionne', className: 'bg-green-100 text-green-800' };
+                      }
+                    };
+                    const statusDisplay = getStatusDisplay(ie.equipment_status);
+                    return (
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${statusDisplay.className}`}>
+                        {statusDisplay.label}
+                      </span>
+                    );
+                  })()}
                 </div>
 
                 {/* Photos après intervention */}
