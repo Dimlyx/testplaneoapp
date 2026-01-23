@@ -2,11 +2,26 @@ import { useEffect, useState, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TypeBadge } from '@/components/ui/status-badge';
 import { MapPin, AlertTriangle, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { Intervention } from '@/hooks/useInterventions';
+import { cn } from '@/lib/utils';
 import 'leaflet/dist/leaflet.css';
+
+// Simple type badge for use inside Leaflet Popup (avoids forwardRef issues)
+const SimpleTypeBadge = ({ type }: { type: 'sav' | 'maintenance' | 'installation' }) => {
+  const config = {
+    sav: { label: 'SAV', className: 'bg-red-100 text-red-800' },
+    maintenance: { label: 'Maintenance', className: 'bg-blue-100 text-blue-800' },
+    installation: { label: 'Installation', className: 'bg-green-100 text-green-800' },
+  };
+  const { label, className } = config[type];
+  return (
+    <span className={cn('inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium', className)}>
+      {label}
+    </span>
+  );
+};
 
 // Fix for default marker icons in Leaflet with Vite
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -204,7 +219,7 @@ export default function InterventionsMap({ interventions }: InterventionsMapProp
                   <div className="min-w-[200px]">
                     <h3 className="font-semibold mb-1">{intervention.title}</h3>
                     <div className="mb-2">
-                      <TypeBadge type={intervention.intervention_type} />
+                      <SimpleTypeBadge type={intervention.intervention_type} />
                     </div>
                     <p className="text-sm text-muted-foreground mb-2">
                       {intervention.clients?.name}
