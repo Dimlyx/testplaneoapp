@@ -4,17 +4,14 @@ import { useTechnicians } from "@/hooks/useTechnicians";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   BarChart3, 
-  Clock, 
   Users, 
   Wrench, 
   TrendingUp,
-  Car,
   Calendar,
   CheckCircle,
   RefreshCw,
   Target,
   Award,
-  Timer,
   UserCheck
 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, isWithinInterval, parseISO } from "date-fns";
@@ -26,33 +23,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-// Helper to calculate duration in minutes between two time strings
-const getMinutesBetween = (start: string | null, end: string | null): number => {
-  if (!start || !end) return 0;
-  const [startHours, startMinutes] = start.split(':').map(Number);
-  const [endHours, endMinutes] = end.split(':').map(Number);
-  let totalMinutes = (endHours * 60 + endMinutes) - (startHours * 60 + startMinutes);
-  if (totalMinutes < 0) totalMinutes += 24 * 60;
-  return totalMinutes;
-};
-
-// Format minutes to hours and minutes string
-const formatDuration = (minutes: number): string => {
-  if (minutes === 0) return "0min";
-  const hours = Math.floor(minutes / 60);
-  const mins = Math.round(minutes % 60);
-  if (hours === 0) return `${mins}min`;
-  if (mins === 0) return `${hours}h`;
-  return `${hours}h${mins.toString().padStart(2, '0')}`;
-};
-
 interface TechnicianStats {
   id: string;
   name: string;
   totalInterventions: number;
   completedInterventions: number;
-  avgDuration: number;
-  avgTravelTime: number;
   resolutionRate: number;
 }
 
@@ -127,34 +102,6 @@ export default function Statistics() {
     ? monthInterventions.length / Object.keys(interventionsByClient).length
     : 0;
 
-  // Average intervention duration
-  const interventionDurations = completedInterventions
-    .map(i => getMinutesBetween(i.arrival_time, i.departure_time))
-    .filter(d => d > 0);
-  
-  const avgInterventionDuration = interventionDurations.length > 0
-    ? interventionDurations.reduce((a, b) => a + b, 0) / interventionDurations.length
-    : 0;
-
-  // Travel times
-  const travelToTimes = completedInterventions
-    .map(i => getMinutesBetween(i.travel_departure_time, i.arrival_time))
-    .filter(d => d > 0);
-  
-  const travelReturnTimes = completedInterventions
-    .map(i => getMinutesBetween(i.departure_time, i.travel_return_time))
-    .filter(d => d > 0);
-
-  const avgTravelToTime = travelToTimes.length > 0
-    ? travelToTimes.reduce((a, b) => a + b, 0) / travelToTimes.length
-    : 0;
-
-  const avgTravelReturnTime = travelReturnTimes.length > 0
-    ? travelReturnTimes.reduce((a, b) => a + b, 0) / travelReturnTimes.length
-    : 0;
-
-  const totalTravelTime = [...travelToTimes, ...travelReturnTimes].reduce((a, b) => a + b, 0);
-
   // Interventions by type
   const interventionsByType: Record<string, number> = {};
   monthInterventions.forEach(i => {
@@ -176,20 +123,12 @@ export default function Statistics() {
       count
     }));
 
-  // === NEW KPIs ===
+  // === KPIs ===
   
   // Resolution rate (completed vs total assigned)
   const assignedInterventions = monthInterventions.filter(i => i.technician_id);
   const resolutionRate = assignedInterventions.length > 0
     ? (completedInterventions.length / assignedInterventions.length) * 100
-    : 0;
-
-  // First-time fix rate (interventions resolved without follow-up - approximation: completed on same day)
-  const firstTimeFixRate = completedInterventions.length > 0
-    ? (completedInterventions.filter(i => {
-        const duration = getMinutesBetween(i.arrival_time, i.departure_time);
-        return duration > 0 && duration < 240; // Less than 4 hours = likely first-time fix
-      }).length / completedInterventions.length) * 100
     : 0;
 
   // Performance by technician
@@ -198,29 +137,12 @@ export default function Statistics() {
     const techCompleted = techInterventions.filter(i => 
       ['completed', 'to_invoice', 'archived'].includes(i.status)
     );
-    
-    const durations = techCompleted
-      .map(i => getMinutesBetween(i.arrival_time, i.departure_time))
-      .filter(d => d > 0);
-    
-    const travelTimes = techCompleted
-      .flatMap(i => [
-        getMinutesBetween(i.travel_departure_time, i.arrival_time),
-        getMinutesBetween(i.departure_time, i.travel_return_time)
-      ])
-      .filter(d => d > 0);
 
     return {
       id: tech.id,
       name: tech.full_name || tech.email,
       totalInterventions: techInterventions.length,
       completedInterventions: techCompleted.length,
-      avgDuration: durations.length > 0 
-        ? durations.reduce((a, b) => a + b, 0) / durations.length 
-        : 0,
-      avgTravelTime: travelTimes.length > 0 
-        ? travelTimes.reduce((a, b) => a + b, 0) / travelTimes.length 
-        : 0,
       resolutionRate: techInterventions.length > 0 
         ? (techCompleted.length / techInterventions.length) * 100 
         : 0
@@ -296,14 +218,13 @@ export default function Statistics() {
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList>
           <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
-          <TabsTrigger value="kpi">KPI avancés</TabsTrigger>
           <TabsTrigger value="technicians">Performance techniciens</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-6">
           {/* Summary Cards */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Interventions du mois</CardTitle>
@@ -319,40 +240,29 @@ export default function Statistics() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Durée moyenne</CardTitle>
-                <Clock className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{formatDuration(avgInterventionDuration)}</div>
-                <p className="text-xs text-muted-foreground">
-                  par intervention
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Temps de route moyen</CardTitle>
-                <Car className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {formatDuration((avgTravelToTime + avgTravelReturnTime) / 2)}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Aller: {formatDuration(avgTravelToTime)} / Retour: {formatDuration(avgTravelReturnTime)}
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Taux de résolution</CardTitle>
                 <Target className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{Math.round(resolutionRate)}%</div>
                 <Progress value={resolutionRate} className="h-2 mt-2" />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Meilleur technicien</CardTitle>
+                <Award className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-lg font-bold truncate">
+                  {bestPerformer?.name || '-'}
+                </div>
+                {bestPerformer && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {Math.round(bestPerformer.resolutionRate)}% résolution
+                  </p>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -470,185 +380,9 @@ export default function Statistics() {
                     <span className="text-xl font-bold">{Object.keys(interventionsByClient).length}</span>
                   </div>
                   <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                    <span className="text-sm">Total temps de route</span>
-                    <span className="text-xl font-bold">{formatDuration(totalTravelTime)}</span>
+                    <span className="text-sm">Techniciens actifs</span>
+                    <span className="text-xl font-bold">{technicianStats.length}</span>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* KPI Tab */}
-        <TabsContent value="kpi" className="space-y-6">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card className="border-l-4 border-l-green-500">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Taux de résolution</CardTitle>
-                <Target className="h-4 w-4 text-green-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-green-600">{Math.round(resolutionRate)}%</div>
-                <Progress value={resolutionRate} className="h-2 mt-2" />
-                <p className="text-xs text-muted-foreground mt-2">
-                  {completedInterventions.length} / {assignedInterventions.length} assignées
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-l-4 border-l-blue-500">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Résolution 1ère visite</CardTitle>
-                <CheckCircle className="h-4 w-4 text-blue-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-blue-600">{Math.round(firstTimeFixRate)}%</div>
-                <Progress value={firstTimeFixRate} className="h-2 mt-2" />
-                <p className="text-xs text-muted-foreground mt-2">
-                  Interventions résolues en moins de 4h
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-l-4 border-l-amber-500">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Temps moyen intervention</CardTitle>
-                <Timer className="h-4 w-4 text-amber-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-amber-600">{formatDuration(avgInterventionDuration)}</div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Basé sur {interventionDurations.length} interventions
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-l-4 border-l-purple-500">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Meilleur technicien</CardTitle>
-                <Award className="h-4 w-4 text-purple-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-lg font-bold text-purple-600 truncate">
-                  {bestPerformer?.name || '-'}
-                </div>
-                {bestPerformer && (
-                  <p className="text-xs text-muted-foreground mt-2">
-                    {Math.round(bestPerformer.resolutionRate)}% résolution • {bestPerformer.completedInterventions} terminées
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* KPI Details */}
-          <div className="grid gap-6 lg:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="h-5 w-5" />
-                  Temps moyens détaillés
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <Car className="h-5 w-5 text-muted-foreground" />
-                    <div>
-                      <p className="font-medium">Trajet aller</p>
-                      <p className="text-xs text-muted-foreground">Départ → Arrivée client</p>
-                    </div>
-                  </div>
-                  <span className="text-2xl font-bold">{formatDuration(avgTravelToTime)}</span>
-                </div>
-                <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <Wrench className="h-5 w-5 text-muted-foreground" />
-                    <div>
-                      <p className="font-medium">Intervention</p>
-                      <p className="text-xs text-muted-foreground">Sur site client</p>
-                    </div>
-                  </div>
-                  <span className="text-2xl font-bold">{formatDuration(avgInterventionDuration)}</span>
-                </div>
-                <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <Car className="h-5 w-5 text-muted-foreground" />
-                    <div>
-                      <p className="font-medium">Trajet retour</p>
-                      <p className="text-xs text-muted-foreground">Départ client → Retour</p>
-                    </div>
-                  </div>
-                  <span className="text-2xl font-bold">{formatDuration(avgTravelReturnTime)}</span>
-                </div>
-                <div className="flex items-center justify-between p-4 bg-primary/10 rounded-lg border-2 border-primary/20">
-                  <div className="flex items-center gap-3">
-                    <Timer className="h-5 w-5 text-primary" />
-                    <div>
-                      <p className="font-medium">Temps total moyen</p>
-                      <p className="text-xs text-muted-foreground">Par intervention complète</p>
-                    </div>
-                  </div>
-                  <span className="text-2xl font-bold text-primary">
-                    {formatDuration(avgTravelToTime + avgInterventionDuration + avgTravelReturnTime)}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" />
-                  Indicateurs de performance
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Productivité</span>
-                    <span className="text-sm text-muted-foreground">
-                      {technicianStats.length > 0 
-                        ? (monthInterventions.length / technicianStats.length).toFixed(1) 
-                        : 0} int./tech
-                    </span>
-                  </div>
-                  <Progress 
-                    value={Math.min((monthInterventions.length / (technicianStats.length * 20)) * 100, 100)} 
-                    className="h-2" 
-                  />
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Efficacité route</span>
-                    <span className="text-sm text-muted-foreground">
-                      {avgInterventionDuration > 0 
-                        ? Math.round((avgInterventionDuration / (avgInterventionDuration + avgTravelToTime + avgTravelReturnTime)) * 100)
-                        : 0}% temps utile
-                    </span>
-                  </div>
-                  <Progress 
-                    value={avgInterventionDuration > 0 
-                      ? (avgInterventionDuration / (avgInterventionDuration + avgTravelToTime + avgTravelReturnTime)) * 100
-                      : 0} 
-                    className="h-2" 
-                  />
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Taux d'assignation</span>
-                    <span className="text-sm text-muted-foreground">
-                      {monthInterventions.length > 0 
-                        ? Math.round((assignedInterventions.length / monthInterventions.length) * 100)
-                        : 0}% assignées
-                    </span>
-                  </div>
-                  <Progress 
-                    value={monthInterventions.length > 0 
-                      ? (assignedInterventions.length / monthInterventions.length) * 100
-                      : 0} 
-                    className="h-2" 
-                  />
                 </div>
               </CardContent>
             </Card>
@@ -737,19 +471,6 @@ export default function Statistics() {
                           <span className="font-medium">{Math.round(tech.resolutionRate)}%</span>
                         </div>
                         <Progress value={tech.resolutionRate} className="h-2" />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2 text-sm">
-                        <div className="flex items-center gap-1 text-muted-foreground">
-                          <Clock className="h-3 w-3" />
-                          <span className="text-xs">Moy. int:</span>
-                          <span className="font-medium text-foreground">{formatDuration(tech.avgDuration)}</span>
-                        </div>
-                        <div className="flex items-center gap-1 text-muted-foreground">
-                          <Car className="h-3 w-3" />
-                          <span className="text-xs">Moy. route:</span>
-                          <span className="font-medium text-foreground">{formatDuration(tech.avgTravelTime)}</span>
-                        </div>
                       </div>
                     </CardContent>
                   </Card>
