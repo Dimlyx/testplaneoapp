@@ -3,6 +3,7 @@ import { useClients } from "@/hooks/useClients";
 import { useTechnicians } from "@/hooks/useTechnicians";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge, TypeBadge } from "@/components/ui/status-badge";
+import InterventionsMap from "@/components/admin/InterventionsMap";
 import { 
   ClipboardList, 
   Users, 
@@ -163,6 +164,9 @@ const Dashboard = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Carte des interventions à planifier */}
+      <InterventionsMap interventions={interventions} />
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Interventions récentes */}
