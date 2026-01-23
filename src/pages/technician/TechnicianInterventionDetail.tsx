@@ -96,6 +96,20 @@ const TechnicianInterventionDetail = () => {
     }
   };
 
+  const handleStatusChange = async (newStatus: string) => {
+    if (!id) return;
+    setStatus(newStatus);
+    try {
+      await updateIntervention.mutateAsync({
+        id,
+        status: newStatus as any,
+      });
+      toast({ title: "Statut mis à jour" });
+    } catch (error) {
+      toast({ title: "Erreur", variant: "destructive" });
+    }
+  };
+
   const handleSave = async () => {
     if (!id) return;
     try {
@@ -195,6 +209,7 @@ const TechnicianInterventionDetail = () => {
         onReportChange={(v) => setReport(v)}
         onClientSignatureNameChange={setClientSignatureName}
         onDownloadPDF={handleDownloadPDF}
+        onStatusChange={handleStatusChange}
         isUpdating={updateIntervention.isPending}
       />
     </div>
