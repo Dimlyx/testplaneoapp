@@ -13,11 +13,14 @@ interface InterventionPhoto {
   equipment_id?: string | null;
 }
 
+type EquipmentStatus = 'not_working' | 'needs_intervention' | 'working';
+
 interface InterventionEquipmentData {
   id: string;
   equipment_id: string;
   technical_comments: string | null;
   equipment_functional: boolean | null;
+  equipment_status: EquipmentStatus | null;
   equipment?: {
     id: string;
     brand: string;
@@ -409,16 +412,23 @@ export const generateInterventionPDF = async (
         yPos += commentLines.length * 5 + 5;
       }
 
-      // Test de l'équipement
+      // État de l'équipement
       checkNewPage(20);
       doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
-      doc.text("Test de l'équipement", 15, yPos);
+      doc.text("État de l'équipement", 15, yPos);
       doc.setFont("helvetica", "normal");
       yPos += 5;
       doc.setFontSize(9);
-      const funcStatus = eq.equipment_functional !== false ? "Oui" : "Non";
-      doc.text(`L'équipement fonctionne correctement: ${funcStatus}`, 15, yPos);
+      const getEquipmentStatusLabel = (status: EquipmentStatus | null) => {
+        switch (status) {
+          case 'not_working': return 'Ne fonctionne pas';
+          case 'needs_intervention': return 'Fonctionne - Pièces ou intervention nécessaire';
+          case 'working': return 'Fonctionne';
+          default: return 'Non renseigné';
+        }
+      };
+      doc.text(`État: ${getEquipmentStatusLabel(eq.equipment_status)}`, 15, yPos);
       yPos += 8;
 
       // Photos après (after photos)

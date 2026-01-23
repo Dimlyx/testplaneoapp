@@ -357,14 +357,27 @@ const InterventionDetail = () => {
                 const duringPhotos = equipmentPhotos.filter(p => p.photo_type === 'during');
                 const afterPhotos = equipmentPhotos.filter(p => p.photo_type === 'after');
                 
+                const getStatusDisplay = (status: string | null) => {
+                  switch (status) {
+                    case 'not_working':
+                      return { label: 'Ne fonctionne pas', className: 'bg-red-100 text-red-800' };
+                    case 'needs_intervention':
+                      return { label: 'Pièces ou intervention nécessaire', className: 'bg-orange-100 text-orange-800' };
+                    case 'working':
+                    default:
+                      return { label: 'Fonctionne', className: 'bg-green-100 text-green-800' };
+                  }
+                };
+                const statusDisplay = getStatusDisplay(ie.equipment_status);
+                
                 return (
                   <div key={ie.id} className="border rounded-lg p-4 space-y-4">
                     <div className="flex items-center justify-between">
                       <h4 className="font-semibold text-lg">
                         {index + 1}. {ie.equipment?.equipment_type || "Équipement"}
                       </h4>
-                      <span className={`px-2 py-1 rounded text-sm ${ie.equipment_functional ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                        {ie.equipment_functional ? 'Fonctionnel' : 'Non fonctionnel'}
+                      <span className={`px-2 py-1 rounded text-sm ${statusDisplay.className}`}>
+                        {statusDisplay.label}
                       </span>
                     </div>
 
