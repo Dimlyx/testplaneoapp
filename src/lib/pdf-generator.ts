@@ -283,25 +283,6 @@ export const generateInterventionPDF = async (
   }
   yPos += 5;
 
-  // ================== TIME TRACKING ==================
-  yPos = addSection("HORAIRES D'INTERVENTION", yPos);
-  const col2X = 110;
-  let baseY = yPos;
-  yPos = addField("Heure d'arrivée", intervention.arrival_time || "N/C", yPos);
-  addField("Heure de départ", intervention.departure_time || "N/C", baseY, col2X);
-  
-  if (intervention.arrival_time && intervention.departure_time) {
-    const [arrH, arrM] = intervention.arrival_time.split(':').map(Number);
-    const [depH, depM] = intervention.departure_time.split(':').map(Number);
-    const totalMinutes = (depH * 60 + depM) - (arrH * 60 + arrM);
-    if (totalMinutes > 0) {
-      const hours = Math.floor(totalMinutes / 60);
-      const minutes = totalMinutes % 60;
-      const duration = hours > 0 ? `${hours} heure(s) ${minutes} minute(s)` : `${minutes} minutes`;
-      yPos = addField("Durée de l'intervention", duration, yPos);
-    }
-  }
-  yPos += 5;
 
   // ================== TRAVAUX EFFECTUÉS ==================
   yPos = addSection("TRAVAUX EFFECTUÉS - COMPTE-RENDU", yPos);
@@ -532,15 +513,6 @@ export const generateInterventionPDF = async (
     yPos += 10;
   }
 
-  // ================== OBSERVATIONS ==================
-  if (intervention.observations) {
-    checkNewPage(30);
-    yPos = addSection("OBSERVATIONS GÉNÉRALES", yPos);
-    doc.setFontSize(9);
-    const obsLines = doc.splitTextToSize(intervention.observations, pageWidth - 30);
-    doc.text(obsLines, 15, yPos);
-    yPos += obsLines.length * 5 + 8;
-  }
 
   // ================== SIGNATURE ==================
   checkNewPage(70);

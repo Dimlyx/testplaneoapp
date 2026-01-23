@@ -25,12 +25,6 @@ const TechnicianInterventionDetail = () => {
 
   const [status, setStatus] = useState<string>("");
   const [report, setReport] = useState<string>("");
-  const [technicalComments, setTechnicalComments] = useState<string>("");
-  const [arrivalTime, setArrivalTime] = useState<string>("");
-  const [departureTime, setDepartureTime] = useState<string>("");
-  const [travelDepartureTime, setTravelDepartureTime] = useState<string>("");
-  const [travelReturnTime, setTravelReturnTime] = useState<string>("");
-  const [observations, setObservations] = useState<string>("");
   const [clientSignatureName, setClientSignatureName] = useState<string>("");
   const [clientSignatureUrl, setClientSignatureUrl] = useState<string | null>(null);
   const [isUploadingSignature, setIsUploadingSignature] = useState(false);
@@ -40,12 +34,6 @@ const TechnicianInterventionDetail = () => {
     if (intervention) {
       setStatus(intervention.status);
       setReport(intervention.report || "");
-      setTechnicalComments(intervention.technical_comments || "");
-      setArrivalTime(intervention.arrival_time || "");
-      setDepartureTime(intervention.departure_time || "");
-      setTravelDepartureTime(intervention.travel_departure_time || "");
-      setTravelReturnTime(intervention.travel_return_time || "");
-      setObservations(intervention.observations || "");
       setClientSignatureName(intervention.client_signature_name || "");
       setClientSignatureUrl(intervention.client_signature_url || null);
     }
@@ -92,69 +80,17 @@ const TechnicianInterventionDetail = () => {
     }
   };
 
-  const handleStartIntervention = async () => {
-    if (!id) return;
-    const now = format(new Date(), 'HH:mm');
-    setArrivalTime(now);
-    setStatus('in_progress');
-    try {
-      await updateIntervention.mutateAsync({
-        id,
-        status: 'in_progress',
-        arrival_time: now,
-      });
-      toast({ title: "Intervention démarrée" });
-    } catch (error) {
-      toast({ title: "Erreur", variant: "destructive" });
-    }
-  };
-
   const handleEndIntervention = async () => {
     if (!id) return;
-    const now = format(new Date(), 'HH:mm');
-    setDepartureTime(now);
     setStatus('completed');
     try {
       await updateIntervention.mutateAsync({
         id,
         status: 'completed',
-        departure_time: departureTime || now,
         report,
-        observations,
         client_signature_name: clientSignatureName,
-        technical_comments: technicalComments,
       });
       toast({ title: "Intervention terminée" });
-    } catch (error) {
-      toast({ title: "Erreur", variant: "destructive" });
-    }
-  };
-
-  const handleStartTravel = async () => {
-    if (!id) return;
-    const now = format(new Date(), 'HH:mm');
-    setTravelDepartureTime(now);
-    try {
-      await updateIntervention.mutateAsync({
-        id,
-        travel_departure_time: now,
-      });
-      toast({ title: "Départ enregistré" });
-    } catch (error) {
-      toast({ title: "Erreur", variant: "destructive" });
-    }
-  };
-
-  const handleEndTravel = async () => {
-    if (!id) return;
-    const now = format(new Date(), 'HH:mm');
-    setTravelReturnTime(now);
-    try {
-      await updateIntervention.mutateAsync({
-        id,
-        travel_return_time: now,
-      });
-      toast({ title: "Retour enregistré" });
     } catch (error) {
       toast({ title: "Erreur", variant: "destructive" });
     }
@@ -167,12 +103,6 @@ const TechnicianInterventionDetail = () => {
         id,
         status: status as any,
         report,
-        technical_comments: technicalComments,
-        arrival_time: arrivalTime || null,
-        departure_time: departureTime || null,
-        travel_departure_time: travelDepartureTime || null,
-        travel_return_time: travelReturnTime || null,
-        observations,
         client_signature_name: clientSignatureName,
       });
       toast({ title: "Intervention mise à jour" });
@@ -256,26 +186,13 @@ const TechnicianInterventionDetail = () => {
         intervention={intervention}
         client={client}
         interventionEquipment={interventionEquipment}
-        arrivalTime={arrivalTime}
-        departureTime={departureTime}
-        travelDepartureTime={travelDepartureTime}
-        travelReturnTime={travelReturnTime}
         report={report}
-        observations={observations}
         clientSignatureName={clientSignatureName}
         clientSignatureUrl={clientSignatureUrl}
-        onStartIntervention={handleStartIntervention}
         onEndIntervention={handleEndIntervention}
-        onStartTravel={handleStartTravel}
-        onEndTravel={handleEndTravel}
         onSave={handleSave}
         onSignatureComplete={handleSignatureComplete}
-        onArrivalTimeChange={(v) => setArrivalTime(v)}
-        onDepartureTimeChange={(v) => setDepartureTime(v)}
-        onTravelDepartureTimeChange={(v) => setTravelDepartureTime(v)}
-        onTravelReturnTimeChange={(v) => setTravelReturnTime(v)}
         onReportChange={(v) => setReport(v)}
-        onObservationsChange={(v) => setObservations(v)}
         onClientSignatureNameChange={setClientSignatureName}
         onDownloadPDF={handleDownloadPDF}
         isUpdating={updateIntervention.isPending}
