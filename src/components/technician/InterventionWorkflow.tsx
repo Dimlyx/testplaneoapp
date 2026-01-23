@@ -17,6 +17,7 @@ import SignaturePad from "@/components/SignaturePad";
 import AddEquipmentDialog from "@/components/AddEquipmentDialog";
 import EquipmentLoopCard from "@/components/EquipmentLoopCard";
 import AttachmentsList from "@/components/technician/AttachmentsList";
+import JourneyTracker from "@/components/technician/JourneyTracker";
 import { InterventionEquipment } from "@/hooks/useInterventionEquipment";
 import { Tables } from "@/integrations/supabase/types";
 
@@ -36,6 +37,7 @@ interface InterventionWorkflowProps {
   onReportChange: (value: string) => void;
   onClientSignatureNameChange: (value: string) => void;
   onDownloadPDF: () => Promise<void>;
+  onStatusChange: (newStatus: string) => Promise<void>;
   isUpdating: boolean;
 }
 
@@ -52,6 +54,7 @@ const InterventionWorkflow = ({
   onReportChange,
   onClientSignatureNameChange,
   onDownloadPDF,
+  onStatusChange,
   isUpdating,
 }: InterventionWorkflowProps) => {
   const [activeStep, setActiveStep] = useState<string | null>(null);
@@ -175,6 +178,13 @@ const InterventionWorkflow = ({
               </label>
               <AttachmentsList interventionId={intervention.id} isReadOnly={true} />
             </div>
+
+            {/* Journey tracker buttons */}
+            <JourneyTracker
+              interventionStatus={intervention.status}
+              onStatusChange={onStatusChange}
+              isUpdating={isUpdating}
+            />
           </CardContent>
         </Card>
       </WorkflowStep>
