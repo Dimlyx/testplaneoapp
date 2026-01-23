@@ -146,6 +146,9 @@ export type Database = {
           created_at: string
           equipment_functional: boolean | null
           equipment_id: string
+          equipment_status:
+            | Database["public"]["Enums"]["equipment_status"]
+            | null
           id: string
           intervention_id: string
           technical_comments: string | null
@@ -155,6 +158,9 @@ export type Database = {
           created_at?: string
           equipment_functional?: boolean | null
           equipment_id: string
+          equipment_status?:
+            | Database["public"]["Enums"]["equipment_status"]
+            | null
           id?: string
           intervention_id: string
           technical_comments?: string | null
@@ -164,6 +170,9 @@ export type Database = {
           created_at?: string
           equipment_functional?: boolean | null
           equipment_id?: string
+          equipment_status?:
+            | Database["public"]["Enums"]["equipment_status"]
+            | null
           id?: string
           intervention_id?: string
           technical_comments?: string | null
@@ -487,6 +496,7 @@ export type Database = {
       alert_status: "pending" | "acknowledged" | "completed" | "dismissed"
       app_role: "admin" | "technician"
       client_type: "individual" | "professional"
+      equipment_status: "not_working" | "needs_intervention" | "working"
       intervention_status:
         | "to_plan"
         | "planned"
@@ -626,6 +636,7 @@ export const Constants = {
       alert_status: ["pending", "acknowledged", "completed", "dismissed"],
       app_role: ["admin", "technician"],
       client_type: ["individual", "professional"],
+      equipment_status: ["not_working", "needs_intervention", "working"],
       intervention_status: [
         "to_plan",
         "planned",

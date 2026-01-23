@@ -2,9 +2,15 @@ import { useState, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Collapsible,
   CollapsibleContent,
@@ -20,7 +26,7 @@ import {
   Trash2,
   Image as ImageIcon
 } from "lucide-react";
-import { InterventionEquipment, useUpdateInterventionEquipment, useRemoveInterventionEquipment } from "@/hooks/useInterventionEquipment";
+import { InterventionEquipment, EquipmentStatus, useUpdateInterventionEquipment, useRemoveInterventionEquipment } from "@/hooks/useInterventionEquipment";
 import { useInterventionPhotos, useUploadInterventionPhoto, useDeleteInterventionPhoto, PhotoType } from "@/hooks/useInterventionPhotos";
 
 interface EquipmentLoopCardProps {
@@ -33,7 +39,7 @@ interface EquipmentLoopCardProps {
 const EquipmentLoopCard = ({ interventionEquipment, interventionId, index, isReadOnly = false }: EquipmentLoopCardProps) => {
   const [isOpen, setIsOpen] = useState(index === 0);
   const [technicalComments, setTechnicalComments] = useState(interventionEquipment.technical_comments || "");
-  const [equipmentFunctional, setEquipmentFunctional] = useState(interventionEquipment.equipment_functional !== false);
+  const [equipmentStatus, setEquipmentStatus] = useState<EquipmentStatus>(interventionEquipment.equipment_status || "working");
   const [isEditing, setIsEditing] = useState(false);
 
   const serialNumberInputRef = useRef<HTMLInputElement>(null);
@@ -57,7 +63,7 @@ const EquipmentLoopCard = ({ interventionEquipment, interventionId, index, isRea
       id: interventionEquipment.id,
       interventionId,
       technical_comments: technicalComments,
-      equipment_functional: equipmentFunctional,
+      equipment_status: equipmentStatus,
     });
     setIsEditing(false);
   };
@@ -186,9 +192,13 @@ const EquipmentLoopCard = ({ interventionEquipment, interventionId, index, isRea
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                {equipmentFunctional ? (
+                {equipmentStatus === "working" && (
                   <Badge variant="default" className="bg-green-600">OK</Badge>
-                ) : (
+                )}
+                {equipmentStatus === "needs_intervention" && (
+                  <Badge variant="secondary" className="bg-orange-500 text-white">À suivre</Badge>
+                )}
+                {equipmentStatus === "not_working" && (
                   <Badge variant="destructive">HS</Badge>
                 )}
                 {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -236,19 +246,27 @@ const EquipmentLoopCard = ({ interventionEquipment, interventionId, index, isRea
             </div>
 
             {/* Equipment Status */}
-            <div className="flex items-center justify-between">
-              <Label htmlFor={`functional-${interventionEquipment.id}`} className="text-sm font-medium">
-                Équipement fonctionne
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">
+                État de l'équipement
               </Label>
-              <Switch
-                id={`functional-${interventionEquipment.id}`}
-                checked={equipmentFunctional}
-                onCheckedChange={(checked) => {
-                  setEquipmentFunctional(checked);
+              <Select
+                value={equipmentStatus}
+                onValueChange={(value: EquipmentStatus) => {
+                  setEquipmentStatus(value);
                   setIsEditing(true);
                 }}
                 disabled={isReadOnly}
-              />
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner l'état" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="not_working">Ne fonctionne pas</SelectItem>
+                  <SelectItem value="needs_intervention">Fonctionne - Pièces ou intervention nécessaire</SelectItem>
+                  <SelectItem value="working">Fonctionne</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Actions */}

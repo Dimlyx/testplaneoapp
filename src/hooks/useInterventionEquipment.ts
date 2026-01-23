@@ -2,12 +2,15 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+export type EquipmentStatus = 'not_working' | 'needs_intervention' | 'working';
+
 export interface InterventionEquipment {
   id: string;
   intervention_id: string;
   equipment_id: string;
   technical_comments: string | null;
   equipment_functional: boolean | null;
+  equipment_status: EquipmentStatus | null;
   created_at: string;
   updated_at: string;
   equipment?: {
@@ -124,18 +127,18 @@ export function useUpdateInterventionEquipment() {
       id,
       interventionId,
       technical_comments,
-      equipment_functional,
+      equipment_status,
     }: { 
       id: string;
       interventionId: string;
       technical_comments?: string;
-      equipment_functional?: boolean;
+      equipment_status?: EquipmentStatus;
     }) => {
       const { data, error } = await supabase
         .from('intervention_equipment')
         .update({
           technical_comments,
-          equipment_functional,
+          equipment_status,
         })
         .eq('id', id)
         .select()
