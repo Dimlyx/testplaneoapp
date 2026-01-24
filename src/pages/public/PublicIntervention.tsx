@@ -23,6 +23,7 @@ import { fr } from "date-fns/locale";
 
 // Report settings from localStorage
 const REPORT_SETTINGS_KEY = "reportSettings";
+const EXTRANET_SETTINGS_KEY = "extranetSettings";
 
 interface ReportSettings {
   companyName: string;
@@ -35,6 +36,19 @@ interface ReportSettings {
   logoUrl: string;
 }
 
+interface ExtranetSettings {
+  showClientInfo: boolean;
+  showInterventionAddress: boolean;
+  showScheduledDateTime: boolean;
+  showDescription: boolean;
+  showEquipmentDetails: boolean;
+  showEquipmentPhotos: boolean;
+  showReport: boolean;
+  showSignature: boolean;
+  welcomeMessage: string;
+  customFooterText: string;
+}
+
 const defaultSettings: ReportSettings = {
   companyName: "",
   companyAddress: "",
@@ -44,6 +58,19 @@ const defaultSettings: ReportSettings = {
   accentColor: "#0050A0",
   footerText: "",
   logoUrl: "",
+};
+
+const defaultExtranetSettings: ExtranetSettings = {
+  showClientInfo: true,
+  showInterventionAddress: true,
+  showScheduledDateTime: true,
+  showDescription: true,
+  showEquipmentDetails: true,
+  showEquipmentPhotos: true,
+  showReport: true,
+  showSignature: true,
+  welcomeMessage: "",
+  customFooterText: "",
 };
 
 const getReportSettings = (): ReportSettings => {
@@ -58,6 +85,18 @@ const getReportSettings = (): ReportSettings => {
   return defaultSettings;
 };
 
+const getExtranetSettings = (): ExtranetSettings => {
+  try {
+    const stored = localStorage.getItem(EXTRANET_SETTINGS_KEY);
+    if (stored) {
+      return { ...defaultExtranetSettings, ...JSON.parse(stored) };
+    }
+  } catch (e) {
+    console.error("Error loading extranet settings:", e);
+  }
+  return defaultExtranetSettings;
+};
+
 const PublicIntervention = () => {
   const { token } = useParams();
   const { data: intervention, isLoading, error } = usePublicIntervention(token || "");
@@ -65,6 +104,7 @@ const PublicIntervention = () => {
   const { data: interventionEquipments = [] } = useInterventionEquipment(intervention?.id || "");
   
   const settings = getReportSettings();
+  const extranetSettings = getExtranetSettings();
 
   if (isLoading) {
     return (
@@ -142,11 +182,16 @@ const PublicIntervention = () => {
               <StatusBadge status={intervention.status} />
               <TypeBadge type={intervention.intervention_type} />
             </div>
+            {extranetSettings.welcomeMessage && (
+              <p className="text-sm text-muted-foreground mt-4 max-w-md mx-auto">
+                {extranetSettings.welcomeMessage}
+              </p>
+            )}
           </CardContent>
         </Card>
 
         {/* Informations client */}
-        {client && (
+        {extranetSettings.showClientInfo && client && (
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
@@ -185,7 +230,7 @@ const PublicIntervention = () => {
         )}
 
         {/* Lieu d'intervention (si différent du client) */}
-        {(intervention.intervention_address || intervention.intervention_phone || intervention.intervention_email) && (
+        {extranetSettings.showInterventionAddress && (intervention.intervention_address || intervention.intervention_phone || intervention.intervention_email) && (
           <Card className="border-primary/20">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
@@ -224,14 +269,14 @@ const PublicIntervention = () => {
             <CardTitle className="text-lg">{intervention.title}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {intervention.description && (
+            {extranetSettings.showDescription && intervention.description && (
               <div>
                 <p className="text-sm font-medium text-muted-foreground mb-1">Description</p>
                 <p>{intervention.description}</p>
               </div>
             )}
 
-            {(intervention.scheduled_date || intervention.scheduled_time) && (
+            {extranetSettings.showScheduledDateTime && (intervention.scheduled_date || intervention.scheduled_time) && (
               <div className="flex gap-6">
                 {intervention.scheduled_date && (
                   <div className="flex items-center gap-2">
@@ -250,23 +295,23 @@ const PublicIntervention = () => {
           </CardContent>
         </Card>
 
-        {/* Horaires d'intervention - Hidden from public extranet */}
-
         {/* Travaux effectués - Compte rendu */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Travaux effectués - Compte rendu
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="whitespace-pre-wrap">{intervention.report || "Aucun compte rendu"}</p>
-          </CardContent>
-        </Card>
+        {extranetSettings.showReport && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Travaux effectués - Compte rendu
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="whitespace-pre-wrap">{intervention.report || "Aucun compte rendu"}</p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Équipements */}
-        {interventionEquipments.length > 0 && interventionEquipments.map((ie, index) => {
+        {extranetSettings.showEquipmentDetails && interventionEquipments.length > 0 && interventionEquipments.map((ie, index) => {
           const equipmentPhotos = photos.filter(p => p.equipment_id === ie.equipment_id);
           const serialPhotos = equipmentPhotos.filter(p => p.photo_type === 'serial_number');
           const duringPhotos = equipmentPhotos.filter(p => p.photo_type === 'during');
@@ -296,7 +341,7 @@ const PublicIntervention = () => {
                 </div>
 
                 {/* Photos N° série */}
-                {serialPhotos.length > 0 && (
+                {extranetSettings.showEquipmentPhotos && serialPhotos.length > 0 && (
                   <div>
                     <p className="text-sm font-medium text-muted-foreground mb-2">Photos N° de série</p>
                     <div className="grid grid-cols-2 gap-2">
@@ -310,7 +355,7 @@ const PublicIntervention = () => {
                 )}
 
                 {/* Photos équipement (pendant) */}
-                {duringPhotos.length > 0 && (
+                {extranetSettings.showEquipmentPhotos && duringPhotos.length > 0 && (
                   <div>
                     <p className="text-sm font-medium text-muted-foreground mb-2">Photo de l'équipement</p>
                     <div className="grid grid-cols-2 gap-2">
@@ -356,7 +401,7 @@ const PublicIntervention = () => {
                 </div>
 
                 {/* Photos après intervention */}
-                {afterPhotos.length > 0 && (
+                {extranetSettings.showEquipmentPhotos && afterPhotos.length > 0 && (
                   <div>
                     <p className="text-sm font-medium text-muted-foreground mb-2">Photos après intervention</p>
                     <div className="grid grid-cols-2 gap-2">
@@ -375,7 +420,7 @@ const PublicIntervention = () => {
 
 
         {/* Photos générales (sans équipement) */}
-        {photos.filter(p => !p.equipment_id).length > 0 && (
+        {extranetSettings.showEquipmentPhotos && photos.filter(p => !p.equipment_id).length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
@@ -396,7 +441,7 @@ const PublicIntervention = () => {
         )}
 
         {/* Signature client */}
-        {intervention.client_signature_url && (
+        {extranetSettings.showSignature && intervention.client_signature_url && (
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
@@ -436,7 +481,7 @@ const PublicIntervention = () => {
         style={{ backgroundColor: settings.accentColor }}
       >
         <div className="container max-w-2xl mx-auto px-4 text-center text-sm">
-          <p>{settings.footerText || `© ${new Date().getFullYear()} ${settings.companyName || "Service Intervention"}`}</p>
+          <p>{extranetSettings.customFooterText || settings.footerText || `© ${new Date().getFullYear()} ${settings.companyName || "Service Intervention"}`}</p>
           {settings.companyAddress && <p className="opacity-80 mt-1">{settings.companyAddress}</p>}
         </div>
       </footer>
