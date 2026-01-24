@@ -6,6 +6,7 @@ import { useInterventionEquipment } from "@/hooks/useInterventionEquipment";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge, TypeBadge } from "@/components/ui/status-badge";
+import { TimesCorrectionDialog } from "@/components/admin/TimesCorrectionDialog";
 import { 
   ArrowLeft, 
   Edit, 
@@ -26,7 +27,7 @@ import { generateInterventionPDF } from "@/lib/pdf-generator";
 const InterventionDetail = () => {
   const navigate = useNavigate();
   const { id } = useParams();
-  const { data: intervention, isLoading } = useIntervention(id || "");
+  const { data: intervention, isLoading, refetch } = useIntervention(id || "");
   const { data: client } = useClient(intervention?.client_id || "");
   const { data: photos = [] } = useInterventionPhotos(id || "");
   const { data: interventionEquipments = [] } = useInterventionEquipment(id || "");
@@ -191,9 +192,12 @@ const InterventionDetail = () => {
         {/* Temps d'intervention */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5" />
-              Temps d'intervention
+            <CardTitle className="flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                Temps d'intervention
+              </span>
+              <TimesCorrectionDialog intervention={intervention} onSuccess={() => refetch()} />
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
