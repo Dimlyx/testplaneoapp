@@ -8,6 +8,7 @@ import {
   Save,
   AlertCircle,
   Info,
+  Lock,
 } from "lucide-react";
 import WorkflowStep from "./WorkflowStep";
 import { Button } from "@/components/ui/button";
@@ -63,7 +64,7 @@ const InterventionWorkflow = ({
   const existingEquipmentIds = interventionEquipment.map(ie => ie.equipment_id);
   
   // Determine completed steps based on data
-  const isStarted = intervention.status === 'in_progress' || intervention.status === 'completed';
+  const isStarted = intervention.status === 'in_progress' || intervention.status === 'completed' || intervention.status === 'to_invoice' || intervention.status === 'archived';
   const hasEquipment = interventionEquipment.length > 0;
   const hasReport = !!report.trim();
   const hasSignature = !!clientSignatureUrl;
@@ -71,34 +72,46 @@ const InterventionWorkflow = ({
   const isToInvoice = intervention.status === 'to_invoice';
   const isArchived = intervention.status === 'archived';
   
-  // Check if journey tracking is complete (mandatory)
-  const hasStartedJourney = !!intervention.travel_departure_time;
-  const hasArrivedAtClient = !!intervention.arrival_time;
-  const journeyComplete = hasStartedJourney && hasArrivedAtClient;
-  
   // Check if intervention is locked (completed, to_invoice, or archived)
   const isLocked = isCompleted || isToInvoice || isArchived;
+
+  // Steps are locked until intervention is started
+  const stepsLocked = !isStarted;
 
   // Auto-open first incomplete step
   useEffect(() => {
     if (isLocked) {
       setActiveStep('finish');
-    } else if (!hasEquipment && isStarted) {
-      setActiveStep('equipment');
-    } else if (!hasReport && isStarted) {
-      setActiveStep('report');
-    } else if (!hasSignature && isStarted) {
-      setActiveStep('signature');
-    } else if (isStarted) {
-      setActiveStep('finish');
-    } else {
+    } else if (!isStarted) {
       setActiveStep('general-info');
+    } else if (!hasEquipment) {
+      setActiveStep('equipment');
+    } else if (!hasReport) {
+      setActiveStep('report');
+    } else if (!hasSignature) {
+      setActiveStep('signature');
+    } else {
+      setActiveStep('finish');
     }
   }, [isStarted, hasEquipment, hasReport, hasSignature, isLocked]);
 
   const handleStepClick = (step: string) => {
+    // Block other steps if intervention not started (except general-info)
+    if (stepsLocked && step !== 'general-info') {
+      return;
+    }
     setActiveStep(activeStep === step ? null : step);
   };
+
+  // Locked step indicator component
+  const LockedOverlay = () => (
+    <div className="absolute inset-0 bg-background/80 backdrop-blur-[1px] flex items-center justify-center z-10 rounded-lg">
+      <div className="flex items-center gap-2 text-muted-foreground bg-muted/90 px-4 py-2 rounded-full text-sm">
+        <Lock className="h-4 w-4" />
+        <span>Démarrez l'intervention d'abord</span>
+      </div>
+    </div>
+  );
 
   return (
     <div className="space-y-0">
@@ -117,12 +130,27 @@ const InterventionWorkflow = ({
         </Card>
       )}
 
+      {/* Warning banner when intervention not started */}
+      {stepsLocked && !isLocked && (
+        <Card className="mb-4 border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
+              <AlertCircle className="h-5 w-5" />
+              <span className="font-medium">Démarrez l'intervention pour débloquer les étapes</span>
+            </div>
+            <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">
+              Cliquez sur "Démarrer l'intervention" dans les informations générales pour accéder aux équipements, compte rendu et signature.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Step 0: General Info + Client */}
       <WorkflowStep
         icon={Info}
         label="Informations générales"
         isActive={activeStep === 'general-info'}
-        isCompleted={true}
+        isCompleted={isStarted}
         onClick={() => handleStepClick('general-info')}
       >
         <Card>
@@ -191,6 +219,7 @@ const InterventionWorkflow = ({
               interventionStatus={intervention.status}
               travelDepartureTime={intervention.travel_departure_time}
               arrivalTime={intervention.arrival_time}
+              departureTime={intervention.departure_time}
               onStatusChange={onStatusChange}
               onTimeUpdate={onTimeUpdate}
               isUpdating={isUpdating}
@@ -206,36 +235,40 @@ const InterventionWorkflow = ({
         isActive={activeStep === 'equipment'}
         isCompleted={hasEquipment}
         onClick={() => handleStepClick('equipment')}
+        isDisabled={stepsLocked}
       >
-        <div className="space-y-4">
-          {interventionEquipment.length === 0 ? (
-            <Card>
-              <CardContent className="p-6 text-center">
-                <Wrench className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                <p className="text-sm text-muted-foreground mb-4">
-                  Aucun équipement ajouté
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            interventionEquipment.map((ie, index) => (
-              <EquipmentLoopCard
-                key={ie.id}
-                interventionEquipment={ie}
+        <div className="relative">
+          {stepsLocked && <LockedOverlay />}
+          <div className="space-y-4">
+            {interventionEquipment.length === 0 ? (
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <Wrench className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Aucun équipement ajouté
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              interventionEquipment.map((ie, index) => (
+                <EquipmentLoopCard
+                  key={ie.id}
+                  interventionEquipment={ie}
+                  interventionId={intervention.id}
+                  index={index}
+                  isReadOnly={isLocked}
+                />
+              ))
+            )}
+            
+            {client && !isLocked && (
+              <AddEquipmentDialog
+                clientId={client.id}
                 interventionId={intervention.id}
-                index={index}
-                isReadOnly={isLocked}
+                existingEquipmentIds={existingEquipmentIds}
               />
-            ))
-          )}
-          
-          {client && !isLocked && (
-            <AddEquipmentDialog
-              clientId={client.id}
-              interventionId={intervention.id}
-              existingEquipmentIds={existingEquipmentIds}
-            />
-          )}
+            )}
+          </div>
         </div>
       </WorkflowStep>
 
@@ -246,27 +279,31 @@ const InterventionWorkflow = ({
         isActive={activeStep === 'report'}
         isCompleted={hasReport}
         onClick={() => handleStepClick('report')}
+        isDisabled={stepsLocked}
       >
-        <Card>
-          <CardContent className="p-4 space-y-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">Travaux effectués</label>
-              <Textarea
-                placeholder="Décrivez les travaux réalisés..."
-                value={report}
-                onChange={(e) => onReportChange(e.target.value)}
-                className="min-h-[120px]"
-                disabled={isLocked}
-              />
-            </div>
-            {!isLocked && (
-              <Button onClick={onSave} disabled={isUpdating} className="w-full">
-                <Save className="h-4 w-4 mr-2" />
-                Enregistrer
-              </Button>
-            )}
-          </CardContent>
-        </Card>
+        <div className="relative">
+          {stepsLocked && <LockedOverlay />}
+          <Card>
+            <CardContent className="p-4 space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Travaux effectués</label>
+                <Textarea
+                  placeholder="Décrivez les travaux réalisés..."
+                  value={report}
+                  onChange={(e) => onReportChange(e.target.value)}
+                  className="min-h-[120px]"
+                  disabled={isLocked}
+                />
+              </div>
+              {!isLocked && (
+                <Button onClick={onSave} disabled={isUpdating} className="w-full">
+                  <Save className="h-4 w-4 mr-2" />
+                  Enregistrer
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </WorkflowStep>
 
       {/* Step 3: Signature */}
@@ -276,13 +313,17 @@ const InterventionWorkflow = ({
         isActive={activeStep === 'signature'}
         isCompleted={hasSignature}
         onClick={() => handleStepClick('signature')}
+        isDisabled={stepsLocked}
       >
-        <SignaturePad
-          onSignatureComplete={onSignatureComplete}
-          signerName={clientSignatureName}
-          onSignerNameChange={onClientSignatureNameChange}
-          existingSignature={clientSignatureUrl}
-        />
+        <div className="relative">
+          {stepsLocked && <LockedOverlay />}
+          <SignaturePad
+            onSignatureComplete={onSignatureComplete}
+            signerName={clientSignatureName}
+            onSignerNameChange={onClientSignatureNameChange}
+            existingSignature={clientSignatureUrl}
+          />
+        </div>
       </WorkflowStep>
 
       {/* Step 4: Finish */}
@@ -293,60 +334,57 @@ const InterventionWorkflow = ({
         isCompleted={isCompleted}
         isLast
         onClick={() => handleStepClick('finish')}
+        isDisabled={stepsLocked}
       >
-        <Card>
-          <CardContent className="p-4 space-y-4">
-            {!isCompleted && isStarted && (
-              <>
-                {/* Warning if journey tracking is incomplete */}
-                {!journeyComplete && (
-                  <div className="p-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg">
-                    <div className="flex items-start gap-2 text-amber-700 dark:text-amber-300">
-                      <AlertCircle className="h-5 w-5 mt-0.5 shrink-0" />
-                      <div>
-                        <p className="font-medium text-sm">Suivi de trajet incomplet</p>
-                        <p className="text-xs mt-1 text-amber-600 dark:text-amber-400">
-                          Vous devez compléter le suivi de trajet avant de clôturer :
-                        </p>
-                        <ul className="text-xs mt-2 space-y-1 text-amber-600 dark:text-amber-400">
-                          <li className={hasStartedJourney ? "line-through opacity-50" : ""}>
-                            {hasStartedJourney ? "✓" : "•"} Démarrer le trajet
-                          </li>
-                          <li className={hasArrivedAtClient ? "line-through opacity-50" : ""}>
-                            {hasArrivedAtClient ? "✓" : "•"} Arriver chez le client
-                          </li>
-                        </ul>
+        <div className="relative">
+          {stepsLocked && <LockedOverlay />}
+          <Card>
+            <CardContent className="p-4 space-y-4">
+              {!isCompleted && isStarted && (
+                <>
+                  {!hasSignature ? (
+                    <div className="p-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg">
+                      <div className="flex items-start gap-2 text-amber-700 dark:text-amber-300">
+                        <AlertCircle className="h-5 w-5 mt-0.5 shrink-0" />
+                        <div>
+                          <p className="font-medium text-sm">Signature requise</p>
+                          <p className="text-xs mt-1 text-amber-600 dark:text-amber-400">
+                            La signature du client est nécessaire pour clôturer l'intervention.
+                          </p>
+                        </div>
                       </div>
                     </div>
+                  ) : (
+                    <div className="p-3 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg">
+                      <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
+                        <CheckCircle className="h-5 w-5" />
+                        <div>
+                          <p className="font-medium text-sm">Intervention clôturée</p>
+                          <p className="text-xs mt-1 text-green-600 dark:text-green-400">
+                            La signature du client a été enregistrée et l'intervention est terminée.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+              
+              {isCompleted && (
+                <div className="text-center space-y-4">
+                  <div className="flex items-center justify-center gap-2 text-green-600">
+                    <CheckCircle className="h-5 w-5" />
+                    <span className="font-medium">Intervention terminée</span>
                   </div>
-                )}
-                
-                <Button 
-                  onClick={onEndIntervention} 
-                  className="w-full bg-green-600 hover:bg-green-700" 
-                  size="lg"
-                  disabled={isUpdating || !journeyComplete}
-                >
-                  <CheckCircle className="h-5 w-5 mr-2" />
-                  Clôturer l'intervention
-                </Button>
-              </>
-            )}
-            
-            {isCompleted && (
-              <div className="text-center space-y-4">
-                <div className="flex items-center justify-center gap-2 text-green-600">
-                  <CheckCircle className="h-5 w-5" />
-                  <span className="font-medium">Intervention terminée</span>
+                  <Button variant="outline" className="w-full" onClick={onDownloadPDF}>
+                    <FileText className="h-4 w-4 mr-2" />
+                    Télécharger le rapport PDF
+                  </Button>
                 </div>
-                <Button variant="outline" className="w-full" onClick={onDownloadPDF}>
-                  <FileText className="h-4 w-4 mr-2" />
-                  Télécharger le rapport PDF
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </WorkflowStep>
     </div>
   );
