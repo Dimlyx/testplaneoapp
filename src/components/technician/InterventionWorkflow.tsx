@@ -71,6 +71,11 @@ const InterventionWorkflow = ({
   const isToInvoice = intervention.status === 'to_invoice';
   const isArchived = intervention.status === 'archived';
   
+  // Check if journey tracking is complete (mandatory)
+  const hasStartedJourney = !!intervention.travel_departure_time;
+  const hasArrivedAtClient = !!intervention.arrival_time;
+  const journeyComplete = hasStartedJourney && hasArrivedAtClient;
+  
   // Check if intervention is locked (completed, to_invoice, or archived)
   const isLocked = isCompleted || isToInvoice || isArchived;
 
@@ -292,15 +297,40 @@ const InterventionWorkflow = ({
         <Card>
           <CardContent className="p-4 space-y-4">
             {!isCompleted && isStarted && (
-              <Button 
-                onClick={onEndIntervention} 
-                className="w-full bg-green-600 hover:bg-green-700" 
-                size="lg"
-                disabled={isUpdating}
-              >
-                <CheckCircle className="h-5 w-5 mr-2" />
-                Clôturer l'intervention
-              </Button>
+              <>
+                {/* Warning if journey tracking is incomplete */}
+                {!journeyComplete && (
+                  <div className="p-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg">
+                    <div className="flex items-start gap-2 text-amber-700 dark:text-amber-300">
+                      <AlertCircle className="h-5 w-5 mt-0.5 shrink-0" />
+                      <div>
+                        <p className="font-medium text-sm">Suivi de trajet incomplet</p>
+                        <p className="text-xs mt-1 text-amber-600 dark:text-amber-400">
+                          Vous devez compléter le suivi de trajet avant de clôturer :
+                        </p>
+                        <ul className="text-xs mt-2 space-y-1 text-amber-600 dark:text-amber-400">
+                          <li className={hasStartedJourney ? "line-through opacity-50" : ""}>
+                            {hasStartedJourney ? "✓" : "•"} Démarrer le trajet
+                          </li>
+                          <li className={hasArrivedAtClient ? "line-through opacity-50" : ""}>
+                            {hasArrivedAtClient ? "✓" : "•"} Arriver chez le client
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                <Button 
+                  onClick={onEndIntervention} 
+                  className="w-full bg-green-600 hover:bg-green-700" 
+                  size="lg"
+                  disabled={isUpdating || !journeyComplete}
+                >
+                  <CheckCircle className="h-5 w-5 mr-2" />
+                  Clôturer l'intervention
+                </Button>
+              </>
             )}
             
             {isCompleted && (
