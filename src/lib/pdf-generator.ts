@@ -270,6 +270,17 @@ export const generateInterventionPDF = async (
   if (fullAddress) yPos = addField("Adresse chantier", fullAddress, yPos);
   yPos += 5;
 
+  // ================== LIEU D'INTERVENTION (si différent) ==================
+  const hasInterventionContact = intervention.intervention_address || intervention.intervention_phone || intervention.intervention_email;
+  if (hasInterventionContact) {
+    yPos = addSection("LIEU D'INTERVENTION", yPos);
+    const interventionFullAddress = [intervention.intervention_address, intervention.intervention_postal_code, intervention.intervention_city].filter(Boolean).join(', ');
+    if (interventionFullAddress) yPos = addField("Adresse", interventionFullAddress, yPos);
+    if (intervention.intervention_phone) yPos = addField("Téléphone", intervention.intervention_phone, yPos);
+    if (intervention.intervention_email) yPos = addField("Email", intervention.intervention_email, yPos);
+    yPos += 5;
+  }
+
   // ================== INTERVENTION DETAILS ==================
   yPos = addSection("DÉTAILS DE L'INTERVENTION", yPos);
   yPos = addField("Titre", intervention.title, yPos);
