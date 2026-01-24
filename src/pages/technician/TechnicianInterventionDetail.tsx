@@ -63,15 +63,22 @@ const TechnicianInterventionDetail = () => {
       
       const signatureUrl = urlData.publicUrl;
       
+      // Record departure time and complete intervention when client signs
+      const departureTime = format(new Date(), 'HH:mm:ss');
+      
       await updateIntervention.mutateAsync({
         id,
         client_signature_name: signerName,
         client_signature_url: signatureUrl,
+        status: 'completed',
+        departure_time: departureTime,
+        report,
       });
       
       setClientSignatureUrl(signatureUrl);
       setClientSignatureName(signerName);
-      toast({ title: "Signature enregistrée" });
+      setStatus('completed');
+      toast({ title: "Signature enregistrée - Intervention terminée" });
     } catch (error) {
       console.error('Error uploading signature:', error);
       toast({ title: "Erreur lors de l'enregistrement de la signature", variant: "destructive" });
