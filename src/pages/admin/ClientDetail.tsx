@@ -1,10 +1,19 @@
+import { useState, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useClient } from "@/hooks/useClients";
-import { useInterventions } from "@/hooks/useInterventions";
+import { useInterventions, InterventionStatus } from "@/hooks/useInterventions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge, TypeBadge } from "@/components/ui/status-badge";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { 
   ArrowLeft, 
   Edit, 
@@ -13,9 +22,11 @@ import {
   Phone, 
   MapPin,
   ClipboardList,
-  Plus
+  Plus,
+  Search,
+  X
 } from "lucide-react";
-import { format } from "date-fns";
+import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
   Table,
@@ -25,6 +36,24 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { CalendarIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+const statusOptions: { value: InterventionStatus | "all"; label: string }[] = [
+  { value: "all", label: "Tous les statuts" },
+  { value: "to_plan", label: "À planifier" },
+  { value: "planned", label: "Planifiée" },
+  { value: "in_progress", label: "En cours" },
+  { value: "completed", label: "Terminée" },
+  { value: "to_invoice", label: "À facturer" },
+  { value: "archived", label: "Archivée" },
+];
 
 const ClientDetail = () => {
   const navigate = useNavigate();
@@ -32,7 +61,50 @@ const ClientDetail = () => {
   const { data: client, isLoading } = useClient(id || "");
   const { data: interventions = [] } = useInterventions();
 
+  // Filtres
+  const [statusFilter, setStatusFilter] = useState<InterventionStatus | "all">("all");
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
+
   const clientInterventions = interventions.filter(i => i.client_id === id);
+
+  const filteredInterventions = useMemo(() => {
+    return clientInterventions.filter((intervention) => {
+      // Filtre par statut
+      if (statusFilter !== "all" && intervention.status !== statusFilter) {
+        return false;
+      }
+
+      // Filtre par date
+      if (startDate || endDate) {
+        if (!intervention.scheduled_date) return false;
+        const interventionDate = parseISO(intervention.scheduled_date);
+        
+        if (startDate && endDate) {
+          if (!isWithinInterval(interventionDate, { 
+            start: startOfDay(startDate), 
+            end: endOfDay(endDate) 
+          })) {
+            return false;
+          }
+        } else if (startDate) {
+          if (interventionDate < startOfDay(startDate)) return false;
+        } else if (endDate) {
+          if (interventionDate > endOfDay(endDate)) return false;
+        }
+      }
+
+      return true;
+    });
+  }, [clientInterventions, statusFilter, startDate, endDate]);
+
+  const clearFilters = () => {
+    setStatusFilter("all");
+    setStartDate(undefined);
+    setEndDate(undefined);
+  };
+
+  const hasActiveFilters = statusFilter !== "all" || startDate || endDate;
 
   if (isLoading) {
     return (
@@ -122,16 +194,102 @@ const ClientDetail = () => {
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <ClipboardList className="h-5 w-5" />
-            Interventions ({clientInterventions.length})
+            Interventions ({filteredInterventions.length}/{clientInterventions.length})
           </CardTitle>
           <Button size="sm" onClick={() => navigate(`/admin/interventions/new?client=${id}`)}>
             <Plus className="h-4 w-4 mr-2" />
             Nouvelle intervention
           </Button>
         </CardHeader>
-        <CardContent>
-          {clientInterventions.length === 0 ? (
-            <p className="text-muted-foreground text-center py-4">Aucune intervention</p>
+        <CardContent className="space-y-4">
+          {/* Filtres */}
+          <div className="flex flex-wrap gap-3 items-end p-4 bg-muted/50 rounded-lg">
+            {/* Filtre statut */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-muted-foreground">Statut</label>
+              <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as InterventionStatus | "all")}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Tous les statuts" />
+                </SelectTrigger>
+                <SelectContent>
+                  {statusOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Filtre date début */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-muted-foreground">Date début</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-[160px] justify-start text-left font-normal",
+                      !startDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {startDate ? format(startDate, "dd/MM/yyyy") : "Début"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={startDate}
+                    onSelect={setStartDate}
+                    initialFocus
+                    className="p-3 pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {/* Filtre date fin */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-muted-foreground">Date fin</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-[160px] justify-start text-left font-normal",
+                      !endDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {endDate ? format(endDate, "dd/MM/yyyy") : "Fin"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={endDate}
+                    onSelect={setEndDate}
+                    initialFocus
+                    className="p-3 pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {/* Bouton réinitialiser */}
+            {hasActiveFilters && (
+              <Button variant="ghost" size="sm" onClick={clearFilters} className="h-10">
+                <X className="h-4 w-4 mr-1" />
+                Réinitialiser
+              </Button>
+            )}
+          </div>
+
+          {filteredInterventions.length === 0 ? (
+            <p className="text-muted-foreground text-center py-4">
+              {hasActiveFilters ? "Aucune intervention correspondante" : "Aucune intervention"}
+            </p>
           ) : (
             <Table>
               <TableHeader>
@@ -144,7 +302,7 @@ const ClientDetail = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {clientInterventions.map((intervention) => (
+                {filteredInterventions.map((intervention) => (
                   <TableRow 
                     key={intervention.id} 
                     className="cursor-pointer hover:bg-muted/50"
