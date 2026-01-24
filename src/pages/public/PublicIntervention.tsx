@@ -178,6 +178,40 @@ const PublicIntervention = () => {
                 <div className="flex items-center gap-2">
                   <MapPin className="h-4 w-4 text-muted-foreground" />
                   <span>{fullAddress}</span>
+              </div>
+            )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Lieu d'intervention (si différent du client) */}
+        {(intervention.intervention_address || intervention.intervention_phone || intervention.intervention_email) && (
+          <Card className="border-primary/20">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <MapPin className="h-5 w-5" />
+                Lieu d'intervention
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {(intervention.intervention_address || intervention.intervention_city || intervention.intervention_postal_code) && (
+                <div className="flex items-start gap-2">
+                  <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
+                  <span>
+                    {[intervention.intervention_address, intervention.intervention_postal_code, intervention.intervention_city].filter(Boolean).join(', ')}
+                  </span>
+                </div>
+              )}
+              {intervention.intervention_phone && (
+                <div className="flex items-center gap-2">
+                  <Phone className="h-4 w-4 text-muted-foreground" />
+                  <span>{intervention.intervention_phone}</span>
+                </div>
+              )}
+              {intervention.intervention_email && (
+                <div className="flex items-center gap-2">
+                  <Mail className="h-4 w-4 text-muted-foreground" />
+                  <span>{intervention.intervention_email}</span>
                 </div>
               )}
             </CardContent>
