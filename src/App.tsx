@@ -13,6 +13,7 @@ import SuperAdminLayout from "@/components/layout/SuperAdminLayout";
 
 // Pages
 import Auth from "@/pages/Auth";
+import ResetPassword from "@/pages/ResetPassword";
 import NotFound from "@/pages/NotFound";
 
 // Admin pages
@@ -109,6 +110,7 @@ const AppRoutes = () => {
 
       {/* Auth */}
       <Route path="/auth" element={<Auth />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
 
       {/* Super Admin routes */}
       <Route

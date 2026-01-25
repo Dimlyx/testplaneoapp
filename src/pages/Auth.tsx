@@ -1,10 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth-context';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Wrench, Loader2 } from 'lucide-react';
 import { z } from 'zod';
@@ -14,11 +23,17 @@ const loginSchema = z.object({
   password: z.string().min(6, 'Le mot de passe doit contenir au moins 6 caractères'),
 });
 
+const emailSchema = z.string().email('Email invalide');
+
 export default function Auth() {
   const navigate = useNavigate();
   const { user, role, signIn, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetEmailError, setResetEmailError] = useState('');
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -68,6 +83,38 @@ export default function Auth() {
     }
   };
 
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetEmailError('');
+
+    const result = emailSchema.safeParse(resetEmail);
+    if (!result.success) {
+      setResetEmailError('Email invalide');
+      return;
+    }
+
+    setResetLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setResetLoading(false);
+
+    if (error) {
+      toast({
+        title: 'Erreur',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } else {
+      toast({
+        title: 'Email envoyé',
+        description: 'Si un compte existe avec cet email, vous recevrez un lien de réinitialisation.',
+      });
+      setResetDialogOpen(false);
+      setResetEmail('');
+    }
+  };
+
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-secondary">
@@ -112,7 +159,54 @@ export default function Auth() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="login-password">Mot de passe</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="login-password">Mot de passe</Label>
+                  <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button 
+                        type="button" 
+                        variant="link" 
+                        className="px-0 h-auto text-xs text-muted-foreground hover:text-primary"
+                      >
+                        Mot de passe oublié ?
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Réinitialiser le mot de passe</DialogTitle>
+                        <DialogDescription>
+                          Entrez votre adresse email pour recevoir un lien de réinitialisation.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <form onSubmit={handleResetPassword} className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="reset-email">Email</Label>
+                          <Input
+                            id="reset-email"
+                            type="email"
+                            placeholder="votre@email.com"
+                            value={resetEmail}
+                            onChange={(e) => setResetEmail(e.target.value)}
+                            disabled={resetLoading}
+                          />
+                          {resetEmailError && (
+                            <p className="text-sm text-destructive">{resetEmailError}</p>
+                          )}
+                        </div>
+                        <Button type="submit" className="w-full" disabled={resetLoading}>
+                          {resetLoading ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Envoi...
+                            </>
+                          ) : (
+                            'Envoyer le lien'
+                          )}
+                        </Button>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
+                </div>
                 <Input
                   id="login-password"
                   type="password"
