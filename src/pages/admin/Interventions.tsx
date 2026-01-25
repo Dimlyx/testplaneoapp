@@ -124,6 +124,8 @@ const Interventions = () => {
             <SelectItem value="planned">Planifiée</SelectItem>
             <SelectItem value="in_progress">En cours</SelectItem>
             <SelectItem value="completed">Terminée</SelectItem>
+            <SelectItem value="to_invoice">À facturer</SelectItem>
+            <SelectItem value="archived">Archivée</SelectItem>
           </SelectContent>
         </Select>
         <Select value={typeFilter} onValueChange={setTypeFilter}>
