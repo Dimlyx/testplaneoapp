@@ -20,82 +20,14 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-
-// Report settings from localStorage
-const REPORT_SETTINGS_KEY = "reportSettings";
-const EXTRANET_SETTINGS_KEY = "extranetSettings";
-
-interface ReportSettings {
-  companyName: string;
-  companyAddress: string;
-  companyPhone: string;
-  companyEmail: string;
-  primaryColor: string;
-  accentColor: string;
-  footerText: string;
-  logoUrl: string;
-}
-
-interface ExtranetSettings {
-  showClientInfo: boolean;
-  showInterventionAddress: boolean;
-  showScheduledDateTime: boolean;
-  showDescription: boolean;
-  showEquipmentDetails: boolean;
-  showEquipmentPhotos: boolean;
-  showReport: boolean;
-  showSignature: boolean;
-  welcomeMessage: string;
-  customFooterText: string;
-}
-
-const defaultSettings: ReportSettings = {
-  companyName: "",
-  companyAddress: "",
-  companyPhone: "",
-  companyEmail: "",
-  primaryColor: "#003057",
-  accentColor: "#0050A0",
-  footerText: "",
-  logoUrl: "",
-};
-
-const defaultExtranetSettings: ExtranetSettings = {
-  showClientInfo: true,
-  showInterventionAddress: true,
-  showScheduledDateTime: true,
-  showDescription: true,
-  showEquipmentDetails: true,
-  showEquipmentPhotos: true,
-  showReport: true,
-  showSignature: true,
-  welcomeMessage: "",
-  customFooterText: "",
-};
-
-const getReportSettings = (): ReportSettings => {
-  try {
-    const stored = localStorage.getItem(REPORT_SETTINGS_KEY);
-    if (stored) {
-      return { ...defaultSettings, ...JSON.parse(stored) };
-    }
-  } catch (e) {
-    console.error("Error loading report settings:", e);
-  }
-  return defaultSettings;
-};
-
-const getExtranetSettings = (): ExtranetSettings => {
-  try {
-    const stored = localStorage.getItem(EXTRANET_SETTINGS_KEY);
-    if (stored) {
-      return { ...defaultExtranetSettings, ...JSON.parse(stored) };
-    }
-  } catch (e) {
-    console.error("Error loading extranet settings:", e);
-  }
-  return defaultExtranetSettings;
-};
+import { 
+  useReportSettings, 
+  useExtranetSettings,
+  defaultReportSettings,
+  defaultExtranetSettings,
+  ReportSettings,
+  ExtranetSettings
+} from "@/hooks/useAppSettings";
 
 const PublicIntervention = () => {
   const { token } = useParams();
@@ -103,10 +35,15 @@ const PublicIntervention = () => {
   const { data: photos = [] } = useInterventionPhotos(intervention?.id || "");
   const { data: interventionEquipments = [] } = useInterventionEquipment(intervention?.id || "");
   
-  const settings = getReportSettings();
-  const extranetSettings = getExtranetSettings();
+  // Fetch settings from database
+  const { data: reportSettings, isLoading: loadingReportSettings } = useReportSettings();
+  const { data: extranetSettingsData, isLoading: loadingExtranetSettings } = useExtranetSettings();
+  
+  // Use fetched settings or defaults
+  const settings: ReportSettings = reportSettings || defaultReportSettings;
+  const extranetSettings: ExtranetSettings = extranetSettingsData || defaultExtranetSettings;
 
-  if (isLoading) {
+  if (isLoading || loadingReportSettings || loadingExtranetSettings) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
