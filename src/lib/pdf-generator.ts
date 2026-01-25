@@ -38,38 +38,53 @@ interface PDFGeneratorOptions {
   interventionEquipments?: InterventionEquipmentData[];
 }
 
-interface ReportSettings {
-  companyName: string;
-  companyAddress: string;
-  companyPhone: string;
-  companyEmail: string;
-  primaryColor: string;
-  accentColor: string;
-  footerText: string;
+interface CompanySettings {
+  name: string;
+  legalName: string;
+  siret: string;
+  tvaNumber: string;
+  rcsNumber: string;
+  capitalSocial: string;
+  address: string;
+  postalCode: string;
+  city: string;
+  phone: string;
+  email: string;
+  website: string;
   logoUrl: string;
 }
 
-const DEFAULT_SETTINGS: ReportSettings = {
-  companyName: '',
-  companyAddress: '',
-  companyPhone: '',
-  companyEmail: '',
-  primaryColor: '#003057',
-  accentColor: '#0050A0',
-  footerText: '',
+interface ReportSettings {
+  primaryColor: string;
+  accentColor: string;
+  footerText: string;
+}
+
+interface PDFSettings {
+  company: CompanySettings;
+  report: ReportSettings;
+}
+
+const DEFAULT_COMPANY: CompanySettings = {
+  name: '',
+  legalName: '',
+  siret: '',
+  tvaNumber: '',
+  rcsNumber: '',
+  capitalSocial: '',
+  address: '',
+  postalCode: '',
+  city: '',
+  phone: '',
+  email: '',
+  website: '',
   logoUrl: '',
 };
 
-const getReportSettings = (): ReportSettings => {
-  try {
-    const saved = localStorage.getItem('reportSettings');
-    if (saved) {
-      return { ...DEFAULT_SETTINGS, ...JSON.parse(saved) };
-    }
-  } catch (e) {
-    console.error('Error loading report settings:', e);
-  }
-  return DEFAULT_SETTINGS;
+const DEFAULT_REPORT: ReportSettings = {
+  primaryColor: '#003057',
+  accentColor: '#0050A0',
+  footerText: '',
 };
 
 const hexToRgb = (hex: string): [number, number, number] => {
@@ -143,17 +158,19 @@ export const generateInterventionPDF = async (
   equipment?: Tables<"equipment"> | null,
   technicianName?: string,
   photos?: InterventionPhoto[],
-  interventionEquipments?: InterventionEquipmentData[]
+  interventionEquipments?: InterventionEquipmentData[],
+  pdfSettings?: PDFSettings
 ) => {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   let yPos = 20;
   
-  // Load custom settings
-  const settings = getReportSettings();
-  const primaryRgb = hexToRgb(settings.primaryColor);
-  const accentRgb = hexToRgb(settings.accentColor);
+  // Use provided settings or defaults
+  const company = pdfSettings?.company || DEFAULT_COMPANY;
+  const report = pdfSettings?.report || DEFAULT_REPORT;
+  const primaryRgb = hexToRgb(report.primaryColor);
+  const accentRgb = hexToRgb(report.accentColor);
   
   // Helper functions
   const centerText = (text: string, y: number, fontSize: number = 12) => {
@@ -208,9 +225,9 @@ export const generateInterventionPDF = async (
   const logoMargin = 15;
   
   // Add logo if available
-  if (settings.logoUrl) {
+  if (company.logoUrl) {
     try {
-      const logoBase64 = await loadImageAsBase64(settings.logoUrl);
+      const logoBase64 = await loadImageAsBase64(company.logoUrl);
       if (logoBase64) {
         const logoHeight = 25;
         logoWidth = 30;
@@ -228,9 +245,9 @@ export const generateInterventionPDF = async (
   doc.setFont("helvetica", "bold");
   
   // Company name or default title
-  if (settings.companyName) {
+  if (company.name) {
     doc.setFontSize(12);
-    doc.text(settings.companyName, textStartX, 15);
+    doc.text(company.name, textStartX, 15);
     doc.setFontSize(14);
     doc.text("RAPPORT D'INTERVENTION", textStartX, 25);
   } else {
@@ -243,9 +260,9 @@ export const generateInterventionPDF = async (
   doc.text(client.name, textStartX, 35);
   
   // Company contact info in header (right aligned)
-  if (settings.companyPhone || settings.companyEmail) {
+  if (company.phone || company.email) {
     doc.setFontSize(8);
-    const contactInfo = [settings.companyPhone, settings.companyEmail].filter(Boolean).join(' | ');
+    const contactInfo = [company.phone, company.email].filter(Boolean).join(' | ');
     const contactWidth = doc.getTextWidth(contactInfo);
     doc.text(contactInfo, pageWidth - contactWidth - 15, 40);
   }
@@ -562,16 +579,24 @@ export const generateInterventionPDF = async (
     doc.setTextColor(128, 128, 128);
     
     // Custom footer text or default
-    const footerContent = settings.footerText 
-      ? `${settings.footerText} - Page ${i}/${totalPages}`
+    const footerContent = report.footerText 
+      ? `${report.footerText} - Page ${i}/${totalPages}`
       : `Document généré le ${format(new Date(), 'dd/MM/yyyy à HH:mm', { locale: fr })} - Page ${i}/${totalPages}`;
     
     centerText(footerContent, footerY, 8);
     
     // Add company address in footer if configured
-    if (settings.companyAddress) {
+    const fullAddress = [company.address, company.postalCode, company.city].filter(Boolean).join(', ');
+    if (fullAddress) {
       doc.setFontSize(7);
-      centerText(settings.companyAddress, footerY - 5, 7);
+      centerText(fullAddress, footerY - 5, 7);
+    }
+    
+    // Add legal info if available
+    const legalInfo = [company.siret ? `SIRET: ${company.siret}` : '', company.tvaNumber ? `TVA: ${company.tvaNumber}` : ''].filter(Boolean).join(' - ');
+    if (legalInfo) {
+      doc.setFontSize(6);
+      centerText(legalInfo, footerY - 10, 6);
     }
   }
 

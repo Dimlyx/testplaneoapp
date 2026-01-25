@@ -3,6 +3,7 @@ import { useIntervention } from "@/hooks/useInterventions";
 import { useClient } from "@/hooks/useClients";
 import { useInterventionPhotos, PhotoType } from "@/hooks/useInterventionPhotos";
 import { useInterventionEquipment } from "@/hooks/useInterventionEquipment";
+import { useCompanySettings, useReportSettings } from "@/hooks/useAppSettings";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge, TypeBadge } from "@/components/ui/status-badge";
@@ -31,6 +32,8 @@ const InterventionDetail = () => {
   const { data: client } = useClient(intervention?.client_id || "");
   const { data: photos = [] } = useInterventionPhotos(id || "");
   const { data: interventionEquipments = [] } = useInterventionEquipment(id || "");
+  const { data: companySettings } = useCompanySettings();
+  const { data: reportSettings } = useReportSettings();
 
   const getPhotosOfType = (type: PhotoType) => photos.filter(p => p.photo_type === type);
 
@@ -51,7 +54,8 @@ const InterventionDetail = () => {
         intervention.equipment as any,
         intervention.profiles?.full_name || undefined,
         photos,
-        interventionEquipments
+        interventionEquipments,
+        { company: companySettings!, report: reportSettings! }
       );
       toast({ title: "PDF généré avec succès" });
     }

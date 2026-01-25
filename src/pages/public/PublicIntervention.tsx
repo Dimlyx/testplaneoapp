@@ -23,10 +23,13 @@ import { fr } from "date-fns/locale";
 import { 
   useReportSettings, 
   useExtranetSettings,
+  useCompanySettings,
   defaultReportSettings,
   defaultExtranetSettings,
+  defaultCompanySettings,
   ReportSettings,
-  ExtranetSettings
+  ExtranetSettings,
+  CompanySettings
 } from "@/hooks/useAppSettings";
 
 const PublicIntervention = () => {
@@ -38,12 +41,14 @@ const PublicIntervention = () => {
   // Fetch settings from database
   const { data: reportSettings, isLoading: loadingReportSettings } = useReportSettings();
   const { data: extranetSettingsData, isLoading: loadingExtranetSettings } = useExtranetSettings();
+  const { data: companySettingsData, isLoading: loadingCompanySettings } = useCompanySettings();
   
   // Use fetched settings or defaults
   const settings: ReportSettings = reportSettings || defaultReportSettings;
   const extranetSettings: ExtranetSettings = extranetSettingsData || defaultExtranetSettings;
+  const companySettings: CompanySettings = companySettingsData || defaultCompanySettings;
 
-  if (isLoading || loadingReportSettings || loadingExtranetSettings) {
+  if (isLoading || loadingReportSettings || loadingExtranetSettings || loadingCompanySettings) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -89,16 +94,16 @@ const PublicIntervention = () => {
       >
         <div className="container max-w-2xl mx-auto px-4">
           <div className="flex items-center gap-3 mb-2">
-            {settings.logoUrl ? (
+            {companySettings.logoUrl ? (
               <img 
-                src={settings.logoUrl} 
+                src={companySettings.logoUrl} 
                 alt="Logo" 
                 className="h-10 w-auto object-contain bg-white rounded p-1"
               />
             ) : (
               <Wrench className="h-6 w-6" />
             )}
-            <span className="font-semibold">{settings.companyName || "Service Intervention"}</span>
+            <span className="font-semibold">{companySettings.name || "Service Intervention"}</span>
           </div>
           <h1 className="text-xl font-bold">Rapport d'intervention</h1>
         </div>
@@ -415,8 +420,8 @@ const PublicIntervention = () => {
         style={{ backgroundColor: settings.accentColor }}
       >
         <div className="container max-w-2xl mx-auto px-4 text-center text-sm">
-          <p>{extranetSettings.customFooterText || settings.footerText || `© ${new Date().getFullYear()} ${settings.companyName || "Service Intervention"}`}</p>
-          {settings.companyAddress && <p className="opacity-80 mt-1">{settings.companyAddress}</p>}
+          <p>{extranetSettings.customFooterText || settings.footerText || `© ${new Date().getFullYear()} ${companySettings.name || "Service Intervention"}`}</p>
+          {companySettings.address && <p className="opacity-80 mt-1">{[companySettings.address, companySettings.postalCode, companySettings.city].filter(Boolean).join(', ')}</p>}
         </div>
       </footer>
     </div>

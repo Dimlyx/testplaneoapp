@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useIntervention, useUpdateIntervention } from "@/hooks/useInterventions";
 import { useClient } from "@/hooks/useClients";
 import { useInterventionEquipment } from "@/hooks/useInterventionEquipment";
+import { useCompanySettings, useReportSettings } from "@/hooks/useAppSettings";
 import { Button } from "@/components/ui/button";
 import { StatusBadge, TypeBadge } from "@/components/ui/status-badge";
 import { ArrowLeft, Calendar, Clock } from "lucide-react";
@@ -21,6 +22,8 @@ const TechnicianInterventionDetail = () => {
   const { data: client } = useClient(intervention?.client_id || "");
   const { data: interventionEquipment = [] } = useInterventionEquipment(id || "");
   const { data: photos = [] } = useInterventionPhotos(id || "");
+  const { data: companySettings } = useCompanySettings();
+  const { data: reportSettings } = useReportSettings();
   const updateIntervention = useUpdateIntervention();
 
   const [status, setStatus] = useState<string>("");
@@ -156,7 +159,8 @@ const TechnicianInterventionDetail = () => {
         intervention.equipment as any,
         intervention.profiles?.full_name || undefined,
         photos,
-        interventionEquipment
+        interventionEquipment,
+        { company: companySettings!, report: reportSettings! }
       );
       toast({ title: "Rapport téléchargé" });
     }
