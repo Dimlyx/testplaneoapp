@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useInterventions } from "@/hooks/useInterventions";
 import { useClients } from "@/hooks/useClients";
 import { useTechnicians } from "@/hooks/useTechnicians";
+import { usePendingAlerts } from "@/hooks/useMaintenanceAlerts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge, TypeBadge } from "@/components/ui/status-badge";
 import { Input } from "@/components/ui/input";
@@ -16,13 +17,16 @@ import {
   Receipt,
   Archive,
   Search,
-  X
+  X,
+  Bell,
+  Wrench
 } from "lucide-react";
-import { format } from "date-fns";
+import { format, differenceInDays } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 type InterventionStatus = 'to_plan' | 'planned' | 'in_progress' | 'completed' | 'to_invoice' | 'archived';
 
@@ -30,6 +34,7 @@ const Dashboard = () => {
   const { data: interventions = [], isLoading: loadingInterventions } = useInterventions();
   const { data: clients = [], isLoading: loadingClients } = useClients();
   const { data: technicians = [], isLoading: loadingTechnicians } = useTechnicians();
+  const { data: overdueAlerts = [] } = usePendingAlerts();
 
   const [selectedStatus, setSelectedStatus] = useState<InterventionStatus | null>(null);
   const [clientSearch, setClientSearch] = useState("");
@@ -108,6 +113,66 @@ const Dashboard = () => {
         <h1 className="text-3xl font-bold text-foreground">Tableau de bord</h1>
         <p className="text-muted-foreground">Vue d'ensemble de l'activité</p>
       </div>
+
+      {/* Alertes de maintenance en retard */}
+      {overdueAlerts.length > 0 && (
+        <Card className="border-red-500 border-2 bg-red-50 dark:bg-red-950/20">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center justify-between">
+              <span className="flex items-center gap-2 text-red-600 dark:text-red-400">
+                <Bell className="h-5 w-5 animate-pulse" />
+                Maintenances en retard
+                <Badge variant="destructive" className="ml-2">
+                  {overdueAlerts.length}
+                </Badge>
+              </span>
+              <Link to="/admin/maintenance-alerts" className="text-sm text-primary hover:underline font-normal">
+                Voir tout
+              </Link>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3 max-h-48 overflow-y-auto">
+              {overdueAlerts.slice(0, 5).map((alert) => {
+                const daysOverdue = differenceInDays(new Date(), new Date(alert.alert_date));
+                return (
+                  <Link
+                    key={alert.id}
+                    to="/admin/maintenance-alerts"
+                    className="flex items-center justify-between p-3 bg-background rounded-lg border border-red-200 dark:border-red-900 hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-full bg-red-100 dark:bg-red-900/50">
+                        <Wrench className="h-4 w-4 text-red-600 dark:text-red-400" />
+                      </div>
+                      <div>
+                        <p className="font-medium">{alert.title}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {alert.clients?.name || "Client non spécifié"}
+                          {alert.equipment && ` • ${alert.equipment.brand} ${alert.equipment.model}`}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <Badge variant="destructive" className="text-xs">
+                        {daysOverdue === 0 ? "Aujourd'hui" : `${daysOverdue} jour${daysOverdue > 1 ? 's' : ''} de retard`}
+                      </Badge>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Prévu le {format(new Date(alert.alert_date), 'dd/MM/yyyy', { locale: fr })}
+                      </p>
+                    </div>
+                  </Link>
+                );
+              })}
+              {overdueAlerts.length > 5 && (
+                <p className="text-sm text-center text-muted-foreground pt-2">
+                  Et {overdueAlerts.length - 5} autre(s) alerte(s)...
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Statistiques principales */}
       <div className="grid gap-4 md:grid-cols-3">
