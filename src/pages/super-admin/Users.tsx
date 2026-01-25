@@ -5,16 +5,28 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Users, UserCog, Activity, Shield, Building2 } from 'lucide-react';
+import { Search, Users, UserCog, Activity, Shield, Building2, Pencil } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Link } from 'react-router-dom';
+import { EditUserDialog } from '@/components/super-admin/EditUserDialog';
+
+interface UserWithRole {
+  id: string;
+  email: string;
+  full_name: string | null;
+  created_at: string;
+  role: 'admin' | 'technician' | 'super_admin';
+  organization: { id: string; name: string } | null;
+}
 
 export default function AllUsers() {
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [editingUser, setEditingUser] = useState<UserWithRole | null>(null);
 
   const { data: usersWithRoles, isLoading } = useQuery({
     queryKey: ['all-users', searchQuery, roleFilter],
@@ -153,6 +165,7 @@ export default function AllUsers() {
                   <TableHead>Rôle</TableHead>
                   <TableHead>Organisation</TableHead>
                   <TableHead>Créé le</TableHead>
+                  <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -194,6 +207,15 @@ export default function AllUsers() {
                       <TableCell>
                         {format(new Date(user.created_at), 'dd MMM yyyy', { locale: fr })}
                       </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setEditingUser(user as UserWithRole)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   );
                 })}
@@ -212,6 +234,12 @@ export default function AllUsers() {
           )}
         </CardContent>
       </Card>
+
+      <EditUserDialog
+        user={editingUser}
+        open={!!editingUser}
+        onOpenChange={(open) => !open && setEditingUser(null)}
+      />
     </div>
   );
 }
