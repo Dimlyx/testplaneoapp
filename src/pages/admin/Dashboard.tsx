@@ -1,9 +1,10 @@
+import { useState, useMemo } from "react";
 import { useInterventions } from "@/hooks/useInterventions";
 import { useClients } from "@/hooks/useClients";
 import { useTechnicians } from "@/hooks/useTechnicians";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge, TypeBadge } from "@/components/ui/status-badge";
-
+import { Input } from "@/components/ui/input";
 import { 
   ClipboardList, 
   Users, 
@@ -13,16 +14,25 @@ import {
   CheckCircle,
   Clock,
   Receipt,
-  Archive
+  Archive,
+  Search,
+  X
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Link } from "react-router-dom";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+
+type InterventionStatus = 'to_plan' | 'planned' | 'in_progress' | 'completed' | 'to_invoice' | 'archived';
 
 const Dashboard = () => {
   const { data: interventions = [], isLoading: loadingInterventions } = useInterventions();
   const { data: clients = [], isLoading: loadingClients } = useClients();
   const { data: technicians = [], isLoading: loadingTechnicians } = useTechnicians();
+
+  const [selectedStatus, setSelectedStatus] = useState<InterventionStatus | null>(null);
+  const [clientSearch, setClientSearch] = useState("");
 
   const stats = {
     total: interventions.length,
@@ -34,11 +44,46 @@ const Dashboard = () => {
     archived: interventions.filter(i => i.status === 'archived').length,
   };
 
+  const getClientName = (clientId: string) => {
+    const client = clients.find(c => c.id === clientId);
+    return client?.name || "Client inconnu";
+  };
+
+  // Filter interventions based on selected status and client search
+  const filteredInterventions = useMemo(() => {
+    let filtered = interventions;
+
+    if (selectedStatus) {
+      filtered = filtered.filter(i => i.status === selectedStatus);
+    }
+
+    if (clientSearch.trim()) {
+      const searchLower = clientSearch.toLowerCase();
+      filtered = filtered.filter(i => {
+        const clientName = getClientName(i.client_id).toLowerCase();
+        return clientName.includes(searchLower) || i.title.toLowerCase().includes(searchLower);
+      });
+    }
+
+    return filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  }, [interventions, selectedStatus, clientSearch, clients]);
+
   const recentInterventions = interventions
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     .slice(0, 5);
 
   const urgentInterventions = interventions.filter(i => i.status === 'to_plan');
+
+  const handleStatusClick = (status: InterventionStatus) => {
+    setSelectedStatus(prev => prev === status ? null : status);
+  };
+
+  const clearFilters = () => {
+    setSelectedStatus(null);
+    setClientSearch("");
+  };
+
+  const hasActiveFilters = selectedStatus !== null || clientSearch.trim() !== "";
 
   if (loadingInterventions || loadingClients || loadingTechnicians) {
     return (
@@ -47,6 +92,15 @@ const Dashboard = () => {
       </div>
     );
   }
+
+  const statusCards = [
+    { status: 'to_plan' as InterventionStatus, label: 'À planifier', count: stats.toPlan, icon: AlertTriangle, colorClass: 'amber' },
+    { status: 'planned' as InterventionStatus, label: 'Planifiées', count: stats.planned, icon: Calendar, colorClass: 'blue' },
+    { status: 'in_progress' as InterventionStatus, label: 'En cours', count: stats.inProgress, icon: Clock, colorClass: 'purple' },
+    { status: 'completed' as InterventionStatus, label: 'Terminées', count: stats.completed, icon: CheckCircle, colorClass: 'green' },
+    { status: 'to_invoice' as InterventionStatus, label: 'À facturer', count: stats.toInvoice, icon: Receipt, colorClass: 'orange' },
+    { status: 'archived' as InterventionStatus, label: 'Archivées', count: stats.archived, icon: Archive, colorClass: 'gray' },
+  ];
 
   return (
     <div className="space-y-6">
@@ -95,76 +149,108 @@ const Dashboard = () => {
         </Card>
       </div>
 
-      {/* Statuts des interventions */}
-      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
-        <Card className="border-l-4 border-l-amber-500">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-amber-500" />
-              À planifier
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-amber-600">{stats.toPlan}</div>
-          </CardContent>
-        </Card>
-        <Card className="border-l-4 border-l-blue-500">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-blue-500" />
-              Planifiées
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{stats.planned}</div>
-          </CardContent>
-        </Card>
-        <Card className="border-l-4 border-l-purple-500">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Clock className="h-4 w-4 text-purple-500" />
-              En cours
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-purple-600">{stats.inProgress}</div>
-          </CardContent>
-        </Card>
-        <Card className="border-l-4 border-l-green-500">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-green-500" />
-              Terminées
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{stats.completed}</div>
-          </CardContent>
-        </Card>
-        <Card className="border-l-4 border-l-orange-500">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Receipt className="h-4 w-4 text-orange-500" />
-              À facturer
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-orange-600">{stats.toInvoice}</div>
-          </CardContent>
-        </Card>
-        <Card className="border-l-4 border-l-gray-500">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Archive className="h-4 w-4 text-gray-500" />
-              Archivées
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-gray-600">{stats.archived}</div>
-          </CardContent>
-        </Card>
+      {/* Statuts des interventions - Cliquables */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-semibold">Filtrer par statut</h2>
+          {hasActiveFilters && (
+            <Button variant="ghost" size="sm" onClick={clearFilters} className="text-muted-foreground">
+              <X className="h-4 w-4 mr-1" />
+              Effacer les filtres
+            </Button>
+          )}
+        </div>
+        <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
+          {statusCards.map(({ status, label, count, icon: Icon, colorClass }) => (
+            <Card 
+              key={status}
+              className={cn(
+                `border-l-4 cursor-pointer transition-all hover:shadow-md`,
+                `border-l-${colorClass}-500`,
+                selectedStatus === status && "ring-2 ring-primary ring-offset-2 bg-muted/50"
+              )}
+              onClick={() => handleStatusClick(status)}
+            >
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <Icon className={`h-4 w-4 text-${colorClass}-500`} />
+                  {label}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className={`text-2xl font-bold text-${colorClass}-600`}>{count}</div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
 
+      {/* Barre de recherche par client */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Rechercher par client ou titre d'intervention..."
+          value={clientSearch}
+          onChange={(e) => setClientSearch(e.target.value)}
+          className="pl-10"
+        />
+      </div>
+
+      {/* Résultats filtrés */}
+      {hasActiveFilters && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>
+                Résultats 
+                {selectedStatus && (
+                  <StatusBadge status={selectedStatus} className="ml-2" />
+                )}
+                {clientSearch && (
+                  <span className="ml-2 text-sm font-normal text-muted-foreground">
+                    - Recherche: "{clientSearch}"
+                  </span>
+                )}
+              </span>
+              <span className="text-sm font-normal text-muted-foreground">
+                {filteredInterventions.length} résultat{filteredInterventions.length > 1 ? 's' : ''}
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4 max-h-96 overflow-y-auto">
+              {filteredInterventions.length === 0 ? (
+                <p className="text-muted-foreground text-center py-4">Aucune intervention trouvée</p>
+              ) : (
+                filteredInterventions.map((intervention) => (
+                  <Link
+                    key={intervention.id}
+                    to={`/admin/interventions/${intervention.id}`}
+                    className="flex items-center justify-between border-b pb-3 last:border-0 hover:bg-muted/50 -mx-2 px-2 py-2 rounded transition-colors"
+                  >
+                    <div className="space-y-1">
+                      <p className="font-medium">{intervention.title}</p>
+                      <p className="text-sm text-muted-foreground">{getClientName(intervention.client_id)}</p>
+                      <div className="flex items-center gap-2">
+                        <TypeBadge type={intervention.intervention_type} />
+                        <StatusBadge status={intervention.status} />
+                      </div>
+                    </div>
+                    <div className="text-sm text-muted-foreground text-right">
+                      <div>{format(new Date(intervention.created_at), 'dd MMM yyyy', { locale: fr })}</div>
+                      {intervention.scheduled_date && (
+                        <div className="text-xs">
+                          Prévu: {format(new Date(intervention.scheduled_date), 'dd/MM/yyyy', { locale: fr })}
+                        </div>
+                      )}
+                    </div>
+                  </Link>
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Interventions récentes */}
@@ -183,9 +269,14 @@ const Dashboard = () => {
                 <p className="text-muted-foreground text-center py-4">Aucune intervention</p>
               ) : (
                 recentInterventions.map((intervention) => (
-                  <div key={intervention.id} className="flex items-center justify-between border-b pb-3 last:border-0">
+                  <Link
+                    key={intervention.id}
+                    to={`/admin/interventions/${intervention.id}`}
+                    className="flex items-center justify-between border-b pb-3 last:border-0 hover:bg-muted/50 -mx-2 px-2 py-1 rounded transition-colors block"
+                  >
                     <div className="space-y-1">
                       <p className="font-medium">{intervention.title}</p>
+                      <p className="text-sm text-muted-foreground">{getClientName(intervention.client_id)}</p>
                       <div className="flex items-center gap-2">
                         <TypeBadge type={intervention.intervention_type} />
                         <StatusBadge status={intervention.status} />
@@ -194,7 +285,7 @@ const Dashboard = () => {
                     <div className="text-sm text-muted-foreground">
                       {format(new Date(intervention.created_at), 'dd MMM', { locale: fr })}
                     </div>
-                  </div>
+                  </Link>
                 ))
               )}
             </div>
@@ -218,6 +309,7 @@ const Dashboard = () => {
                   <div key={intervention.id} className="flex items-center justify-between border-b pb-3 last:border-0">
                     <div className="space-y-1">
                       <p className="font-medium">{intervention.title}</p>
+                      <p className="text-sm text-muted-foreground">{getClientName(intervention.client_id)}</p>
                       <TypeBadge type={intervention.intervention_type} />
                     </div>
                     <Link 
