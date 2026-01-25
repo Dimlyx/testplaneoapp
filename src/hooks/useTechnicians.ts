@@ -7,15 +7,22 @@ export interface Technician {
   email: string;
 }
 
-export function useTechnicians() {
+export function useTechnicians(organizationId?: string | null) {
   return useQuery({
-    queryKey: ['technicians'],
+    queryKey: ['technicians', organizationId],
     queryFn: async () => {
-      // First get technician user_ids
-      const { data: roles, error: rolesError } = await supabase
+      // First get technician user_ids for this organization
+      let query = supabase
         .from('user_roles')
         .select('user_id')
         .eq('role', 'technician');
+      
+      // Filter by organization if provided
+      if (organizationId) {
+        query = query.eq('organization_id', organizationId);
+      }
+
+      const { data: roles, error: rolesError } = await query;
 
       if (rolesError) throw rolesError;
       if (!roles || roles.length === 0) return [];
