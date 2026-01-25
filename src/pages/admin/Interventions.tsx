@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useInterventions, useDeleteIntervention } from "@/hooks/useInterventions";
+import { useInterventions, useDeleteIntervention, useUpdateIntervention } from "@/hooks/useInterventions";
 import { useClients } from "@/hooks/useClients";
 import { useTechnicians } from "@/hooks/useTechnicians";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { StatusBadge, TypeBadge } from "@/components/ui/status-badge";
-import { Plus, Search, Trash2, Eye, Edit } from "lucide-react";
+import { Plus, Search, Trash2, Eye, Edit, CheckSquare, X, UserCheck, Archive } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Link, useNavigate } from "react-router-dom";
@@ -35,6 +35,25 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+type InterventionStatus = 'to_plan' | 'planned' | 'in_progress' | 'completed' | 'to_invoice' | 'archived';
+
+const STATUS_OPTIONS: { value: InterventionStatus; label: string }[] = [
+  { value: 'to_plan', label: 'À planifier' },
+  { value: 'planned', label: 'Planifiée' },
+  { value: 'in_progress', label: 'En cours' },
+  { value: 'completed', label: 'Terminée' },
+  { value: 'to_invoice', label: 'À facturer' },
+  { value: 'archived', label: 'Archivée' },
+];
 
 const Interventions = () => {
   const navigate = useNavigate();
@@ -42,6 +61,7 @@ const Interventions = () => {
   const { data: clients = [] } = useClients();
   const { data: technicians = [] } = useTechnicians();
   const deleteIntervention = useDeleteIntervention();
+  const updateIntervention = useUpdateIntervention();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -49,6 +69,12 @@ const Interventions = () => {
   const [technicianFilter, setTechnicianFilter] = useState<string>("all");
   const [clientFilter, setClientFilter] = useState<string>("all");
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  
+  // Bulk selection state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkStatusOpen, setBulkStatusOpen] = useState(false);
+  const [bulkTechnicianOpen, setBulkTechnicianOpen] = useState(false);
 
   const getClientName = (clientId: string) => {
     const client = clients.find(c => c.id === clientId);
@@ -72,6 +98,75 @@ const Interventions = () => {
 
     return matchesSearch && matchesStatus && matchesType && matchesTechnician && matchesClient;
   });
+
+  // Selection handlers
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredInterventions.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredInterventions.map(i => i.id)));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const clearSelection = () => {
+    setSelectedIds(new Set());
+  };
+
+  const isAllSelected = filteredInterventions.length > 0 && selectedIds.size === filteredInterventions.length;
+  const isSomeSelected = selectedIds.size > 0;
+
+  // Bulk action handlers
+  const handleBulkStatusChange = async (newStatus: InterventionStatus) => {
+    try {
+      const promises = Array.from(selectedIds).map(id =>
+        updateIntervention.mutateAsync({ id, status: newStatus })
+      );
+      await Promise.all(promises);
+      toast({ title: `${selectedIds.size} intervention(s) mise(s) à jour` });
+      clearSelection();
+      setBulkStatusOpen(false);
+    } catch (error) {
+      toast({ title: "Erreur lors de la mise à jour", variant: "destructive" });
+    }
+  };
+
+  const handleBulkTechnicianChange = async (technicianId: string | null) => {
+    try {
+      const promises = Array.from(selectedIds).map(id =>
+        updateIntervention.mutateAsync({ id, technician_id: technicianId })
+      );
+      await Promise.all(promises);
+      toast({ title: `${selectedIds.size} intervention(s) assignée(s)` });
+      clearSelection();
+      setBulkTechnicianOpen(false);
+    } catch (error) {
+      toast({ title: "Erreur lors de l'assignation", variant: "destructive" });
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    try {
+      const promises = Array.from(selectedIds).map(id =>
+        deleteIntervention.mutateAsync(id)
+      );
+      await Promise.all(promises);
+      toast({ title: `${selectedIds.size} intervention(s) supprimée(s)` });
+      clearSelection();
+      setBulkDeleteOpen(false);
+    } catch (error) {
+      toast({ title: "Erreur lors de la suppression", variant: "destructive" });
+    }
+  };
 
   const handleDelete = async () => {
     if (!deleteId) return;
@@ -169,11 +264,91 @@ const Interventions = () => {
         </Select>
       </div>
 
+      {/* Bulk Actions Bar */}
+      {isSomeSelected && (
+        <div className="flex items-center gap-3 p-3 bg-muted rounded-lg border">
+          <div className="flex items-center gap-2">
+            <CheckSquare className="h-4 w-4 text-primary" />
+            <span className="font-medium">{selectedIds.size} sélectionnée(s)</span>
+          </div>
+          
+          <div className="flex-1" />
+          
+          {/* Change Status */}
+          <DropdownMenu open={bulkStatusOpen} onOpenChange={setBulkStatusOpen}>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Archive className="h-4 w-4 mr-2" />
+                Changer le statut
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-background">
+              {STATUS_OPTIONS.map((status) => (
+                <DropdownMenuItem
+                  key={status.value}
+                  onClick={() => handleBulkStatusChange(status.value)}
+                >
+                  <StatusBadge status={status.value} className="mr-2" />
+                  {status.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Assign Technician */}
+          <DropdownMenu open={bulkTechnicianOpen} onOpenChange={setBulkTechnicianOpen}>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <UserCheck className="h-4 w-4 mr-2" />
+                Assigner
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-background">
+              <DropdownMenuItem onClick={() => handleBulkTechnicianChange(null)}>
+                Non assigné
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              {technicians.map((tech) => (
+                <DropdownMenuItem
+                  key={tech.id}
+                  onClick={() => handleBulkTechnicianChange(tech.id)}
+                >
+                  {tech.full_name || tech.email}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Delete */}
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="text-destructive hover:text-destructive"
+            onClick={() => setBulkDeleteOpen(true)}
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Supprimer
+          </Button>
+
+          {/* Clear Selection */}
+          <Button variant="ghost" size="sm" onClick={clearSelection}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+
       {/* Table */}
       <div className="border rounded-lg overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-12">
+                <Checkbox
+                  checked={isAllSelected}
+                  onCheckedChange={toggleSelectAll}
+                  aria-label="Sélectionner tout"
+                />
+              </TableHead>
               <TableHead>Titre</TableHead>
               <TableHead>Client</TableHead>
               <TableHead>Type</TableHead>
@@ -186,13 +361,23 @@ const Interventions = () => {
           <TableBody>
             {filteredInterventions.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                   Aucune intervention trouvée
                 </TableCell>
               </TableRow>
             ) : (
               filteredInterventions.map((intervention) => (
-                <TableRow key={intervention.id}>
+                <TableRow 
+                  key={intervention.id}
+                  className={selectedIds.has(intervention.id) ? "bg-muted/50" : ""}
+                >
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedIds.has(intervention.id)}
+                      onCheckedChange={() => toggleSelect(intervention.id)}
+                      aria-label={`Sélectionner ${intervention.title}`}
+                    />
+                  </TableCell>
                   <TableCell className="font-medium">{intervention.title}</TableCell>
                   <TableCell>{getClientName(intervention.client_id)}</TableCell>
                   <TableCell><TypeBadge type={intervention.intervention_type} /></TableCell>
@@ -235,6 +420,7 @@ const Interventions = () => {
         </Table>
       </div>
 
+      {/* Single Delete Dialog */}
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -247,6 +433,24 @@ const Interventions = () => {
             <AlertDialogCancel>Annuler</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
               Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Delete Dialog */}
+      <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmer la suppression groupée</AlertDialogTitle>
+            <AlertDialogDescription>
+              Êtes-vous sûr de vouloir supprimer {selectedIds.size} intervention(s) ? Cette action est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive text-destructive-foreground">
+              Supprimer {selectedIds.size} intervention(s)
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
