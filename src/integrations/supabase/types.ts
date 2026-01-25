@@ -19,6 +19,7 @@ export type Database = {
           created_at: string
           id: string
           key: string
+          organization_id: string | null
           updated_at: string
           value: Json
         }
@@ -26,6 +27,7 @@ export type Database = {
           created_at?: string
           id?: string
           key: string
+          organization_id?: string | null
           updated_at?: string
           value?: Json
         }
@@ -33,10 +35,19 @@ export type Database = {
           created_at?: string
           id?: string
           key?: string
+          organization_id?: string | null
           updated_at?: string
           value?: Json
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "app_settings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       clients: {
         Row: {
@@ -48,6 +59,7 @@ export type Database = {
           id: string
           name: string
           notes: string | null
+          organization_id: string | null
           phone: string | null
           postal_code: string | null
           updated_at: string
@@ -61,6 +73,7 @@ export type Database = {
           id?: string
           name: string
           notes?: string | null
+          organization_id?: string | null
           phone?: string | null
           postal_code?: string | null
           updated_at?: string
@@ -74,11 +87,20 @@ export type Database = {
           id?: string
           name?: string
           notes?: string | null
+          organization_id?: string | null
           phone?: string | null
           postal_code?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "clients_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       equipment: {
         Row: {
@@ -90,6 +112,7 @@ export type Database = {
           installation_date: string | null
           model: string
           notes: string | null
+          organization_id: string | null
           serial_number: string | null
           updated_at: string
         }
@@ -102,6 +125,7 @@ export type Database = {
           installation_date?: string | null
           model: string
           notes?: string | null
+          organization_id?: string | null
           serial_number?: string | null
           updated_at?: string
         }
@@ -114,6 +138,7 @@ export type Database = {
           installation_date?: string | null
           model?: string
           notes?: string | null
+          organization_id?: string | null
           serial_number?: string | null
           updated_at?: string
         }
@@ -123,6 +148,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "equipment_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -268,6 +300,7 @@ export type Database = {
           id: string
           label: string
           name: string
+          organization_id: string | null
         }
         Insert: {
           color?: string | null
@@ -275,6 +308,7 @@ export type Database = {
           id?: string
           label: string
           name: string
+          organization_id?: string | null
         }
         Update: {
           color?: string | null
@@ -282,8 +316,17 @@ export type Database = {
           id?: string
           label?: string
           name?: string
+          organization_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "intervention_types_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       interventions: {
         Row: {
@@ -304,6 +347,7 @@ export type Database = {
           intervention_postal_code: string | null
           intervention_type: Database["public"]["Enums"]["intervention_type"]
           observations: string | null
+          organization_id: string | null
           public_token: string | null
           report: string | null
           scheduled_date: string | null
@@ -334,6 +378,7 @@ export type Database = {
           intervention_postal_code?: string | null
           intervention_type: Database["public"]["Enums"]["intervention_type"]
           observations?: string | null
+          organization_id?: string | null
           public_token?: string | null
           report?: string | null
           scheduled_date?: string | null
@@ -364,6 +409,7 @@ export type Database = {
           intervention_postal_code?: string | null
           intervention_type?: Database["public"]["Enums"]["intervention_type"]
           observations?: string | null
+          organization_id?: string | null
           public_token?: string | null
           report?: string | null
           scheduled_date?: string | null
@@ -391,6 +437,13 @@ export type Database = {
             referencedRelation: "equipment"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "interventions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
         ]
       }
       maintenance_alerts: {
@@ -402,6 +455,7 @@ export type Database = {
           equipment_id: string | null
           id: string
           last_triggered_at: string | null
+          organization_id: string | null
           recurrence: Database["public"]["Enums"]["alert_recurrence"]
           status: Database["public"]["Enums"]["alert_status"]
           title: string
@@ -415,6 +469,7 @@ export type Database = {
           equipment_id?: string | null
           id?: string
           last_triggered_at?: string | null
+          organization_id?: string | null
           recurrence?: Database["public"]["Enums"]["alert_recurrence"]
           status?: Database["public"]["Enums"]["alert_status"]
           title: string
@@ -428,6 +483,7 @@ export type Database = {
           equipment_id?: string | null
           id?: string
           last_triggered_at?: string | null
+          organization_id?: string | null
           recurrence?: Database["public"]["Enums"]["alert_recurrence"]
           status?: Database["public"]["Enums"]["alert_status"]
           title?: string
@@ -446,6 +502,13 @@ export type Database = {
             columns: ["equipment_id"]
             isOneToOne: false
             referencedRelation: "equipment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_alerts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -522,6 +585,7 @@ export type Database = {
           email: string
           full_name: string | null
           id: string
+          organization_id: string | null
           phone: string | null
           updated_at: string
         }
@@ -530,6 +594,7 @@ export type Database = {
           email: string
           full_name?: string | null
           id: string
+          organization_id?: string | null
           phone?: string | null
           updated_at?: string
         }
@@ -538,37 +603,58 @@ export type Database = {
           email?: string
           full_name?: string | null
           id?: string
+          organization_id?: string | null
           phone?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
           created_at: string
           id: string
+          organization_id: string | null
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
+          organization_id?: string | null
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Update: {
           created_at?: string
           id?: string
+          organization_id?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      get_user_organization: { Args: { _user_id: string }; Returns: string }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -580,6 +666,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_super_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       alert_recurrence: "once" | "weekly" | "monthly" | "quarterly" | "yearly"
