@@ -450,6 +450,72 @@ export type Database = {
           },
         ]
       }
+      organizations: {
+        Row: {
+          address: string | null
+          city: string | null
+          created_at: string
+          email: string | null
+          id: string
+          logo_url: string | null
+          max_users: number | null
+          name: string
+          phone: string | null
+          postal_code: string | null
+          siret: string | null
+          slug: string
+          status: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          subscription_status: string | null
+          trial_ends_at: string | null
+          tva_number: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          logo_url?: string | null
+          max_users?: number | null
+          name: string
+          phone?: string | null
+          postal_code?: string | null
+          siret?: string | null
+          slug: string
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_status?: string | null
+          trial_ends_at?: string | null
+          tva_number?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          logo_url?: string | null
+          max_users?: number | null
+          name?: string
+          phone?: string | null
+          postal_code?: string | null
+          siret?: string | null
+          slug?: string
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_status?: string | null
+          trial_ends_at?: string | null
+          tva_number?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -518,7 +584,7 @@ export type Database = {
     Enums: {
       alert_recurrence: "once" | "weekly" | "monthly" | "quarterly" | "yearly"
       alert_status: "pending" | "acknowledged" | "completed" | "dismissed"
-      app_role: "admin" | "technician"
+      app_role: "admin" | "technician" | "super_admin"
       client_type: "individual" | "professional"
       equipment_status: "not_working" | "needs_intervention" | "working"
       intervention_status:
@@ -658,7 +724,7 @@ export const Constants = {
     Enums: {
       alert_recurrence: ["once", "weekly", "monthly", "quarterly", "yearly"],
       alert_status: ["pending", "acknowledged", "completed", "dismissed"],
-      app_role: ["admin", "technician"],
+      app_role: ["admin", "technician", "super_admin"],
       client_type: ["individual", "professional"],
       equipment_status: ["not_working", "needs_intervention", "working"],
       intervention_status: [
