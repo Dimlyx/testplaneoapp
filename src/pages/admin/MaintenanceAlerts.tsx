@@ -11,12 +11,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Bell, Plus, Edit, Trash2, Calendar, RefreshCw, CheckCircle, Clock, XCircle, AlertTriangle } from 'lucide-react';
+import { Bell, Plus, Edit, Trash2, Calendar, RefreshCw, CheckCircle, Clock, XCircle, AlertTriangle, CalendarDays } from 'lucide-react';
 import { format, parseISO, isPast, isToday, isFuture, addDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { MaintenanceCalendar } from '@/components/admin/MaintenanceCalendar';
 
 const recurrenceLabels: Record<AlertRecurrence, string> = {
   once: 'Une fois',
@@ -336,10 +337,21 @@ export default function MaintenanceAlerts() {
           <TabsTrigger value="active">
             Actives ({pendingAlerts.length + acknowledgedAlerts.length})
           </TabsTrigger>
+          <TabsTrigger value="calendar" className="flex items-center gap-1">
+            <CalendarDays className="h-4 w-4" />
+            Calendrier
+          </TabsTrigger>
           <TabsTrigger value="completed">
             Historique ({completedAlerts.length})
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="calendar">
+          <MaintenanceCalendar 
+            alerts={alerts} 
+            onAlertClick={(alert) => handleOpenDialog(alert)}
+          />
+        </TabsContent>
 
         <TabsContent value="active">
           <Card>
