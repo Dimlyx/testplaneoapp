@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   BarChart, 
@@ -15,15 +15,27 @@ import {
   Pie,
   Cell
 } from "recharts";
-import { TrendingUp, Clock, BarChart3, PieChart as PieChartIcon } from "lucide-react";
-import { format, parseISO, startOfMonth, endOfMonth, isWithinInterval, subMonths } from "date-fns";
+import { TrendingUp, Clock, BarChart3, PieChart as PieChartIcon, Filter, X, Calendar, UserCheck } from "lucide-react";
+import { format, parseISO, startOfMonth, endOfMonth, isWithinInterval, subMonths, isAfter, isBefore, startOfDay, endOfDay } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Tables } from "@/integrations/supabase/types";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 
 type Intervention = Tables<"interventions">;
 
+interface Technician {
+  id: string;
+  full_name: string | null;
+  email: string;
+}
+
 interface PerformanceChartsProps {
   interventions: Intervention[];
+  technicians?: Technician[];
 }
 
 const COLORS = {
@@ -38,7 +50,44 @@ const TYPE_LABELS: Record<string, string> = {
   installation: "Installation"
 };
 
-export function PerformanceCharts({ interventions }: PerformanceChartsProps) {
+export function PerformanceCharts({ interventions, technicians = [] }: PerformanceChartsProps) {
+  const [selectedTechnicianId, setSelectedTechnicianId] = useState<string>("all");
+  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
+  const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
+
+  // Filter interventions based on selected filters
+  const filteredInterventions = useMemo(() => {
+    let filtered = interventions;
+
+    // Filter by technician
+    if (selectedTechnicianId && selectedTechnicianId !== "all") {
+      filtered = filtered.filter(i => i.technician_id === selectedTechnicianId);
+    }
+
+    // Filter by date range
+    if (dateFrom || dateTo) {
+      filtered = filtered.filter(i => {
+        const dateString = i.scheduled_date || i.created_at;
+        if (!dateString) return false;
+        const interventionDate = parseISO(dateString);
+        
+        if (dateFrom && isBefore(interventionDate, startOfDay(dateFrom))) return false;
+        if (dateTo && isAfter(interventionDate, endOfDay(dateTo))) return false;
+        
+        return true;
+      });
+    }
+
+    return filtered;
+  }, [interventions, selectedTechnicianId, dateFrom, dateTo]);
+
+  const hasActiveFilters = selectedTechnicianId !== "all" || dateFrom || dateTo;
+
+  const clearFilters = () => {
+    setSelectedTechnicianId("all");
+    setDateFrom(undefined);
+    setDateTo(undefined);
+  };
   // Calculate time difference in minutes
   const calculateTimeDiff = (start: string | null, end: string | null): number | null => {
     if (!start || !end) return null;
@@ -63,7 +112,7 @@ export function PerformanceCharts({ interventions }: PerformanceChartsProps) {
       const monthStart = startOfMonth(date);
       const monthEnd = endOfMonth(date);
 
-      const monthInterventions = interventions.filter(i => {
+      const monthInterventions = filteredInterventions.filter(i => {
         const dateString = i.scheduled_date || i.created_at;
         if (!dateString) return false;
         const interventionDate = parseISO(dateString);
@@ -88,14 +137,14 @@ export function PerformanceCharts({ interventions }: PerformanceChartsProps) {
         installation: installationCount
       };
     });
-  }, [interventions]);
+  }, [filteredInterventions]);
 
   // Average times by intervention type
   const timesByType = useMemo(() => {
     const types = ['sav', 'maintenance', 'installation'] as const;
     
     return types.map(type => {
-      const typeInterventions = interventions.filter(i => i.intervention_type === type);
+      const typeInterventions = filteredInterventions.filter(i => i.intervention_type === type);
       
       const travelTimes = typeInterventions
         .map(i => calculateTimeDiff(i.travel_departure_time, i.arrival_time))
@@ -122,12 +171,12 @@ export function PerformanceCharts({ interventions }: PerformanceChartsProps) {
         count: typeInterventions.length
       };
     }).filter(t => t.count > 0);
-  }, [interventions]);
+  }, [filteredInterventions]);
 
   // Distribution by type (for pie chart)
   const typeDistribution = useMemo(() => {
     const distribution: Record<string, number> = {};
-    interventions.forEach(i => {
+    filteredInterventions.forEach(i => {
       distribution[i.intervention_type] = (distribution[i.intervention_type] || 0) + 1;
     });
 
@@ -136,7 +185,7 @@ export function PerformanceCharts({ interventions }: PerformanceChartsProps) {
       value: count,
       color: COLORS[type as keyof typeof COLORS] || "#6b7280"
     }));
-  }, [interventions]);
+  }, [filteredInterventions]);
 
   // Monthly trend - resolution rate
   const resolutionTrend = useMemo(() => {
@@ -152,7 +201,7 @@ export function PerformanceCharts({ interventions }: PerformanceChartsProps) {
       const monthStart = startOfMonth(date);
       const monthEnd = endOfMonth(date);
 
-      const monthInterventions = interventions.filter(i => {
+      const monthInterventions = filteredInterventions.filter(i => {
         const dateString = i.scheduled_date || i.created_at;
         if (!dateString) return false;
         const interventionDate = parseISO(dateString);
@@ -171,7 +220,7 @@ export function PerformanceCharts({ interventions }: PerformanceChartsProps) {
         taux: rate
       };
     });
-  }, [interventions]);
+  }, [filteredInterventions]);
 
   const formatMinutes = (minutes: number): string => {
     if (minutes === 0) return "0min";
@@ -212,8 +261,131 @@ export function PerformanceCharts({ interventions }: PerformanceChartsProps) {
     return null;
   };
 
+  const selectedTechnician = technicians.find(t => t.id === selectedTechnicianId);
+
   return (
     <div className="space-y-6">
+      {/* Filtres */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              <Filter className="h-5 w-5" />
+              Filtres
+            </span>
+            {hasActiveFilters && (
+              <Button variant="ghost" size="sm" onClick={clearFilters}>
+                <X className="h-4 w-4 mr-1" />
+                Effacer
+              </Button>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-4">
+            {/* Filtre technicien */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                <UserCheck className="h-3.5 w-3.5" />
+                Technicien
+              </label>
+              <Select value={selectedTechnicianId} onValueChange={setSelectedTechnicianId}>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Tous les techniciens" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous les techniciens</SelectItem>
+                  {technicians.map(tech => (
+                    <SelectItem key={tech.id} value={tech.id}>
+                      {tech.full_name || tech.email}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Date de début */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                <Calendar className="h-3.5 w-3.5" />
+                Date début
+              </label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-[160px] justify-start text-left font-normal",
+                      !dateFrom && "text-muted-foreground"
+                    )}
+                  >
+                    {dateFrom ? format(dateFrom, "dd/MM/yyyy") : "Sélectionner"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarComponent
+                    mode="single"
+                    selected={dateFrom}
+                    onSelect={setDateFrom}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {/* Date de fin */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                <Calendar className="h-3.5 w-3.5" />
+                Date fin
+              </label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-[160px] justify-start text-left font-normal",
+                      !dateTo && "text-muted-foreground"
+                    )}
+                  >
+                    {dateTo ? format(dateTo, "dd/MM/yyyy") : "Sélectionner"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarComponent
+                    mode="single"
+                    selected={dateTo}
+                    onSelect={setDateTo}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+
+          {/* Résumé des filtres actifs */}
+          {hasActiveFilters && (
+            <div className="mt-4 pt-3 border-t">
+              <p className="text-sm text-muted-foreground">
+                <span className="font-medium">{filteredInterventions.length}</span> intervention{filteredInterventions.length > 1 ? 's' : ''} correspondant{filteredInterventions.length > 1 ? 'es' : 'e'}
+                {selectedTechnicianId !== "all" && selectedTechnician && (
+                  <span> pour <span className="font-medium">{selectedTechnician.full_name || selectedTechnician.email}</span></span>
+                )}
+                {(dateFrom || dateTo) && (
+                  <span>
+                    {dateFrom && dateTo && ` du ${format(dateFrom, "dd/MM/yyyy")} au ${format(dateTo, "dd/MM/yyyy")}`}
+                    {dateFrom && !dateTo && ` à partir du ${format(dateFrom, "dd/MM/yyyy")}`}
+                    {!dateFrom && dateTo && ` jusqu'au ${format(dateTo, "dd/MM/yyyy")}`}
+                  </span>
+                )}
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Evolution mensuelle */}
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
