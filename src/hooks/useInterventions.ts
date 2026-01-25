@@ -11,6 +11,7 @@ export interface Intervention {
   client_id: string;
   equipment_id: string | null;
   technician_id: string | null;
+  organization_id: string | null;
   intervention_type: InterventionType;
   status: InterventionStatus;
   title: string;
@@ -43,6 +44,7 @@ export interface Intervention {
     city: string | null;
     postal_code?: string | null;
     client_type?: string;
+    organization_id?: string | null;
   };
   equipment?: {
     id: string;
@@ -51,11 +53,13 @@ export interface Intervention {
     equipment_type: string;
     serial_number: string | null;
     installation_date?: string | null;
+    organization_id?: string | null;
   } | null;
   profiles?: {
     id: string;
     full_name: string | null;
     email: string;
+    organization_id?: string | null;
   } | null;
 }
 

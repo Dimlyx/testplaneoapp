@@ -14,6 +14,7 @@ export interface Client {
   email: string | null;
   phone: string | null;
   notes: string | null;
+  organization_id: string | null;
   created_at: string;
   updated_at: string;
 }

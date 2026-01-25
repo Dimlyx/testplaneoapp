@@ -9,6 +9,7 @@ import { OfflineProvider } from "@/hooks/useOfflineSync";
 // Layouts
 import AdminLayout from "@/components/layout/AdminLayout";
 import TechnicianLayout from "@/components/layout/TechnicianLayout";
+import SuperAdminLayout from "@/components/layout/SuperAdminLayout";
 
 // Pages
 import Auth from "@/pages/Auth";
@@ -35,10 +36,16 @@ import TechnicianHistory from "@/pages/technician/TechnicianHistory";
 import PublicIntervention from "@/pages/public/PublicIntervention";
 import InstallApp from "@/pages/InstallApp";
 
+// Super Admin pages
+import SuperAdminDashboard from "@/pages/super-admin/Dashboard";
+import SuperAdminOrganizations from "@/pages/super-admin/Organizations";
+import SuperAdminOrganizationDetail from "@/pages/super-admin/OrganizationDetail";
+import SuperAdminUsers from "@/pages/super-admin/Users";
+
 const queryClient = new QueryClient();
 
 // Protected route wrapper
-const ProtectedRoute = ({ children, requiredRole }: { children: React.ReactNode; requiredRole?: "admin" | "technician" }) => {
+const ProtectedRoute = ({ children, requiredRole }: { children: React.ReactNode; requiredRole?: "admin" | "technician" | "super_admin" }) => {
   const { user, role, loading } = useAuth();
 
   if (loading) {
@@ -55,7 +62,9 @@ const ProtectedRoute = ({ children, requiredRole }: { children: React.ReactNode;
 
   if (requiredRole && role !== requiredRole) {
     // Redirect to appropriate dashboard based on role
-    if (role === "admin") {
+    if (role === "super_admin") {
+      return <Navigate to="/super-admin" replace />;
+    } else if (role === "admin") {
       return <Navigate to="/admin" replace />;
     } else if (role === "technician") {
       return <Navigate to="/technician" replace />;
@@ -81,7 +90,9 @@ const RootRedirect = () => {
     return <Navigate to="/auth" replace />;
   }
 
-  if (role === "admin") {
+  if (role === "super_admin") {
+    return <Navigate to="/super-admin" replace />;
+  } else if (role === "admin") {
     return <Navigate to="/admin" replace />;
   } else if (role === "technician") {
     return <Navigate to="/technician" replace />;
@@ -98,6 +109,21 @@ const AppRoutes = () => {
 
       {/* Auth */}
       <Route path="/auth" element={<Auth />} />
+
+      {/* Super Admin routes */}
+      <Route
+        path="/super-admin"
+        element={
+          <ProtectedRoute requiredRole="super_admin">
+            <SuperAdminLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<SuperAdminDashboard />} />
+        <Route path="organizations" element={<SuperAdminOrganizations />} />
+        <Route path="organizations/:id" element={<SuperAdminOrganizationDetail />} />
+        <Route path="users" element={<SuperAdminUsers />} />
+      </Route>
 
       {/* Admin routes */}
       <Route

@@ -1,10 +1,22 @@
 import { jsPDF } from "jspdf";
 import { Intervention } from "@/hooks/useInterventions";
-import { Tables } from "@/integrations/supabase/types";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
-type Client = Tables<"clients">;
+interface Client {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  city: string | null;
+  postal_code: string | null;
+  client_type: 'individual' | 'professional';
+  notes: string | null;
+  organization_id?: string | null;
+  created_at: string;
+  updated_at: string;
+}
 
 interface InterventionPhoto {
   id: string;
@@ -155,7 +167,15 @@ const loadImageAsBase64 = async (url: string): Promise<string | null> => {
 export const generateInterventionPDF = async (
   intervention: Intervention, 
   client: Client, 
-  equipment?: Tables<"equipment"> | null,
+  equipment?: {
+    id: string;
+    brand: string;
+    model: string;
+    equipment_type: string;
+    serial_number: string | null;
+    installation_date?: string | null;
+    organization_id?: string | null;
+  } | null,
   technicianName?: string,
   photos?: InterventionPhoto[],
   interventionEquipments?: InterventionEquipmentData[],
