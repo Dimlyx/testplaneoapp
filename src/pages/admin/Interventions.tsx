@@ -47,6 +47,7 @@ const Interventions = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [technicianFilter, setTechnicianFilter] = useState<string>("all");
+  const [clientFilter, setClientFilter] = useState<string>("all");
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const getClientName = (clientId: string) => {
@@ -67,8 +68,9 @@ const Interventions = () => {
     const matchesStatus = statusFilter === "all" || intervention.status === statusFilter;
     const matchesType = typeFilter === "all" || intervention.intervention_type === typeFilter;
     const matchesTechnician = technicianFilter === "all" || intervention.technician_id === technicianFilter;
+    const matchesClient = clientFilter === "all" || intervention.client_id === clientFilter;
 
-    return matchesSearch && matchesStatus && matchesType && matchesTechnician;
+    return matchesSearch && matchesStatus && matchesType && matchesTechnician && matchesClient;
   });
 
   const handleDelete = async () => {
@@ -148,6 +150,19 @@ const Interventions = () => {
             {technicians.map((tech) => (
               <SelectItem key={tech.id} value={tech.id}>
                 {tech.full_name || tech.email}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={clientFilter} onValueChange={setClientFilter}>
+          <SelectTrigger className="w-full sm:w-[200px]">
+            <SelectValue placeholder="Client" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tous les clients</SelectItem>
+            {clients.map((client) => (
+              <SelectItem key={client.id} value={client.id}>
+                {client.name}
               </SelectItem>
             ))}
           </SelectContent>
