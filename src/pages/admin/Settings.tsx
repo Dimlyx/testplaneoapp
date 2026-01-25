@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Settings as SettingsIcon, Tag, FileText, Palette, Save, Upload, X, Image, Globe, Eye, EyeOff } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,109 +10,46 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import InterventionTypesSettings from "@/components/settings/InterventionTypesSettings";
 import { supabase } from "@/integrations/supabase/client";
-
-// Report settings stored in localStorage for now
-const REPORT_SETTINGS_KEY = "reportSettings";
-const EXTRANET_SETTINGS_KEY = "extranetSettings";
-
-interface ReportSettings {
-  companyName: string;
-  companyAddress: string;
-  companyPhone: string;
-  companyEmail: string;
-  primaryColor: string;
-  accentColor: string;
-  footerText: string;
-  logoUrl: string;
-}
-
-interface ExtranetSettings {
-  showClientInfo: boolean;
-  showInterventionAddress: boolean;
-  showScheduledDateTime: boolean;
-  showDescription: boolean;
-  showEquipmentDetails: boolean;
-  showEquipmentPhotos: boolean;
-  showReport: boolean;
-  showSignature: boolean;
-  welcomeMessage: string;
-  customFooterText: string;
-}
-
-const defaultReportSettings: ReportSettings = {
-  companyName: "",
-  companyAddress: "",
-  companyPhone: "",
-  companyEmail: "",
-  primaryColor: "#003057",
-  accentColor: "#0050A0",
-  footerText: "",
-  logoUrl: "",
-};
-
-const defaultExtranetSettings: ExtranetSettings = {
-  showClientInfo: true,
-  showInterventionAddress: true,
-  showScheduledDateTime: true,
-  showDescription: true,
-  showEquipmentDetails: true,
-  showEquipmentPhotos: true,
-  showReport: true,
-  showSignature: true,
-  welcomeMessage: "",
-  customFooterText: "",
-};
-
-const getStoredSettings = (): ReportSettings => {
-  try {
-    const stored = localStorage.getItem(REPORT_SETTINGS_KEY);
-    if (stored) {
-      return { ...defaultReportSettings, ...JSON.parse(stored) };
-    }
-  } catch (e) {
-    console.error("Error loading report settings:", e);
-  }
-  return defaultReportSettings;
-};
-
-const getStoredExtranetSettings = (): ExtranetSettings => {
-  try {
-    const stored = localStorage.getItem(EXTRANET_SETTINGS_KEY);
-    if (stored) {
-      return { ...defaultExtranetSettings, ...JSON.parse(stored) };
-    }
-  } catch (e) {
-    console.error("Error loading extranet settings:", e);
-  }
-  return defaultExtranetSettings;
-};
+import { 
+  useReportSettings, 
+  useExtranetSettings, 
+  useUpdateReportSettings, 
+  useUpdateExtranetSettings,
+  ReportSettings,
+  ExtranetSettings,
+  defaultReportSettings,
+  defaultExtranetSettings
+} from "@/hooks/useAppSettings";
 
 export default function Settings() {
   const { toast } = useToast();
-  const [reportSettings, setReportSettings] = useState<ReportSettings>(getStoredSettings);
-  const [extranetSettings, setExtranetSettings] = useState<ExtranetSettings>(getStoredExtranetSettings);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isSavingExtranet, setIsSavingExtranet] = useState(false);
+  
+  // Fetch settings from database
+  const { data: dbReportSettings, isLoading: loadingReport } = useReportSettings();
+  const { data: dbExtranetSettings, isLoading: loadingExtranet } = useExtranetSettings();
+  const updateReportSettingsMutation = useUpdateReportSettings();
+  const updateExtranetSettingsMutation = useUpdateExtranetSettings();
+  
+  const [reportSettings, setReportSettings] = useState<ReportSettings>(defaultReportSettings);
+  const [extranetSettings, setExtranetSettings] = useState<ExtranetSettings>(defaultExtranetSettings);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleSaveReportSettings = () => {
-    setIsSaving(true);
-    try {
-      localStorage.setItem(REPORT_SETTINGS_KEY, JSON.stringify(reportSettings));
-      toast({
-        title: "Paramètres enregistrés",
-        description: "Les paramètres des rapports ont été sauvegardés.",
-      });
-    } catch (e) {
-      toast({
-        title: "Erreur",
-        description: "Impossible de sauvegarder les paramètres.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSaving(false);
+  // Sync local state with database
+  useEffect(() => {
+    if (dbReportSettings) {
+      setReportSettings(dbReportSettings);
     }
+  }, [dbReportSettings]);
+
+  useEffect(() => {
+    if (dbExtranetSettings) {
+      setExtranetSettings(dbExtranetSettings);
+    }
+  }, [dbExtranetSettings]);
+
+  const handleSaveReportSettings = async () => {
+    await updateReportSettingsMutation.mutateAsync(reportSettings);
   };
 
   const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -157,7 +94,11 @@ export default function Settings() {
         .from('intervention-photos')
         .getPublicUrl(filePath);
 
-      updateReportSetting("logoUrl", urlData.publicUrl);
+      // Update local state and save to DB
+      const newSettings = { ...reportSettings, logoUrl: urlData.publicUrl };
+      setReportSettings(newSettings);
+      await updateReportSettingsMutation.mutateAsync({ logoUrl: urlData.publicUrl });
+      
       toast({
         title: "Logo uploadé",
         description: "Le logo a été enregistré avec succès.",
@@ -177,8 +118,9 @@ export default function Settings() {
     }
   };
 
-  const handleRemoveLogo = () => {
-    updateReportSetting("logoUrl", "");
+  const handleRemoveLogo = async () => {
+    setReportSettings(prev => ({ ...prev, logoUrl: "" }));
+    await updateReportSettingsMutation.mutateAsync({ logoUrl: "" });
     toast({
       title: "Logo supprimé",
       description: "Le logo a été retiré des paramètres.",
@@ -199,24 +141,17 @@ export default function Settings() {
     setExtranetSettings((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleSaveExtranetSettings = () => {
-    setIsSavingExtranet(true);
-    try {
-      localStorage.setItem(EXTRANET_SETTINGS_KEY, JSON.stringify(extranetSettings));
-      toast({
-        title: "Paramètres enregistrés",
-        description: "Les paramètres de l'extranet ont été sauvegardés.",
-      });
-    } catch (e) {
-      toast({
-        title: "Erreur",
-        description: "Impossible de sauvegarder les paramètres.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSavingExtranet(false);
-    }
+  const handleSaveExtranetSettings = async () => {
+    await updateExtranetSettingsMutation.mutateAsync(extranetSettings);
   };
+
+  if (loadingReport || loadingExtranet) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -263,7 +198,7 @@ export default function Settings() {
                 Informations entreprise
               </CardTitle>
               <CardDescription>
-                Ces informations apparaîtront sur les rapports PDF
+                Ces informations apparaîtront sur les rapports PDF et l'extranet
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -476,273 +411,158 @@ export default function Settings() {
                   className="p-3 text-center text-xs text-white"
                   style={{ backgroundColor: reportSettings.accentColor }}
                 >
-                  {reportSettings.footerText || "Pied de page"}
+                  {reportSettings.footerText || "Texte de pied de page"}
                 </div>
               </div>
             </CardContent>
           </Card>
 
           {/* Save Button */}
-          <div className="flex justify-end">
-            <Button onClick={handleSaveReportSettings} disabled={isSaving}>
-              <Save className="h-4 w-4 mr-2" />
-              {isSaving ? "Enregistrement..." : "Enregistrer les paramètres"}
-            </Button>
-          </div>
+          <Button 
+            onClick={handleSaveReportSettings} 
+            disabled={updateReportSettingsMutation.isPending}
+            className="w-full sm:w-auto"
+          >
+            <Save className="h-4 w-4 mr-2" />
+            {updateReportSettingsMutation.isPending ? "Enregistrement..." : "Enregistrer les paramètres"}
+          </Button>
         </TabsContent>
 
         {/* Tab: Extranet Settings */}
         <TabsContent value="extranet" className="space-y-6">
-          {/* Visibility Settings */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Eye className="h-5 w-5" />
-                Visibilité des sections
+                <Globe className="h-5 w-5" />
+                Personnalisation de l'extranet
               </CardTitle>
               <CardDescription>
-                Choisissez les informations visibles par vos clients sur l'extranet
+                Contrôlez les informations affichées sur le portail client accessible via lien public
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Informations client</Label>
-                    <p className="text-xs text-muted-foreground">Nom, téléphone, email du client</p>
+            <CardContent className="space-y-6">
+              {/* Visibility toggles */}
+              <div className="space-y-4">
+                <h3 className="font-medium text-sm text-muted-foreground">Sections affichées</h3>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="flex items-center justify-between p-3 rounded-lg border">
+                    <div className="flex items-center gap-2">
+                      {extranetSettings.showClientInfo ? <Eye className="h-4 w-4 text-green-600" /> : <EyeOff className="h-4 w-4 text-muted-foreground" />}
+                      <span className="text-sm">Informations client</span>
+                    </div>
+                    <Switch
+                      checked={extranetSettings.showClientInfo}
+                      onCheckedChange={(checked) => updateExtranetSetting("showClientInfo", checked)}
+                    />
                   </div>
-                  <Switch
-                    checked={extranetSettings.showClientInfo}
-                    onCheckedChange={(checked) => updateExtranetSetting("showClientInfo", checked)}
+                  <div className="flex items-center justify-between p-3 rounded-lg border">
+                    <div className="flex items-center gap-2">
+                      {extranetSettings.showInterventionAddress ? <Eye className="h-4 w-4 text-green-600" /> : <EyeOff className="h-4 w-4 text-muted-foreground" />}
+                      <span className="text-sm">Lieu d'intervention</span>
+                    </div>
+                    <Switch
+                      checked={extranetSettings.showInterventionAddress}
+                      onCheckedChange={(checked) => updateExtranetSetting("showInterventionAddress", checked)}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between p-3 rounded-lg border">
+                    <div className="flex items-center gap-2">
+                      {extranetSettings.showScheduledDateTime ? <Eye className="h-4 w-4 text-green-600" /> : <EyeOff className="h-4 w-4 text-muted-foreground" />}
+                      <span className="text-sm">Date et heure prévues</span>
+                    </div>
+                    <Switch
+                      checked={extranetSettings.showScheduledDateTime}
+                      onCheckedChange={(checked) => updateExtranetSetting("showScheduledDateTime", checked)}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between p-3 rounded-lg border">
+                    <div className="flex items-center gap-2">
+                      {extranetSettings.showDescription ? <Eye className="h-4 w-4 text-green-600" /> : <EyeOff className="h-4 w-4 text-muted-foreground" />}
+                      <span className="text-sm">Description intervention</span>
+                    </div>
+                    <Switch
+                      checked={extranetSettings.showDescription}
+                      onCheckedChange={(checked) => updateExtranetSetting("showDescription", checked)}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between p-3 rounded-lg border">
+                    <div className="flex items-center gap-2">
+                      {extranetSettings.showEquipmentDetails ? <Eye className="h-4 w-4 text-green-600" /> : <EyeOff className="h-4 w-4 text-muted-foreground" />}
+                      <span className="text-sm">Détails équipements</span>
+                    </div>
+                    <Switch
+                      checked={extranetSettings.showEquipmentDetails}
+                      onCheckedChange={(checked) => updateExtranetSetting("showEquipmentDetails", checked)}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between p-3 rounded-lg border">
+                    <div className="flex items-center gap-2">
+                      {extranetSettings.showEquipmentPhotos ? <Eye className="h-4 w-4 text-green-600" /> : <EyeOff className="h-4 w-4 text-muted-foreground" />}
+                      <span className="text-sm">Photos équipements</span>
+                    </div>
+                    <Switch
+                      checked={extranetSettings.showEquipmentPhotos}
+                      onCheckedChange={(checked) => updateExtranetSetting("showEquipmentPhotos", checked)}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between p-3 rounded-lg border">
+                    <div className="flex items-center gap-2">
+                      {extranetSettings.showReport ? <Eye className="h-4 w-4 text-green-600" /> : <EyeOff className="h-4 w-4 text-muted-foreground" />}
+                      <span className="text-sm">Compte rendu</span>
+                    </div>
+                    <Switch
+                      checked={extranetSettings.showReport}
+                      onCheckedChange={(checked) => updateExtranetSetting("showReport", checked)}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between p-3 rounded-lg border">
+                    <div className="flex items-center gap-2">
+                      {extranetSettings.showSignature ? <Eye className="h-4 w-4 text-green-600" /> : <EyeOff className="h-4 w-4 text-muted-foreground" />}
+                      <span className="text-sm">Signature client</span>
+                    </div>
+                    <Switch
+                      checked={extranetSettings.showSignature}
+                      onCheckedChange={(checked) => updateExtranetSetting("showSignature", checked)}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Custom text */}
+              <div className="space-y-4 pt-4 border-t">
+                <h3 className="font-medium text-sm text-muted-foreground">Textes personnalisés</h3>
+                <div className="space-y-2">
+                  <Label htmlFor="welcomeMessage">Message de bienvenue</Label>
+                  <Textarea
+                    id="welcomeMessage"
+                    value={extranetSettings.welcomeMessage}
+                    onChange={(e) => updateExtranetSetting("welcomeMessage", e.target.value)}
+                    placeholder="Bienvenue sur votre espace client. Retrouvez ici le détail de votre intervention."
+                    rows={2}
                   />
                 </div>
-
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Lieu d'intervention</Label>
-                    <p className="text-xs text-muted-foreground">Adresse, téléphone et email spécifiques</p>
-                  </div>
-                  <Switch
-                    checked={extranetSettings.showInterventionAddress}
-                    onCheckedChange={(checked) => updateExtranetSetting("showInterventionAddress", checked)}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Date et heure prévues</Label>
-                    <p className="text-xs text-muted-foreground">Planification de l'intervention</p>
-                  </div>
-                  <Switch
-                    checked={extranetSettings.showScheduledDateTime}
-                    onCheckedChange={(checked) => updateExtranetSetting("showScheduledDateTime", checked)}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Description</Label>
-                    <p className="text-xs text-muted-foreground">Description de l'intervention</p>
-                  </div>
-                  <Switch
-                    checked={extranetSettings.showDescription}
-                    onCheckedChange={(checked) => updateExtranetSetting("showDescription", checked)}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Détails des équipements</Label>
-                    <p className="text-xs text-muted-foreground">Type, marque, modèle, état</p>
-                  </div>
-                  <Switch
-                    checked={extranetSettings.showEquipmentDetails}
-                    onCheckedChange={(checked) => updateExtranetSetting("showEquipmentDetails", checked)}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Photos des équipements</Label>
-                    <p className="text-xs text-muted-foreground">Photos prises pendant l'intervention</p>
-                  </div>
-                  <Switch
-                    checked={extranetSettings.showEquipmentPhotos}
-                    onCheckedChange={(checked) => updateExtranetSetting("showEquipmentPhotos", checked)}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Compte rendu</Label>
-                    <p className="text-xs text-muted-foreground">Travaux effectués par le technicien</p>
-                  </div>
-                  <Switch
-                    checked={extranetSettings.showReport}
-                    onCheckedChange={(checked) => updateExtranetSetting("showReport", checked)}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Signature client</Label>
-                    <p className="text-xs text-muted-foreground">Signature de validation</p>
-                  </div>
-                  <Switch
-                    checked={extranetSettings.showSignature}
-                    onCheckedChange={(checked) => updateExtranetSetting("showSignature", checked)}
+                <div className="space-y-2">
+                  <Label htmlFor="customFooterText">Texte de pied de page</Label>
+                  <Input
+                    id="customFooterText"
+                    value={extranetSettings.customFooterText}
+                    onChange={(e) => updateExtranetSetting("customFooterText", e.target.value)}
+                    placeholder="Merci pour votre confiance - N'hésitez pas à nous contacter"
                   />
                 </div>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Custom Messages */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Messages personnalisés
-              </CardTitle>
-              <CardDescription>
-                Personnalisez les textes affichés sur l'extranet client
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="welcomeMessage">Message d'accueil (optionnel)</Label>
-                <Textarea
-                  id="welcomeMessage"
-                  value={extranetSettings.welcomeMessage}
-                  onChange={(e) => updateExtranetSetting("welcomeMessage", e.target.value)}
-                  placeholder="Bienvenue sur votre espace de suivi d'intervention..."
-                  rows={2}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Affiché en haut de la page, sous le statut
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="customFooterText">Texte de pied de page (optionnel)</Label>
-                <Input
-                  id="customFooterText"
-                  value={extranetSettings.customFooterText}
-                  onChange={(e) => updateExtranetSetting("customFooterText", e.target.value)}
-                  placeholder="Une question ? Contactez-nous au 01 23 45 67 89"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Remplace le pied de page par défaut si renseigné
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Preview */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Aperçu de la visibilité</CardTitle>
-              <CardDescription>
-                Sections actuellement visibles sur l'extranet
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-2">
-                {extranetSettings.showClientInfo && (
-                  <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-sm flex items-center gap-1">
-                    <Eye className="h-3 w-3" /> Infos client
-                  </span>
-                )}
-                {extranetSettings.showInterventionAddress && (
-                  <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-sm flex items-center gap-1">
-                    <Eye className="h-3 w-3" /> Lieu intervention
-                  </span>
-                )}
-                {extranetSettings.showScheduledDateTime && (
-                  <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-sm flex items-center gap-1">
-                    <Eye className="h-3 w-3" /> Date/Heure
-                  </span>
-                )}
-                {extranetSettings.showDescription && (
-                  <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-sm flex items-center gap-1">
-                    <Eye className="h-3 w-3" /> Description
-                  </span>
-                )}
-                {extranetSettings.showEquipmentDetails && (
-                  <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-sm flex items-center gap-1">
-                    <Eye className="h-3 w-3" /> Équipements
-                  </span>
-                )}
-                {extranetSettings.showEquipmentPhotos && (
-                  <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-sm flex items-center gap-1">
-                    <Eye className="h-3 w-3" /> Photos
-                  </span>
-                )}
-                {extranetSettings.showReport && (
-                  <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-sm flex items-center gap-1">
-                    <Eye className="h-3 w-3" /> Compte rendu
-                  </span>
-                )}
-                {extranetSettings.showSignature && (
-                  <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-sm flex items-center gap-1">
-                    <Eye className="h-3 w-3" /> Signature
-                  </span>
-                )}
-              </div>
-              {Object.values(extranetSettings).filter(v => v === false).length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t">
-                  {!extranetSettings.showClientInfo && (
-                    <span className="px-2 py-1 bg-muted text-muted-foreground rounded text-sm flex items-center gap-1">
-                      <EyeOff className="h-3 w-3" /> Infos client
-                    </span>
-                  )}
-                  {!extranetSettings.showInterventionAddress && (
-                    <span className="px-2 py-1 bg-muted text-muted-foreground rounded text-sm flex items-center gap-1">
-                      <EyeOff className="h-3 w-3" /> Lieu intervention
-                    </span>
-                  )}
-                  {!extranetSettings.showScheduledDateTime && (
-                    <span className="px-2 py-1 bg-muted text-muted-foreground rounded text-sm flex items-center gap-1">
-                      <EyeOff className="h-3 w-3" /> Date/Heure
-                    </span>
-                  )}
-                  {!extranetSettings.showDescription && (
-                    <span className="px-2 py-1 bg-muted text-muted-foreground rounded text-sm flex items-center gap-1">
-                      <EyeOff className="h-3 w-3" /> Description
-                    </span>
-                  )}
-                  {!extranetSettings.showEquipmentDetails && (
-                    <span className="px-2 py-1 bg-muted text-muted-foreground rounded text-sm flex items-center gap-1">
-                      <EyeOff className="h-3 w-3" /> Équipements
-                    </span>
-                  )}
-                  {!extranetSettings.showEquipmentPhotos && (
-                    <span className="px-2 py-1 bg-muted text-muted-foreground rounded text-sm flex items-center gap-1">
-                      <EyeOff className="h-3 w-3" /> Photos
-                    </span>
-                  )}
-                  {!extranetSettings.showReport && (
-                    <span className="px-2 py-1 bg-muted text-muted-foreground rounded text-sm flex items-center gap-1">
-                      <EyeOff className="h-3 w-3" /> Compte rendu
-                    </span>
-                  )}
-                  {!extranetSettings.showSignature && (
-                    <span className="px-2 py-1 bg-muted text-muted-foreground rounded text-sm flex items-center gap-1">
-                      <EyeOff className="h-3 w-3" /> Signature
-                    </span>
-                  )}
-                </div>
-              )}
             </CardContent>
           </Card>
 
           {/* Save Button */}
-          <div className="flex justify-end">
-            <Button onClick={handleSaveExtranetSettings} disabled={isSavingExtranet}>
-              <Save className="h-4 w-4 mr-2" />
-              {isSavingExtranet ? "Enregistrement..." : "Enregistrer les paramètres"}
-            </Button>
-          </div>
+          <Button 
+            onClick={handleSaveExtranetSettings} 
+            disabled={updateExtranetSettingsMutation.isPending}
+            className="w-full sm:w-auto"
+          >
+            <Save className="h-4 w-4 mr-2" />
+            {updateExtranetSettingsMutation.isPending ? "Enregistrement..." : "Enregistrer les paramètres extranet"}
+          </Button>
         </TabsContent>
       </Tabs>
     </div>
