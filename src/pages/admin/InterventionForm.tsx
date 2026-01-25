@@ -6,6 +6,7 @@ import { z } from "zod";
 import { useIntervention, useCreateIntervention, useUpdateIntervention } from "@/hooks/useInterventions";
 import { useClients } from "@/hooks/useClients";
 import { useTechnicians } from "@/hooks/useTechnicians";
+import { useUserOrganization } from "@/hooks/useUserOrganization";
 import { useAddInterventionAttachment } from "@/hooks/useInterventionAttachments";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,10 +58,11 @@ const InterventionForm = () => {
   const isEditing = !!id;
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
 
+  const { data: organizationId } = useUserOrganization();
   const { data: intervention, isLoading: loadingIntervention } = useIntervention(id || "");
   const { data: clients = [], isLoading: loadingClients } = useClients();
-  const { data: technicians = [], isLoading: loadingTechnicians } = useTechnicians();
-  const createIntervention = useCreateIntervention();
+  const { data: technicians = [], isLoading: loadingTechnicians } = useTechnicians(organizationId);
+  const createIntervention = useCreateIntervention(organizationId);
   const updateIntervention = useUpdateIntervention();
   const addAttachment = useAddInterventionAttachment();
 

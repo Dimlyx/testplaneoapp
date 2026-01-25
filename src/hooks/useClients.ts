@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useUserOrganization } from '@/hooks/useUserOrganization';
 
 export type ClientType = 'individual' | 'professional';
 
@@ -28,6 +29,7 @@ export interface CreateClientData {
   email?: string;
   phone?: string;
   notes?: string;
+  organization_id?: string | null;
 }
 
 export interface UpdateClientData extends Partial<CreateClientData> {
@@ -65,15 +67,20 @@ export function useClient(id: string) {
   });
 }
 
-export function useCreateClient() {
+export function useCreateClient(organizationId?: string | null) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   return useMutation({
     mutationFn: async (data: CreateClientData) => {
+      const insertData = {
+        ...data,
+        organization_id: data.organization_id || organizationId || null,
+      };
+      
       const { data: result, error } = await supabase
         .from('clients')
-        .insert(data)
+        .insert(insertData)
         .select()
         .single();
 

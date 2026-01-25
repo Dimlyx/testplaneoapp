@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useClient, useCreateClient, useUpdateClient } from "@/hooks/useClients";
+import { useUserOrganization } from "@/hooks/useUserOrganization";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -44,8 +45,9 @@ const ClientForm = () => {
   const { id } = useParams();
   const isEditing = !!id;
 
+  const { data: organizationId } = useUserOrganization();
   const { data: client, isLoading } = useClient(id || "");
-  const createClient = useCreateClient();
+  const createClient = useCreateClient(organizationId);
   const updateClient = useUpdateClient();
 
   const form = useForm<ClientFormValues>({

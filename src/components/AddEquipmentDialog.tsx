@@ -18,9 +18,10 @@ interface AddEquipmentDialogProps {
   clientId: string;
   interventionId: string;
   existingEquipmentIds: string[];
+  organizationId?: string | null;
 }
 
-const AddEquipmentDialog = ({ clientId, interventionId, existingEquipmentIds }: AddEquipmentDialogProps) => {
+const AddEquipmentDialog = ({ clientId, interventionId, existingEquipmentIds, organizationId }: AddEquipmentDialogProps) => {
   const [open, setOpen] = useState(false);
   const [equipmentType, setEquipmentType] = useState("");
   const [isCreating, setIsCreating] = useState(false);
@@ -32,7 +33,7 @@ const AddEquipmentDialog = ({ clientId, interventionId, existingEquipmentIds }: 
     
     setIsCreating(true);
     try {
-      // Create new equipment with minimal info
+      // Create new equipment with minimal info and organization
       const { data: newEquipment, error } = await supabase
         .from('equipment')
         .insert({
@@ -40,6 +41,7 @@ const AddEquipmentDialog = ({ clientId, interventionId, existingEquipmentIds }: 
           equipment_type: type,
           brand: "À identifier",
           model: "À identifier",
+          organization_id: organizationId || null,
         })
         .select()
         .single();

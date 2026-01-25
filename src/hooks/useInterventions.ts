@@ -77,6 +77,7 @@ export interface CreateInterventionData {
   intervention_postal_code?: string | null;
   intervention_phone?: string | null;
   intervention_email?: string | null;
+  organization_id?: string | null;
 }
 
 export interface UpdateInterventionData {
@@ -218,15 +219,20 @@ export function usePublicIntervention(token: string) {
   });
 }
 
-export function useCreateIntervention() {
+export function useCreateIntervention(organizationId?: string | null) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   return useMutation({
     mutationFn: async (data: CreateInterventionData) => {
+      const insertData = {
+        ...data,
+        organization_id: data.organization_id || organizationId || null,
+      };
+      
       const { data: result, error } = await supabase
         .from('interventions')
-        .insert(data)
+        .insert(insertData)
         .select()
         .single();
 

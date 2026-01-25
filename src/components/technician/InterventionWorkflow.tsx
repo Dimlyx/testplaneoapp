@@ -266,6 +266,7 @@ const InterventionWorkflow = ({
                 clientId={client.id}
                 interventionId={intervention.id}
                 existingEquipmentIds={existingEquipmentIds}
+                organizationId={intervention.organization_id}
               />
             )}
           </div>
