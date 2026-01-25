@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Settings as SettingsIcon, Tag, FileText, Palette, Save, Upload, X, Image, Globe, Eye, EyeOff } from "lucide-react";
+import { Settings as SettingsIcon, Tag, FileText, Palette, Save, Upload, X, Image, Globe, Eye, EyeOff, Building2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -12,13 +12,17 @@ import InterventionTypesSettings from "@/components/settings/InterventionTypesSe
 import { supabase } from "@/integrations/supabase/client";
 import { 
   useReportSettings, 
-  useExtranetSettings, 
+  useExtranetSettings,
+  useCompanySettings,
   useUpdateReportSettings, 
   useUpdateExtranetSettings,
+  useUpdateCompanySettings,
   ReportSettings,
   ExtranetSettings,
+  CompanySettings,
   defaultReportSettings,
-  defaultExtranetSettings
+  defaultExtranetSettings,
+  defaultCompanySettings
 } from "@/hooks/useAppSettings";
 
 export default function Settings() {
@@ -27,11 +31,14 @@ export default function Settings() {
   // Fetch settings from database
   const { data: dbReportSettings, isLoading: loadingReport } = useReportSettings();
   const { data: dbExtranetSettings, isLoading: loadingExtranet } = useExtranetSettings();
+  const { data: dbCompanySettings, isLoading: loadingCompany } = useCompanySettings();
   const updateReportSettingsMutation = useUpdateReportSettings();
   const updateExtranetSettingsMutation = useUpdateExtranetSettings();
+  const updateCompanySettingsMutation = useUpdateCompanySettings();
   
   const [reportSettings, setReportSettings] = useState<ReportSettings>(defaultReportSettings);
   const [extranetSettings, setExtranetSettings] = useState<ExtranetSettings>(defaultExtranetSettings);
+  const [companySettings, setCompanySettings] = useState<CompanySettings>(defaultCompanySettings);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -48,8 +55,18 @@ export default function Settings() {
     }
   }, [dbExtranetSettings]);
 
+  useEffect(() => {
+    if (dbCompanySettings) {
+      setCompanySettings(dbCompanySettings);
+    }
+  }, [dbCompanySettings]);
+
   const handleSaveReportSettings = async () => {
     await updateReportSettingsMutation.mutateAsync(reportSettings);
+  };
+
+  const handleSaveCompanySettings = async () => {
+    await updateCompanySettingsMutation.mutateAsync(companySettings);
   };
 
   const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -95,9 +112,9 @@ export default function Settings() {
         .getPublicUrl(filePath);
 
       // Update local state and save to DB
-      const newSettings = { ...reportSettings, logoUrl: urlData.publicUrl };
-      setReportSettings(newSettings);
-      await updateReportSettingsMutation.mutateAsync({ logoUrl: urlData.publicUrl });
+      const newSettings = { ...companySettings, logoUrl: urlData.publicUrl };
+      setCompanySettings(newSettings);
+      await updateCompanySettingsMutation.mutateAsync({ logoUrl: urlData.publicUrl });
       
       toast({
         title: "Logo uploadé",
@@ -119,8 +136,8 @@ export default function Settings() {
   };
 
   const handleRemoveLogo = async () => {
-    setReportSettings(prev => ({ ...prev, logoUrl: "" }));
-    await updateReportSettingsMutation.mutateAsync({ logoUrl: "" });
+    setCompanySettings(prev => ({ ...prev, logoUrl: "" }));
+    await updateCompanySettingsMutation.mutateAsync({ logoUrl: "" });
     toast({
       title: "Logo supprimé",
       description: "Le logo a été retiré des paramètres.",
@@ -141,11 +158,18 @@ export default function Settings() {
     setExtranetSettings((prev) => ({ ...prev, [key]: value }));
   };
 
+  const updateCompanySetting = <K extends keyof CompanySettings>(
+    key: K,
+    value: CompanySettings[K]
+  ) => {
+    setCompanySettings((prev) => ({ ...prev, [key]: value }));
+  };
+
   const handleSaveExtranetSettings = async () => {
     await updateExtranetSettingsMutation.mutateAsync(extranetSettings);
   };
 
-  if (loadingReport || loadingExtranet) {
+  if (loadingReport || loadingExtranet || loadingCompany) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -165,94 +189,50 @@ export default function Settings() {
         </div>
       </div>
 
-      <Tabs defaultValue="intervention-types" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 lg:w-[600px]">
+      <Tabs defaultValue="company" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4 lg:w-[800px]">
+          <TabsTrigger value="company" className="flex items-center gap-2">
+            <Building2 className="h-4 w-4" />
+            <span className="hidden sm:inline">Société</span>
+          </TabsTrigger>
           <TabsTrigger value="intervention-types" className="flex items-center gap-2">
             <Tag className="h-4 w-4" />
-            <span className="hidden sm:inline">Types d'intervention</span>
-            <span className="sm:hidden">Types</span>
+            <span className="hidden sm:inline">Types</span>
           </TabsTrigger>
           <TabsTrigger value="reports" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
-            <span className="hidden sm:inline">Rapports PDF</span>
-            <span className="sm:hidden">PDF</span>
+            <span className="hidden sm:inline">Rapports</span>
           </TabsTrigger>
           <TabsTrigger value="extranet" className="flex items-center gap-2">
             <Globe className="h-4 w-4" />
-            Extranet
+            <span className="hidden sm:inline">Extranet</span>
           </TabsTrigger>
         </TabsList>
 
-        {/* Tab: Intervention Types */}
-        <TabsContent value="intervention-types">
-          <InterventionTypesSettings />
-        </TabsContent>
-
-        {/* Tab: Report Settings */}
-        <TabsContent value="reports" className="space-y-6">
-          {/* Company Info */}
+        {/* Tab: Company Info */}
+        <TabsContent value="company" className="space-y-6">
+          {/* Identity */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Informations entreprise
+                <Building2 className="h-5 w-5" />
+                Identité de l'entreprise
               </CardTitle>
               <CardDescription>
-                Ces informations apparaîtront sur les rapports PDF et l'extranet
+                Ces informations apparaîtront sur tous les documents officiels et rapports
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="companyName">Nom de l'entreprise</Label>
-                  <Input
-                    id="companyName"
-                    value={reportSettings.companyName}
-                    onChange={(e) => updateReportSetting("companyName", e.target.value)}
-                    placeholder="SportEquip Services"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="companyPhone">Téléphone</Label>
-                  <Input
-                    id="companyPhone"
-                    value={reportSettings.companyPhone}
-                    onChange={(e) => updateReportSetting("companyPhone", e.target.value)}
-                    placeholder="01 23 45 67 89"
-                  />
-                </div>
-              </div>
+            <CardContent className="space-y-6">
+              {/* Logo */}
               <div className="space-y-2">
-                <Label htmlFor="companyAddress">Adresse</Label>
-                <Textarea
-                  id="companyAddress"
-                  value={reportSettings.companyAddress}
-                  onChange={(e) => updateReportSetting("companyAddress", e.target.value)}
-                  placeholder="123 Rue de l'Exemple, 75001 Paris"
-                  rows={2}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="companyEmail">Email</Label>
-                <Input
-                  id="companyEmail"
-                  type="email"
-                  value={reportSettings.companyEmail}
-                  onChange={(e) => updateReportSetting("companyEmail", e.target.value)}
-                  placeholder="contact@entreprise.fr"
-                />
-              </div>
-
-              {/* Logo Upload */}
-              <div className="space-y-2 pt-4 border-t">
                 <Label>Logo de l'entreprise</Label>
                 <div className="flex items-center gap-4">
-                  {reportSettings.logoUrl ? (
+                  {companySettings.logoUrl ? (
                     <div className="relative">
                       <img 
-                        src={reportSettings.logoUrl} 
+                        src={companySettings.logoUrl} 
                         alt="Logo entreprise" 
-                        className="h-16 w-auto object-contain border rounded-lg p-1 bg-white"
+                        className="h-20 w-auto object-contain border rounded-lg p-2 bg-white"
                       />
                       <Button
                         type="button"
@@ -265,8 +245,8 @@ export default function Settings() {
                       </Button>
                     </div>
                   ) : (
-                    <div className="h-16 w-24 border-2 border-dashed rounded-lg flex items-center justify-center bg-muted/50">
-                      <Image className="h-6 w-6 text-muted-foreground" />
+                    <div className="h-20 w-32 border-2 border-dashed rounded-lg flex items-center justify-center bg-muted/50">
+                      <Image className="h-8 w-8 text-muted-foreground" />
                     </div>
                   )}
                   <div>
@@ -293,9 +273,214 @@ export default function Settings() {
                   </div>
                 </div>
               </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="companyName">Nom commercial</Label>
+                  <Input
+                    id="companyName"
+                    value={companySettings.name}
+                    onChange={(e) => updateCompanySetting("name", e.target.value)}
+                    placeholder="Mon Entreprise"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="legalName">Raison sociale</Label>
+                  <Input
+                    id="legalName"
+                    value={companySettings.legalName}
+                    onChange={(e) => updateCompanySetting("legalName", e.target.value)}
+                    placeholder="Mon Entreprise SARL"
+                  />
+                </div>
+              </div>
             </CardContent>
           </Card>
 
+          {/* Legal Info */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Informations légales</CardTitle>
+              <CardDescription>
+                Mentions obligatoires pour les documents commerciaux
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="siret">N° SIRET</Label>
+                  <Input
+                    id="siret"
+                    value={companySettings.siret}
+                    onChange={(e) => updateCompanySetting("siret", e.target.value)}
+                    placeholder="123 456 789 00012"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="tvaNumber">N° TVA Intracommunautaire</Label>
+                  <Input
+                    id="tvaNumber"
+                    value={companySettings.tvaNumber}
+                    onChange={(e) => updateCompanySetting("tvaNumber", e.target.value)}
+                    placeholder="FR12345678901"
+                  />
+                </div>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="rcsNumber">N° RCS</Label>
+                  <Input
+                    id="rcsNumber"
+                    value={companySettings.rcsNumber}
+                    onChange={(e) => updateCompanySetting("rcsNumber", e.target.value)}
+                    placeholder="Paris B 123 456 789"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="capitalSocial">Capital social</Label>
+                  <Input
+                    id="capitalSocial"
+                    value={companySettings.capitalSocial}
+                    onChange={(e) => updateCompanySetting("capitalSocial", e.target.value)}
+                    placeholder="10 000 €"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Contact Info */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Coordonnées</CardTitle>
+              <CardDescription>
+                Adresse et moyens de contact
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="address">Adresse</Label>
+                <Input
+                  id="address"
+                  value={companySettings.address}
+                  onChange={(e) => updateCompanySetting("address", e.target.value)}
+                  placeholder="123 Rue de l'Exemple"
+                />
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="postalCode">Code postal</Label>
+                  <Input
+                    id="postalCode"
+                    value={companySettings.postalCode}
+                    onChange={(e) => updateCompanySetting("postalCode", e.target.value)}
+                    placeholder="75001"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="city">Ville</Label>
+                  <Input
+                    id="city"
+                    value={companySettings.city}
+                    onChange={(e) => updateCompanySetting("city", e.target.value)}
+                    placeholder="Paris"
+                  />
+                </div>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Téléphone</Label>
+                  <Input
+                    id="phone"
+                    value={companySettings.phone}
+                    onChange={(e) => updateCompanySetting("phone", e.target.value)}
+                    placeholder="01 23 45 67 89"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={companySettings.email}
+                    onChange={(e) => updateCompanySetting("email", e.target.value)}
+                    placeholder="contact@entreprise.fr"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="website">Site web</Label>
+                <Input
+                  id="website"
+                  value={companySettings.website}
+                  onChange={(e) => updateCompanySetting("website", e.target.value)}
+                  placeholder="www.entreprise.fr"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Preview */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Aperçu en-tête rapport</CardTitle>
+              <CardDescription>
+                Prévisualisation de l'en-tête des rapports PDF
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="border rounded-lg overflow-hidden max-w-lg bg-white">
+                <div 
+                  className="p-4 text-white"
+                  style={{ backgroundColor: reportSettings.primaryColor }}
+                >
+                  <div className="flex items-start gap-4">
+                    {companySettings.logoUrl && (
+                      <img 
+                        src={companySettings.logoUrl} 
+                        alt="Logo" 
+                        className="h-12 w-auto object-contain bg-white rounded p-1"
+                      />
+                    )}
+                    <div className="flex-1">
+                      <p className="font-bold text-lg">{companySettings.name || "Nom de l'entreprise"}</p>
+                      <p className="text-sm opacity-80">RAPPORT D'INTERVENTION</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-4 text-xs text-muted-foreground border-t space-y-1">
+                  {(companySettings.address || companySettings.postalCode || companySettings.city) && (
+                    <p>{[companySettings.address, companySettings.postalCode, companySettings.city].filter(Boolean).join(', ')}</p>
+                  )}
+                  <div className="flex gap-4">
+                    {companySettings.phone && <span>Tél: {companySettings.phone}</span>}
+                    {companySettings.email && <span>Email: {companySettings.email}</span>}
+                  </div>
+                  {companySettings.siret && <p>SIRET: {companySettings.siret}</p>}
+                  {companySettings.tvaNumber && <p>TVA: {companySettings.tvaNumber}</p>}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Save Button */}
+          <Button 
+            onClick={handleSaveCompanySettings} 
+            disabled={updateCompanySettingsMutation.isPending}
+            className="w-full sm:w-auto"
+          >
+            <Save className="h-4 w-4 mr-2" />
+            {updateCompanySettingsMutation.isPending ? "Enregistrement..." : "Enregistrer les informations société"}
+          </Button>
+        </TabsContent>
+
+        {/* Tab: Intervention Types */}
+        <TabsContent value="intervention-types">
+          <InterventionTypesSettings />
+        </TabsContent>
+
+        {/* Tab: Report Settings */}
+        <TabsContent value="reports" className="space-y-6">
           {/* Visual Customization */}
           <Card>
             <CardHeader>
@@ -304,7 +489,7 @@ export default function Settings() {
                 Personnalisation visuelle
               </CardTitle>
               <CardDescription>
-                Couleurs et apparence des rapports
+                Couleurs et apparence des rapports PDF
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -375,15 +560,15 @@ export default function Settings() {
                   className="p-4 text-white flex items-center gap-3"
                   style={{ backgroundColor: reportSettings.primaryColor }}
                 >
-                  {reportSettings.logoUrl && (
+                  {companySettings.logoUrl && (
                     <img 
-                      src={reportSettings.logoUrl} 
+                      src={companySettings.logoUrl} 
                       alt="Logo" 
                       className="h-10 w-auto object-contain bg-white rounded p-1"
                     />
                   )}
                   <div>
-                    <p className="font-bold">{reportSettings.companyName || "Nom de l'entreprise"}</p>
+                    <p className="font-bold">{companySettings.name || "Nom de l'entreprise"}</p>
                     <p className="text-sm opacity-80">RAPPORT D'INTERVENTION</p>
                   </div>
                 </div>
