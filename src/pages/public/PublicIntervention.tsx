@@ -101,9 +101,6 @@ const PublicIntervention = () => {
             <span className="font-semibold">{settings.companyName || "Service Intervention"}</span>
           </div>
           <h1 className="text-xl font-bold">Rapport d'intervention</h1>
-          <p className="text-sm opacity-80 mt-1">
-            Réf: INT-{intervention.id.slice(0, 8).toUpperCase()}
-          </p>
         </div>
       </header>
 
