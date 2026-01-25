@@ -14,7 +14,8 @@ import {
   Award,
   UserCheck,
   Clock,
-  Car
+  Car,
+  LineChart
 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, isWithinInterval, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -24,6 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PerformanceCharts } from "@/components/admin/PerformanceCharts";
 
 interface TechnicianStats {
   id: string;
@@ -273,6 +275,10 @@ export default function Statistics() {
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList>
           <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
+          <TabsTrigger value="charts" className="flex items-center gap-1">
+            <LineChart className="h-4 w-4" />
+            Graphiques
+          </TabsTrigger>
           <TabsTrigger value="technicians">Performance techniciens</TabsTrigger>
         </TabsList>
 
@@ -468,6 +474,11 @@ export default function Statistics() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        {/* Charts Tab */}
+        <TabsContent value="charts" className="space-y-6">
+          <PerformanceCharts interventions={interventions} />
         </TabsContent>
 
         {/* Technicians Tab */}
