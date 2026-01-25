@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Building2, Plus, UserPlus, Trash2, Users, UserCog, Activity, ClipboardList } from 'lucide-react';
+import { ArrowLeft, Building2, Plus, UserPlus, Trash2, Users, UserCog, Activity, ClipboardList, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -104,6 +104,7 @@ export default function OrganizationDetail() {
         email: data.email,
         password: data.password,
         options: {
+          emailRedirectTo: `${window.location.origin}/`,
           data: {
             full_name: data.full_name,
           },
@@ -113,16 +114,31 @@ export default function OrganizationDetail() {
       if (authError) throw authError;
       if (!authData.user) throw new Error('Échec de la création de l\'utilisateur');
 
-      // Update the user role with organization
+      const userId = authData.user.id;
+
+      // Wait a bit for the trigger to create the initial records
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Update the user role with organization and correct role
       const { error: roleError } = await supabase
         .from('user_roles')
         .update({ 
           role: data.role,
           organization_id: id,
         })
-        .eq('user_id', authData.user.id);
+        .eq('user_id', userId);
 
-      if (roleError) throw roleError;
+      if (roleError) {
+        // If update fails, try inserting instead (in case trigger didn't run)
+        const { error: insertRoleError } = await supabase
+          .from('user_roles')
+          .insert({ 
+            user_id: userId,
+            role: data.role,
+            organization_id: id,
+          });
+        if (insertRoleError) throw insertRoleError;
+      }
 
       // Update profile with organization
       const { error: profileError } = await supabase
@@ -131,9 +147,20 @@ export default function OrganizationDetail() {
           organization_id: id,
           full_name: data.full_name,
         })
-        .eq('id', authData.user.id);
+        .eq('id', userId);
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        // If update fails, try inserting instead
+        const { error: insertProfileError } = await supabase
+          .from('profiles')
+          .insert({ 
+            id: userId,
+            email: data.email,
+            organization_id: id,
+            full_name: data.full_name,
+          });
+        if (insertProfileError) throw insertProfileError;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['organization-users', id] });
@@ -222,9 +249,17 @@ export default function OrganizationDetail() {
             <p className="text-muted-foreground">{organization.slug}</p>
           </div>
         </div>
-        <Badge className="ml-auto" variant={organization.status === 'active' ? 'default' : 'secondary'}>
-          {organization.status === 'active' ? 'Actif' : organization.status}
-        </Badge>
+        <div className="ml-auto flex items-center gap-2">
+          <Button variant="outline" asChild>
+            <a href="/admin" target="_blank" rel="noopener noreferrer">
+              <Eye className="mr-2 h-4 w-4" />
+              Voir comme admin
+            </a>
+          </Button>
+          <Badge variant={organization.status === 'active' ? 'default' : 'secondary'}>
+            {organization.status === 'active' ? 'Actif' : organization.status}
+          </Badge>
+        </div>
       </div>
 
       {/* Stats */}
