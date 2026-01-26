@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Settings as SettingsIcon, Tag, FileText, Palette, Save, Upload, X, Image, Globe, Eye, EyeOff, Building2, RotateCcw } from "lucide-react";
+import { Settings as SettingsIcon, Tag, FileText, Palette, Save, Upload, X, Image, Globe, Eye, EyeOff, Building2, RotateCcw, ListChecks } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import InterventionTypesSettings from "@/components/settings/InterventionTypesSettings";
+import WorkflowStepsSettings from "@/components/settings/WorkflowStepsSettings";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   useReportSettings, 
@@ -222,7 +223,7 @@ export default function Settings() {
       </div>
 
       <Tabs defaultValue="company" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5 lg:w-[900px]">
+        <TabsList className="grid w-full grid-cols-6 lg:w-[1050px]">
           <TabsTrigger value="company" className="flex items-center gap-2">
             <Building2 className="h-4 w-4" />
             <span className="hidden sm:inline">Société</span>
@@ -234,6 +235,10 @@ export default function Settings() {
           <TabsTrigger value="intervention-types" className="flex items-center gap-2">
             <Tag className="h-4 w-4" />
             <span className="hidden sm:inline">Types</span>
+          </TabsTrigger>
+          <TabsTrigger value="workflow" className="flex items-center gap-2">
+            <ListChecks className="h-4 w-4" />
+            <span className="hidden sm:inline">Workflow</span>
           </TabsTrigger>
           <TabsTrigger value="reports" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
@@ -677,6 +682,11 @@ export default function Settings() {
         {/* Tab: Intervention Types */}
         <TabsContent value="intervention-types">
           <InterventionTypesSettings />
+        </TabsContent>
+
+        {/* Tab: Workflow Steps */}
+        <TabsContent value="workflow">
+          <WorkflowStepsSettings />
         </TabsContent>
 
         {/* Tab: Report Settings */}

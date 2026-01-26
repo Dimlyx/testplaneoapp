@@ -293,6 +293,54 @@ export type Database = {
           },
         ]
       }
+      intervention_step_completions: {
+        Row: {
+          comment: string | null
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          id: string
+          intervention_id: string
+          photo_url: string | null
+          step_id: string
+        }
+        Insert: {
+          comment?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          id?: string
+          intervention_id: string
+          photo_url?: string | null
+          step_id: string
+        }
+        Update: {
+          comment?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          id?: string
+          intervention_id?: string
+          photo_url?: string | null
+          step_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intervention_step_completions_intervention_id_fkey"
+            columns: ["intervention_id"]
+            isOneToOne: false
+            referencedRelation: "interventions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "intervention_step_completions_step_id_fkey"
+            columns: ["step_id"]
+            isOneToOne: false
+            referencedRelation: "intervention_workflow_steps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       intervention_types: {
         Row: {
           color: string | null
@@ -321,6 +369,69 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "intervention_types_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      intervention_workflow_steps: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          intervention_type_id: string
+          is_mandatory: boolean | null
+          label: string
+          name: string
+          organization_id: string | null
+          requires_comment: boolean | null
+          requires_photo: boolean | null
+          requires_signature: boolean | null
+          step_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          intervention_type_id: string
+          is_mandatory?: boolean | null
+          label: string
+          name: string
+          organization_id?: string | null
+          requires_comment?: boolean | null
+          requires_photo?: boolean | null
+          requires_signature?: boolean | null
+          step_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          intervention_type_id?: string
+          is_mandatory?: boolean | null
+          label?: string
+          name?: string
+          organization_id?: string | null
+          requires_comment?: boolean | null
+          requires_photo?: boolean | null
+          requires_signature?: boolean | null
+          step_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intervention_workflow_steps_intervention_type_id_fkey"
+            columns: ["intervention_type_id"]
+            isOneToOne: false
+            referencedRelation: "intervention_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "intervention_workflow_steps_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
