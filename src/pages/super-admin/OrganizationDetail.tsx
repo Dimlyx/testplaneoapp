@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,6 +17,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { useOrganizationContext } from '@/lib/organization-context';
 
 interface UserFormData {
   email: string;
@@ -34,7 +35,9 @@ const initialUserFormData: UserFormData = {
 
 export default function OrganizationDetail() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { setViewAsOrgId } = useOrganizationContext();
   const [isAddUserDialogOpen, setIsAddUserDialogOpen] = useState(false);
   const [userFormData, setUserFormData] = useState<UserFormData>(initialUserFormData);
 
@@ -250,11 +253,17 @@ export default function OrganizationDetail() {
           </div>
         </div>
         <div className="ml-auto flex items-center gap-2">
-          <Button variant="outline" asChild>
-            <a href="/admin" target="_blank" rel="noopener noreferrer">
-              <Eye className="mr-2 h-4 w-4" />
-              Voir comme admin
-            </a>
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              if (id) {
+                setViewAsOrgId(id);
+                navigate('/admin');
+              }
+            }}
+          >
+            <Eye className="mr-2 h-4 w-4" />
+            Voir comme admin
           </Button>
           <Badge variant={organization.status === 'active' ? 'default' : 'secondary'}>
             {organization.status === 'active' ? 'Actif' : organization.status}
