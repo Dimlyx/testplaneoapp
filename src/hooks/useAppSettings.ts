@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useUserOrganization } from '@/hooks/useUserOrganization';
 
 export interface CompanySettings {
   name: string;
@@ -85,13 +86,16 @@ export const defaultInterfaceSettings: InterfaceSettings = {
 };
 
 export function useCompanySettings() {
+  const { data: organizationId } = useUserOrganization();
+  
   return useQuery({
-    queryKey: ['app-settings', 'company'],
+    queryKey: ['app-settings', 'company', organizationId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('app_settings')
         .select('value')
         .eq('key', 'company')
+        .eq('organization_id', organizationId!)
         .maybeSingle();
 
       if (error) throw error;
@@ -101,17 +105,21 @@ export function useCompanySettings() {
       }
       return defaultCompanySettings;
     },
+    enabled: !!organizationId,
   });
 }
 
 export function useReportSettings() {
+  const { data: organizationId } = useUserOrganization();
+  
   return useQuery({
-    queryKey: ['app-settings', 'report'],
+    queryKey: ['app-settings', 'report', organizationId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('app_settings')
         .select('value')
         .eq('key', 'report')
+        .eq('organization_id', organizationId!)
         .maybeSingle();
 
       if (error) throw error;
@@ -121,17 +129,21 @@ export function useReportSettings() {
       }
       return defaultReportSettings;
     },
+    enabled: !!organizationId,
   });
 }
 
 export function useExtranetSettings() {
+  const { data: organizationId } = useUserOrganization();
+  
   return useQuery({
-    queryKey: ['app-settings', 'extranet'],
+    queryKey: ['app-settings', 'extranet', organizationId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('app_settings')
         .select('value')
         .eq('key', 'extranet')
+        .eq('organization_id', organizationId!)
         .maybeSingle();
 
       if (error) throw error;
@@ -141,19 +153,24 @@ export function useExtranetSettings() {
       }
       return defaultExtranetSettings;
     },
+    enabled: !!organizationId,
   });
 }
 
 export function useUpdateCompanySettings() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { data: organizationId } = useUserOrganization();
 
   return useMutation({
     mutationFn: async (settings: Partial<CompanySettings>) => {
+      if (!organizationId) throw new Error('Organization ID required');
+      
       const { data: current } = await supabase
         .from('app_settings')
         .select('value')
         .eq('key', 'company')
+        .eq('organization_id', organizationId)
         .maybeSingle();
 
       const currentValue = current?.value as object || {};
@@ -163,9 +180,10 @@ export function useUpdateCompanySettings() {
         .from('app_settings')
         .upsert({ 
           key: 'company', 
-          value: newValue 
+          value: newValue,
+          organization_id: organizationId
         }, { 
-          onConflict: 'key' 
+          onConflict: 'key,organization_id' 
         });
 
       if (error) throw error;
@@ -191,13 +209,17 @@ export function useUpdateCompanySettings() {
 export function useUpdateReportSettings() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { data: organizationId } = useUserOrganization();
 
   return useMutation({
     mutationFn: async (settings: Partial<ReportSettings>) => {
+      if (!organizationId) throw new Error('Organization ID required');
+      
       const { data: current } = await supabase
         .from('app_settings')
         .select('value')
         .eq('key', 'report')
+        .eq('organization_id', organizationId)
         .maybeSingle();
 
       const currentValue = current?.value as object || {};
@@ -207,9 +229,10 @@ export function useUpdateReportSettings() {
         .from('app_settings')
         .upsert({ 
           key: 'report', 
-          value: newValue 
+          value: newValue,
+          organization_id: organizationId
         }, { 
-          onConflict: 'key' 
+          onConflict: 'key,organization_id' 
         });
 
       if (error) throw error;
@@ -235,14 +258,17 @@ export function useUpdateReportSettings() {
 export function useUpdateExtranetSettings() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { data: organizationId } = useUserOrganization();
 
   return useMutation({
     mutationFn: async (settings: Partial<ExtranetSettings>) => {
-      // First get current settings
+      if (!organizationId) throw new Error('Organization ID required');
+      
       const { data: current } = await supabase
         .from('app_settings')
         .select('value')
         .eq('key', 'extranet')
+        .eq('organization_id', organizationId)
         .maybeSingle();
 
       const currentValue = current?.value as object || {};
@@ -252,9 +278,10 @@ export function useUpdateExtranetSettings() {
         .from('app_settings')
         .upsert({ 
           key: 'extranet', 
-          value: newValue 
+          value: newValue,
+          organization_id: organizationId
         }, { 
-          onConflict: 'key' 
+          onConflict: 'key,organization_id' 
         });
 
       if (error) throw error;
@@ -278,13 +305,16 @@ export function useUpdateExtranetSettings() {
 }
 
 export function useInterfaceSettings() {
+  const { data: organizationId } = useUserOrganization();
+  
   return useQuery({
-    queryKey: ['app-settings', 'interface'],
+    queryKey: ['app-settings', 'interface', organizationId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('app_settings')
         .select('value')
         .eq('key', 'interface')
+        .eq('organization_id', organizationId!)
         .maybeSingle();
 
       if (error) throw error;
@@ -294,19 +324,24 @@ export function useInterfaceSettings() {
       }
       return defaultInterfaceSettings;
     },
+    enabled: !!organizationId,
   });
 }
 
 export function useUpdateInterfaceSettings() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { data: organizationId } = useUserOrganization();
 
   return useMutation({
     mutationFn: async (settings: Partial<InterfaceSettings>) => {
+      if (!organizationId) throw new Error('Organization ID required');
+      
       const { data: current } = await supabase
         .from('app_settings')
         .select('value')
         .eq('key', 'interface')
+        .eq('organization_id', organizationId)
         .maybeSingle();
 
       const currentValue = current?.value as object || {};
@@ -316,9 +351,10 @@ export function useUpdateInterfaceSettings() {
         .from('app_settings')
         .upsert({ 
           key: 'interface', 
-          value: newValue 
+          value: newValue,
+          organization_id: organizationId
         }, { 
-          onConflict: 'key' 
+          onConflict: 'key,organization_id' 
         });
 
       if (error) throw error;
