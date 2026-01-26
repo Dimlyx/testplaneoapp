@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
+import { OrganizationProvider, useOrganizationContext } from "@/lib/organization-context";
 import { OfflineProvider } from "@/hooks/useOfflineSync";
 
 // Layouts
@@ -48,6 +49,7 @@ const queryClient = new QueryClient();
 // Protected route wrapper
 const ProtectedRoute = ({ children, requiredRole }: { children: React.ReactNode; requiredRole?: "admin" | "technician" | "super_admin" }) => {
   const { user, role, loading } = useAuth();
+  const { viewAsOrgId } = useOrganizationContext();
 
   if (loading) {
     return (
@@ -59,6 +61,11 @@ const ProtectedRoute = ({ children, requiredRole }: { children: React.ReactNode;
 
   if (!user) {
     return <Navigate to="/auth" replace />;
+  }
+
+  // Super admins can access admin routes when viewing as an organization
+  if (requiredRole === "admin" && role === "super_admin" && viewAsOrgId) {
+    return <>{children}</>;
   }
 
   if (requiredRole && role !== requiredRole) {
@@ -187,7 +194,9 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <AppRoutes />
+          <OrganizationProvider>
+            <AppRoutes />
+          </OrganizationProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

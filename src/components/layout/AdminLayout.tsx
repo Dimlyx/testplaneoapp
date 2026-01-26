@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '@/lib/auth-context';
+import { useOrganizationContext } from '@/lib/organization-context';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
@@ -15,7 +16,8 @@ import {
   CalendarDays,
   BarChart3,
   Settings,
-  Bell
+  Bell,
+  ArrowLeft
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -32,16 +34,42 @@ const navigation = [
 export default function AdminLayout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, role, signOut } = useAuth();
+  const { viewAsOrgId, clearViewAsOrg } = useOrganizationContext();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const isSuperAdminViewing = role === 'super_admin' && viewAsOrgId;
 
   const handleSignOut = async () => {
     await signOut();
     navigate('/auth');
   };
 
+  const handleReturnToSuperAdmin = () => {
+    clearViewAsOrg();
+    navigate('/super-admin');
+  };
+
   return (
     <div className="min-h-screen bg-background">
+      {/* Super Admin viewing banner */}
+      {isSuperAdminViewing && (
+        <div className="fixed top-0 left-0 right-0 z-[60] bg-amber-500 text-amber-950 px-4 py-2 flex items-center justify-between">
+          <span className="text-sm font-medium">
+            Mode visualisation Super Admin
+          </span>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={handleReturnToSuperAdmin}
+            className="bg-amber-600 text-white hover:bg-amber-700"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Retour au portail Super Admin
+          </Button>
+        </div>
+      )}
+
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div 
@@ -54,7 +82,8 @@ export default function AdminLayout() {
       <aside className={cn(
         "fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-200 ease-in-out lg:translate-x-0",
         sidebarOpen ? "translate-x-0" : "-translate-x-full",
-        "gradient-navy"
+        "gradient-navy",
+        isSuperAdminViewing && "top-10"
       )}>
         <div className="flex h-full flex-col">
           {/* Logo */}
@@ -131,9 +160,12 @@ export default function AdminLayout() {
       </aside>
 
       {/* Main content */}
-      <div className="lg:pl-64">
+      <div className={cn("lg:pl-64", isSuperAdminViewing && "pt-10")}>
         {/* Mobile header */}
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background px-4 lg:hidden">
+        <header className={cn(
+          "sticky z-30 flex h-16 items-center gap-4 border-b bg-background px-4 lg:hidden",
+          isSuperAdminViewing ? "top-10" : "top-0"
+        )}>
           <Button
             variant="ghost"
             size="icon"
