@@ -37,6 +37,12 @@ export interface ExtranetSettings {
   customFooterText: string;
 }
 
+export interface InterfaceSettings {
+  primaryColor: string;
+  accentColor: string;
+  sidebarColor: string;
+}
+
 export const defaultCompanySettings: CompanySettings = {
   name: "",
   legalName: "",
@@ -70,6 +76,12 @@ export const defaultExtranetSettings: ExtranetSettings = {
   showSignature: true,
   welcomeMessage: "",
   customFooterText: "",
+};
+
+export const defaultInterfaceSettings: InterfaceSettings = {
+  primaryColor: "#003057",
+  accentColor: "#0050A0",
+  sidebarColor: "#0a1628",
 };
 
 export function useCompanySettings() {
@@ -253,6 +265,70 @@ export function useUpdateExtranetSettings() {
       toast({
         title: 'Paramètres sauvegardés',
         description: 'Les paramètres de l\'extranet ont été mis à jour.',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de sauvegarder les paramètres: ' + error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+}
+
+export function useInterfaceSettings() {
+  return useQuery({
+    queryKey: ['app-settings', 'interface'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'interface')
+        .maybeSingle();
+
+      if (error) throw error;
+      
+      if (data?.value) {
+        return { ...defaultInterfaceSettings, ...(data.value as object) } as InterfaceSettings;
+      }
+      return defaultInterfaceSettings;
+    },
+  });
+}
+
+export function useUpdateInterfaceSettings() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (settings: Partial<InterfaceSettings>) => {
+      const { data: current } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'interface')
+        .maybeSingle();
+
+      const currentValue = current?.value as object || {};
+      const newValue = { ...defaultInterfaceSettings, ...currentValue, ...settings };
+
+      const { error } = await supabase
+        .from('app_settings')
+        .upsert({ 
+          key: 'interface', 
+          value: newValue 
+        }, { 
+          onConflict: 'key' 
+        });
+
+      if (error) throw error;
+      return newValue;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['app-settings', 'interface'] });
+      toast({
+        title: 'Paramètres sauvegardés',
+        description: 'Les paramètres d\'interface ont été mis à jour.',
       });
     },
     onError: (error) => {
