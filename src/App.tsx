@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
 import { OrganizationProvider, useOrganizationContext } from "@/lib/organization-context";
 import { OfflineProvider } from "@/hooks/useOfflineSync";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
 // Layouts
 import AdminLayout from "@/components/layout/AdminLayout";
@@ -195,7 +196,9 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <OrganizationProvider>
-            <AppRoutes />
+            <ThemeProvider>
+              <AppRoutes />
+            </ThemeProvider>
           </OrganizationProvider>
         </AuthProvider>
       </BrowserRouter>

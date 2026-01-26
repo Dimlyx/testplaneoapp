@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Settings as SettingsIcon, Tag, FileText, Palette, Save, Upload, X, Image, Globe, Eye, EyeOff, Building2 } from "lucide-react";
+import { Settings as SettingsIcon, Tag, FileText, Palette, Save, Upload, X, Image, Globe, Eye, EyeOff, Building2, RotateCcw } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -14,15 +14,19 @@ import {
   useReportSettings, 
   useExtranetSettings,
   useCompanySettings,
+  useInterfaceSettings,
   useUpdateReportSettings, 
   useUpdateExtranetSettings,
   useUpdateCompanySettings,
+  useUpdateInterfaceSettings,
   ReportSettings,
   ExtranetSettings,
   CompanySettings,
+  InterfaceSettings,
   defaultReportSettings,
   defaultExtranetSettings,
-  defaultCompanySettings
+  defaultCompanySettings,
+  defaultInterfaceSettings
 } from "@/hooks/useAppSettings";
 
 export default function Settings() {
@@ -32,13 +36,16 @@ export default function Settings() {
   const { data: dbReportSettings, isLoading: loadingReport } = useReportSettings();
   const { data: dbExtranetSettings, isLoading: loadingExtranet } = useExtranetSettings();
   const { data: dbCompanySettings, isLoading: loadingCompany } = useCompanySettings();
+  const { data: dbInterfaceSettings, isLoading: loadingInterface } = useInterfaceSettings();
   const updateReportSettingsMutation = useUpdateReportSettings();
   const updateExtranetSettingsMutation = useUpdateExtranetSettings();
   const updateCompanySettingsMutation = useUpdateCompanySettings();
+  const updateInterfaceSettingsMutation = useUpdateInterfaceSettings();
   
   const [reportSettings, setReportSettings] = useState<ReportSettings>(defaultReportSettings);
   const [extranetSettings, setExtranetSettings] = useState<ExtranetSettings>(defaultExtranetSettings);
   const [companySettings, setCompanySettings] = useState<CompanySettings>(defaultCompanySettings);
+  const [interfaceSettings, setInterfaceSettings] = useState<InterfaceSettings>(defaultInterfaceSettings);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -61,12 +68,37 @@ export default function Settings() {
     }
   }, [dbCompanySettings]);
 
+  useEffect(() => {
+    if (dbInterfaceSettings) {
+      setInterfaceSettings(dbInterfaceSettings);
+    }
+  }, [dbInterfaceSettings]);
+
   const handleSaveReportSettings = async () => {
     await updateReportSettingsMutation.mutateAsync(reportSettings);
   };
 
   const handleSaveCompanySettings = async () => {
     await updateCompanySettingsMutation.mutateAsync(companySettings);
+  };
+
+  const handleSaveInterfaceSettings = async () => {
+    await updateInterfaceSettingsMutation.mutateAsync(interfaceSettings);
+  };
+
+  const handleResetInterfaceSettings = () => {
+    setInterfaceSettings(defaultInterfaceSettings);
+    toast({
+      title: "Couleurs réinitialisées",
+      description: "Les couleurs par défaut ont été restaurées. N'oubliez pas d'enregistrer.",
+    });
+  };
+
+  const updateInterfaceSetting = <K extends keyof InterfaceSettings>(
+    key: K,
+    value: InterfaceSettings[K]
+  ) => {
+    setInterfaceSettings((prev) => ({ ...prev, [key]: value }));
   };
 
   const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -169,7 +201,7 @@ export default function Settings() {
     await updateExtranetSettingsMutation.mutateAsync(extranetSettings);
   };
 
-  if (loadingReport || loadingExtranet || loadingCompany) {
+  if (loadingReport || loadingExtranet || loadingCompany || loadingInterface) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -190,10 +222,14 @@ export default function Settings() {
       </div>
 
       <Tabs defaultValue="company" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 lg:w-[800px]">
+        <TabsList className="grid w-full grid-cols-5 lg:w-[900px]">
           <TabsTrigger value="company" className="flex items-center gap-2">
             <Building2 className="h-4 w-4" />
             <span className="hidden sm:inline">Société</span>
+          </TabsTrigger>
+          <TabsTrigger value="interface" className="flex items-center gap-2">
+            <Palette className="h-4 w-4" />
+            <span className="hidden sm:inline">Interface</span>
           </TabsTrigger>
           <TabsTrigger value="intervention-types" className="flex items-center gap-2">
             <Tag className="h-4 w-4" />
@@ -472,6 +508,170 @@ export default function Settings() {
             <Save className="h-4 w-4 mr-2" />
             {updateCompanySettingsMutation.isPending ? "Enregistrement..." : "Enregistrer les informations société"}
           </Button>
+        </TabsContent>
+
+        {/* Tab: Interface Customization */}
+        <TabsContent value="interface" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Palette className="h-5 w-5" />
+                Personnalisation de l'interface
+              </CardTitle>
+              <CardDescription>
+                Modifiez les couleurs pour adapter l'application à votre identité visuelle
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid gap-6 md:grid-cols-3">
+                <div className="space-y-2">
+                  <Label htmlFor="interfacePrimaryColor">Couleur principale</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="interfacePrimaryColor"
+                      type="color"
+                      value={interfaceSettings.primaryColor}
+                      onChange={(e) => updateInterfaceSetting("primaryColor", e.target.value)}
+                      className="w-16 h-10 p-1 cursor-pointer"
+                    />
+                    <Input
+                      value={interfaceSettings.primaryColor}
+                      onChange={(e) => updateInterfaceSetting("primaryColor", e.target.value)}
+                      placeholder="#003057"
+                      className="flex-1"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">Boutons, liens et accents</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="interfaceAccentColor">Couleur d'accent</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="interfaceAccentColor"
+                      type="color"
+                      value={interfaceSettings.accentColor}
+                      onChange={(e) => updateInterfaceSetting("accentColor", e.target.value)}
+                      className="w-16 h-10 p-1 cursor-pointer"
+                    />
+                    <Input
+                      value={interfaceSettings.accentColor}
+                      onChange={(e) => updateInterfaceSetting("accentColor", e.target.value)}
+                      placeholder="#0050A0"
+                      className="flex-1"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">Éléments secondaires</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="sidebarColor">Couleur de la barre latérale</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="sidebarColor"
+                      type="color"
+                      value={interfaceSettings.sidebarColor}
+                      onChange={(e) => updateInterfaceSetting("sidebarColor", e.target.value)}
+                      className="w-16 h-10 p-1 cursor-pointer"
+                    />
+                    <Input
+                      value={interfaceSettings.sidebarColor}
+                      onChange={(e) => updateInterfaceSetting("sidebarColor", e.target.value)}
+                      placeholder="#0a1628"
+                      className="flex-1"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">Menu de navigation</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Preview */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Aperçu</CardTitle>
+              <CardDescription>
+                Prévisualisation des couleurs sélectionnées
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col md:flex-row gap-4">
+                {/* Sidebar Preview */}
+                <div 
+                  className="w-48 h-48 rounded-lg p-4 text-white"
+                  style={{ backgroundColor: interfaceSettings.sidebarColor }}
+                >
+                  <p className="text-sm font-semibold mb-4">Menu latéral</p>
+                  <div className="space-y-2">
+                    <div 
+                      className="px-3 py-2 rounded text-sm"
+                      style={{ backgroundColor: interfaceSettings.primaryColor }}
+                    >
+                      Tableau de bord
+                    </div>
+                    <div className="px-3 py-2 rounded text-sm opacity-70 hover:opacity-100">
+                      Interventions
+                    </div>
+                    <div className="px-3 py-2 rounded text-sm opacity-70 hover:opacity-100">
+                      Clients
+                    </div>
+                  </div>
+                </div>
+
+                {/* Buttons Preview */}
+                <div className="flex-1 p-4 border rounded-lg space-y-4">
+                  <p className="text-sm font-medium text-muted-foreground mb-4">Éléments d'interface</p>
+                  <div className="flex flex-wrap gap-2">
+                    <button 
+                      className="px-4 py-2 rounded-md text-white text-sm font-medium"
+                      style={{ backgroundColor: interfaceSettings.primaryColor }}
+                    >
+                      Bouton principal
+                    </button>
+                    <button 
+                      className="px-4 py-2 rounded-md text-white text-sm font-medium"
+                      style={{ backgroundColor: interfaceSettings.accentColor }}
+                    >
+                      Bouton secondaire
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <span 
+                      className="text-sm font-medium cursor-pointer"
+                      style={{ color: interfaceSettings.primaryColor }}
+                    >
+                      Lien hypertexte
+                    </span>
+                    <div 
+                      className="px-3 py-1 rounded-full text-xs text-white"
+                      style={{ backgroundColor: interfaceSettings.accentColor }}
+                    >
+                      Badge
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Actions */}
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Button 
+              onClick={handleSaveInterfaceSettings} 
+              disabled={updateInterfaceSettingsMutation.isPending}
+              className="w-full sm:w-auto"
+            >
+              <Save className="h-4 w-4 mr-2" />
+              {updateInterfaceSettingsMutation.isPending ? "Enregistrement..." : "Enregistrer les couleurs"}
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={handleResetInterfaceSettings}
+              className="w-full sm:w-auto"
+            >
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Réinitialiser par défaut
+            </Button>
+          </div>
         </TabsContent>
 
         {/* Tab: Intervention Types */}
