@@ -1,8 +1,11 @@
 import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useInterventions } from "@/hooks/useInterventions";
 import { useClients } from "@/hooks/useClients";
 import { useTechnicians } from "@/hooks/useTechnicians";
 import { usePendingAlerts } from "@/hooks/useMaintenanceAlerts";
+import { useUserOrganization } from "@/hooks/useUserOrganization";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge, TypeBadge } from "@/components/ui/status-badge";
 import { Input } from "@/components/ui/input";
@@ -19,7 +22,8 @@ import {
   Search,
   X,
   Bell,
-  Wrench
+  Wrench,
+  Building2
 } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -35,6 +39,22 @@ const Dashboard = () => {
   const { data: clients = [], isLoading: loadingClients } = useClients();
   const { data: technicians = [], isLoading: loadingTechnicians } = useTechnicians();
   const { data: overdueAlerts = [] } = usePendingAlerts();
+  const { data: organizationId } = useUserOrganization();
+
+  const { data: organization } = useQuery({
+    queryKey: ['organization', organizationId],
+    queryFn: async () => {
+      if (!organizationId) return null;
+      const { data, error } = await supabase
+        .from('organizations')
+        .select('name, logo_url')
+        .eq('id', organizationId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!organizationId,
+  });
 
   const [selectedStatus, setSelectedStatus] = useState<InterventionStatus | null>(null);
   const [clientSearch, setClientSearch] = useState("");
@@ -109,9 +129,26 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Tableau de bord</h1>
-        <p className="text-muted-foreground">Vue d'ensemble de l'activité</p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Tableau de bord</h1>
+          <p className="text-muted-foreground">Vue d'ensemble de l'activité</p>
+        </div>
+        {organization && (
+          <div className="flex items-center gap-3 bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl px-4 py-3 border border-primary/20">
+            <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
+              {organization.logo_url ? (
+                <img src={organization.logo_url} alt={organization.name} className="w-8 h-8 rounded object-cover" />
+              ) : (
+                <Building2 className="h-5 w-5 text-primary" />
+              )}
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Organisation</p>
+              <p className="font-semibold text-foreground">{organization.name}</p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Alertes de maintenance en retard */}
