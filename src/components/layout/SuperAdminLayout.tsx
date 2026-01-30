@@ -56,7 +56,7 @@ export default function SuperAdminLayout() {
               <Shield className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h1 className="text-lg font-semibold text-white">MobileInt</h1>
+              <h1 className="text-lg font-semibold text-white">Planéo</h1>
               <p className="text-xs text-purple-300">Super Admin</p>
             </div>
             <Button
