@@ -20,8 +20,8 @@ export default defineConfig(({ mode }) => ({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "placeholder.svg"],
       manifest: {
-        name: "MobileInt - Gestion Interventions",
-        short_name: "MobileInt",
+        name: "Planéo - Gestion Interventions",
+        short_name: "Planéo",
         description: "Application de gestion des interventions SAV",
         theme_color: "#1e3a5f",
         background_color: "#ffffff",

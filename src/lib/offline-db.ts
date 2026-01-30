@@ -35,7 +35,7 @@ export interface OfflineSignature {
   synced: boolean;
 }
 
-interface MobileIntDB extends DBSchema {
+interface PlaneoOfflineDB extends DBSchema {
   interventions: {
     key: string;
     value: OfflineIntervention;
@@ -62,15 +62,15 @@ interface MobileIntDB extends DBSchema {
   };
 }
 
-const DB_NAME = 'mobileint-offline';
+const DB_NAME = 'planeo-offline';
 const DB_VERSION = 1;
 
-let dbInstance: IDBPDatabase<MobileIntDB> | null = null;
+let dbInstance: IDBPDatabase<PlaneoOfflineDB> | null = null;
 
-export async function getDB(): Promise<IDBPDatabase<MobileIntDB>> {
+export async function getDB(): Promise<IDBPDatabase<PlaneoOfflineDB>> {
   if (dbInstance) return dbInstance;
 
-  dbInstance = await openDB<MobileIntDB>(DB_NAME, DB_VERSION, {
+  dbInstance = await openDB<PlaneoOfflineDB>(DB_NAME, DB_VERSION, {
     upgrade(db) {
       // Interventions store
       if (!db.objectStoreNames.contains('interventions')) {
