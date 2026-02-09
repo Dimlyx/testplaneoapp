@@ -111,57 +111,73 @@ const MAX_IMAGE_HEIGHT = 300;
 const JPEG_QUALITY = 0.6;
 
 const loadImageAsBase64 = async (url: string): Promise<string | null> => {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
+  try {
+    // Use fetch to avoid CORS canvas tainting issues
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
     
-    const timeout = setTimeout(() => {
-      console.warn('Image load timeout:', url);
-      resolve(null);
-    }, 10000);
+    const response = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeout);
     
-    img.onload = () => {
-      clearTimeout(timeout);
-      try {
-        let width = img.naturalWidth;
-        let height = img.naturalHeight;
-        
-        if (width > MAX_IMAGE_WIDTH) {
-          height = (height * MAX_IMAGE_WIDTH) / width;
-          width = MAX_IMAGE_WIDTH;
+    if (!response.ok) {
+      console.warn('Failed to fetch image:', url, response.status);
+      return null;
+    }
+    
+    const blob = await response.blob();
+    
+    // Convert blob to base64 via FileReader
+    const base64 = await new Promise<string | null>((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+    
+    if (!base64) return null;
+    
+    // Resize using canvas (no CORS issue since we loaded via fetch)
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          let width = img.naturalWidth;
+          let height = img.naturalHeight;
+          
+          if (width > MAX_IMAGE_WIDTH) {
+            height = (height * MAX_IMAGE_WIDTH) / width;
+            width = MAX_IMAGE_WIDTH;
+          }
+          if (height > MAX_IMAGE_HEIGHT) {
+            width = (width * MAX_IMAGE_HEIGHT) / height;
+            height = MAX_IMAGE_HEIGHT;
+          }
+          
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          
+          if (ctx) {
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'medium';
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', JPEG_QUALITY));
+          } else {
+            resolve(base64);
+          }
+        } catch (err) {
+          console.error('Error resizing image:', err);
+          resolve(base64);
         }
-        if (height > MAX_IMAGE_HEIGHT) {
-          width = (width * MAX_IMAGE_HEIGHT) / height;
-          height = MAX_IMAGE_HEIGHT;
-        }
-        
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        
-        if (ctx) {
-          ctx.imageSmoothingEnabled = true;
-          ctx.imageSmoothingQuality = 'medium';
-          ctx.drawImage(img, 0, 0, width, height);
-          const dataUrl = canvas.toDataURL('image/jpeg', JPEG_QUALITY);
-          resolve(dataUrl);
-        } else {
-          resolve(null);
-        }
-      } catch (err) {
-        console.error('Error processing image:', err);
-        resolve(null);
-      }
-    };
-    
-    img.onerror = () => {
-      clearTimeout(timeout);
-      resolve(null);
-    };
-    
-    img.src = url;
-  });
+      };
+      img.onerror = () => resolve(base64);
+      img.src = base64;
+    });
+  } catch (err) {
+    console.error('Error loading image:', url, err);
+    return null;
+  }
 };
 
 export const generateInterventionPDF = async (
