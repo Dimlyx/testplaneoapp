@@ -272,9 +272,10 @@ export function useUpdateIntervention() {
       if (error) throw error;
       return result;
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['interventions'] });
       queryClient.invalidateQueries({ queryKey: ['technician-interventions'] });
+      queryClient.invalidateQueries({ queryKey: ['intervention', result.id] });
       toast({
         title: 'Intervention mise à jour',
         description: 'L\'intervention a été mise à jour avec succès.',
