@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useUserOrganization } from '@/hooks/useUserOrganization';
 
 export type InterventionStatus = 'to_plan' | 'planned' | 'in_progress' | 'completed' | 'to_invoice' | 'archived';
 export type InterventionType = 'sav' | 'maintenance' | 'installation';
@@ -111,10 +112,12 @@ export interface UpdateInterventionData {
 }
 
 export function useInterventions() {
+  const { data: organizationId } = useUserOrganization();
+
   return useQuery({
-    queryKey: ['interventions'],
+    queryKey: ['interventions', organizationId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('interventions')
         .select(`
           *,
@@ -123,6 +126,11 @@ export function useInterventions() {
         `)
         .order('created_at', { ascending: false });
 
+      if (organizationId) {
+        query = query.eq('organization_id', organizationId);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       
       // Fetch technician profiles separately
