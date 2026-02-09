@@ -169,8 +169,10 @@ const InterventionWorkflow = ({
             {/* Client info section */}
             {client && (
               <div className="border-t pt-4">
-                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2 block">Client</label>
-                <p className="font-medium">{client.name}</p>
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2 block">Contact</label>
+                <p className="font-medium">
+                  {intervention.intervention_contact_name || client.name}
+                </p>
                 
                 {/* Show intervention address if available, otherwise client address */}
                 {(intervention.intervention_address || client.address) && (

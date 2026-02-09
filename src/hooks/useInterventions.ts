@@ -33,6 +33,7 @@ export interface Intervention {
   intervention_postal_code: string | null;
   intervention_phone: string | null;
   intervention_email: string | null;
+  intervention_contact_name: string | null;
   created_at: string;
   updated_at: string;
   clients?: {
@@ -106,6 +107,7 @@ export interface UpdateInterventionData {
   intervention_postal_code?: string | null;
   intervention_phone?: string | null;
   intervention_email?: string | null;
+  intervention_contact_name?: string | null;
 }
 
 export function useInterventions() {

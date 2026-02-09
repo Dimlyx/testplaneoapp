@@ -1,0 +1,1 @@
+ALTER TABLE public.interventions ADD COLUMN intervention_contact_name text;

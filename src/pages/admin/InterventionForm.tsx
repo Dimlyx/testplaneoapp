@@ -48,6 +48,7 @@ const interventionSchema = z.object({
   intervention_postal_code: z.string().optional(),
   intervention_phone: z.string().optional(),
   intervention_email: z.string().optional(),
+  intervention_contact_name: z.string().optional(),
 });
 
 type InterventionFormValues = z.infer<typeof interventionSchema>;
@@ -84,6 +85,7 @@ const InterventionForm = () => {
       intervention_postal_code: "",
       intervention_phone: "",
       intervention_email: "",
+      intervention_contact_name: "",
     },
   });
 
@@ -105,6 +107,7 @@ const InterventionForm = () => {
         intervention_postal_code: intervention.intervention_postal_code || "",
         intervention_phone: intervention.intervention_phone || "",
         intervention_email: intervention.intervention_email || "",
+        intervention_contact_name: intervention.intervention_contact_name || "",
       });
     }
   }, [intervention, isEditing, form]);
@@ -127,6 +130,7 @@ const InterventionForm = () => {
         intervention_postal_code: values.intervention_postal_code || null,
         intervention_phone: values.intervention_phone || null,
         intervention_email: values.intervention_email || null,
+        intervention_contact_name: values.intervention_contact_name || null,
       };
 
       if (isEditing && id) {
@@ -367,6 +371,19 @@ const InterventionForm = () => {
                 <p className="text-sm text-muted-foreground">
                   Si l'intervention a lieu à une adresse différente de celle du client
                 </p>
+                <FormField
+                  control={form.control}
+                  name="intervention_contact_name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nom et prénom du contact</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Nom et prénom du contact sur site" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <FormField
                   control={form.control}
                   name="intervention_address"
