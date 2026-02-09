@@ -37,14 +37,21 @@ export interface UpdateClientData extends Partial<CreateClientData> {
 }
 
 export function useClients() {
+  const { data: organizationId } = useUserOrganization();
+
   return useQuery({
-    queryKey: ['clients'],
+    queryKey: ['clients', organizationId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('clients')
         .select('*')
         .order('name', { ascending: true });
 
+      if (organizationId) {
+        query = query.eq('organization_id', organizationId);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data as Client[];
     },
