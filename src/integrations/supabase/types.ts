@@ -349,6 +349,7 @@ export type Database = {
           label: string
           name: string
           organization_id: string | null
+          track_journey: boolean
         }
         Insert: {
           color?: string | null
@@ -357,6 +358,7 @@ export type Database = {
           label: string
           name: string
           organization_id?: string | null
+          track_journey?: boolean
         }
         Update: {
           color?: string | null
@@ -365,6 +367,7 @@ export type Database = {
           label?: string
           name?: string
           organization_id?: string | null
+          track_journey?: boolean
         }
         Relationships: [
           {
