@@ -12,8 +12,8 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
+  DialogTrigger } from
+'@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { z } from 'zod';
@@ -21,7 +21,7 @@ import planeoLogo from '@/assets/planeo-logo.png';
 
 const loginSchema = z.object({
   email: z.string().email('Email invalide'),
-  password: z.string().min(6, 'Le mot de passe doit contenir au moins 6 caractères'),
+  password: z.string().min(6, 'Le mot de passe doit contenir au moins 6 caractères')
 });
 
 const emailSchema = z.string().email('Email invalide');
@@ -37,7 +37,7 @@ export default function Auth() {
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
-    password: '',
+    password: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -76,10 +76,10 @@ export default function Auth() {
     if (error) {
       toast({
         title: 'Erreur de connexion',
-        description: error.message === 'Invalid login credentials' 
-          ? 'Email ou mot de passe incorrect' 
-          : error.message,
-        variant: 'destructive',
+        description: error.message === 'Invalid login credentials' ?
+        'Email ou mot de passe incorrect' :
+        error.message,
+        variant: 'destructive'
       });
     }
   };
@@ -96,7 +96,7 @@ export default function Auth() {
 
     setResetLoading(true);
     const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-      redirectTo: `${window.location.origin}/reset-password`,
+      redirectTo: `${window.location.origin}/reset-password`
     });
     setResetLoading(false);
 
@@ -104,12 +104,12 @@ export default function Auth() {
       toast({
         title: 'Erreur',
         description: error.message,
-        variant: 'destructive',
+        variant: 'destructive'
       });
     } else {
       toast({
         title: 'Email envoyé',
-        description: 'Si un compte existe avec cet email, vous recevrez un lien de réinitialisation.',
+        description: 'Si un compte existe avec cet email, vous recevrez un lien de réinitialisation.'
       });
       setResetDialogOpen(false);
       setResetEmail('');
@@ -120,19 +120,19 @@ export default function Auth() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-secondary">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+      </div>);
+
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-secondary p-4">
       <div className="w-full max-w-md animate-fade-in">
         <div className="text-center mb-8">
-          <img 
-            src={planeoLogo} 
-            alt="Planéo - Gestion des interventions SAV" 
-            className="h-32 mx-auto mb-4"
-          />
+          <img
+            src={planeoLogo}
+            alt="Planéo - Gestion des interventions SAV"
+            className="h-32 mx-auto mb-4" />
+
         </div>
 
         <Card className="shadow-soft">
@@ -152,11 +152,11 @@ export default function Auth() {
                   placeholder="votre@email.com"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  disabled={loading}
-                />
-                {errors.email && (
-                  <p className="text-sm text-destructive">{errors.email}</p>
-                )}
+                  disabled={loading} />
+
+                {errors.email &&
+                <p className="text-sm text-destructive">{errors.email}</p>
+                }
               </div>
 
               <div className="space-y-2">
@@ -164,11 +164,11 @@ export default function Auth() {
                   <Label htmlFor="login-password">Mot de passe</Label>
                   <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
                     <DialogTrigger asChild>
-                      <Button 
-                        type="button" 
-                        variant="link" 
-                        className="px-0 h-auto text-xs text-muted-foreground hover:text-primary"
-                      >
+                      <Button
+                        type="button"
+                        variant="link"
+                        className="px-0 h-auto text-xs text-muted-foreground hover:text-primary">
+
                         Mot de passe oublié ?
                       </Button>
                     </DialogTrigger>
@@ -188,21 +188,21 @@ export default function Auth() {
                             placeholder="votre@email.com"
                             value={resetEmail}
                             onChange={(e) => setResetEmail(e.target.value)}
-                            disabled={resetLoading}
-                          />
-                          {resetEmailError && (
-                            <p className="text-sm text-destructive">{resetEmailError}</p>
-                          )}
+                            disabled={resetLoading} />
+
+                          {resetEmailError &&
+                          <p className="text-sm text-destructive">{resetEmailError}</p>
+                          }
                         </div>
                         <Button type="submit" className="w-full" disabled={resetLoading}>
-                          {resetLoading ? (
-                            <>
+                          {resetLoading ?
+                          <>
                               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                               Envoi...
-                            </>
-                          ) : (
-                            'Envoyer le lien'
-                          )}
+                            </> :
+
+                          'Envoyer le lien'
+                          }
                         </Button>
                       </form>
                     </DialogContent>
@@ -214,31 +214,32 @@ export default function Auth() {
                   placeholder="••••••••"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  disabled={loading}
-                />
-                {errors.password && (
-                  <p className="text-sm text-destructive">{errors.password}</p>
-                )}
+                  disabled={loading} />
+
+                {errors.password &&
+                <p className="text-sm text-destructive">{errors.password}</p>
+                }
               </div>
 
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? (
-                  <>
+                {loading ?
+                <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Connexion...
-                  </>
-                ) : (
-                  'Se connecter'
-                )}
+                  </> :
+
+                'Se connecter'
+                }
               </Button>
 
-              <p className="text-xs text-center text-muted-foreground">
-                Les comptes sont créés par l'administrateur
+              <p className="text-xs text-center text-muted-foreground">Les comptes sont créés par l'administrateur
+www.app.planeo.tech
+contact@planeo.tech
+numero
+
               </p>
             </CardContent>
           </form>
         </Card>
       </div>
-    </div>
-  );
-}
+    </div>);}
