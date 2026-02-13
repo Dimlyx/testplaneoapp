@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Trash2, GripVertical, Camera, MessageSquare, PenTool, ChevronDown, ChevronRight, ListChecks, Settings2 } from "lucide-react";
+import { Plus, Trash2, ArrowUp, ArrowDown, Camera, MessageSquare, PenTool, ChevronDown, ChevronRight, ListChecks, Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -37,6 +37,7 @@ import {
   useCreateWorkflowStep,
   useUpdateWorkflowStep,
   useDeleteWorkflowStep,
+  useReorderWorkflowSteps,
   WorkflowStep,
 } from "@/hooks/useWorkflowSteps";
 import { useInterventionTypes } from "@/hooks/useInterventionTypes";
@@ -58,6 +59,7 @@ export default function WorkflowStepsSettings() {
   const createStep = useCreateWorkflowStep();
   const updateStep = useUpdateWorkflowStep();
   const deleteStep = useDeleteWorkflowStep();
+  const reorderSteps = useReorderWorkflowSteps();
 
   const [openTypes, setOpenTypes] = useState<Record<string, boolean>>({});
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -143,6 +145,21 @@ export default function WorkflowStepsSettings() {
     await deleteStep.mutateAsync(id);
   };
 
+  const handleMoveStep = async (typeId: string, stepIndex: number, direction: "up" | "down") => {
+    const steps = [...(stepsByType[typeId] || [])];
+    const targetIndex = direction === "up" ? stepIndex - 1 : stepIndex + 1;
+    if (targetIndex < 0 || targetIndex >= steps.length) return;
+
+    // Swap
+    const temp = steps[stepIndex];
+    steps[stepIndex] = steps[targetIndex];
+    steps[targetIndex] = temp;
+
+    await reorderSteps.mutateAsync(
+      steps.map((s, i) => ({ id: s.id, step_order: i }))
+    );
+  };
+
   const toggleType = (typeId: string) => {
     setOpenTypes((prev) => ({ ...prev, [typeId]: !prev[typeId] }));
   };
@@ -223,7 +240,26 @@ export default function WorkflowStepsSettings() {
                                 key={step.id}
                                 className="flex items-center gap-3 p-3 bg-background rounded-md border"
                               >
-                                <GripVertical className="h-4 w-4 text-muted-foreground cursor-move" />
+                                <div className="flex flex-col gap-0.5">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6"
+                                    disabled={index === 0 || reorderSteps.isPending}
+                                    onClick={() => handleMoveStep(type.id, index, "up")}
+                                  >
+                                    <ArrowUp className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6"
+                                    disabled={index === steps.length - 1 || reorderSteps.isPending}
+                                    onClick={() => handleMoveStep(type.id, index, "down")}
+                                  >
+                                    <ArrowDown className="h-3 w-3" />
+                                  </Button>
+                                </div>
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-2">
                                     <span className="font-medium text-sm">

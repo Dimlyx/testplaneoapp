@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useUserOrganization } from "./useUserOrganization";
 
 export interface InterventionType {
   id: string;
@@ -27,12 +28,14 @@ export function useInterventionTypes() {
 
 export function useCreateInterventionType() {
   const queryClient = useQueryClient();
+  const { data: organizationId } = useUserOrganization();
 
   return useMutation({
     mutationFn: async ({ name, label, color }: { name: string; label: string; color: string }) => {
+      if (!organizationId) throw new Error("No organization found");
       const { data, error } = await supabase
         .from("intervention_types")
-        .insert({ name, label, color })
+        .insert({ name, label, color, organization_id: organizationId })
         .select()
         .single();
 
