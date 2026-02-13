@@ -8,6 +8,7 @@ export interface InterventionType {
   name: string;
   label: string;
   color: string;
+  track_journey: boolean;
   created_at: string;
 }
 
@@ -31,11 +32,11 @@ export function useCreateInterventionType() {
   const { data: organizationId } = useUserOrganization();
 
   return useMutation({
-    mutationFn: async ({ name, label, color }: { name: string; label: string; color: string }) => {
+    mutationFn: async ({ name, label, color, track_journey = true }: { name: string; label: string; color: string; track_journey?: boolean }) => {
       if (!organizationId) throw new Error("No organization found");
       const { data, error } = await supabase
         .from("intervention_types")
-        .insert({ name, label, color, organization_id: organizationId })
+        .insert({ name, label, color, track_journey, organization_id: organizationId })
         .select()
         .single();
 
@@ -56,10 +57,10 @@ export function useUpdateInterventionType() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, name, label, color }: { id: string; name: string; label: string; color: string }) => {
+    mutationFn: async ({ id, name, label, color, track_journey }: { id: string; name: string; label: string; color: string; track_journey: boolean }) => {
       const { data, error } = await supabase
         .from("intervention_types")
-        .update({ name, label, color })
+        .update({ name, label, color, track_journey })
         .eq("id", id)
         .select()
         .single();

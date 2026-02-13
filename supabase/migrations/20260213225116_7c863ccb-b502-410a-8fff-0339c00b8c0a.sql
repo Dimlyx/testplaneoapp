@@ -1,0 +1,1 @@
+ALTER TABLE public.intervention_types ADD COLUMN track_journey boolean NOT NULL DEFAULT true;

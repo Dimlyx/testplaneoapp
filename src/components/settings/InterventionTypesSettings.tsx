@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Switch } from "@/components/ui/switch";
 import { Plus, Trash2, Tag, Pencil, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -76,6 +77,7 @@ export default function InterventionTypesSettings() {
   const [name, setName] = useState("");
   const [label, setLabel] = useState("");
   const [color, setColor] = useState("blue");
+  const [trackJourney, setTrackJourney] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingType, setEditingType] = useState<InterventionType | null>(null);
 
@@ -83,6 +85,7 @@ export default function InterventionTypesSettings() {
     setName("");
     setLabel("");
     setColor("blue");
+    setTrackJourney(true);
     setEditingType(null);
   };
 
@@ -96,6 +99,7 @@ export default function InterventionTypesSettings() {
     setName(type.name);
     setLabel(type.label);
     setColor(type.color);
+    setTrackJourney(type.track_journey);
     setDialogOpen(true);
   };
 
@@ -110,12 +114,14 @@ export default function InterventionTypesSettings() {
         name: finalName,
         label: label.trim(),
         color,
+        track_journey: trackJourney,
       });
     } else {
       await createType.mutateAsync({
         name: finalName,
         label: label.trim(),
         color,
+        track_journey: trackJourney,
       });
     }
 
@@ -128,6 +134,7 @@ export default function InterventionTypesSettings() {
       name: type.name + "_copie",
       label: type.label + " (copie)",
       color: type.color,
+      track_journey: type.track_journey,
     });
 
     // Duplicate workflow steps
@@ -331,6 +338,15 @@ export default function InterventionTypesSettings() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>Suivi de trajet</Label>
+                <p className="text-xs text-muted-foreground">
+                  Activer le suivi des temps de trajet pour ce type
+                </p>
+              </div>
+              <Switch checked={trackJourney} onCheckedChange={setTrackJourney} />
             </div>
           </div>
           <DialogFooter>
