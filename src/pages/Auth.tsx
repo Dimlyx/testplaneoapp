@@ -15,8 +15,9 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Wrench, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { z } from 'zod';
+import planeoLogo from '@/assets/planeo-logo.png';
 
 const loginSchema = z.object({
   email: z.string().email('Email invalide'),
@@ -127,11 +128,11 @@ export default function Auth() {
     <div className="min-h-screen flex items-center justify-center bg-secondary p-4">
       <div className="w-full max-w-md animate-fade-in">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-xl gradient-navy shadow-navy mb-4">
-            <Wrench className="h-8 w-8 text-primary-foreground" />
-          </div>
-          <h1 className="text-2xl font-bold text-foreground">Planéo</h1>
-          <p className="text-muted-foreground mt-1">Gestion des interventions SAV</p>
+          <img 
+            src={planeoLogo} 
+            alt="Planéo - Gestion des interventions SAV" 
+            className="h-32 mx-auto mb-4"
+          />
         </div>
 
         <Card className="shadow-soft">
