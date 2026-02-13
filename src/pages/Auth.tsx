@@ -232,10 +232,10 @@ export default function Auth() {
                 }
               </Button>
 
-              <p className="text-xs text-center text-muted-foreground">Les comptes sont créés par l'administrateur
-www.app.planeo.tech
-contact@planeo.tech
-numero
+              <p className="text-xs text-center text-muted-foreground">Les comptes sont créés par l'administrateur 
+www.app.planeo.tech contact@planeo.tech numero
+
+
 
               </p>
             </CardContent>
