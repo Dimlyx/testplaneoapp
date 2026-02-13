@@ -36,7 +36,7 @@ export function useCreateInterventionType() {
       if (!organizationId) throw new Error("No organization found");
       const { data, error } = await supabase
         .from("intervention_types")
-        .insert({ name, label, color, track_journey, organization_id: organizationId })
+        .insert({ name, label, color, track_journey, organization_id: organizationId } as any)
         .select()
         .single();
 
@@ -58,15 +58,12 @@ export function useUpdateInterventionType() {
 
   return useMutation({
     mutationFn: async ({ id, name, label, color, track_journey }: { id: string; name: string; label: string; color: string; track_journey: boolean }) => {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from("intervention_types")
-        .update({ name, label, color, track_journey })
-        .eq("id", id)
-        .select()
-        .single();
+        .update({ name, label, color, track_journey } as any)
+        .eq("id", id);
 
       if (error) throw error;
-      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["intervention-types"] });
