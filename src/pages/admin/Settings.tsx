@@ -679,7 +679,7 @@ export default function Settings() {
           </AccordionContent>
         </AccordionItem>
 
-        {/* Section: Workflow (Types + Étapes) */}
+        {/* Section: Modèles d'intervention */}
         <AccordionItem value="workflow" className="border rounded-lg px-4">
           <AccordionTrigger className="hover:no-underline">
             <div className="flex items-center gap-3">
@@ -687,8 +687,8 @@ export default function Settings() {
                 <ListChecks className="h-5 w-5 text-primary" />
               </div>
               <div className="text-left">
-                <p className="font-semibold">Workflow</p>
-                <p className="text-sm text-muted-foreground font-normal">Types d'intervention et étapes personnalisées</p>
+                <p className="font-semibold">Modèles d'intervention</p>
+                <p className="text-sm text-muted-foreground font-normal">Types, étapes de workflow et personnalisation des interventions</p>
               </div>
             </div>
           </AccordionTrigger>

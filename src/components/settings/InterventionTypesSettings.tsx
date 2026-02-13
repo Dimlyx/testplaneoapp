@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Trash2, Tag } from "lucide-react";
+import { Plus, Trash2, Tag, Pencil, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -16,7 +16,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
@@ -40,11 +39,15 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   useInterventionTypes,
   useCreateInterventionType,
+  useUpdateInterventionType,
   useDeleteInterventionType,
+  InterventionType,
 } from "@/hooks/useInterventionTypes";
+import { useWorkflowStepsByType, useCreateWorkflowStep } from "@/hooks/useWorkflowSteps";
 
 const COLORS = [
   { value: "red", label: "Rouge", class: "bg-red-500" },
@@ -64,27 +67,84 @@ const getColorClass = (color: string) => {
 
 export default function InterventionTypesSettings() {
   const { data: types = [], isLoading } = useInterventionTypes();
+  const { data: stepsByType = {} } = useWorkflowStepsByType();
   const createType = useCreateInterventionType();
+  const updateType = useUpdateInterventionType();
   const deleteType = useDeleteInterventionType();
+  const createStep = useCreateWorkflowStep();
 
   const [name, setName] = useState("");
   const [label, setLabel] = useState("");
   const [color, setColor] = useState("blue");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingType, setEditingType] = useState<InterventionType | null>(null);
 
-  const handleCreate = async () => {
-    if (!name.trim() || !label.trim()) return;
-
-    await createType.mutateAsync({
-      name: name.toLowerCase().replace(/\s+/g, "_"),
-      label: label.trim(),
-      color,
-    });
-
+  const resetForm = () => {
     setName("");
     setLabel("");
     setColor("blue");
+    setEditingType(null);
+  };
+
+  const openCreateDialog = () => {
+    resetForm();
+    setDialogOpen(true);
+  };
+
+  const openEditDialog = (type: InterventionType) => {
+    setEditingType(type);
+    setName(type.name);
+    setLabel(type.label);
+    setColor(type.color);
+    setDialogOpen(true);
+  };
+
+  const handleSubmit = async () => {
+    if (!label.trim()) return;
+
+    const finalName = name.trim() || label.toLowerCase().replace(/\s+/g, "_");
+
+    if (editingType) {
+      await updateType.mutateAsync({
+        id: editingType.id,
+        name: finalName,
+        label: label.trim(),
+        color,
+      });
+    } else {
+      await createType.mutateAsync({
+        name: finalName,
+        label: label.trim(),
+        color,
+      });
+    }
+
+    resetForm();
     setDialogOpen(false);
+  };
+
+  const handleDuplicate = async (type: InterventionType) => {
+    const newType = await createType.mutateAsync({
+      name: type.name + "_copie",
+      label: type.label + " (copie)",
+      color: type.color,
+    });
+
+    // Duplicate workflow steps
+    const steps = stepsByType[type.id] || [];
+    for (const step of steps) {
+      await createStep.mutateAsync({
+        intervention_type_id: newType.id,
+        name: step.name,
+        label: step.label,
+        description: step.description || undefined,
+        is_mandatory: step.is_mandatory,
+        step_order: step.step_order,
+        requires_photo: step.requires_photo,
+        requires_comment: step.requires_comment,
+        requires_signature: step.requires_signature,
+      });
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -108,80 +168,19 @@ export default function InterventionTypesSettings() {
             Types d'intervention
           </CardTitle>
           <CardDescription>
-            Gérez les différents types d'intervention disponibles
+            Créez, modifiez ou supprimez les types d'intervention. Chaque type peut avoir ses propres étapes de workflow.
           </CardDescription>
         </div>
 
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Ajouter
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Nouveau type d'intervention</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="label">Libellé</Label>
-                <Input
-                  id="label"
-                  placeholder="Ex: Dépannage urgent"
-                  value={label}
-                  onChange={(e) => setLabel(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="name">Identifiant technique</Label>
-                <Input
-                  id="name"
-                  placeholder="Ex: depannage_urgent"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Utilisé en interne, sans espaces ni caractères spéciaux
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label>Couleur</Label>
-                <Select value={color} onValueChange={setColor}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {COLORS.map((c) => (
-                      <SelectItem key={c.value} value={c.value}>
-                        <div className="flex items-center gap-2">
-                          <div className={`w-3 h-3 rounded-full ${c.class}`} />
-                          {c.label}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button variant="outline">Annuler</Button>
-              </DialogClose>
-              <Button
-                onClick={handleCreate}
-                disabled={!name.trim() || !label.trim() || createType.isPending}
-              >
-                {createType.isPending ? "Création..." : "Créer"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <Button onClick={openCreateDialog}>
+          <Plus className="h-4 w-4 mr-2" />
+          Ajouter
+        </Button>
       </CardHeader>
       <CardContent>
         {types.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
-            Aucun type d'intervention configuré
+            Aucun type d'intervention configuré. Créez-en un pour commencer.
           </div>
         ) : (
           <Table>
@@ -190,62 +189,167 @@ export default function InterventionTypesSettings() {
                 <TableHead>Libellé</TableHead>
                 <TableHead>Identifiant</TableHead>
                 <TableHead>Couleur</TableHead>
-                <TableHead className="w-[100px]">Actions</TableHead>
+                <TableHead>Étapes</TableHead>
+                <TableHead className="w-[140px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {types.map((type) => (
-                <TableRow key={type.id}>
-                  <TableCell className="font-medium">{type.label}</TableCell>
-                  <TableCell>
-                    <code className="text-sm bg-muted px-2 py-1 rounded">
-                      {type.name}
-                    </code>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      className={`${getColorClass(type.color)} text-white`}
-                    >
-                      {type.color}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>
-                            Supprimer ce type ?
-                          </AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Cette action est irréversible. Les interventions
-                            existantes de ce type ne seront pas affectées mais
-                            le type ne sera plus disponible pour les nouvelles
-                            interventions.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Annuler</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => handleDelete(type.id)}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                          >
-                            Supprimer
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {types.map((type) => {
+                const stepsCount = (stepsByType[type.id] || []).length;
+                return (
+                  <TableRow key={type.id}>
+                    <TableCell className="font-medium">{type.label}</TableCell>
+                    <TableCell>
+                      <code className="text-sm bg-muted px-2 py-1 rounded">
+                        {type.name}
+                      </code>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={`${getColorClass(type.color)} text-white`}>
+                        {type.color}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm text-muted-foreground">
+                        {stepsCount} étape{stepsCount !== 1 ? "s" : ""}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <TooltipProvider>
+                        <div className="flex items-center gap-1">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" onClick={() => openEditDialog(type)}>
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Modifier</TooltipContent>
+                          </Tooltip>
+
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDuplicate(type)}
+                                disabled={createType.isPending}
+                              >
+                                <Copy className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Dupliquer avec ses étapes</TooltipContent>
+                          </Tooltip>
+
+                          <AlertDialog>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="icon">
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                              </TooltipTrigger>
+                              <TooltipContent>Supprimer</TooltipContent>
+                            </Tooltip>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>
+                                  Supprimer « {type.label} » ?
+                                </AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Cette action est irréversible. Les interventions
+                                  existantes de ce type ne seront pas affectées, mais
+                                  le type et ses étapes ne seront plus disponibles.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDelete(type.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Supprimer
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </TooltipProvider>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         )}
       </CardContent>
+
+      {/* Create/Edit Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {editingType ? "Modifier le type d'intervention" : "Nouveau type d'intervention"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="label">Libellé *</Label>
+              <Input
+                id="label"
+                placeholder="Ex: Dépannage urgent"
+                value={label}
+                onChange={(e) => setLabel(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="name">Identifiant technique</Label>
+              <Input
+                id="name"
+                placeholder="Ex: depannage_urgent"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Laissez vide pour générer automatiquement
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label>Couleur</Label>
+              <Select value={color} onValueChange={setColor}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {COLORS.map((c) => (
+                    <SelectItem key={c.value} value={c.value}>
+                      <div className="flex items-center gap-2">
+                        <div className={`w-3 h-3 rounded-full ${c.class}`} />
+                        {c.label}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Annuler</Button>
+            </DialogClose>
+            <Button
+              onClick={handleSubmit}
+              disabled={!label.trim() || createType.isPending || updateType.isPending}
+            >
+              {createType.isPending || updateType.isPending
+                ? "Enregistrement..."
+                : editingType
+                ? "Mettre à jour"
+                : "Créer"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
