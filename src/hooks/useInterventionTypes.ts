@@ -49,6 +49,31 @@ export function useCreateInterventionType() {
   });
 }
 
+export function useUpdateInterventionType() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, name, label, color }: { id: string; name: string; label: string; color: string }) => {
+      const { data, error } = await supabase
+        .from("intervention_types")
+        .update({ name, label, color })
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["intervention-types"] });
+      toast.success("Type d'intervention mis à jour");
+    },
+    onError: (error: Error) => {
+      toast.error("Erreur lors de la mise à jour: " + error.message);
+    },
+  });
+}
+
 export function useDeleteInterventionType() {
   const queryClient = useQueryClient();
 
