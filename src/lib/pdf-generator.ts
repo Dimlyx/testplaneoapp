@@ -373,14 +373,6 @@ export const generateInterventionPDF = async (
   yPos += 5;
 
 
-  // ================== TRAVAUX EFFECTUÉS ==================
-  yPos = addSection("TRAVAUX EFFECTUÉS - COMPTE-RENDU", yPos);
-  doc.setFontSize(9);
-  const reportText = intervention.report || "Aucun compte rendu";
-  const reportLines = doc.splitTextToSize(reportText, pageWidth - 30);
-  doc.text(reportLines, 15, yPos);
-  yPos += reportLines.length * 5 + 8;
-
   // ================== EQUIPMENTS SECTION ==================
   if (interventionEquipments && interventionEquipments.length > 0) {
     for (let i = 0; i < interventionEquipments.length; i++) {
