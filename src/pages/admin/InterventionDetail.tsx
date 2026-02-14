@@ -383,21 +383,6 @@ const InterventionDetail = () => {
           </CardContent>
         </Card>
 
-        {/* Rapport */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Compte rendu d'intervention
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="whitespace-pre-wrap">
-              {intervention.report || "Aucun compte rendu pour le moment"}
-            </p>
-          </CardContent>
-        </Card>
-
         {/* Équipements */}
         {interventionEquipments.length > 0 && (
           <Card className="lg:col-span-2">
