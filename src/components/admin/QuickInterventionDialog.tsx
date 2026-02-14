@@ -163,14 +163,14 @@ export function QuickInterventionDialog({
             <div className="space-y-2">
               <Label htmlFor="technician">Technicien</Label>
               <Select
-                value={formData.technician_id}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, technician_id: value }))}
+                value={formData.technician_id || "none"}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, technician_id: value === "none" ? "" : value }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Non assigné" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Non assigné</SelectItem>
+                  <SelectItem value="none">Non assigné</SelectItem>
                   {technicians.map(tech => (
                     <SelectItem key={tech.id} value={tech.id}>
                       {tech.full_name || tech.email}
