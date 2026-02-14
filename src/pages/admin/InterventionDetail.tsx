@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge, TypeBadge } from "@/components/ui/status-badge";
 import { TimesCorrectionDialog } from "@/components/admin/TimesCorrectionDialog";
+import AdminStepEditor from "@/components/admin/AdminStepEditor";
 import { 
   ArrowLeft, 
   Edit, 
@@ -23,9 +24,6 @@ import {
   Copy,
   Image as ImageIcon,
   ClipboardList,
-  CheckCircle,
-  MessageSquare,
-  Camera
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -551,7 +549,7 @@ const InterventionDetail = () => {
           </Card>
         )}
 
-        {/* Étapes du workflow */}
+        {/* Étapes du workflow - éditable */}
         {workflowSteps.length > 0 && (
           <Card className="lg:col-span-2">
             <CardHeader>
@@ -560,81 +558,12 @@ const InterventionDetail = () => {
                 Étapes du workflow ({stepCompletions.filter(c => c.completed_at).length}/{workflowSteps.length})
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {workflowSteps.map((step, index) => {
-                const completion = stepCompletions.find(c => c.step_id === step.id);
-                const isStepCompleted = !!completion?.completed_at;
-                const stepPhotos = parsePhotoUrls(completion?.photo_url || null);
-
-                return (
-                  <div key={step.id} className="border rounded-lg p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-muted-foreground">{index + 1}.</span>
-                        <h4 className="font-semibold">{step.label}</h4>
-                        {step.is_mandatory && (
-                          <span className="text-xs text-destructive">Obligatoire</span>
-                        )}
-                      </div>
-                      {isStepCompleted ? (
-                        <div className="flex items-center gap-1 text-green-600">
-                          <CheckCircle className="h-4 w-4" />
-                          <span className="text-xs">Validée</span>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">Non validée</span>
-                      )}
-                    </div>
-
-                    {step.description && (
-                      <p className="text-sm text-muted-foreground">{step.description}</p>
-                    )}
-
-                    {/* Requirements indicators */}
-                    <div className="flex gap-3 text-xs text-muted-foreground">
-                      {step.requires_photo && (
-                        <span className="flex items-center gap-1">
-                          <Camera className="h-3 w-3" /> Photo requise
-                        </span>
-                      )}
-                      {step.requires_comment && (
-                        <span className="flex items-center gap-1">
-                          <MessageSquare className="h-3 w-3" /> Commentaire requis
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Completion data */}
-                    {isStepCompleted && (
-                      <div className="bg-muted/30 rounded-lg p-3 space-y-3">
-                        {completion?.comment && (
-                          <div>
-                            <p className="text-xs font-medium text-muted-foreground mb-1">Commentaire</p>
-                            <p className="text-sm whitespace-pre-wrap">{completion.comment}</p>
-                          </div>
-                        )}
-                        {stepPhotos.length > 0 && (
-                          <div>
-                            <p className="text-xs font-medium text-muted-foreground mb-2">Photos ({stepPhotos.length})</p>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                              {stepPhotos.map((url, photoIdx) => (
-                                <a key={photoIdx} href={url} target="_blank" rel="noopener noreferrer">
-                                  <img src={url} alt={`Étape ${index + 1} - Photo ${photoIdx + 1}`} className="w-full aspect-square object-cover rounded-lg hover:opacity-90 transition-opacity" />
-                                </a>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                        {completion?.completed_at && (
-                          <p className="text-xs text-muted-foreground">
-                            Validée le {new Date(completion.completed_at).toLocaleString('fr-FR')}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+            <CardContent>
+              <AdminStepEditor
+                steps={workflowSteps}
+                completions={stepCompletions}
+                interventionId={id || ""}
+              />
             </CardContent>
           </Card>
         )}
