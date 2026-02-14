@@ -4,6 +4,9 @@ import { useIntervention, useUpdateIntervention } from "@/hooks/useInterventions
 import { useClient } from "@/hooks/useClients";
 import { useInterventionEquipment } from "@/hooks/useInterventionEquipment";
 import { useCompanySettings, useReportSettings } from "@/hooks/useAppSettings";
+import { useInterventionTypes } from "@/hooks/useInterventionTypes";
+import { useWorkflowSteps } from "@/hooks/useWorkflowSteps";
+import { useStepCompletions } from "@/hooks/useStepCompletions";
 import { Button } from "@/components/ui/button";
 import { StatusBadge, TypeBadge } from "@/components/ui/status-badge";
 import { ArrowLeft, Calendar, Clock } from "lucide-react";
@@ -25,6 +28,14 @@ const TechnicianInterventionDetail = () => {
   const { data: companySettings } = useCompanySettings();
   const { data: reportSettings } = useReportSettings();
   const updateIntervention = useUpdateIntervention();
+  
+  // For PDF generation with step data
+  const { data: interventionTypes = [] } = useInterventionTypes();
+  const matchingType = interventionTypes.find(
+    t => t.name === intervention?.intervention_type
+  );
+  const { data: workflowSteps = [] } = useWorkflowSteps(matchingType?.id);
+  const { data: stepCompletions = [] } = useStepCompletions(id || "");
 
   const [status, setStatus] = useState<string>("");
   const [report, setReport] = useState<string>("");
@@ -160,7 +171,9 @@ const TechnicianInterventionDetail = () => {
         intervention.profiles?.full_name || undefined,
         photos,
         interventionEquipment,
-        { company: companySettings!, report: reportSettings! }
+        { company: companySettings!, report: reportSettings! },
+        stepCompletions,
+        workflowSteps
       );
       toast({ title: "Rapport téléchargé" });
     }

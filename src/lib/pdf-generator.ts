@@ -180,6 +180,29 @@ const loadImageAsBase64 = async (url: string): Promise<string | null> => {
   }
 };
 
+interface StepCompletionData {
+  step_id: string;
+  comment: string | null;
+  photo_url: string | null;
+  completed_at: string | null;
+}
+
+interface WorkflowStepData {
+  id: string;
+  label: string;
+  requires_photo: boolean | null;
+  requires_comment: boolean | null;
+}
+
+const parsePhotoUrls = (photoUrl: string | null): string[] => {
+  if (!photoUrl) return [];
+  try {
+    const parsed = JSON.parse(photoUrl);
+    if (Array.isArray(parsed)) return parsed;
+  } catch {}
+  return photoUrl ? [photoUrl] : [];
+};
+
 export const generateInterventionPDF = async (
   intervention: Intervention, 
   client: Client, 
@@ -195,7 +218,9 @@ export const generateInterventionPDF = async (
   technicianName?: string,
   photos?: InterventionPhoto[],
   interventionEquipments?: InterventionEquipmentData[],
-  pdfSettings?: PDFSettings
+  pdfSettings?: PDFSettings,
+  stepCompletions?: StepCompletionData[],
+  workflowSteps?: WorkflowStepData[]
 ) => {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -575,6 +600,58 @@ export const generateInterventionPDF = async (
     const funcStatus = intervention.equipment_functional !== false ? "Oui" : "Non";
     yPos = addField("L'équipement fonctionne correctement", funcStatus, yPos);
     yPos += 10;
+  }
+
+  // ================== WORKFLOW STEPS ==================
+  if (workflowSteps && workflowSteps.length > 0 && stepCompletions && stepCompletions.length > 0) {
+    checkNewPage(40);
+    yPos = addSection("ÉTAPES DU WORKFLOW", yPos);
+    
+    for (const step of workflowSteps) {
+      const completion = stepCompletions.find(c => c.step_id === step.id);
+      if (!completion?.completed_at) continue;
+      
+      checkNewPage(30);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.text(`✓ ${step.label}`, 15, yPos);
+      doc.setFont("helvetica", "normal");
+      yPos += 6;
+      
+      if (completion.comment) {
+        doc.setFontSize(9);
+        const commentLines = doc.splitTextToSize(completion.comment, pageWidth - 35);
+        doc.text(commentLines, 20, yPos);
+        yPos += commentLines.length * 5 + 3;
+      }
+      
+      const stepPhotoUrls = parsePhotoUrls(completion.photo_url);
+      if (stepPhotoUrls.length > 0) {
+        let xPos = 20;
+        let photoCount = 0;
+        for (const photoUrl of stepPhotoUrls) {
+          const base64 = await loadImageAsBase64(photoUrl);
+          if (base64) {
+            if (photoCount > 0 && photoCount % 2 === 0) {
+              xPos = 20;
+              yPos += 50;
+              checkNewPage(50);
+            }
+            try {
+              doc.addImage(base64, 'JPEG', xPos, yPos, 55, 40);
+              xPos += 65;
+              photoCount++;
+            } catch (e) {
+              console.error('Error adding step photo:', e);
+            }
+          }
+        }
+        if (photoCount > 0) yPos += 45;
+      }
+      
+      yPos += 3;
+    }
+    yPos += 5;
   }
 
 

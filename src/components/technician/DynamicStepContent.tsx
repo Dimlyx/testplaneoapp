@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
-import { Camera, MessageSquare, CheckCircle, Upload, X } from "lucide-react";
+import { Camera, MessageSquare, CheckCircle, Upload, X, Plus } from "lucide-react";
 import { WorkflowStep as WorkflowStepType } from "@/hooks/useWorkflowSteps";
 import { StepCompletion } from "@/hooks/useStepCompletions";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,6 +21,18 @@ interface DynamicStepContentProps {
   existingSignature?: string | null;
 }
 
+// Helper to parse photo_url which can be a single URL or JSON array
+const parsePhotoUrls = (photoUrl: string | null): string[] => {
+  if (!photoUrl) return [];
+  try {
+    const parsed = JSON.parse(photoUrl);
+    if (Array.isArray(parsed)) return parsed;
+  } catch {
+    // Not JSON, single URL
+  }
+  return photoUrl ? [photoUrl] : [];
+};
+
 const DynamicStepContent = ({
   step,
   interventionId,
@@ -34,38 +46,49 @@ const DynamicStepContent = ({
   existingSignature,
 }: DynamicStepContentProps) => {
   const [comment, setComment] = useState(completion?.comment || "");
-  const [photoUrl, setPhotoUrl] = useState(completion?.photo_url || "");
+  const [photoUrls, setPhotoUrls] = useState<string[]>(parsePhotoUrls(completion?.photo_url || null));
   const [isUploading, setIsUploading] = useState(false);
 
   const isCompleted = !!completion?.completed_at;
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
     setIsUploading(true);
     try {
-      const fileName = `steps/${interventionId}/${step.id}-${Date.now()}.${file.name.split('.').pop()}`;
-      const { error: uploadError } = await supabase.storage
-        .from("intervention-photos")
-        .upload(fileName, file, { contentType: file.type });
+      const newUrls: string[] = [];
+      for (const file of Array.from(files)) {
+        const fileName = `steps/${interventionId}/${step.id}-${Date.now()}-${Math.random().toString(36).slice(2)}.${file.name.split('.').pop()}`;
+        const { error: uploadError } = await supabase.storage
+          .from("intervention-photos")
+          .upload(fileName, file, { contentType: file.type });
 
-      if (uploadError) throw uploadError;
+        if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabase.storage
-        .from("intervention-photos")
-        .getPublicUrl(fileName);
+        const { data: urlData } = supabase.storage
+          .from("intervention-photos")
+          .getPublicUrl(fileName);
 
-      setPhotoUrl(urlData.publicUrl);
+        newUrls.push(urlData.publicUrl);
+      }
+      setPhotoUrls(prev => [...prev, ...newUrls]);
     } catch (error: any) {
       console.error("Upload error:", error);
     } finally {
       setIsUploading(false);
+      // Reset input
+      e.target.value = '';
     }
   };
 
+  const removePhoto = (index: number) => {
+    setPhotoUrls(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleValidate = async () => {
-    await onComplete(step.id, comment || undefined, photoUrl || undefined);
+    const serializedPhotos = photoUrls.length > 0 ? JSON.stringify(photoUrls) : undefined;
+    await onComplete(step.id, comment || undefined, serializedPhotos);
   };
 
   // If this step requires signature, use the signature pad
@@ -87,32 +110,46 @@ const DynamicStepContent = ({
           <p className="text-sm text-muted-foreground">{step.description}</p>
         )}
 
-        {/* Photo section */}
+        {/* Photo section - multiple photos */}
         {step.requires_photo && (
           <div>
             <label className="text-sm font-medium mb-2 flex items-center gap-2">
               <Camera className="h-4 w-4" />
-              Photo {step.is_mandatory && <span className="text-destructive">*</span>}
+              Photos {step.is_mandatory && <span className="text-destructive">*</span>}
+              {photoUrls.length > 0 && <span className="text-muted-foreground text-xs">({photoUrls.length})</span>}
             </label>
-            {photoUrl ? (
-              <div className="relative">
-                <img src={photoUrl} alt="Step photo" className="w-full h-48 object-cover rounded-lg" />
-                {!isLocked && (
-                  <Button
-                    variant="destructive"
-                    size="icon"
-                    className="absolute top-2 right-2 h-6 w-6"
-                    onClick={() => setPhotoUrl("")}
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                )}
+            
+            {/* Photo grid */}
+            {photoUrls.length > 0 && (
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                {photoUrls.map((url, index) => (
+                  <div key={index} className="relative">
+                    <img src={url} alt={`Photo ${index + 1}`} className="w-full h-32 object-cover rounded-lg" />
+                    {!isLocked && (
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-1 right-1 h-6 w-6"
+                        onClick={() => removePhoto(index)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
               </div>
-            ) : !isLocked ? (
-              <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-muted-foreground/30 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
-                <Upload className="h-8 w-8 text-muted-foreground mb-2" />
+            )}
+
+            {/* Add more photos button */}
+            {!isLocked && (
+              <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-muted-foreground/30 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+                {photoUrls.length > 0 ? (
+                  <Plus className="h-6 w-6 text-muted-foreground mb-1" />
+                ) : (
+                  <Upload className="h-6 w-6 text-muted-foreground mb-1" />
+                )}
                 <span className="text-sm text-muted-foreground">
-                  {isUploading ? "Envoi en cours..." : "Prendre une photo"}
+                  {isUploading ? "Envoi en cours..." : photoUrls.length > 0 ? "Ajouter une photo" : "Prendre une photo"}
                 </span>
                 <input
                   type="file"
@@ -121,9 +158,10 @@ const DynamicStepContent = ({
                   className="hidden"
                   onChange={handlePhotoUpload}
                   disabled={isUploading || isLocked}
+                  multiple
                 />
               </label>
-            ) : null}
+            )}
           </div>
         )}
 
@@ -162,7 +200,7 @@ const DynamicStepContent = ({
             ) : (
               <Button
                 onClick={handleValidate}
-                disabled={isCompleting || isUploading || (step.requires_photo && step.is_mandatory && !photoUrl) || (step.requires_comment && step.is_mandatory && !comment.trim())}
+                disabled={isCompleting || isUploading || (step.requires_photo && step.is_mandatory && photoUrls.length === 0) || (step.requires_comment && step.is_mandatory && !comment.trim())}
                 className="w-full"
               >
                 <CheckCircle className="h-4 w-4 mr-2" />

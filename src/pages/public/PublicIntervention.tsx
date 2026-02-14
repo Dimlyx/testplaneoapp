@@ -4,6 +4,8 @@ import { useInterventionPhotos } from "@/hooks/useInterventionPhotos";
 import { useInterventionEquipment } from "@/hooks/useInterventionEquipment";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge, TypeBadge } from "@/components/ui/status-badge";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 import { 
   User, 
   Calendar, 
@@ -16,7 +18,8 @@ import {
   MapPin,
   Phone,
   Mail,
-  Building
+  Building,
+  ClipboardList
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -32,11 +35,56 @@ import {
   CompanySettings
 } from "@/hooks/useAppSettings";
 
+const parsePhotoUrls = (photoUrl: string | null): string[] => {
+  if (!photoUrl) return [];
+  try {
+    const parsed = JSON.parse(photoUrl);
+    if (Array.isArray(parsed)) return parsed;
+  } catch {}
+  return photoUrl ? [photoUrl] : [];
+};
+
 const PublicIntervention = () => {
   const { token } = useParams();
   const { data: intervention, isLoading, error } = usePublicIntervention(token || "");
   const { data: photos = [] } = useInterventionPhotos(intervention?.id || "");
   const { data: interventionEquipments = [] } = useInterventionEquipment(intervention?.id || "");
+  
+  // Fetch step completions for the intervention
+  const { data: stepCompletions = [] } = useQuery({
+    queryKey: ["public-step-completions", intervention?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("intervention_step_completions")
+        .select("*")
+        .eq("intervention_id", intervention!.id);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!intervention?.id,
+  });
+  
+  // Fetch workflow steps for the intervention type
+  const { data: workflowSteps = [] } = useQuery({
+    queryKey: ["public-workflow-steps", intervention?.intervention_type],
+    queryFn: async () => {
+      // First find matching type
+      const { data: types } = await supabase
+        .from("intervention_types")
+        .select("id")
+        .eq("name", intervention!.intervention_type);
+      if (!types || types.length === 0) return [];
+      
+      const { data, error } = await supabase
+        .from("intervention_workflow_steps")
+        .select("*")
+        .eq("intervention_type_id", types[0].id)
+        .order("step_order");
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!intervention?.intervention_type,
+  });
   
   // Fetch settings from database
   const { data: reportSettings, isLoading: loadingReportSettings } = useReportSettings();
@@ -375,6 +423,46 @@ const PublicIntervention = () => {
                   </a>
                 ))}
               </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Étapes du workflow */}
+        {workflowSteps.length > 0 && stepCompletions.filter(c => c.completed_at).length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <ClipboardList className="h-5 w-5" />
+                Étapes réalisées
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {workflowSteps.map((step, index) => {
+                const completion = stepCompletions.find(c => c.step_id === step.id);
+                if (!completion?.completed_at) return null;
+                const stepPhotos = parsePhotoUrls(completion.photo_url);
+
+                return (
+                  <div key={step.id} className="border rounded-lg p-3 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                      <span className="font-medium text-sm">{step.label}</span>
+                    </div>
+                    {completion.comment && (
+                      <p className="text-sm text-muted-foreground ml-6 whitespace-pre-wrap">{completion.comment}</p>
+                    )}
+                    {stepPhotos.length > 0 && (
+                      <div className="grid grid-cols-2 gap-2 ml-6">
+                        {stepPhotos.map((url, photoIdx) => (
+                          <a key={photoIdx} href={url} target="_blank" rel="noopener noreferrer">
+                            <img src={url} alt={`Étape ${index + 1}`} className="w-full aspect-video object-cover rounded-lg border" />
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </CardContent>
           </Card>
         )}

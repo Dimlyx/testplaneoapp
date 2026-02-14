@@ -4,6 +4,9 @@ import { useClient } from "@/hooks/useClients";
 import { useInterventionPhotos, PhotoType } from "@/hooks/useInterventionPhotos";
 import { useInterventionEquipment } from "@/hooks/useInterventionEquipment";
 import { useCompanySettings, useReportSettings } from "@/hooks/useAppSettings";
+import { useInterventionTypes } from "@/hooks/useInterventionTypes";
+import { useWorkflowSteps } from "@/hooks/useWorkflowSteps";
+import { useStepCompletions } from "@/hooks/useStepCompletions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge, TypeBadge } from "@/components/ui/status-badge";
@@ -18,12 +21,25 @@ import {
   Clock,
   ExternalLink,
   Copy,
-  Image as ImageIcon
+  Image as ImageIcon,
+  ClipboardList,
+  CheckCircle,
+  MessageSquare,
+  Camera
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "@/hooks/use-toast";
 import { generateInterventionPDF } from "@/lib/pdf-generator";
+
+const parsePhotoUrls = (photoUrl: string | null): string[] => {
+  if (!photoUrl) return [];
+  try {
+    const parsed = JSON.parse(photoUrl);
+    if (Array.isArray(parsed)) return parsed;
+  } catch {}
+  return photoUrl ? [photoUrl] : [];
+};
 
 const InterventionDetail = () => {
   const navigate = useNavigate();
@@ -34,6 +50,14 @@ const InterventionDetail = () => {
   const { data: interventionEquipments = [] } = useInterventionEquipment(id || "");
   const { data: companySettings } = useCompanySettings();
   const { data: reportSettings } = useReportSettings();
+  
+  // Fetch workflow steps and completions
+  const { data: interventionTypes = [] } = useInterventionTypes();
+  const matchingType = interventionTypes.find(
+    t => t.name === intervention?.intervention_type
+  );
+  const { data: workflowSteps = [] } = useWorkflowSteps(matchingType?.id);
+  const { data: stepCompletions = [] } = useStepCompletions(id || "");
 
   const getPhotosOfType = (type: PhotoType) => photos.filter(p => p.photo_type === type);
 
@@ -55,7 +79,9 @@ const InterventionDetail = () => {
         intervention.profiles?.full_name || undefined,
         photos,
         interventionEquipments,
-        { company: companySettings!, report: reportSettings! }
+        { company: companySettings!, report: reportSettings! },
+        stepCompletions,
+        workflowSteps
       );
       toast({ title: "PDF généré avec succès" });
     }
@@ -521,6 +547,94 @@ const InterventionDetail = () => {
                   </div>
                 </div>
               )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Étapes du workflow */}
+        {workflowSteps.length > 0 && (
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ClipboardList className="h-5 w-5" />
+                Étapes du workflow ({stepCompletions.filter(c => c.completed_at).length}/{workflowSteps.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {workflowSteps.map((step, index) => {
+                const completion = stepCompletions.find(c => c.step_id === step.id);
+                const isStepCompleted = !!completion?.completed_at;
+                const stepPhotos = parsePhotoUrls(completion?.photo_url || null);
+
+                return (
+                  <div key={step.id} className="border rounded-lg p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-muted-foreground">{index + 1}.</span>
+                        <h4 className="font-semibold">{step.label}</h4>
+                        {step.is_mandatory && (
+                          <span className="text-xs text-destructive">Obligatoire</span>
+                        )}
+                      </div>
+                      {isStepCompleted ? (
+                        <div className="flex items-center gap-1 text-green-600">
+                          <CheckCircle className="h-4 w-4" />
+                          <span className="text-xs">Validée</span>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Non validée</span>
+                      )}
+                    </div>
+
+                    {step.description && (
+                      <p className="text-sm text-muted-foreground">{step.description}</p>
+                    )}
+
+                    {/* Requirements indicators */}
+                    <div className="flex gap-3 text-xs text-muted-foreground">
+                      {step.requires_photo && (
+                        <span className="flex items-center gap-1">
+                          <Camera className="h-3 w-3" /> Photo requise
+                        </span>
+                      )}
+                      {step.requires_comment && (
+                        <span className="flex items-center gap-1">
+                          <MessageSquare className="h-3 w-3" /> Commentaire requis
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Completion data */}
+                    {isStepCompleted && (
+                      <div className="bg-muted/30 rounded-lg p-3 space-y-3">
+                        {completion?.comment && (
+                          <div>
+                            <p className="text-xs font-medium text-muted-foreground mb-1">Commentaire</p>
+                            <p className="text-sm whitespace-pre-wrap">{completion.comment}</p>
+                          </div>
+                        )}
+                        {stepPhotos.length > 0 && (
+                          <div>
+                            <p className="text-xs font-medium text-muted-foreground mb-2">Photos ({stepPhotos.length})</p>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                              {stepPhotos.map((url, photoIdx) => (
+                                <a key={photoIdx} href={url} target="_blank" rel="noopener noreferrer">
+                                  <img src={url} alt={`Étape ${index + 1} - Photo ${photoIdx + 1}`} className="w-full aspect-square object-cover rounded-lg hover:opacity-90 transition-opacity" />
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {completion?.completed_at && (
+                          <p className="text-xs text-muted-foreground">
+                            Validée le {new Date(completion.completed_at).toLocaleString('fr-FR')}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </CardContent>
           </Card>
         )}
