@@ -458,49 +458,6 @@ const InterventionForm = () => {
 
             <Card className="lg:col-span-2">
               <CardHeader>
-                <CardTitle>Compte rendu</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="report"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Rapport d'intervention</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                          placeholder="Compte rendu de l'intervention..." 
-                          className="min-h-[100px]"
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="technical_comments"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Commentaires techniques</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                          placeholder="Commentaires techniques (usage interne)..." 
-                          className="min-h-[100px]"
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </CardContent>
-            </Card>
-
-            <Card className="lg:col-span-2">
-              <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Paperclip className="h-5 w-5" />
                   Pièces jointes
