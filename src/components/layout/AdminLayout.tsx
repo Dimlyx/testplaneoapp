@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ChatBot } from '@/components/ChatBot';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 const navigation = [
   { name: 'Tableau de bord', href: '/admin', icon: LayoutDashboard },
@@ -96,14 +97,17 @@ export default function AdminLayout() {
               <h1 className="text-lg font-semibold text-sidebar-foreground">Planéo</h1>
               <p className="text-xs text-sidebar-foreground/60">Administration</p>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="ml-auto lg:hidden text-sidebar-foreground hover:bg-sidebar-accent"
-              onClick={() => setSidebarOpen(false)}
-            >
-              <X className="h-5 w-5" />
-            </Button>
+            <div className="ml-auto flex items-center gap-1">
+              <ThemeToggle />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="lg:hidden text-sidebar-foreground hover:bg-sidebar-accent"
+                onClick={() => setSidebarOpen(false)}
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
           </div>
 
           {/* Navigation */}
@@ -177,6 +181,9 @@ export default function AdminLayout() {
           <div className="flex items-center gap-2">
             <Wrench className="h-5 w-5 text-primary" />
             <span className="font-semibold">Planéo</span>
+          </div>
+          <div className="ml-auto">
+            <ThemeToggle />
           </div>
         </header>
 
