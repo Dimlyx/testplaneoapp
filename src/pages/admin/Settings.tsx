@@ -507,7 +507,7 @@ export default function Settings() {
                         <Upload className="h-4 w-4 mr-2" />
                         {isUploadingLogo ? "Upload..." : "Choisir un logo"}
                       </Button>
-                      <p className="text-xs text-muted-foreground mt-1">Format recommandé : PNG ou SVG, fond transparent. Max 2 Mo.</p>
+                      <p className="text-xs text-muted-foreground mt-1">Dimensions recommandées : 300 × 100 px · Format : PNG ou SVG, fond transparent · Max 2 Mo</p>
                     </div>
                   </div>
                 </div>
