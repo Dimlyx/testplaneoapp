@@ -567,8 +567,8 @@ const InterventionWorkflow = ({
             );
           })}
 
-          {/* "Add another loop?" prompt after last step of latest completed loop */}
-          {loopIdx === totalLoops - 1 && isLoopComplete(loopIdx) && !isLocked && !stepsLocked && (
+          {/* "Add another loop?" prompt - only if allow_loop is enabled */}
+          {matchingType?.allow_loop && loopIdx === totalLoops - 1 && isLoopComplete(loopIdx) && !isLocked && !stepsLocked && (
             <Card className="my-3 border-primary/30 bg-primary/5">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">

@@ -531,6 +531,7 @@ export type Database = {
       }
       intervention_types: {
         Row: {
+          allow_loop: boolean
           color: string | null
           created_at: string
           id: string
@@ -540,6 +541,7 @@ export type Database = {
           track_journey: boolean
         }
         Insert: {
+          allow_loop?: boolean
           color?: string | null
           created_at?: string
           id?: string
@@ -549,6 +551,7 @@ export type Database = {
           track_journey?: boolean
         }
         Update: {
+          allow_loop?: boolean
           color?: string | null
           created_at?: string
           id?: string
