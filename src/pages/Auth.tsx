@@ -129,9 +129,9 @@ export default function Auth() {
       <div className="w-full max-w-md animate-fade-in">
         <div className="text-center mb-8">
           <img
-            src={planeoLogo}
+
             alt="Planéo - Gestion des interventions SAV"
-            className="h-32 mx-auto mb-4" />
+            className="h-32 mx-auto mb-4" src="/lovable-uploads/42ee7578-b16d-4240-acc5-b9c51d7ebb87.png" />
 
         </div>
 
@@ -232,7 +232,7 @@ export default function Auth() {
                 }
               </Button>
 
-              <p className="text-xs text-center text-muted-foreground">Les comptes sont créés par l'administrateur
+              <p className="text-xs text-center text-muted-foreground">Les comptes sont créés par l'administrateur 
 www.app.planeo.tech contact@planeo.tech numero
 
 
