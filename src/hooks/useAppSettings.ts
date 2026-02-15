@@ -38,6 +38,20 @@ export interface ExtranetSettings {
   customFooterText: string;
 }
 
+export interface DocumentSettings {
+  showClientInfo: boolean;
+  showInterventionAddress: boolean;
+  showScheduledDateTime: boolean;
+  showDescription: boolean;
+  showEquipmentDetails: boolean;
+  showEquipmentPhotos: boolean;
+  showWorkflowSteps: boolean;
+  primaryColor: string;
+  accentColor: string;
+  footerText: string;
+  welcomeMessage: string;
+}
+
 export interface InterfaceSettings {
   primaryColor: string;
   accentColor: string;
@@ -83,6 +97,20 @@ export const defaultInterfaceSettings: InterfaceSettings = {
   primaryColor: "#003057",
   accentColor: "#0050A0",
   sidebarColor: "#0a1628",
+};
+
+export const defaultDocumentSettings: DocumentSettings = {
+  showClientInfo: true,
+  showInterventionAddress: true,
+  showScheduledDateTime: true,
+  showDescription: true,
+  showEquipmentDetails: true,
+  showEquipmentPhotos: true,
+  showWorkflowSteps: true,
+  primaryColor: "#003057",
+  accentColor: "#0050A0",
+  footerText: "",
+  welcomeMessage: "",
 };
 
 export function useCompanySettings() {
@@ -365,6 +393,79 @@ export function useUpdateInterfaceSettings() {
       toast({
         title: 'Paramètres sauvegardés',
         description: 'Les paramètres d\'interface ont été mis à jour.',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de sauvegarder les paramètres: ' + error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+}
+
+export function useDocumentSettings() {
+  const { data: organizationId } = useUserOrganization();
+  
+  return useQuery({
+    queryKey: ['app-settings', 'documents', organizationId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'documents')
+        .eq('organization_id', organizationId!)
+        .maybeSingle();
+
+      if (error) throw error;
+      
+      if (data?.value) {
+        return { ...defaultDocumentSettings, ...(data.value as object) } as DocumentSettings;
+      }
+      return defaultDocumentSettings;
+    },
+    enabled: !!organizationId,
+  });
+}
+
+export function useUpdateDocumentSettings() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const { data: organizationId } = useUserOrganization();
+
+  return useMutation({
+    mutationFn: async (settings: Partial<DocumentSettings>) => {
+      if (!organizationId) throw new Error('Organization ID required');
+      
+      const { data: current } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'documents')
+        .eq('organization_id', organizationId)
+        .maybeSingle();
+
+      const currentValue = current?.value as object || {};
+      const newValue = { ...defaultDocumentSettings, ...currentValue, ...settings };
+
+      const { error } = await supabase
+        .from('app_settings')
+        .upsert({ 
+          key: 'documents', 
+          value: newValue,
+          organization_id: organizationId
+        }, { 
+          onConflict: 'key,organization_id' 
+        });
+
+      if (error) throw error;
+      return newValue;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['app-settings', 'documents'] });
+      toast({
+        title: 'Paramètres sauvegardés',
+        description: 'Les paramètres des documents ont été mis à jour.',
       });
     },
     onError: (error) => {
