@@ -223,7 +223,7 @@ export default function Settings() {
         </div>
       </div>
 
-      <Accordion type="multiple" defaultValue={["company"]} className="space-y-4">
+      <Accordion type="multiple" defaultValue={[]} className="space-y-4">
         {/* Section: Société */}
         <AccordionItem value="company" className="border rounded-lg px-4">
           <AccordionTrigger className="hover:no-underline">
