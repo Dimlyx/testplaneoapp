@@ -462,7 +462,7 @@ export type Database = {
           intervention_floor: string | null
           intervention_phone: string | null
           intervention_postal_code: string | null
-          intervention_type: Database["public"]["Enums"]["intervention_type"]
+          intervention_type: string
           observations: string | null
           organization_id: string | null
           public_token: string | null
@@ -496,7 +496,7 @@ export type Database = {
           intervention_floor?: string | null
           intervention_phone?: string | null
           intervention_postal_code?: string | null
-          intervention_type: Database["public"]["Enums"]["intervention_type"]
+          intervention_type: string
           observations?: string | null
           organization_id?: string | null
           public_token?: string | null
@@ -530,7 +530,7 @@ export type Database = {
           intervention_floor?: string | null
           intervention_phone?: string | null
           intervention_postal_code?: string | null
-          intervention_type?: Database["public"]["Enums"]["intervention_type"]
+          intervention_type?: string
           observations?: string | null
           organization_id?: string | null
           public_token?: string | null
@@ -804,7 +804,6 @@ export type Database = {
         | "completed"
         | "to_invoice"
         | "archived"
-      intervention_type: "sav" | "maintenance" | "installation"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -945,7 +944,6 @@ export const Constants = {
         "to_invoice",
         "archived",
       ],
-      intervention_type: ["sav", "maintenance", "installation"],
     },
   },
 } as const

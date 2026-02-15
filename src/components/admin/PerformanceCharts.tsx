@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
+import { useInterventionTypes } from "@/hooks/useInterventionTypes";
 
 type Intervention = Tables<"interventions">;
 
@@ -38,22 +39,22 @@ interface PerformanceChartsProps {
   technicians?: Technician[];
 }
 
-const COLORS = {
-  sav: "#ef4444",
-  maintenance: "#3b82f6", 
-  installation: "#22c55e"
-};
-
-const TYPE_LABELS: Record<string, string> = {
-  sav: "SAV",
-  maintenance: "Maintenance",
-  installation: "Installation"
+const COLOR_MAP: Record<string, string> = {
+  red: "#ef4444",
+  blue: "#3b82f6",
+  green: "#22c55e",
+  yellow: "#eab308",
+  purple: "#a855f7",
+  orange: "#f97316",
+  pink: "#ec4899",
+  gray: "#6b7280",
 };
 
 export function PerformanceCharts({ interventions, technicians = [] }: PerformanceChartsProps) {
   const [selectedTechnicianId, setSelectedTechnicianId] = useState<string>("all");
   const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
+  const { data: interventionTypes = [] } = useInterventionTypes();
 
   // Filter interventions based on selected filters
   const filteredInterventions = useMemo(() => {
@@ -123,27 +124,25 @@ export function PerformanceCharts({ interventions, technicians = [] }: Performan
         ['completed', 'to_invoice', 'archived'].includes(i.status)
       ).length;
 
-      const savCount = monthInterventions.filter(i => i.intervention_type === 'sav').length;
-      const maintenanceCount = monthInterventions.filter(i => i.intervention_type === 'maintenance').length;
-      const installationCount = monthInterventions.filter(i => i.intervention_type === 'installation').length;
+      const typeCounts: Record<string, number> = {};
+      interventionTypes.forEach(t => {
+        typeCounts[t.name] = monthInterventions.filter(i => i.intervention_type === t.name).length;
+      });
 
       return {
         name: label,
         fullName: fullLabel,
         total: monthInterventions.length,
         completed,
-        sav: savCount,
-        maintenance: maintenanceCount,
-        installation: installationCount
+        ...typeCounts,
       };
     });
-  }, [filteredInterventions]);
+  }, [filteredInterventions, interventionTypes]);
 
   // Average times by intervention type
   const timesByType = useMemo(() => {
-    const types = ['sav', 'maintenance', 'installation'] as const;
-    
-    return types.map(type => {
+    return interventionTypes.map(typeObj => {
+      const type = typeObj.name;
       const typeInterventions = filteredInterventions.filter(i => i.intervention_type === type);
       
       const travelTimes = typeInterventions
@@ -164,14 +163,14 @@ export function PerformanceCharts({ interventions, technicians = [] }: Performan
 
       return {
         type,
-        name: TYPE_LABELS[type],
+        name: typeObj.label,
         trajet: avgTravel,
         intervention: avgIntervention,
         total: avgTravel + avgIntervention,
         count: typeInterventions.length
       };
     }).filter(t => t.count > 0);
-  }, [filteredInterventions]);
+  }, [filteredInterventions, interventionTypes]);
 
   // Distribution by type (for pie chart)
   const typeDistribution = useMemo(() => {
@@ -180,12 +179,15 @@ export function PerformanceCharts({ interventions, technicians = [] }: Performan
       distribution[i.intervention_type] = (distribution[i.intervention_type] || 0) + 1;
     });
 
-    return Object.entries(distribution).map(([type, count]) => ({
-      name: TYPE_LABELS[type] || type,
-      value: count,
-      color: COLORS[type as keyof typeof COLORS] || "#6b7280"
-    }));
-  }, [filteredInterventions]);
+    return Object.entries(distribution).map(([type, count]) => {
+      const found = interventionTypes.find(t => t.name === type);
+      return {
+        name: found?.label || type,
+        value: count,
+        color: COLOR_MAP[found?.color || 'gray'] || "#6b7280"
+      };
+    });
+  }, [filteredInterventions, interventionTypes]);
 
   // Monthly trend - resolution rate
   const resolutionTrend = useMemo(() => {
@@ -404,9 +406,9 @@ export function PerformanceCharts({ interventions, technicians = [] }: Performan
                   <YAxis className="text-xs" />
                   <Tooltip content={<CustomTooltip />} />
                   <Legend />
-                  <Bar dataKey="sav" name="SAV" fill={COLORS.sav} stackId="a" />
-                  <Bar dataKey="maintenance" name="Maintenance" fill={COLORS.maintenance} stackId="a" />
-                  <Bar dataKey="installation" name="Installation" fill={COLORS.installation} stackId="a" />
+                  {interventionTypes.map((t) => (
+                    <Bar key={t.name} dataKey={t.name} name={t.label} fill={COLOR_MAP[t.color] || "#6b7280"} stackId="a" />
+                  ))}
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -545,7 +547,7 @@ export function PerformanceCharts({ interventions, technicians = [] }: Performan
                         <div className="flex items-center gap-2">
                           <div 
                             className="w-3 h-3 rounded-full" 
-                            style={{ backgroundColor: COLORS[row.type as keyof typeof COLORS] }}
+                            style={{ backgroundColor: COLOR_MAP[interventionTypes.find(t => t.name === row.type)?.color || 'gray'] || '#6b7280' }}
                           />
                           {row.name}
                         </div>

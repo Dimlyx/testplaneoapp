@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
+import { useInterventionTypes } from '@/hooks/useInterventionTypes';
 
 // Status and Type badges with forwardRef support
 
@@ -43,48 +44,45 @@ export const StatusBadge = React.forwardRef<HTMLSpanElement, StatusBadgeProps>(
     return (
       <span 
         ref={ref}
-        className={cn('status-badge', config.className, className)}
+        className={cn('status-badge', config?.className, className)}
         {...props}
       >
-        {config.label}
+        {config?.label || status}
       </span>
     );
   }
 );
 StatusBadge.displayName = 'StatusBadge';
 
-type InterventionType = 'sav' | 'maintenance' | 'installation';
-
-const typeConfig: Record<InterventionType, { label: string; className: string }> = {
-  sav: {
-    label: 'SAV',
-    className: 'bg-red-100 text-red-800',
-  },
-  maintenance: {
-    label: 'Maintenance',
-    className: 'bg-blue-100 text-blue-800',
-  },
-  installation: {
-    label: 'Installation',
-    className: 'bg-green-100 text-green-800',
-  },
+const colorClassMap: Record<string, string> = {
+  red: 'bg-red-100 text-red-800',
+  blue: 'bg-blue-100 text-blue-800',
+  green: 'bg-green-100 text-green-800',
+  yellow: 'bg-yellow-100 text-yellow-800',
+  purple: 'bg-purple-100 text-purple-800',
+  orange: 'bg-orange-100 text-orange-800',
+  pink: 'bg-pink-100 text-pink-800',
+  gray: 'bg-gray-100 text-gray-800',
 };
 
 interface TypeBadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
-  type: InterventionType;
+  type: string;
 }
 
 export const TypeBadge = React.forwardRef<HTMLSpanElement, TypeBadgeProps>(
   ({ type, className, ...props }, ref) => {
-    const config = typeConfig[type];
+    const { data: interventionTypes = [] } = useInterventionTypes();
+    const found = interventionTypes.find(t => t.name === type);
+    const colorClass = found?.color ? (colorClassMap[found.color] || 'bg-gray-100 text-gray-800') : 'bg-gray-100 text-gray-800';
+    const label = found?.label || type;
     
     return (
       <span 
         ref={ref}
-        className={cn('status-badge', config.className, className)}
+        className={cn('status-badge', colorClass, className)}
         {...props}
       >
-        {config.label}
+        {label}
       </span>
     );
   }

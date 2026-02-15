@@ -8,6 +8,7 @@ import { useClients } from "@/hooks/useClients";
 import { useTechnicians } from "@/hooks/useTechnicians";
 import { useUserOrganization } from "@/hooks/useUserOrganization";
 import { useAddInterventionAttachment } from "@/hooks/useInterventionAttachments";
+import { useInterventionTypes } from "@/hooks/useInterventionTypes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -37,7 +38,7 @@ const interventionSchema = z.object({
   description: z.string().optional(),
   client_id: z.string().min(1, "Le client est requis"),
   technician_id: z.string().optional(),
-  intervention_type: z.enum(["sav", "maintenance", "installation"]),
+  intervention_type: z.string().min(1, "Le type est requis"),
   status: z.enum(["to_plan", "planned", "in_progress", "completed", "to_invoice", "archived"]),
   scheduled_date: z.string().optional(),
   scheduled_time: z.string().optional(),
@@ -65,6 +66,7 @@ const InterventionForm = () => {
   const { data: intervention, isLoading: loadingIntervention } = useIntervention(id || "");
   const { data: clients = [], isLoading: loadingClients } = useClients();
   const { data: technicians = [], isLoading: loadingTechnicians } = useTechnicians(organizationId);
+  const { data: interventionTypes = [] } = useInterventionTypes();
   const createIntervention = useCreateIntervention(organizationId);
   const updateIntervention = useUpdateIntervention();
   const addAttachment = useAddInterventionAttachment();
@@ -76,7 +78,7 @@ const InterventionForm = () => {
       description: "",
       client_id: "",
       technician_id: "",
-      intervention_type: "sav",
+      intervention_type: "",
       status: "to_plan",
       scheduled_date: "",
       scheduled_time: "",
@@ -242,9 +244,9 @@ const InterventionForm = () => {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="sav">SAV</SelectItem>
-                            <SelectItem value="maintenance">Maintenance</SelectItem>
-                            <SelectItem value="installation">Installation</SelectItem>
+                            {interventionTypes.map((t) => (
+                              <SelectItem key={t.id} value={t.name}>{t.label}</SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                         <FormMessage />
