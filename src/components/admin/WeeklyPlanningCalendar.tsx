@@ -150,6 +150,9 @@ export function WeeklyPlanningCalendar({
     return interventionsByTechAndDate.get(techId)?.get(dateKey) || [];
   };
 
+  const hasAnyExpanded = expandedTechnicians.size > 0;
+  const hours = Array.from({ length: 12 }, (_, i) => i + 7); // 7h to 18h
+
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -188,7 +191,9 @@ export function WeeklyPlanningCalendar({
         <div className="min-w-[1000px]">
           {/* Header with days */}
           <div className="grid grid-cols-[150px_repeat(7,1fr)] border-b">
-            <div className="p-2 font-medium text-sm border-r bg-muted/50"></div>
+            <div className="p-2 font-medium text-sm border-r bg-muted/50">
+              {hasAnyExpanded && <span className="text-xs text-muted-foreground">Heures</span>}
+            </div>
             {daysInWeek.map(day => (
               <div 
                 key={day.toISOString()} 
@@ -222,20 +227,33 @@ export function WeeklyPlanningCalendar({
                 {/* Technician name row */}
                 <div className="grid grid-cols-[150px_repeat(7,1fr)]">
                   <div 
-                    className="p-2 border-r bg-muted/30 flex items-center gap-2 cursor-pointer hover:bg-muted/50 transition-colors"
+                    className="p-2 border-r bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
                     onClick={() => toggleTechnician(tech.id)}
                   >
-                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                      {isExpanded ? <Minus className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
-                    </Button>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm truncate">
-                        {tech.full_name || tech.email}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {techInterventionsThisWeek} intervention{techInterventionsThisWeek !== 1 ? 's' : ''}
+                    <div className="flex items-center gap-2">
+                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                        {isExpanded ? <Minus className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
+                      </Button>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm truncate">
+                          {tech.full_name || tech.email}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {techInterventionsThisWeek} intervention{techInterventionsThisWeek !== 1 ? 's' : ''}
+                        </div>
                       </div>
                     </div>
+                    {isExpanded && (
+                      <div className="mt-2 space-y-0">
+                        {hours.map(hour => (
+                          <div key={hour} className="h-[28px] flex items-center border-t border-border/30 first:border-t-0">
+                            <span className="text-[10px] text-muted-foreground font-mono">
+                              {String(hour).padStart(2, '0')}:00
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   
                   {/* Day cells */}
@@ -247,85 +265,80 @@ export function WeeklyPlanningCalendar({
                       <div
                         key={day.toISOString()}
                         className={cn(
-                          "border-r last:border-r-0 min-h-[60px] transition-colors",
+                          "border-r last:border-r-0 transition-colors",
                           isToday(day) && "bg-primary/5",
-                          isExpanded ? "p-1" : "p-0.5",
+                          !isExpanded && "min-h-[60px] p-0.5",
                           isDragOver && "hover:bg-primary/10"
                         )}
                         onDragOver={handleDragOver}
                         onDrop={(e) => handleDrop(e, tech.id, day)}
                         onClick={(e) => {
-                          // Only trigger if clicking on empty space
                           if ((e.target as HTMLElement).closest('.intervention-card')) return;
                           onCellClick?.(tech.id, day);
                         }}
                       >
                         {isExpanded ? (
-                          <div className="space-y-1">
-                            <TooltipProvider>
-                              {cellInterventions.map(intervention => (
-                                <Tooltip key={intervention.id}>
-                                  <TooltipTrigger asChild>
-                                    <div
-                                      className={cn(
-                                        "intervention-card text-xs p-1.5 rounded cursor-pointer text-white truncate transition-opacity",
-                                        typeColors[intervention.intervention_type],
-                                        draggedIntervention?.id === intervention.id && "opacity-50"
-                                      )}
-                                      draggable
-                                      onDragStart={(e) => handleDragStart(e, intervention)}
-                                      onDragEnd={handleDragEnd}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        onInterventionClick?.(intervention);
-                                      }}
-                                    >
-                                      <div className="font-medium truncate">
-                                        {intervention.title}
-                                      </div>
-                                      {intervention.scheduled_time && (
-                                        <div className="text-[10px] opacity-80">
-                                          {intervention.scheduled_time.slice(0, 5)}
-                                        </div>
-                                      )}
-                                    </div>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="right" className="max-w-[250px]">
-                                    <div className="space-y-1">
-                                      <p className="font-medium">{intervention.title}</p>
-                                      <Badge variant="secondary" className="text-xs">
-                                        {typeLabels[intervention.intervention_type]}
-                                      </Badge>
-                                      {intervention.clients?.name && (
-                                        <p className="text-sm">Client: {intervention.clients.name}</p>
-                                      )}
-                                      {intervention.scheduled_time && (
-                                        <p className="text-sm">Heure: {intervention.scheduled_time.slice(0, 5)}</p>
-                                      )}
-                                      {intervention.intervention_city && (
-                                        <p className="text-sm text-muted-foreground">{intervention.intervention_city}</p>
-                                      )}
-                                    </div>
-                                  </TooltipContent>
-                                </Tooltip>
+                          <div className="relative">
+                            {/* Hour grid lines */}
+                            <div className="mt-2">
+                              {hours.map(hour => (
+                                <div key={hour} className="h-[28px] border-t border-border/30 first:border-t-0" />
                               ))}
-                            </TooltipProvider>
-                            
-                            {cellInterventions.length === 0 && (
-                              <div className="h-full min-h-[40px] flex items-center justify-center">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-6 w-6 p-0 opacity-0 hover:opacity-100 transition-opacity text-muted-foreground hover:text-primary"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onCellClick?.(tech.id, day);
-                                  }}
-                                >
-                                  <Plus className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            )}
+                            </div>
+                            {/* Interventions positioned by time */}
+                            <div className="absolute inset-0 mt-2 px-0.5">
+                              <TooltipProvider>
+                                {cellInterventions.map(intervention => {
+                                  const time = intervention.scheduled_time || '07:00';
+                                  const [h, m] = time.split(':').map(Number);
+                                  const hourIndex = Math.max(0, Math.min(h - 7, 11));
+                                  const topPx = hourIndex * 28 + (m / 60) * 28;
+                                  
+                                  return (
+                                    <Tooltip key={intervention.id}>
+                                      <TooltipTrigger asChild>
+                                        <div
+                                          className={cn(
+                                            "intervention-card absolute left-0.5 right-0.5 text-xs p-1 rounded cursor-pointer text-white truncate transition-opacity z-10",
+                                            typeColors[intervention.intervention_type],
+                                            draggedIntervention?.id === intervention.id && "opacity-50"
+                                          )}
+                                          style={{ top: `${topPx}px`, minHeight: '24px' }}
+                                          draggable
+                                          onDragStart={(e) => handleDragStart(e, intervention)}
+                                          onDragEnd={handleDragEnd}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            onInterventionClick?.(intervention);
+                                          }}
+                                        >
+                                          <div className="font-medium truncate text-[10px]">
+                                            {intervention.scheduled_time?.slice(0, 5)} {intervention.title}
+                                          </div>
+                                        </div>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="right" className="max-w-[250px]">
+                                        <div className="space-y-1">
+                                          <p className="font-medium">{intervention.title}</p>
+                                          <Badge variant="secondary" className="text-xs">
+                                            {typeLabels[intervention.intervention_type]}
+                                          </Badge>
+                                          {intervention.clients?.name && (
+                                            <p className="text-sm">Client: {intervention.clients.name}</p>
+                                          )}
+                                          {intervention.scheduled_time && (
+                                            <p className="text-sm">Heure: {intervention.scheduled_time.slice(0, 5)}</p>
+                                          )}
+                                          {intervention.intervention_city && (
+                                            <p className="text-sm text-muted-foreground">{intervention.intervention_city}</p>
+                                          )}
+                                        </div>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  );
+                                })}
+                              </TooltipProvider>
+                            </div>
                           </div>
                         ) : (
                           <div className="h-full flex items-center justify-center gap-0.5 flex-wrap">
