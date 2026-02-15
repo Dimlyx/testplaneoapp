@@ -147,9 +147,16 @@ const Clients = () => {
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
-            <AlertDialogDescription>
-              Êtes-vous sûr de vouloir supprimer ce client ? Cette action supprimera également tous les équipements et interventions associés.
+            <AlertDialogTitle>⚠️ Suppression définitive</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>Êtes-vous sûr de vouloir supprimer ce client ?</p>
+              <p className="font-semibold text-destructive">Cette action est irréversible et entraînera la suppression de :</p>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>Toutes les interventions associées à ce client</li>
+                <li>Tous les rapports et documents liés</li>
+                <li>Tous les équipements enregistrés</li>
+                <li>Les photos, signatures et pièces jointes</li>
+              </ul>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
