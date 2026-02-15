@@ -219,6 +219,7 @@ interface WorkflowStepData {
   label: string;
   requires_photo: boolean | null;
   requires_comment: boolean | null;
+  requires_signature?: boolean | null;
 }
 
 interface InterventionTypeData {
@@ -656,29 +657,24 @@ export const generateInterventionPDF = async (
   }
 
   // ================== WORKFLOW STEPS ==================
-  console.log('PDF Workflow Debug:', { 
-    docSettings: !!docSettings,
-    showWorkflowSteps: docSettings?.showWorkflowSteps,
-    workflowStepsCount: workflowSteps?.length, 
-    stepCompletionsCount: stepCompletions?.length,
-    stepIds: workflowSteps?.map(s => s.id),
-    completionStepIds: stepCompletions?.map(c => c.step_id)
-  });
   if ((!docSettings || docSettings.showWorkflowSteps) && workflowSteps && workflowSteps.length > 0 && stepCompletions && stepCompletions.length > 0) {
     checkNewPage(40);
     yPos = addSection("ÉTAPES RÉALISÉES", yPos);
-    
-    for (const step of workflowSteps) {
-      const completion = stepCompletions.find(c => c.step_id === step.id);
-      if (!completion?.completed_at) continue;
-      
+
+    // Calculate loop iterations
+    const maxLoopIndex = Math.max(...stepCompletions.map(c => (c as any).loop_index ?? 0));
+    const totalLoops = maxLoopIndex + 1;
+    const signatureSteps = workflowSteps.filter(s => s.requires_signature);
+    const loopableSteps = workflowSteps.filter(s => !s.requires_signature);
+
+    // Render helper for a single step completion
+    const renderStepCompletion = async (step: any, completion: any) => {
       checkNewPage(30);
       
       // Styled step card
       doc.setFillColor(245, 247, 250);
       doc.roundedRect(14, yPos - 4, pageWidth - 28, 10, 2, 2, 'F');
       
-      // Step label only
       doc.setTextColor(primaryRgb[0], primaryRgb[1], primaryRgb[2]);
       doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
@@ -717,7 +713,38 @@ export const generateInterventionPDF = async (
       }
       
       yPos += 3;
+    };
+
+    // Render loopable steps per iteration
+    for (let loopIdx = 0; loopIdx < totalLoops; loopIdx++) {
+      // Add loop separator label if multiple loops
+      if (totalLoops > 1) {
+        checkNewPage(15);
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(100, 100, 100);
+        doc.text(`— Passage ${loopIdx + 1} —`, pageWidth / 2, yPos, { align: 'center' });
+        doc.setTextColor(0, 0, 0);
+        doc.setFont("helvetica", "normal");
+        yPos += 8;
+      }
+
+      for (const step of loopableSteps) {
+        const completion = stepCompletions.find(
+          c => c.step_id === step.id && ((c as any).loop_index ?? 0) === loopIdx
+        );
+        if (!completion?.completed_at) continue;
+        await renderStepCompletion(step, completion);
+      }
     }
+
+    // Render signature steps (not in loop)
+    for (const step of signatureSteps) {
+      const completion = stepCompletions.find(c => c.step_id === step.id);
+      if (!completion?.completed_at) continue;
+      await renderStepCompletion(step, completion);
+    }
+
     yPos += 5;
   }
 

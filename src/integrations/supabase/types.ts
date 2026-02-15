@@ -486,6 +486,7 @@ export type Database = {
           created_at: string
           id: string
           intervention_id: string
+          loop_index: number
           photo_url: string | null
           step_id: string
         }
@@ -496,6 +497,7 @@ export type Database = {
           created_at?: string
           id?: string
           intervention_id: string
+          loop_index?: number
           photo_url?: string | null
           step_id: string
         }
@@ -506,6 +508,7 @@ export type Database = {
           created_at?: string
           id?: string
           intervention_id?: string
+          loop_index?: number
           photo_url?: string | null
           step_id?: string
         }

@@ -11,6 +11,7 @@ export interface StepCompletion {
   photo_url: string | null;
   comment: string | null;
   created_at: string;
+  loop_index: number;
 }
 
 export function useStepCompletions(interventionId: string) {
@@ -20,7 +21,8 @@ export function useStepCompletions(interventionId: string) {
       const { data, error } = await supabase
         .from("intervention_step_completions")
         .select("*")
-        .eq("intervention_id", interventionId);
+        .eq("intervention_id", interventionId)
+        .order("loop_index", { ascending: true });
 
       if (error) throw error;
       return data as StepCompletion[];
@@ -38,63 +40,49 @@ export function useCompleteStep() {
       stepId,
       comment,
       photoUrl,
+      loopIndex = 0,
     }: {
       interventionId: string;
       stepId: string;
       comment?: string;
       photoUrl?: string;
+      loopIndex?: number;
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
 
-      const { data, error } = await supabase
+      // Check if a completion already exists for this step+loop combo
+      const { data: existing } = await supabase
         .from("intervention_step_completions")
-        .upsert(
-          {
+        .select("id")
+        .eq("intervention_id", interventionId)
+        .eq("step_id", stepId)
+        .eq("loop_index", loopIndex)
+        .maybeSingle();
+
+      if (existing) {
+        const { error: updateError } = await supabase
+          .from("intervention_step_completions")
+          .update({
+            completed_at: new Date().toISOString(),
+            completed_by: user?.id || null,
+            comment: comment || null,
+            photo_url: photoUrl || null,
+          })
+          .eq("id", existing.id);
+        if (updateError) throw updateError;
+      } else {
+        const { error: insertError } = await supabase
+          .from("intervention_step_completions")
+          .insert({
             intervention_id: interventionId,
             step_id: stepId,
             completed_at: new Date().toISOString(),
             completed_by: user?.id || null,
             comment: comment || null,
             photo_url: photoUrl || null,
-          },
-          { onConflict: "intervention_id,step_id" }
-        )
-        .select()
-        .single();
-
-      if (error) {
-        // If upsert fails due to no unique constraint, try insert then update
-        const { data: existing } = await supabase
-          .from("intervention_step_completions")
-          .select("id")
-          .eq("intervention_id", interventionId)
-          .eq("step_id", stepId)
-          .maybeSingle();
-
-        if (existing) {
-          const { error: updateError } = await supabase
-            .from("intervention_step_completions")
-            .update({
-              completed_at: new Date().toISOString(),
-              completed_by: user?.id || null,
-              comment: comment || null,
-              photo_url: photoUrl || null,
-            })
-            .eq("id", existing.id);
-          if (updateError) throw updateError;
-        } else {
-          const { error: insertError } = await supabase
-            .from("intervention_step_completions")
-            .insert({
-              intervention_id: interventionId,
-              step_id: stepId,
-              completed_at: new Date().toISOString(),
-              completed_by: user?.id || null,
-              comment: comment || null,
-              photo_url: photoUrl || null,
-            });
-          if (insertError) throw insertError;
-        }
+            loop_index: loopIndex,
+          });
+        if (insertError) throw insertError;
       }
     },
     onSuccess: (_, variables) => {
@@ -114,16 +102,23 @@ export function useUncompleteStep() {
     mutationFn: async ({
       interventionId,
       stepId,
+      loopIndex,
     }: {
       interventionId: string;
       stepId: string;
+      loopIndex?: number;
     }) => {
-      const { error } = await supabase
+      let query = supabase
         .from("intervention_step_completions")
         .delete()
         .eq("intervention_id", interventionId)
         .eq("step_id", stepId);
 
+      if (loopIndex !== undefined) {
+        query = query.eq("loop_index", loopIndex);
+      }
+
+      const { error } = await query;
       if (error) throw error;
     },
     onSuccess: (_, variables) => {
