@@ -14,6 +14,7 @@ import {
   History
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ChatBot } from '@/components/ChatBot';
 import { OfflineIndicator } from '@/components/technician/OfflineIndicator';
 import { NotificationBell } from '@/components/technician/NotificationBell';
 
@@ -147,6 +148,7 @@ export default function TechnicianLayout() {
           <Outlet />
         </main>
       </div>
+      <ChatBot />
     </div>
   );
 }
