@@ -399,17 +399,27 @@ const InterventionWorkflow = ({
           <Card>
             <CardContent className="p-4 space-y-4">
               {!isCompleted && isStarted && (
-                <div className="p-3 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg">
-                  <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
-                    <CheckCircle className="h-5 w-5" />
-                    <div>
-                      <p className="font-medium text-sm">Prêt à clôturer</p>
-                      <p className="text-xs mt-1 text-green-600 dark:text-green-400">
-                        Vous pouvez clôturer l'intervention.
-                      </p>
+                <>
+                  <div className="p-3 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg">
+                    <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
+                      <CheckCircle className="h-5 w-5" />
+                      <div>
+                        <p className="font-medium text-sm">Prêt à clôturer</p>
+                        <p className="text-xs mt-1 text-green-600 dark:text-green-400">
+                          Vous pouvez clôturer l'intervention.
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
+                  <Button
+                    onClick={onEndIntervention}
+                    disabled={isUpdating}
+                    className="w-full"
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Clôturer l'intervention
+                  </Button>
+                </>
               )}
               
               {isCompleted && (
