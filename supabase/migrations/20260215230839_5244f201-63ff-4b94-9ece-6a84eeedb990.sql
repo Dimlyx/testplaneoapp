@@ -1,0 +1,7 @@
+
+ALTER TABLE public.intervention_step_completions
+DROP CONSTRAINT intervention_step_completions_intervention_id_step_id_key;
+
+ALTER TABLE public.intervention_step_completions
+ADD CONSTRAINT intervention_step_completions_intervention_id_step_id_loop_key
+UNIQUE (intervention_id, step_id, loop_index);
