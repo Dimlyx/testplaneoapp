@@ -35,20 +35,25 @@ const TechnicianInterventions = () => {
     return client.address ? `${client.address}, ${client.postal_code || ''} ${client.city || ''}` : client.city;
   };
 
-  const todayInterventions = interventions.filter(i => {
+  // Exclude completed/to_invoice/archived — those go to history
+  const activeInterventions = interventions.filter(
+    i => !['completed', 'to_invoice', 'archived'].includes(i.status)
+  );
+
+  const todayInterventions = activeInterventions.filter(i => {
     if (!i.scheduled_date) return false;
     const today = new Date().toISOString().split('T')[0];
     return i.scheduled_date === today;
   });
 
-  const upcomingInterventions = interventions.filter(i => {
+  const upcomingInterventions = activeInterventions.filter(i => {
     if (!i.scheduled_date) return false;
     const today = new Date().toISOString().split('T')[0];
     return i.scheduled_date > today;
   });
 
-  const inProgressInterventions = interventions.filter(i => i.status === 'in_progress');
-  const toDoInterventions = interventions.filter(i => i.status === 'planned' || i.status === 'to_plan');
+  const inProgressInterventions = activeInterventions.filter(i => i.status === 'in_progress');
+  const toDoInterventions = activeInterventions.filter(i => i.status === 'planned' || i.status === 'to_plan');
 
   if (isLoading) {
     return (
@@ -63,7 +68,7 @@ const TechnicianInterventions = () => {
       <div>
         <h1 className="text-2xl font-bold text-foreground">Mes Interventions</h1>
         <p className="text-muted-foreground">
-          {interventions.length} intervention{interventions.length > 1 ? 's' : ''} assignée{interventions.length > 1 ? 's' : ''}
+          {activeInterventions.length} intervention{activeInterventions.length > 1 ? 's' : ''} en cours
         </p>
       </div>
 
@@ -208,11 +213,11 @@ const TechnicianInterventions = () => {
         </div>
       )}
 
-      {interventions.length === 0 && (
+      {activeInterventions.length === 0 && (
         <Card>
           <CardContent className="py-12 text-center">
             <ClipboardList className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">Aucune intervention assignée</p>
+            <p className="text-muted-foreground">Aucune intervention en cours</p>
           </CardContent>
         </Card>
       )}
