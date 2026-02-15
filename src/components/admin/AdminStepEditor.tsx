@@ -49,9 +49,10 @@ interface StepItemProps {
   completion: StepCompletion | undefined;
   interventionId: string;
   index: number;
+  loopIndex: number;
 }
 
-const StepItem = ({ step, completion, interventionId, index }: StepItemProps) => {
+const StepItem = ({ step, completion, interventionId, index, loopIndex }: StepItemProps) => {
   const isCompleted = !!completion?.completed_at;
   const [editing, setEditing] = useState(false);
   const [comment, setComment] = useState(completion?.comment || "");
@@ -69,7 +70,7 @@ const StepItem = ({ step, completion, interventionId, index }: StepItemProps) =>
     try {
       const newUrls: string[] = [];
       for (const file of Array.from(files)) {
-        const fileName = `steps/${interventionId}/${step.id}-${Date.now()}-${Math.random().toString(36).slice(2)}.${file.name.split('.').pop()}`;
+        const fileName = `steps/${interventionId}/${step.id}-loop${loopIndex}-${Date.now()}-${Math.random().toString(36).slice(2)}.${file.name.split('.').pop()}`;
         const { error: uploadError } = await supabase.storage
           .from("intervention-photos")
           .upload(fileName, file, { contentType: file.type });
@@ -101,6 +102,7 @@ const StepItem = ({ step, completion, interventionId, index }: StepItemProps) =>
         stepId: step.id,
         comment: comment || undefined,
         photoUrl: serializedPhotos,
+        loopIndex,
       });
       setEditing(false);
     } catch (error: any) {
@@ -112,7 +114,7 @@ const StepItem = ({ step, completion, interventionId, index }: StepItemProps) =>
 
   const handleUncomplete = async () => {
     try {
-      await uncompleteStep.mutateAsync({ interventionId, stepId: step.id });
+      await uncompleteStep.mutateAsync({ interventionId, stepId: step.id, loopIndex });
       setComment("");
       setPhotoUrls([]);
       setEditing(false);
@@ -299,9 +301,50 @@ const StepItem = ({ step, completion, interventionId, index }: StepItemProps) =>
 };
 
 const AdminStepEditor = ({ steps, completions, interventionId }: AdminStepEditorProps) => {
+  // Calculate max loop index
+  const maxLoopIndex = completions.length > 0
+    ? Math.max(...completions.map(c => c.loop_index ?? 0))
+    : 0;
+  const totalLoops = maxLoopIndex + 1;
+
+  // Separate signature steps from loopable steps
+  const signatureSteps = steps.filter(s => s.requires_signature);
+  const loopableSteps = steps.filter(s => !s.requires_signature);
+
   return (
     <div className="space-y-4">
-      {steps.map((step, index) => {
+      {/* Loopable steps grouped by iteration */}
+      {Array.from({ length: totalLoops }, (_, loopIdx) => (
+        <div key={`loop-${loopIdx}`}>
+          {totalLoops > 1 && (
+            <div className="flex items-center gap-2 my-3">
+              <div className="flex-1 h-px bg-border" />
+              <span className="text-xs font-medium text-muted-foreground bg-muted px-3 py-1 rounded-full">
+                Passage {loopIdx + 1}
+              </span>
+              <div className="flex-1 h-px bg-border" />
+            </div>
+          )}
+          {loopableSteps.map((step, index) => {
+            const completion = completions.find(
+              c => c.step_id === step.id && (c.loop_index ?? 0) === loopIdx
+            );
+            return (
+              <StepItem
+                key={`${step.id}-loop-${loopIdx}`}
+                step={step}
+                completion={completion}
+                interventionId={interventionId}
+                index={index}
+                loopIndex={loopIdx}
+              />
+            );
+          })}
+        </div>
+      ))}
+
+      {/* Signature steps (not in loop) */}
+      {signatureSteps.map((step, index) => {
         const completion = completions.find(c => c.step_id === step.id);
         return (
           <StepItem
@@ -309,7 +352,8 @@ const AdminStepEditor = ({ steps, completions, interventionId }: AdminStepEditor
             step={step}
             completion={completion}
             interventionId={interventionId}
-            index={index}
+            index={loopableSteps.length + index}
+            loopIndex={0}
           />
         );
       })}

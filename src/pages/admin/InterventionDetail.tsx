@@ -665,7 +665,12 @@ const InterventionDetail = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <ClipboardList className="h-5 w-5" />
-                Étapes du workflow ({stepCompletions.filter(c => c.completed_at).length}/{workflowSteps.length})
+                Étapes du workflow ({stepCompletions.filter(c => c.completed_at).length}/{(() => {
+                  const maxLoop = stepCompletions.length > 0 ? Math.max(...stepCompletions.map(c => c.loop_index ?? 0)) : 0;
+                  const loopableCount = workflowSteps.filter(s => !s.requires_signature).length;
+                  const sigCount = workflowSteps.filter(s => s.requires_signature).length;
+                  return loopableCount * (maxLoop + 1) + sigCount;
+                })()})
               </CardTitle>
             </CardHeader>
             <CardContent>

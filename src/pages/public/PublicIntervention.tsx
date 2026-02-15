@@ -310,44 +310,96 @@ const PublicIntervention = () => {
         )}
 
         {/* Étapes du workflow */}
-        {docSettings.showWorkflowSteps && workflowSteps.length > 0 && stepCompletions.filter(c => c.completed_at).length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <ClipboardList className="h-5 w-5" />
-                Étapes réalisées
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {workflowSteps.map((step, index) => {
-                const completion = stepCompletions.find(c => c.step_id === step.id);
-                if (!completion?.completed_at) return null;
-                const stepPhotos = parsePhotoUrls(completion.photo_url);
+        {docSettings.showWorkflowSteps && workflowSteps.length > 0 && stepCompletions.filter(c => c.completed_at).length > 0 && (() => {
+          const maxLoopIndex = stepCompletions.length > 0
+            ? Math.max(...stepCompletions.map(c => (c as any).loop_index ?? 0))
+            : 0;
+          const totalLoops = maxLoopIndex + 1;
+          const signatureSteps = workflowSteps.filter(s => s.requires_signature);
+          const loopableSteps = workflowSteps.filter(s => !s.requires_signature);
 
-                return (
-                  <div key={step.id} className="border rounded-lg p-3 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                      <span className="font-medium text-sm">{step.label}</span>
-                    </div>
-                    {completion.comment && (
-                      <p className="text-sm text-muted-foreground ml-6 whitespace-pre-wrap">{completion.comment}</p>
-                    )}
-                    {stepPhotos.length > 0 && (
-                      <div className="grid grid-cols-2 gap-2 ml-6">
-                        {stepPhotos.map((url, photoIdx) => (
-                          <a key={photoIdx} href={url} target="_blank" rel="noopener noreferrer">
-                            <img src={url} alt={`Étape ${index + 1}`} className="w-full aspect-video object-cover rounded-lg border" />
-                          </a>
-                        ))}
+          return (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <ClipboardList className="h-5 w-5" />
+                  Étapes réalisées
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {Array.from({ length: totalLoops }, (_, loopIdx) => (
+                  <div key={`loop-${loopIdx}`}>
+                    {totalLoops > 1 && (
+                      <div className="flex items-center gap-2 my-3">
+                        <div className="flex-1 h-px bg-border" />
+                        <span className="text-xs font-medium text-muted-foreground bg-muted px-3 py-1 rounded-full">
+                          Passage {loopIdx + 1}
+                        </span>
+                        <div className="flex-1 h-px bg-border" />
                       </div>
                     )}
+                    {loopableSteps.map((step, index) => {
+                      const completion = stepCompletions.find(
+                        c => c.step_id === step.id && ((c as any).loop_index ?? 0) === loopIdx
+                      );
+                      if (!completion?.completed_at) return null;
+                      const stepPhotos = parsePhotoUrls(completion.photo_url);
+
+                      return (
+                        <div key={`${step.id}-${loopIdx}`} className="border rounded-lg p-3 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4 text-green-600" />
+                            <span className="font-medium text-sm">{step.label}</span>
+                          </div>
+                          {completion.comment && (
+                            <p className="text-sm text-muted-foreground ml-6 whitespace-pre-wrap">{completion.comment}</p>
+                          )}
+                          {stepPhotos.length > 0 && (
+                            <div className="grid grid-cols-2 gap-2 ml-6">
+                              {stepPhotos.map((url, photoIdx) => (
+                                <a key={photoIdx} href={url} target="_blank" rel="noopener noreferrer">
+                                  <img src={url} alt={`Étape ${index + 1}`} className="w-full aspect-video object-cover rounded-lg border" />
+                                </a>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
-                );
-              })}
-            </CardContent>
-          </Card>
-        )}
+                ))}
+
+                {/* Signature steps (not in loop) */}
+                {signatureSteps.map((step, index) => {
+                  const completion = stepCompletions.find(c => c.step_id === step.id);
+                  if (!completion?.completed_at) return null;
+                  const stepPhotos = parsePhotoUrls(completion.photo_url);
+
+                  return (
+                    <div key={step.id} className="border rounded-lg p-3 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                        <span className="font-medium text-sm">{step.label}</span>
+                      </div>
+                      {completion.comment && (
+                        <p className="text-sm text-muted-foreground ml-6 whitespace-pre-wrap">{completion.comment}</p>
+                      )}
+                      {stepPhotos.length > 0 && (
+                        <div className="grid grid-cols-2 gap-2 ml-6">
+                          {stepPhotos.map((url, photoIdx) => (
+                            <a key={photoIdx} href={url} target="_blank" rel="noopener noreferrer">
+                              <img src={url} alt={`Étape ${index + 1}`} className="w-full aspect-video object-cover rounded-lg border" />
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+          );
+        })()}
 
         {/* Info footer */}
         <Card className="bg-muted/50">

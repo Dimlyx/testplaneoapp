@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { 
   MapPin, 
   Wrench, 
@@ -13,6 +13,7 @@ import {
   PauseCircle,
   PlayCircle,
   Clock,
+  RefreshCw,
 } from "lucide-react";
 import WorkflowStep from "./WorkflowStep";
 import DynamicStepContent from "./DynamicStepContent";
@@ -111,10 +112,51 @@ const InterventionWorkflow = ({
   const isLocked = isCompleted || isToInvoice || isArchived;
   const stepsLocked = !isStarted || isPaused;
 
-  // Check if all dynamic steps are completed
-  const allDynamicStepsCompleted = workflowSteps.length === 0 || workflowSteps.every(
+  // Separate signature steps from loopable steps
+  const signatureSteps = useMemo(() => workflowSteps.filter(s => s.requires_signature), [workflowSteps]);
+  const loopableSteps = useMemo(() => workflowSteps.filter(s => !s.requires_signature), [workflowSteps]);
+
+  // Calculate loop iterations from completions
+  const maxLoopIndex = useMemo(() => {
+    if (stepCompletions.length === 0) return 0;
+    return Math.max(...stepCompletions.map(c => c.loop_index ?? 0));
+  }, [stepCompletions]);
+
+  // Current loop count (number of complete or in-progress loops)
+  const loopCount = maxLoopIndex + 1;
+
+  // Check if all loopable steps are completed for a given loop index
+  const isLoopComplete = (loopIdx: number) => {
+    return loopableSteps.length > 0 && loopableSteps.every(
+      step => stepCompletions.some(c => c.step_id === step.id && c.loop_index === loopIdx && c.completed_at)
+    );
+  };
+
+  // Check if the latest loop is complete (to show the "add another?" question)
+  const isLatestLoopComplete = isLoopComplete(maxLoopIndex);
+
+  // All loops are complete
+  const allLoopsComplete = loopableSteps.length === 0 || isLatestLoopComplete;
+
+  // Check if all signature steps are completed
+  const allSignatureStepsCompleted = signatureSteps.length === 0 || signatureSteps.every(
     step => stepCompletions.some(c => c.step_id === step.id && c.completed_at)
   );
+
+  // Show "add another" dialog state
+  const [showAddLoopPrompt, setShowAddLoopPrompt] = useState(false);
+
+  // Handle adding a new loop
+  const handleAddLoop = () => {
+    setShowAddLoopPrompt(false);
+    // The new loop will be maxLoopIndex + 1, and its steps will automatically appear
+    // We need to create at least one empty state to trigger the loop
+    // Simply setting active step to the first step of the new loop will work
+    const newLoopIdx = maxLoopIndex + 1;
+    if (loopableSteps.length > 0) {
+      setActiveStep(`step-${loopableSteps[0].id}-loop-${newLoopIdx}`);
+    }
+  };
 
   // Auto-open first incomplete step
   useEffect(() => {
@@ -126,28 +168,42 @@ const InterventionWorkflow = ({
       setActiveStep('general-info');
       return;
     }
-    // Find first incomplete dynamic step
-    const firstIncomplete = workflowSteps.find(
+    
+    // Find first incomplete step across all loops
+    for (let loopIdx = 0; loopIdx <= maxLoopIndex; loopIdx++) {
+      const firstIncomplete = loopableSteps.find(
+        step => !stepCompletions.some(c => c.step_id === step.id && c.loop_index === loopIdx && c.completed_at)
+      );
+      if (firstIncomplete) {
+        setActiveStep(`step-${firstIncomplete.id}-loop-${loopIdx}`);
+        return;
+      }
+    }
+    
+    // All loopable steps done, check signature steps
+    const firstIncompleteSignature = signatureSteps.find(
       step => !stepCompletions.some(c => c.step_id === step.id && c.completed_at)
     );
-    if (firstIncomplete) {
-      setActiveStep(`step-${firstIncomplete.id}`);
-    } else {
-      setActiveStep('finish');
+    if (firstIncompleteSignature) {
+      setActiveStep(`step-${firstIncompleteSignature.id}`);
+      return;
     }
-  }, [isStarted, isLocked, workflowSteps.length, stepCompletions.length]);
+    
+    setActiveStep('finish');
+  }, [isStarted, isLocked, workflowSteps.length, stepCompletions.length, maxLoopIndex]);
 
   const handleStepClick = (step: string) => {
     if (stepsLocked && step !== 'general-info') return;
     setActiveStep(activeStep === step ? null : step);
   };
 
-  const handleCompleteStep = async (stepId: string, comment?: string, photoUrl?: string) => {
+  const handleCompleteStep = async (stepId: string, comment?: string, photoUrl?: string, loopIndex: number = 0) => {
     await completeStep.mutateAsync({
       interventionId: intervention.id,
       stepId,
       comment,
       photoUrl,
+      loopIndex,
     });
   };
 
@@ -196,6 +252,24 @@ const InterventionWorkflow = ({
       </div>
     </div>
   );
+
+  // Determine how many loops to render (existing + 1 new if user triggered it)
+  const hasNewEmptyLoop = useMemo(() => {
+    // Check if the latest loop has any completions
+    if (loopableSteps.length === 0) return false;
+    const latestHasCompletions = stepCompletions.some(c => c.loop_index === maxLoopIndex);
+    // If the active step references a loop higher than maxLoopIndex, we have a new empty loop
+    if (activeStep) {
+      const match = activeStep.match(/loop-(\d+)/);
+      if (match) {
+        const activeLoopIdx = parseInt(match[1]);
+        return activeLoopIdx > maxLoopIndex;
+      }
+    }
+    return false;
+  }, [activeStep, maxLoopIndex, stepCompletions, loopableSteps]);
+
+  const totalLoops = hasNewEmptyLoop ? maxLoopIndex + 2 : loopCount;
 
   return (
     <div className="space-y-0">
@@ -446,17 +520,88 @@ const InterventionWorkflow = ({
         </Card>
       </WorkflowStep>
 
-      {/* Dynamic workflow steps from intervention type */}
-      {workflowSteps.map((step, index) => {
+      {/* Dynamic workflow steps - rendered per loop iteration */}
+      {loopableSteps.length > 0 && Array.from({ length: totalLoops }, (_, loopIdx) => (
+        <div key={`loop-${loopIdx}`}>
+          {/* Loop separator for iterations > 0 */}
+          {totalLoops > 1 && (
+            <div className="flex items-center gap-2 my-3 px-3">
+              <div className="flex-1 h-px bg-border" />
+              <span className="text-xs font-medium text-muted-foreground bg-muted px-3 py-1 rounded-full">
+                Passage {loopIdx + 1}
+              </span>
+              <div className="flex-1 h-px bg-border" />
+            </div>
+          )}
+
+          {loopableSteps.map((step, index) => {
+            const completion = stepCompletions.find(
+              c => c.step_id === step.id && (c.loop_index ?? 0) === loopIdx
+            );
+            const isStepCompleted = !!completion?.completed_at;
+            const stepKey = `step-${step.id}-loop-${loopIdx}`;
+
+            return (
+              <WorkflowStep
+                key={stepKey}
+                icon={step.requires_photo ? Wrench : ClipboardList}
+                label={step.label}
+                isActive={activeStep === stepKey}
+                isCompleted={isStepCompleted}
+                onClick={() => handleStepClick(stepKey)}
+                isDisabled={stepsLocked}
+              >
+                <div className="relative">
+                  {stepsLocked && <LockedOverlay />}
+                  <DynamicStepContent
+                    step={step}
+                    interventionId={intervention.id}
+                    completion={completion}
+                    onComplete={(stepId, comment, photoUrl) => handleCompleteStep(stepId, comment, photoUrl, loopIdx)}
+                    isLocked={isLocked}
+                    isCompleting={completeStep.isPending}
+                    loopIndex={loopIdx}
+                  />
+                </div>
+              </WorkflowStep>
+            );
+          })}
+
+          {/* "Add another loop?" prompt after last step of latest completed loop */}
+          {loopIdx === totalLoops - 1 && isLoopComplete(loopIdx) && !isLocked && !stepsLocked && (
+            <Card className="my-3 border-primary/30 bg-primary/5">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <RefreshCw className="h-5 w-5 text-primary" />
+                    <div>
+                      <p className="font-medium text-sm">Souhaitez-vous ajouter un autre passage ?</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Un nouveau passage reprendra toutes les étapes sans supprimer les données existantes.
+                      </p>
+                    </div>
+                  </div>
+                  <Button size="sm" onClick={handleAddLoop}>
+                    <RefreshCw className="h-4 w-4 mr-1" />
+                    Oui, ajouter
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      ))}
+
+      {/* Signature steps - shown after all loops, not part of the loop */}
+      {signatureSteps.map((step) => {
         const completion = stepCompletions.find(c => c.step_id === step.id);
         const isStepCompleted = !!completion?.completed_at;
-        const isLastDynamicStep = index === workflowSteps.length - 1;
         const stepKey = `step-${step.id}`;
 
         return (
           <WorkflowStep
             key={step.id}
-            icon={step.requires_signature ? PenTool : step.requires_photo ? Wrench : ClipboardList}
+            icon={PenTool}
             label={step.label}
             isActive={activeStep === stepKey}
             isCompleted={isStepCompleted}
@@ -469,7 +614,7 @@ const InterventionWorkflow = ({
                 step={step}
                 interventionId={intervention.id}
                 completion={completion}
-                onComplete={handleCompleteStep}
+                onComplete={(stepId, comment, photoUrl) => handleCompleteStep(stepId, comment, photoUrl, 0)}
                 isLocked={isLocked}
                 isCompleting={completeStep.isPending}
               />

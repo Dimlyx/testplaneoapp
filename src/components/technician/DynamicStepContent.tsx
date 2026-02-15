@@ -17,6 +17,7 @@ interface DynamicStepContentProps {
   isCompleting: boolean;
   signerName?: string;
   onSignerNameChange?: (name: string) => void;
+  loopIndex?: number;
 }
 
 // Helper to parse photo_url which can be a single URL or JSON array
@@ -40,6 +41,7 @@ const DynamicStepContent = ({
   isCompleting,
   signerName = "",
   onSignerNameChange,
+  loopIndex = 0,
 }: DynamicStepContentProps) => {
   const [comment, setComment] = useState(completion?.comment || "");
   const [photoUrls, setPhotoUrls] = useState<string[]>(parsePhotoUrls(completion?.photo_url || null));
@@ -56,7 +58,7 @@ const DynamicStepContent = ({
     try {
       const newUrls: string[] = [];
       for (const file of Array.from(files)) {
-        const fileName = `steps/${interventionId}/${step.id}-${Date.now()}-${Math.random().toString(36).slice(2)}.${file.name.split('.').pop()}`;
+        const fileName = `steps/${interventionId}/${step.id}-loop${loopIndex}-${Date.now()}-${Math.random().toString(36).slice(2)}.${file.name.split('.').pop()}`;
         const { error: uploadError } = await supabase.storage
           .from("intervention-photos")
           .upload(fileName, file, { contentType: file.type });
