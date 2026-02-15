@@ -645,33 +645,6 @@ export const generateInterventionPDF = async (
   }
 
 
-  // ================== SIGNATURE ==================
-  checkNewPage(70);
-  yPos = addSection("SIGNATURE DU CLIENT", yPos);
-  yPos += 5;
-  
-  if (intervention.client_signature_name) {
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    doc.text(`Signataire : ${intervention.client_signature_name}`, 15, yPos);
-    yPos += 8;
-  }
-  
-  doc.setDrawColor(200, 200, 200);
-  doc.rect(15, yPos, 80, 35);
-  
-  if (intervention.client_signature_url) {
-    try {
-      const signatureBase64 = await loadImageAsBase64(intervention.client_signature_url);
-      if (signatureBase64) {
-        doc.addImage(signatureBase64, 'PNG', 17, yPos + 2, 76, 31);
-      }
-    } catch (err) {
-      console.error('Error loading signature:', err);
-    }
-  }
-  
-  yPos += 40;
 
   // ================== FOOTER ==================
   const totalPages = doc.getNumberOfPages();

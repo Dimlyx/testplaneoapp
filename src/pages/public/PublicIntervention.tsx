@@ -289,20 +289,6 @@ const PublicIntervention = () => {
           </CardContent>
         </Card>
 
-        {/* Travaux effectués - Compte rendu */}
-        {extranetSettings.showReport && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Travaux effectués - Compte rendu
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="whitespace-pre-wrap">{intervention.report || "Aucun compte rendu"}</p>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Équipements */}
         {extranetSettings.showEquipmentDetails && interventionEquipments.length > 0 && interventionEquipments.map((ie, index) => {
