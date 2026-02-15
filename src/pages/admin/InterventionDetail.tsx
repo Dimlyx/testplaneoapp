@@ -4,6 +4,7 @@ import { useClient } from "@/hooks/useClients";
 import { useInterventionPhotos, PhotoType } from "@/hooks/useInterventionPhotos";
 import { useInterventionEquipment } from "@/hooks/useInterventionEquipment";
 import { useCompanySettings, useReportSettings } from "@/hooks/useAppSettings";
+import { useUpdateIntervention } from "@/hooks/useInterventions";
 import { useInterventionTypes } from "@/hooks/useInterventionTypes";
 import { useWorkflowSteps } from "@/hooks/useWorkflowSteps";
 import { useStepCompletions } from "@/hooks/useStepCompletions";
@@ -24,6 +25,7 @@ import {
   Copy,
   Image as ImageIcon,
   ClipboardList,
+  CheckCircle,
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -56,7 +58,7 @@ const InterventionDetail = () => {
   );
   const { data: workflowSteps = [] } = useWorkflowSteps(matchingType?.id);
   const { data: stepCompletions = [] } = useStepCompletions(id || "");
-
+  const updateIntervention = useUpdateIntervention();
   const getPhotosOfType = (type: PhotoType) => photos.filter(p => p.photo_type === type);
 
   const handleCopyLink = () => {
@@ -83,6 +85,15 @@ const InterventionDetail = () => {
       );
       toast({ title: "PDF généré avec succès" });
     }
+  };
+  const handleCloseIntervention = async () => {
+    if (!id) return;
+    await updateIntervention.mutateAsync({
+      id,
+      status: 'completed',
+    });
+    toast({ title: "Intervention clôturée avec succès" });
+    refetch();
   };
 
   if (isLoading) {
@@ -553,26 +564,19 @@ const InterventionDetail = () => {
           </Card>
         )}
 
-        {/* Signature client */}
-        {intervention.client_signature_url && (
+        {/* Bouton Clôturer */}
+        {intervention.status !== 'completed' && intervention.status !== 'archived' && intervention.status !== 'to_invoice' && (
           <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5" />
-                Signature client
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {intervention.client_signature_name && (
-                <p className="text-sm text-muted-foreground">
-                  Signataire : <span className="font-medium text-foreground">{intervention.client_signature_name}</span>
-                </p>
-              )}
-              <img 
-                src={intervention.client_signature_url} 
-                alt="Signature client" 
-                className="max-w-xs border rounded-lg bg-white p-2"
-              />
+            <CardContent className="pt-6 flex justify-center">
+              <Button
+                size="lg"
+                onClick={handleCloseIntervention}
+                disabled={updateIntervention.isPending}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                <CheckCircle className="h-5 w-5 mr-2" />
+                {updateIntervention.isPending ? "Clôture en cours..." : "Clôturer l'intervention"}
+              </Button>
             </CardContent>
           </Card>
         )}
