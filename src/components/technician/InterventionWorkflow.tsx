@@ -205,6 +205,17 @@ const InterventionWorkflow = ({
                     </span>
                   </div>
                 )}
+
+                {(intervention.intervention_building || intervention.intervention_floor) && (
+                  <div className="flex items-start gap-2 text-sm text-muted-foreground mt-1 ml-6">
+                    <span>
+                      {[
+                        intervention.intervention_building ? `Bât. ${intervention.intervention_building}` : '',
+                        intervention.intervention_floor ? `Étage ${intervention.intervention_floor}` : '',
+                      ].filter(Boolean).join(' - ')}
+                    </span>
+                  </div>
+                )}
                 
                 {(intervention.intervention_phone || client.phone) && (
                   <a 
