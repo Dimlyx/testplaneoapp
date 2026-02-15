@@ -98,6 +98,8 @@ export function useDeleteInterventionType() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["intervention-types"] });
       queryClient.invalidateQueries({ queryKey: ["workflow-steps"] });
+      queryClient.invalidateQueries({ queryKey: ["interventions"] });
+      queryClient.invalidateQueries({ queryKey: ["technician-interventions"] });
       toast.success("Type d'intervention supprimé");
     },
     onError: (error: Error) => {
