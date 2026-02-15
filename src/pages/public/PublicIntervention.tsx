@@ -24,8 +24,6 @@ import {
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { 
-  useDocumentSettings,
-  useCompanySettings,
   defaultDocumentSettings,
   defaultCompanySettings,
   DocumentSettings,
@@ -80,8 +78,42 @@ const PublicIntervention = () => {
     enabled: !!intervention?.intervention_type,
   });
   
-  const { data: documentSettingsData, isLoading: loadingDocSettings } = useDocumentSettings();
-  const { data: companySettingsData, isLoading: loadingCompanySettings } = useCompanySettings();
+  // Fetch document settings using intervention's organization_id (works without auth)
+  const { data: documentSettingsData, isLoading: loadingDocSettings } = useQuery({
+    queryKey: ['public-document-settings', intervention?.organization_id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'documents')
+        .eq('organization_id', intervention!.organization_id!)
+        .maybeSingle();
+      if (error) throw error;
+      if (data?.value) {
+        return { ...defaultDocumentSettings, ...(data.value as object) } as DocumentSettings;
+      }
+      return defaultDocumentSettings;
+    },
+    enabled: !!intervention?.organization_id,
+  });
+
+  const { data: companySettingsData, isLoading: loadingCompanySettings } = useQuery({
+    queryKey: ['public-company-settings', intervention?.organization_id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'company')
+        .eq('organization_id', intervention!.organization_id!)
+        .maybeSingle();
+      if (error) throw error;
+      if (data?.value) {
+        return { ...defaultCompanySettings, ...(data.value as object) } as CompanySettings;
+      }
+      return defaultCompanySettings;
+    },
+    enabled: !!intervention?.organization_id,
+  });
   
   const docSettings: DocumentSettings = documentSettingsData || defaultDocumentSettings;
   const companySettings: CompanySettings = companySettingsData || defaultCompanySettings;
@@ -110,17 +142,17 @@ const PublicIntervention = () => {
     );
   }
 
-  const statusConfig = {
+  const statusConfig: Record<string, { icon: any; color: string; message: string }> = {
     to_plan: { icon: AlertTriangle, color: "text-status-to-plan", message: "En attente de planification" },
     planned: { icon: Calendar, color: "text-status-planned", message: "Intervention planifiée" },
     in_progress: { icon: Wrench, color: "text-status-in-progress", message: "Intervention en cours" },
     completed: { icon: CheckCircle, color: "text-status-completed", message: "Intervention terminée" },
   };
 
-  const currentStatus = statusConfig[intervention.status];
+  const currentStatus = statusConfig[intervention.status] || statusConfig.to_plan;
   const StatusIcon = currentStatus.icon;
 
-  const client = intervention.clients;
+  const client = (intervention as any).clients;
   const fullAddress = client ? [client.address, client.postal_code, client.city].filter(Boolean).join(', ') : null;
 
   return (
@@ -142,7 +174,7 @@ const PublicIntervention = () => {
 
       <main className="container max-w-2xl mx-auto px-4 py-6 space-y-4">
         {/* Statut principal */}
-        <Card className="border-2" style={{ borderColor: `hsl(var(--${intervention.status === 'completed' ? 'status-completed' : intervention.status === 'in_progress' ? 'status-in-progress' : intervention.status === 'planned' ? 'status-planned' : 'status-to-plan'}))` }}>
+        <Card>
           <CardContent className="py-6 text-center">
             <StatusIcon className={`h-12 w-12 mx-auto mb-3 ${currentStatus.color}`} />
             <p className={`text-lg font-semibold ${currentStatus.color}`}>{currentStatus.message}</p>
@@ -189,8 +221,8 @@ const PublicIntervention = () => {
                 <div className="flex items-center gap-2">
                   <MapPin className="h-4 w-4 text-muted-foreground" />
                   <span>{fullAddress}</span>
-              </div>
-            )}
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
@@ -210,9 +242,9 @@ const PublicIntervention = () => {
                   <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
                   <div>
                     <span>{[intervention.intervention_address, intervention.intervention_postal_code, intervention.intervention_city].filter(Boolean).join(', ')}</span>
-                    {((intervention as any).intervention_building || (intervention as any).intervention_floor) && (
+                    {(intervention.intervention_building || intervention.intervention_floor) && (
                       <div className="text-sm text-muted-foreground">
-                        {[(intervention as any).intervention_building, (intervention as any).intervention_floor].filter(Boolean).join(' - ')}
+                        {[intervention.intervention_building, intervention.intervention_floor].filter(Boolean).join(' - ')}
                       </div>
                     )}
                   </div>

@@ -4,19 +4,18 @@ import {
   Wrench, 
   CheckCircle, 
   FileText, 
-  PenTool,
   Save,
   AlertCircle,
   Info,
   Lock,
   ClipboardList,
+  PenTool,
 } from "lucide-react";
 import WorkflowStep from "./WorkflowStep";
 import DynamicStepContent from "./DynamicStepContent";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
-import SignaturePad from "@/components/SignaturePad";
 import AddEquipmentDialog from "@/components/AddEquipmentDialog";
 import EquipmentLoopCard from "@/components/EquipmentLoopCard";
 import AttachmentsList from "@/components/technician/AttachmentsList";
@@ -358,25 +357,6 @@ const InterventionWorkflow = ({
             </div>
           </WorkflowStep>
 
-          {/* Signature */}
-          <WorkflowStep
-            icon={PenTool}
-            label="Signature client"
-            isActive={activeStep === 'signature'}
-            isCompleted={hasSignature}
-            onClick={() => handleStepClick('signature')}
-            isDisabled={stepsLocked}
-          >
-            <div className="relative">
-              {stepsLocked && <LockedOverlay />}
-              <SignaturePad
-                onSignatureComplete={onSignatureComplete}
-                signerName={clientSignatureName}
-                onSignerNameChange={onClientSignatureNameChange}
-                existingSignature={clientSignatureUrl}
-              />
-            </div>
-          </WorkflowStep>
         </>
       )}
 
