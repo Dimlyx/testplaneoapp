@@ -1,10 +1,9 @@
 import { useNavigate, useParams, Link } from "react-router-dom";
-import { useIntervention } from "@/hooks/useInterventions";
+import { useIntervention, useCreateIntervention, useUpdateIntervention } from "@/hooks/useInterventions";
 import { useClient } from "@/hooks/useClients";
 import { useInterventionPhotos, PhotoType } from "@/hooks/useInterventionPhotos";
 import { useInterventionEquipment } from "@/hooks/useInterventionEquipment";
 import { useCompanySettings, useReportSettings } from "@/hooks/useAppSettings";
-import { useUpdateIntervention } from "@/hooks/useInterventions";
 import { useInterventionTypes } from "@/hooks/useInterventionTypes";
 import { useWorkflowSteps } from "@/hooks/useWorkflowSteps";
 import { useStepCompletions } from "@/hooks/useStepCompletions";
@@ -26,6 +25,7 @@ import {
   Image as ImageIcon,
   ClipboardList,
   CheckCircle,
+  CopyPlus,
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -59,6 +59,7 @@ const InterventionDetail = () => {
   const { data: workflowSteps = [] } = useWorkflowSteps(matchingType?.id);
   const { data: stepCompletions = [] } = useStepCompletions(id || "");
   const updateIntervention = useUpdateIntervention();
+  const createIntervention = useCreateIntervention(intervention?.organization_id);
   const getPhotosOfType = (type: PhotoType) => photos.filter(p => p.photo_type === type);
 
   const handleCopyLink = () => {
@@ -86,6 +87,27 @@ const InterventionDetail = () => {
       toast({ title: "PDF généré avec succès" });
     }
   };
+  const handleDuplicate = async () => {
+    if (!intervention) return;
+    try {
+      const result = await createIntervention.mutateAsync({
+        client_id: intervention.client_id,
+        equipment_id: intervention.equipment_id,
+        technician_id: intervention.technician_id,
+        intervention_type: intervention.intervention_type,
+        title: `${intervention.title} (copie)`,
+        description: intervention.description || undefined,
+        intervention_address: intervention.intervention_address,
+        intervention_city: intervention.intervention_city,
+        intervention_postal_code: intervention.intervention_postal_code,
+        intervention_phone: intervention.intervention_phone,
+        intervention_email: intervention.intervention_email,
+        organization_id: intervention.organization_id,
+      });
+      navigate(`/admin/interventions/${result.id}`);
+    } catch {}
+  };
+
   const handleCloseIntervention = async () => {
     if (!id) return;
     await updateIntervention.mutateAsync({
@@ -131,9 +153,13 @@ const InterventionDetail = () => {
           </div>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={handleDuplicate} disabled={createIntervention.isPending}>
+            <CopyPlus className="h-4 w-4 mr-2" />
+            {createIntervention.isPending ? "Duplication..." : "Dupliquer"}
+          </Button>
           <Button variant="outline" onClick={handleDownloadPDF}>
             <FileText className="h-4 w-4 mr-2" />
-            Télécharger PDF
+            PDF
           </Button>
           <Button onClick={() => navigate(`/admin/interventions/${id}/edit`)}>
             <Edit className="h-4 w-4 mr-2" />
