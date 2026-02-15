@@ -528,7 +528,7 @@ const InterventionWorkflow = ({
             <div className="flex items-center gap-2 my-3 px-3">
               <div className="flex-1 h-px bg-border" />
               <span className="text-xs font-medium text-muted-foreground bg-muted px-3 py-1 rounded-full">
-                Passage {loopIdx + 1}
+                Équipement {loopIdx + 1}
               </span>
               <div className="flex-1 h-px bg-border" />
             </div>
@@ -575,9 +575,9 @@ const InterventionWorkflow = ({
                   <div className="flex items-center gap-2">
                     <RefreshCw className="h-5 w-5 text-primary" />
                     <div>
-                      <p className="font-medium text-sm">Souhaitez-vous ajouter un autre passage ?</p>
+                      <p className="font-medium text-sm">Souhaitez-vous ajouter un autre équipement ?</p>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        Un nouveau passage reprendra toutes les étapes sans supprimer les données existantes.
+                        Un nouvel équipement reprendra toutes les étapes sans supprimer les données existantes.
                       </p>
                     </div>
                   </div>

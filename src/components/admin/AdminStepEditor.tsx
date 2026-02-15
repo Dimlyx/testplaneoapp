@@ -320,7 +320,7 @@ const AdminStepEditor = ({ steps, completions, interventionId }: AdminStepEditor
             <div className="flex items-center gap-2 my-3">
               <div className="flex-1 h-px bg-border" />
               <span className="text-xs font-medium text-muted-foreground bg-muted px-3 py-1 rounded-full">
-                Passage {loopIdx + 1}
+                Équipement {loopIdx + 1}
               </span>
               <div className="flex-1 h-px bg-border" />
             </div>
