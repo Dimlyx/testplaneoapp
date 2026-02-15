@@ -13,12 +13,10 @@ interface DynamicStepContentProps {
   interventionId: string;
   completion: StepCompletion | undefined;
   onComplete: (stepId: string, comment?: string, photoUrl?: string) => Promise<void>;
-  onSignatureComplete?: (signatureDataUrl: string, signerName: string) => Promise<void>;
   isLocked: boolean;
   isCompleting: boolean;
   signerName?: string;
   onSignerNameChange?: (name: string) => void;
-  existingSignature?: string | null;
 }
 
 // Helper to parse photo_url which can be a single URL or JSON array
@@ -38,12 +36,10 @@ const DynamicStepContent = ({
   interventionId,
   completion,
   onComplete,
-  onSignatureComplete,
   isLocked,
   isCompleting,
   signerName = "",
   onSignerNameChange,
-  existingSignature,
 }: DynamicStepContentProps) => {
   const [comment, setComment] = useState(completion?.comment || "");
   const [photoUrls, setPhotoUrls] = useState<string[]>(parsePhotoUrls(completion?.photo_url || null));
@@ -91,15 +87,53 @@ const DynamicStepContent = ({
     await onComplete(step.id, comment || undefined, serializedPhotos);
   };
 
-  // If this step requires signature, use the signature pad
-  if (step.requires_signature && onSignatureComplete) {
+  // Handle signature step: upload signature and complete the step (does NOT close the intervention)
+  const handleSignatureValidation = async (signatureDataUrl: string, sName: string) => {
+    try {
+      const response = await fetch(signatureDataUrl);
+      const blob = await response.blob();
+      const fileName = `steps/${interventionId}/${step.id}-signature-${Date.now()}.png`;
+      const { error: uploadError } = await supabase.storage
+        .from('intervention-photos')
+        .upload(fileName, blob, { contentType: 'image/png', upsert: true });
+      if (uploadError) throw uploadError;
+      const { data: urlData } = supabase.storage
+        .from('intervention-photos')
+        .getPublicUrl(fileName);
+      await onComplete(step.id, sName, urlData.publicUrl);
+    } catch (error) {
+      console.error('Error uploading step signature:', error);
+    }
+  };
+
+  // If this step requires signature, use the signature pad (only validates the step, does not close the intervention)
+  if (step.requires_signature) {
     return (
-      <SignaturePad
-        onSignatureComplete={onSignatureComplete}
-        signerName={signerName}
-        onSignerNameChange={onSignerNameChange || (() => {})}
-        existingSignature={existingSignature}
-      />
+      <div className="space-y-4">
+        {isCompleted ? (
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 text-green-600 bg-green-50 dark:bg-green-950 p-3 rounded-lg">
+                <CheckCircle className="h-5 w-5" />
+                <span className="font-medium text-sm">Étape validée</span>
+              </div>
+              {completion?.photo_url && (
+                <img src={completion.photo_url} alt="Signature" className="mt-3 max-h-32 border rounded" />
+              )}
+              {completion?.comment && (
+                <p className="text-sm text-muted-foreground mt-2">Signataire : {completion.comment}</p>
+              )}
+            </CardContent>
+          </Card>
+        ) : isLocked ? null : (
+          <SignaturePad
+            onSignatureComplete={handleSignatureValidation}
+            signerName={signerName}
+            onSignerNameChange={onSignerNameChange || (() => {})}
+            existingSignature={null}
+          />
+        )}
+      </div>
     );
   }
 

@@ -271,12 +271,8 @@ const InterventionWorkflow = ({
                 interventionId={intervention.id}
                 completion={completion}
                 onComplete={handleCompleteStep}
-                onSignatureComplete={step.requires_signature ? onSignatureComplete : undefined}
                 isLocked={isLocked}
                 isCompleting={completeStep.isPending}
-                signerName={clientSignatureName}
-                onSignerNameChange={onClientSignatureNameChange}
-                existingSignature={clientSignatureUrl}
               />
             </div>
           </WorkflowStep>
