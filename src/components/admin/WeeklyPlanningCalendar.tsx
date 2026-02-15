@@ -1,8 +1,9 @@
 import { useState, useMemo, DragEvent } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ChevronLeft, ChevronRight, Plus, Minus, Calendar as CalendarIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Minus, Calendar as CalendarIcon, Clock } from 'lucide-react';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, addWeeks, subWeeks, isSameDay, parseISO, isToday, addDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Intervention, useUpdateIntervention } from '@/hooks/useInterventions';
@@ -43,6 +44,8 @@ export function WeeklyPlanningCalendar({
   const [currentWeek, setCurrentWeek] = useState(new Date());
   const [expandedTechnicians, setExpandedTechnicians] = useState<Set<string>>(new Set(technicians.map(t => t.id)));
   const [draggedIntervention, setDraggedIntervention] = useState<Intervention | null>(null);
+  const [startHour, setStartHour] = useState(7);
+  const [endHour, setEndHour] = useState(18);
   
   const updateIntervention = useUpdateIntervention();
 
@@ -151,7 +154,8 @@ export function WeeklyPlanningCalendar({
   };
 
   const hasAnyExpanded = expandedTechnicians.size > 0;
-  const hours = Array.from({ length: 12 }, (_, i) => i + 7); // 7h to 18h
+  const hours = Array.from({ length: endHour - startHour + 1 }, (_, i) => i + startHour);
+  const allHourOptions = Array.from({ length: 24 }, (_, i) => i);
 
   return (
     <Card>
@@ -162,7 +166,32 @@ export function WeeklyPlanningCalendar({
             Planning Hebdomadaire
           </CardTitle>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-1.5 mr-2">
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              <Select value={String(startHour)} onValueChange={(v) => { const h = Number(v); setStartHour(h); if (h >= endHour) setEndHour(h + 1); }}>
+                <SelectTrigger className="w-[72px] h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {allHourOptions.filter(h => h < endHour).map(h => (
+                    <SelectItem key={h} value={String(h)}>{String(h).padStart(2, '0')}:00</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <span className="text-xs text-muted-foreground">à</span>
+              <Select value={String(endHour)} onValueChange={(v) => { const h = Number(v); setEndHour(h); if (h <= startHour) setStartHour(h - 1); }}>
+                <SelectTrigger className="w-[72px] h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {allHourOptions.filter(h => h > startHour).map(h => (
+                    <SelectItem key={h} value={String(h)}>{String(h).padStart(2, '0')}:00</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="flex items-center gap-1 mr-4">
               <Button variant="outline" size="sm" onClick={expandAll}>
                 <Plus className="h-4 w-4 mr-1" />
@@ -289,9 +318,9 @@ export function WeeklyPlanningCalendar({
                             <div className="absolute inset-0 mt-2 px-0.5">
                               <TooltipProvider>
                                 {cellInterventions.map(intervention => {
-                                  const time = intervention.scheduled_time || '07:00';
+                                  const time = intervention.scheduled_time || `${String(startHour).padStart(2, '0')}:00`;
                                   const [h, m] = time.split(':').map(Number);
-                                  const hourIndex = Math.max(0, Math.min(h - 7, 11));
+                                  const hourIndex = Math.max(0, Math.min(h - startHour, hours.length - 1));
                                   const topPx = hourIndex * 28 + (m / 60) * 28;
                                   
                                   return (
