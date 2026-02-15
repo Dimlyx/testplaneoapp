@@ -455,9 +455,11 @@ export type Database = {
           equipment_id: string | null
           id: string
           intervention_address: string | null
+          intervention_building: string | null
           intervention_city: string | null
           intervention_contact_name: string | null
           intervention_email: string | null
+          intervention_floor: string | null
           intervention_phone: string | null
           intervention_postal_code: string | null
           intervention_type: Database["public"]["Enums"]["intervention_type"]
@@ -487,9 +489,11 @@ export type Database = {
           equipment_id?: string | null
           id?: string
           intervention_address?: string | null
+          intervention_building?: string | null
           intervention_city?: string | null
           intervention_contact_name?: string | null
           intervention_email?: string | null
+          intervention_floor?: string | null
           intervention_phone?: string | null
           intervention_postal_code?: string | null
           intervention_type: Database["public"]["Enums"]["intervention_type"]
@@ -519,9 +523,11 @@ export type Database = {
           equipment_id?: string | null
           id?: string
           intervention_address?: string | null
+          intervention_building?: string | null
           intervention_city?: string | null
           intervention_contact_name?: string | null
           intervention_email?: string | null
+          intervention_floor?: string | null
           intervention_phone?: string | null
           intervention_postal_code?: string | null
           intervention_type?: Database["public"]["Enums"]["intervention_type"]

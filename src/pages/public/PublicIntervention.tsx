@@ -229,9 +229,16 @@ const PublicIntervention = () => {
               {(intervention.intervention_address || intervention.intervention_city || intervention.intervention_postal_code) && (
                 <div className="flex items-start gap-2">
                   <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
-                  <span>
-                    {[intervention.intervention_address, intervention.intervention_postal_code, intervention.intervention_city].filter(Boolean).join(', ')}
-                  </span>
+                  <div>
+                    <span>
+                      {[intervention.intervention_address, intervention.intervention_postal_code, intervention.intervention_city].filter(Boolean).join(', ')}
+                    </span>
+                    {((intervention as any).intervention_building || (intervention as any).intervention_floor) && (
+                      <div className="text-sm text-muted-foreground">
+                        {[(intervention as any).intervention_building, (intervention as any).intervention_floor].filter(Boolean).join(' - ')}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
               {intervention.intervention_phone && (
