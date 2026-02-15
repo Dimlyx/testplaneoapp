@@ -723,7 +723,7 @@ export const generateInterventionPDF = async (
         doc.setFontSize(9);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(100, 100, 100);
-        doc.text(`— Passage ${loopIdx + 1} —`, pageWidth / 2, yPos, { align: 'center' });
+        doc.text(`— Équipement ${loopIdx + 1} —`, pageWidth / 2, yPos, { align: 'center' });
         doc.setTextColor(0, 0, 0);
         doc.setFont("helvetica", "normal");
         yPos += 8;
