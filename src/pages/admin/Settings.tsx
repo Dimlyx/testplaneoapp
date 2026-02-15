@@ -298,39 +298,6 @@ export default function Settings() {
               </CardContent>
             </Card>
 
-            {/* Preview */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Aperçu en-tête rapport</CardTitle>
-                <CardDescription>Prévisualisation de l'en-tête des rapports PDF</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="border rounded-lg overflow-hidden max-w-lg bg-white">
-                  <div className="p-4 text-white" style={{ backgroundColor: documentSettings.primaryColor }}>
-                    <div className="flex items-start gap-4">
-                      {companySettings.logoUrl && (
-                        <img src={companySettings.logoUrl} alt="Logo" className="h-12 w-auto object-contain bg-white rounded p-1" />
-                      )}
-                      <div className="flex-1">
-                        <p className="font-bold text-lg">{companySettings.name || "Nom de l'entreprise"}</p>
-                        <p className="text-sm opacity-80">RAPPORT D'INTERVENTION</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="p-4 text-xs text-muted-foreground border-t space-y-1">
-                    {(companySettings.address || companySettings.postalCode || companySettings.city) && (
-                      <p>{[companySettings.address, companySettings.postalCode, companySettings.city].filter(Boolean).join(', ')}</p>
-                    )}
-                    <div className="flex gap-4">
-                      {companySettings.phone && <span>Tél: {companySettings.phone}</span>}
-                      {companySettings.email && <span>Email: {companySettings.email}</span>}
-                    </div>
-                    {companySettings.siret && <p>SIRET: {companySettings.siret}</p>}
-                    {companySettings.tvaNumber && <p>TVA: {companySettings.tvaNumber}</p>}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
 
             <Button onClick={handleSaveCompanySettings} disabled={updateCompanySettingsMutation.isPending} className="w-full sm:w-auto">
               <Save className="h-4 w-4 mr-2" />
@@ -514,6 +481,37 @@ export default function Settings() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Logo for documents */}
+                <div className="space-y-2">
+                  <Label>Logo (affiché en haut à gauche du PDF et de l'extranet)</Label>
+                  <div className="flex items-center gap-4">
+                    {companySettings.logoUrl ? (
+                      <div className="relative">
+                        <img 
+                          src={companySettings.logoUrl} 
+                          alt="Logo entreprise" 
+                          className="h-16 w-auto object-contain border rounded-lg p-2 bg-white"
+                        />
+                        <Button type="button" variant="destructive" size="icon" className="absolute -top-2 -right-2 h-6 w-6" onClick={handleRemoveLogo}>
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="h-16 w-28 border-2 border-dashed rounded-lg flex items-center justify-center bg-muted/50">
+                        <Image className="h-6 w-6 text-muted-foreground" />
+                      </div>
+                    )}
+                    <div>
+                      <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/svg+xml" onChange={handleLogoUpload} className="hidden" />
+                      <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={isUploadingLogo}>
+                        <Upload className="h-4 w-4 mr-2" />
+                        {isUploadingLogo ? "Upload..." : "Choisir un logo"}
+                      </Button>
+                      <p className="text-xs text-muted-foreground mt-1">Format recommandé : PNG ou SVG, fond transparent. Max 2 Mo.</p>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="docPrimaryColor">Couleur principale</Label>
@@ -543,49 +541,7 @@ export default function Settings() {
               </CardContent>
             </Card>
 
-            {/* Preview */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Aperçu</CardTitle>
-                <CardDescription>Prévisualisation du rapport</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="border rounded-lg overflow-hidden max-w-md">
-                  <div className="p-4 text-white flex items-center gap-3" style={{ backgroundColor: documentSettings.primaryColor }}>
-                    {companySettings.logoUrl && (
-                      <img src={companySettings.logoUrl} alt="Logo" className="h-10 w-auto object-contain bg-white rounded p-1" />
-                    )}
-                    <div>
-                      <p className="font-bold">{companySettings.name || "Nom de l'entreprise"}</p>
-                      <p className="text-sm opacity-80">RAPPORT D'INTERVENTION</p>
-                    </div>
-                  </div>
-                  <div className="p-4 bg-white space-y-2">
-                    {documentSettings.showClientInfo && (
-                      <>
-                        <div className="text-sm font-medium" style={{ color: documentSettings.primaryColor }}>Informations client</div>
-                        <div className="h-2 bg-muted rounded w-3/4"></div>
-                      </>
-                    )}
-                    {documentSettings.showDescription && (
-                      <>
-                        <div className="text-sm font-medium mt-2" style={{ color: documentSettings.primaryColor }}>Détails intervention</div>
-                        <div className="h-2 bg-muted rounded w-full"></div>
-                      </>
-                    )}
-                    {documentSettings.showWorkflowSteps && (
-                      <>
-                        <div className="text-sm font-medium mt-2" style={{ color: documentSettings.primaryColor }}>Étapes du workflow</div>
-                        <div className="h-2 bg-muted rounded w-1/2"></div>
-                      </>
-                    )}
-                  </div>
-                  <div className="p-3 text-center text-xs text-white" style={{ backgroundColor: documentSettings.accentColor }}>
-                    {documentSettings.footerText || "Texte de pied de page"}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+
 
             <Button onClick={handleSaveDocumentSettings} disabled={updateDocumentSettingsMutation.isPending} className="w-full sm:w-auto">
               <Save className="h-4 w-4 mr-2" />
