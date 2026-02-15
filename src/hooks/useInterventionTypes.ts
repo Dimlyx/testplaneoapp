@@ -80,6 +80,14 @@ export function useDeleteInterventionType() {
 
   return useMutation({
     mutationFn: async (id: string) => {
+      // First delete related workflow steps to avoid FK constraint violation
+      const { error: stepsError } = await supabase
+        .from("intervention_workflow_steps")
+        .delete()
+        .eq("intervention_type_id", id);
+
+      if (stepsError) throw stepsError;
+
       const { error } = await supabase
         .from("intervention_types")
         .delete()
@@ -89,6 +97,7 @@ export function useDeleteInterventionType() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["intervention-types"] });
+      queryClient.invalidateQueries({ queryKey: ["workflow-steps"] });
       toast.success("Type d'intervention supprimé");
     },
     onError: (error: Error) => {
