@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Settings as SettingsIcon, FileText, Palette, Save, Upload, X, Image, Eye, EyeOff, Building2, RotateCcw, ListChecks } from "lucide-react";
+import { Settings as SettingsIcon, FileText, Palette, Save, Upload, X, Image, Eye, EyeOff, Building2, RotateCcw, ListChecks, Download } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +44,7 @@ export default function Settings() {
   const [interfaceSettings, setInterfaceSettings] = useState<InterfaceSettings>(defaultInterfaceSettings);
   const [documentSettings, setDocumentSettings] = useState<DocumentSettings>(defaultDocumentSettings);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -547,6 +548,73 @@ export default function Settings() {
               <Save className="h-4 w-4 mr-2" />
               {updateDocumentSettingsMutation.isPending ? "Enregistrement..." : "Enregistrer les paramètres documents"}
             </Button>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Section: Export des données */}
+        <AccordionItem value="export" className="border rounded-lg px-4">
+          <AccordionTrigger className="hover:no-underline">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-destructive/10">
+                <Download className="h-5 w-5 text-destructive" />
+              </div>
+              <div className="text-left">
+                <p className="font-semibold">Export des données</p>
+                <p className="text-sm text-muted-foreground font-normal">Télécharger toutes vos données au format CSV</p>
+              </div>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="pt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Download className="h-5 w-5" />
+                  Portabilité des données
+                </CardTitle>
+                <CardDescription>
+                  Exportez l'intégralité de vos données (clients, interventions, équipements, notes, documents, etc.) dans un fichier CSV unique. 
+                  Ce fichier contient toutes les informations de votre organisation et peut être utilisé pour migrer vers un autre outil.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button
+                  variant="outline"
+                  disabled={isExporting}
+                  onClick={async () => {
+                    setIsExporting(true);
+                    try {
+                      const { data: { session } } = await supabase.auth.getSession();
+                      if (!session) {
+                        toast({ title: "Erreur", description: "Vous devez être connecté.", variant: "destructive" });
+                        return;
+                      }
+                      const response = await supabase.functions.invoke("export-data", {});
+                      if (response.error) throw response.error;
+                      
+                      const blob = new Blob([response.data], { type: "text/csv;charset=utf-8;" });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = `export-donnees-${new Date().toISOString().slice(0, 10)}.csv`;
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                      URL.revokeObjectURL(url);
+
+                      toast({ title: "Export réussi", description: "Le fichier CSV a été téléchargé." });
+                    } catch (error: any) {
+                      console.error("Export error:", error);
+                      toast({ title: "Erreur d'export", description: error.message || "Impossible d'exporter les données.", variant: "destructive" });
+                    } finally {
+                      setIsExporting(false);
+                    }
+                  }}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  {isExporting ? "Export en cours..." : "Exporter toutes les données (.csv)"}
+                </Button>
+              </CardContent>
+            </Card>
           </AccordionContent>
         </AccordionItem>
       </Accordion>
