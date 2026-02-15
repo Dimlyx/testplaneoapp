@@ -30,6 +30,8 @@ export interface Intervention {
   client_signature_name: string | null;
   client_signature_url: string | null;
   intervention_address: string | null;
+  intervention_building: string | null;
+  intervention_floor: string | null;
   intervention_city: string | null;
   intervention_postal_code: string | null;
   intervention_phone: string | null;

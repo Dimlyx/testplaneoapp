@@ -44,6 +44,8 @@ const interventionSchema = z.object({
   report: z.string().optional(),
   technical_comments: z.string().optional(),
   intervention_address: z.string().optional(),
+  intervention_building: z.string().optional(),
+  intervention_floor: z.string().optional(),
   intervention_city: z.string().optional(),
   intervention_postal_code: z.string().optional(),
   intervention_phone: z.string().optional(),
@@ -81,6 +83,8 @@ const InterventionForm = () => {
       report: "",
       technical_comments: "",
       intervention_address: "",
+      intervention_building: "",
+      intervention_floor: "",
       intervention_city: "",
       intervention_postal_code: "",
       intervention_phone: "",
@@ -103,6 +107,8 @@ const InterventionForm = () => {
         report: intervention.report || "",
         technical_comments: intervention.technical_comments || "",
         intervention_address: intervention.intervention_address || "",
+        intervention_building: (intervention as any).intervention_building || "",
+        intervention_floor: (intervention as any).intervention_floor || "",
         intervention_city: intervention.intervention_city || "",
         intervention_postal_code: intervention.intervention_postal_code || "",
         intervention_phone: intervention.intervention_phone || "",
@@ -126,6 +132,8 @@ const InterventionForm = () => {
         report: values.report || null,
         technical_comments: values.technical_comments || null,
         intervention_address: values.intervention_address || null,
+        intervention_building: values.intervention_building || null,
+        intervention_floor: values.intervention_floor || null,
         intervention_city: values.intervention_city || null,
         intervention_postal_code: values.intervention_postal_code || null,
         intervention_phone: values.intervention_phone || null,
@@ -397,6 +405,34 @@ const InterventionForm = () => {
                     </FormItem>
                   )}
                 />
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name="intervention_building"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Bâtiment</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Bâtiment / Résidence" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="intervention_floor"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Étage</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Étage / Porte" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <FormField
                     control={form.control}
