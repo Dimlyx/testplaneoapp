@@ -10,6 +10,9 @@ import {
   Lock,
   ClipboardList,
   PenTool,
+  PauseCircle,
+  PlayCircle,
+  Clock,
 } from "lucide-react";
 import WorkflowStep from "./WorkflowStep";
 import DynamicStepContent from "./DynamicStepContent";
@@ -25,6 +28,18 @@ import { Tables } from "@/integrations/supabase/types";
 import { useInterventionTypes } from "@/hooks/useInterventionTypes";
 import { useWorkflowSteps } from "@/hooks/useWorkflowSteps";
 import { useStepCompletions, useCompleteStep } from "@/hooks/useStepCompletions";
+import { useInterventionPauses, useActivePause, usePauseIntervention, useResumeIntervention } from "@/hooks/useInterventionPauses";
+import { Input } from "@/components/ui/input";
+import { toast } from "@/hooks/use-toast";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 type Client = Tables<"clients">;
 type Intervention = Tables<"interventions">;
@@ -76,6 +91,16 @@ const InterventionWorkflow = ({
   const { data: stepCompletions = [] } = useStepCompletions(intervention.id);
   const completeStep = useCompleteStep();
 
+  // Pause management
+  const { data: pauses = [] } = useInterventionPauses(intervention.id);
+  const activePause = useActivePause(intervention.id);
+  const pauseIntervention = usePauseIntervention();
+  const resumeIntervention = useResumeIntervention();
+  const [showPauseDialog, setShowPauseDialog] = useState(false);
+  const [pauseReason, setPauseReason] = useState("");
+  const [showPauseHistory, setShowPauseHistory] = useState(false);
+  const isPaused = !!activePause;
+
   // Determine completed steps based on data
   const isStarted = intervention.status === 'in_progress' || intervention.status === 'completed' || intervention.status === 'to_invoice' || intervention.status === 'archived';
   const hasSignature = !!clientSignatureUrl;
@@ -84,7 +109,7 @@ const InterventionWorkflow = ({
   const isArchived = intervention.status === 'archived';
   
   const isLocked = isCompleted || isToInvoice || isArchived;
-  const stepsLocked = !isStarted;
+  const stepsLocked = !isStarted || isPaused;
 
   // Check if all dynamic steps are completed
   const allDynamicStepsCompleted = workflowSteps.length === 0 || workflowSteps.every(
@@ -126,11 +151,48 @@ const InterventionWorkflow = ({
     });
   };
 
+  const handlePause = async () => {
+    if (!pauseReason.trim()) return;
+    try {
+      await pauseIntervention.mutateAsync({
+        interventionId: intervention.id,
+        reason: pauseReason.trim(),
+      });
+      setPauseReason("");
+      setShowPauseDialog(false);
+      toast({ title: "Intervention mise en pause" });
+    } catch {
+      toast({ title: "Erreur lors de la mise en pause", variant: "destructive" });
+    }
+  };
+
+  const handleResume = async () => {
+    if (!activePause) return;
+    try {
+      await resumeIntervention.mutateAsync({
+        interventionId: intervention.id,
+        pauseId: activePause.id,
+      });
+      toast({ title: "Intervention reprise" });
+    } catch {
+      toast({ title: "Erreur lors de la reprise", variant: "destructive" });
+    }
+  };
+
   const LockedOverlay = () => (
     <div className="absolute inset-0 bg-background/80 backdrop-blur-[1px] flex items-center justify-center z-10 rounded-lg">
       <div className="flex items-center gap-2 text-muted-foreground bg-muted/90 px-4 py-2 rounded-full text-sm">
-        <Lock className="h-4 w-4" />
-        <span>Démarrez l'intervention d'abord</span>
+        {isPaused ? (
+          <>
+            <PauseCircle className="h-4 w-4" />
+            <span>Intervention en pause</span>
+          </>
+        ) : (
+          <>
+            <Lock className="h-4 w-4" />
+            <span>Démarrez l'intervention d'abord</span>
+          </>
+        )}
       </div>
     </div>
   );
@@ -152,7 +214,38 @@ const InterventionWorkflow = ({
         </Card>
       )}
 
-      {stepsLocked && !isLocked && (
+      {/* Paused banner */}
+      {isPaused && !isLocked && (
+        <Card className="mb-4 border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-orange-700 dark:text-orange-300">
+                <PauseCircle className="h-5 w-5" />
+                <div>
+                  <span className="font-medium">Intervention en pause</span>
+                  <p className="text-sm text-orange-600 dark:text-orange-400 mt-0.5">
+                    Motif : {activePause?.pause_reason}
+                  </p>
+                  <p className="text-xs text-orange-500 dark:text-orange-500 mt-0.5">
+                    Depuis le {format(new Date(activePause!.paused_at), "dd/MM/yyyy à HH:mm", { locale: fr })}
+                  </p>
+                </div>
+              </div>
+              <Button
+                size="sm"
+                onClick={handleResume}
+                disabled={resumeIntervention.isPending}
+                className="shrink-0"
+              >
+                <PlayCircle className="h-4 w-4 mr-1" />
+                Reprendre
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {stepsLocked && !isLocked && !isPaused && (
         <Card className="mb-4 border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
@@ -165,6 +258,65 @@ const InterventionWorkflow = ({
           </CardContent>
         </Card>
       )}
+
+      {/* Pause dialog */}
+      <Dialog open={showPauseDialog} onOpenChange={setShowPauseDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Mettre en pause l'intervention</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <label className="text-sm font-medium">Motif de la pause</label>
+            <Input
+              placeholder="Ex: Attente de pièces, pause déjeuner..."
+              value={pauseReason}
+              onChange={(e) => setPauseReason(e.target.value)}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPauseDialog(false)}>Annuler</Button>
+            <Button
+              onClick={handlePause}
+              disabled={!pauseReason.trim() || pauseIntervention.isPending}
+            >
+              <PauseCircle className="h-4 w-4 mr-1" />
+              Confirmer la pause
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Pause history dialog */}
+      <Dialog open={showPauseHistory} onOpenChange={setShowPauseHistory}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Historique des pauses</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 max-h-80 overflow-y-auto">
+            {pauses.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">Aucune pause enregistrée</p>
+            ) : (
+              pauses.map((pause) => (
+                <div key={pause.id} className="border rounded-lg p-3 space-y-1">
+                  <p className="text-sm font-medium">{pause.pause_reason}</p>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Clock className="h-3 w-3" />
+                    <span>Pause : {format(new Date(pause.paused_at), "dd/MM/yyyy HH:mm", { locale: fr })}</span>
+                  </div>
+                  {pause.resumed_at ? (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <PlayCircle className="h-3 w-3" />
+                      <span>Reprise : {format(new Date(pause.resumed_at), "dd/MM/yyyy HH:mm", { locale: fr })}</span>
+                    </div>
+                  ) : (
+                    <span className="text-xs font-medium text-orange-600">En cours</span>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Step 0: General Info */}
       <WorkflowStep
@@ -253,6 +405,43 @@ const InterventionWorkflow = ({
               onTimeUpdate={onTimeUpdate}
               isUpdating={isUpdating}
             />
+
+            {/* Pause/Resume buttons - only shown when intervention is in progress */}
+            {isStarted && !isLocked && (
+              <div className="border-t pt-4 space-y-2">
+                <div className="flex items-center gap-2">
+                  {!isPaused ? (
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => setShowPauseDialog(true)}
+                    >
+                      <PauseCircle className="h-4 w-4 mr-2" />
+                      Mettre en pause
+                    </Button>
+                  ) : (
+                    <Button
+                      className="flex-1"
+                      onClick={handleResume}
+                      disabled={resumeIntervention.isPending}
+                    >
+                      <PlayCircle className="h-4 w-4 mr-2" />
+                      Reprendre l'intervention
+                    </Button>
+                  )}
+                  {pauses.length > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setShowPauseHistory(true)}
+                      title="Historique des pauses"
+                    >
+                      <Clock className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </WorkflowStep>

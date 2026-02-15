@@ -37,6 +37,7 @@ export interface Intervention {
   intervention_phone: string | null;
   intervention_email: string | null;
   intervention_contact_name: string | null;
+  is_paused: boolean;
   created_at: string;
   updated_at: string;
   clients?: {
@@ -111,6 +112,7 @@ export interface UpdateInterventionData {
   intervention_phone?: string | null;
   intervention_email?: string | null;
   intervention_contact_name?: string | null;
+  is_paused?: boolean;
 }
 
 export function useInterventions() {

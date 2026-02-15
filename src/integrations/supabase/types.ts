@@ -398,6 +398,44 @@ export type Database = {
           },
         ]
       }
+      intervention_pauses: {
+        Row: {
+          created_at: string
+          id: string
+          intervention_id: string
+          pause_reason: string
+          paused_at: string
+          paused_by: string | null
+          resumed_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          intervention_id: string
+          pause_reason: string
+          paused_at?: string
+          paused_by?: string | null
+          resumed_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          intervention_id?: string
+          pause_reason?: string
+          paused_at?: string
+          paused_by?: string | null
+          resumed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intervention_pauses_intervention_id_fkey"
+            columns: ["intervention_id"]
+            isOneToOne: false
+            referencedRelation: "interventions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       intervention_photos: {
         Row: {
           created_at: string
@@ -610,6 +648,7 @@ export type Database = {
           intervention_phone: string | null
           intervention_postal_code: string | null
           intervention_type: string
+          is_paused: boolean
           observations: string | null
           organization_id: string | null
           public_token: string | null
@@ -644,6 +683,7 @@ export type Database = {
           intervention_phone?: string | null
           intervention_postal_code?: string | null
           intervention_type: string
+          is_paused?: boolean
           observations?: string | null
           organization_id?: string | null
           public_token?: string | null
@@ -678,6 +718,7 @@ export type Database = {
           intervention_phone?: string | null
           intervention_postal_code?: string | null
           intervention_type?: string
+          is_paused?: boolean
           observations?: string | null
           organization_id?: string | null
           public_token?: string | null
