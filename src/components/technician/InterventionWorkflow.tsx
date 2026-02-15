@@ -278,86 +278,19 @@ const InterventionWorkflow = ({
         );
       })}
 
-      {/* If no dynamic steps configured, show fallback equipment + report + signature */}
+      {/* If no dynamic steps configured, show a message */}
       {workflowSteps.length === 0 && (
-        <>
-          {/* Equipment */}
-          <WorkflowStep
-            icon={Wrench}
-            label={`Équipements (${interventionEquipment.length})`}
-            isActive={activeStep === 'equipment'}
-            isCompleted={interventionEquipment.length > 0}
-            onClick={() => handleStepClick('equipment')}
-            isDisabled={stepsLocked}
-          >
-            <div className="relative">
-              {stepsLocked && <LockedOverlay />}
-              <div className="space-y-4">
-                {interventionEquipment.length === 0 ? (
-                  <Card>
-                    <CardContent className="p-6 text-center">
-                      <Wrench className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                      <p className="text-sm text-muted-foreground mb-4">Aucun équipement ajouté</p>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  interventionEquipment.map((ie, idx) => (
-                    <EquipmentLoopCard
-                      key={ie.id}
-                      interventionEquipment={ie}
-                      interventionId={intervention.id}
-                      index={idx}
-                      isReadOnly={isLocked}
-                    />
-                  ))
-                )}
-                {client && !isLocked && (
-                  <AddEquipmentDialog
-                    clientId={client.id}
-                    interventionId={intervention.id}
-                    existingEquipmentIds={existingEquipmentIds}
-                    organizationId={intervention.organization_id}
-                  />
-                )}
-              </div>
+        <Card className="my-4 border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300">
+              <AlertCircle className="h-5 w-5" />
+              <span className="font-medium">Aucune étape configurée</span>
             </div>
-          </WorkflowStep>
-
-          {/* Report */}
-          <WorkflowStep
-            icon={FileText}
-            label="Compte rendu"
-            isActive={activeStep === 'report'}
-            isCompleted={!!report.trim()}
-            onClick={() => handleStepClick('report')}
-            isDisabled={stepsLocked}
-          >
-            <div className="relative">
-              {stepsLocked && <LockedOverlay />}
-              <Card>
-                <CardContent className="p-4 space-y-4">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Travaux effectués</label>
-                    <Textarea
-                      placeholder="Décrivez les travaux réalisés..."
-                      value={report}
-                      onChange={(e) => onReportChange(e.target.value)}
-                      className="min-h-[120px]"
-                      disabled={isLocked}
-                    />
-                  </div>
-                  {!isLocked && (
-                    <Button onClick={onSave} disabled={isUpdating} className="w-full">
-                      <Save className="h-4 w-4 mr-2" />
-                      Enregistrer
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </WorkflowStep>
-
-        </>
+            <p className="text-sm text-amber-600 dark:text-amber-400 mt-1">
+              Ce type d'intervention n'a pas d'étapes de workflow. Demandez à un administrateur de configurer les étapes dans les paramètres.
+            </p>
+          </CardContent>
+        </Card>
       )}
 
       {/* Final step: Finish */}
