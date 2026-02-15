@@ -1,0 +1,1 @@
+ALTER TABLE public.intervention_types ADD COLUMN allow_loop boolean NOT NULL DEFAULT false;

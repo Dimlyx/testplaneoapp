@@ -9,6 +9,7 @@ export interface InterventionType {
   label: string;
   color: string;
   track_journey: boolean;
+  allow_loop: boolean;
   created_at: string;
 }
 
@@ -32,11 +33,11 @@ export function useCreateInterventionType() {
   const { data: organizationId } = useUserOrganization();
 
   return useMutation({
-    mutationFn: async ({ name, label, color, track_journey = true }: { name: string; label: string; color: string; track_journey?: boolean }) => {
+    mutationFn: async ({ name, label, color, track_journey = true, allow_loop = false }: { name: string; label: string; color: string; track_journey?: boolean; allow_loop?: boolean }) => {
       if (!organizationId) throw new Error("No organization found");
       const { data, error } = await supabase
         .from("intervention_types")
-        .insert({ name, label, color, track_journey, organization_id: organizationId } as any)
+        .insert({ name, label, color, track_journey, allow_loop, organization_id: organizationId } as any)
         .select()
         .single();
 
@@ -57,10 +58,10 @@ export function useUpdateInterventionType() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, name, label, color, track_journey }: { id: string; name: string; label: string; color: string; track_journey: boolean }) => {
+    mutationFn: async ({ id, name, label, color, track_journey, allow_loop }: { id: string; name: string; label: string; color: string; track_journey: boolean; allow_loop: boolean }) => {
       const { error } = await supabase
         .from("intervention_types")
-        .update({ name, label, color, track_journey } as any)
+        .update({ name, label, color, track_journey, allow_loop } as any)
         .eq("id", id);
 
       if (error) throw error;

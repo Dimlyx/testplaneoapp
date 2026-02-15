@@ -78,6 +78,7 @@ export default function InterventionTypesSettings() {
   const [label, setLabel] = useState("");
   const [color, setColor] = useState("blue");
   const [trackJourney, setTrackJourney] = useState(true);
+  const [allowLoop, setAllowLoop] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingType, setEditingType] = useState<InterventionType | null>(null);
 
@@ -86,6 +87,7 @@ export default function InterventionTypesSettings() {
     setLabel("");
     setColor("blue");
     setTrackJourney(true);
+    setAllowLoop(false);
     setEditingType(null);
   };
 
@@ -100,6 +102,7 @@ export default function InterventionTypesSettings() {
     setLabel(type.label);
     setColor(type.color);
     setTrackJourney(type.track_journey);
+    setAllowLoop(type.allow_loop);
     setDialogOpen(true);
   };
 
@@ -115,6 +118,7 @@ export default function InterventionTypesSettings() {
         label: label.trim(),
         color,
         track_journey: trackJourney,
+        allow_loop: allowLoop,
       });
     } else {
       await createType.mutateAsync({
@@ -122,6 +126,7 @@ export default function InterventionTypesSettings() {
         label: label.trim(),
         color,
         track_journey: trackJourney,
+        allow_loop: allowLoop,
       });
     }
 
@@ -135,6 +140,7 @@ export default function InterventionTypesSettings() {
       label: type.label + " (copie)",
       color: type.color,
       track_journey: type.track_journey,
+      allow_loop: type.allow_loop,
     });
 
     // Duplicate workflow steps
@@ -347,6 +353,15 @@ export default function InterventionTypesSettings() {
                 </p>
               </div>
               <Switch checked={trackJourney} onCheckedChange={setTrackJourney} />
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>Boucle équipements</Label>
+                <p className="text-xs text-muted-foreground">
+                  Permettre au technicien de répéter les étapes pour plusieurs équipements
+                </p>
+              </div>
+              <Switch checked={allowLoop} onCheckedChange={setAllowLoop} />
             </div>
           </div>
           <DialogFooter>
