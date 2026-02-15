@@ -127,9 +127,11 @@ const JPEG_QUALITY = 0.6;
 
 const loadImageAsBase64 = async (url: string): Promise<string | null> => {
   try {
+    if (!url || url.trim() === '') return null;
+    
     // Use fetch to avoid CORS canvas tainting issues
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000);
+    const timeout = setTimeout(() => controller.abort(), 15000);
     
     const response = await fetch(url, { signal: controller.signal });
     clearTimeout(timeout);
@@ -140,6 +142,12 @@ const loadImageAsBase64 = async (url: string): Promise<string | null> => {
     }
     
     const blob = await response.blob();
+    
+    // Verify it's an actual image
+    if (!blob.type.startsWith('image/')) {
+      console.warn('Response is not an image:', url, blob.type);
+      return null;
+    }
     
     // Convert blob to base64 via FileReader
     const base64 = await new Promise<string | null>((resolve) => {
@@ -169,15 +177,16 @@ const loadImageAsBase64 = async (url: string): Promise<string | null> => {
           }
           
           const canvas = document.createElement('canvas');
-          canvas.width = width;
-          canvas.height = height;
+          canvas.width = Math.max(1, Math.round(width));
+          canvas.height = Math.max(1, Math.round(height));
           const ctx = canvas.getContext('2d');
           
           if (ctx) {
             ctx.imageSmoothingEnabled = true;
             ctx.imageSmoothingQuality = 'medium';
-            ctx.drawImage(img, 0, 0, width, height);
-            resolve(canvas.toDataURL('image/jpeg', JPEG_QUALITY));
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            const result = canvas.toDataURL('image/jpeg', JPEG_QUALITY);
+            resolve(result);
           } else {
             resolve(base64);
           }
@@ -186,7 +195,10 @@ const loadImageAsBase64 = async (url: string): Promise<string | null> => {
           resolve(base64);
         }
       };
-      img.onerror = () => resolve(base64);
+      img.onerror = () => {
+        console.warn('Image failed to load from base64, using raw data');
+        resolve(base64);
+      };
       img.src = base64;
     });
   } catch (err) {
@@ -209,13 +221,42 @@ interface WorkflowStepData {
   requires_comment: boolean | null;
 }
 
+interface InterventionTypeData {
+  name: string;
+  label: string;
+}
+
 const parsePhotoUrls = (photoUrl: string | null): string[] => {
   if (!photoUrl) return [];
   try {
     const parsed = JSON.parse(photoUrl);
-    if (Array.isArray(parsed)) return parsed;
+    if (Array.isArray(parsed)) return parsed.filter(u => typeof u === 'string' && u.trim() !== '');
   } catch {}
-  return photoUrl ? [photoUrl] : [];
+  return photoUrl.trim() ? [photoUrl.trim()] : [];
+};
+
+const getImageFormat = (base64: string): string => {
+  if (base64.includes('data:image/png')) return 'PNG';
+  if (base64.includes('data:image/webp')) return 'WEBP';
+  return 'JPEG';
+};
+
+const safeAddImage = (doc: jsPDF, base64: string, x: number, y: number, w: number, h: number) => {
+  try {
+    const format = getImageFormat(base64);
+    doc.addImage(base64, format, x, y, w, h);
+    return true;
+  } catch (e) {
+    console.error('Error adding image to PDF:', e);
+    // Try with auto-detect as fallback
+    try {
+      doc.addImage(base64, 'JPEG', x, y, w, h);
+      return true;
+    } catch (e2) {
+      console.error('Fallback addImage also failed:', e2);
+      return false;
+    }
+  }
 };
 
 export const generateInterventionPDF = async (
@@ -235,7 +276,8 @@ export const generateInterventionPDF = async (
   interventionEquipments?: InterventionEquipmentData[],
   pdfSettings?: PDFSettings,
   stepCompletions?: StepCompletionData[],
-  workflowSteps?: WorkflowStepData[]
+  workflowSteps?: WorkflowStepData[],
+  interventionTypes?: InterventionTypeData[]
 ) => {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -309,7 +351,7 @@ export const generateInterventionPDF = async (
       if (logoBase64) {
         const logoHeight = 25;
         logoWidth = 30;
-        doc.addImage(logoBase64, 'JPEG', logoMargin, 10, logoWidth, logoHeight);
+        safeAddImage(doc, logoBase64, logoMargin, 10, logoWidth, logoHeight);
         logoWidth += 10; // Add spacing after logo
       }
     } catch (err) {
@@ -385,7 +427,8 @@ export const generateInterventionPDF = async (
   // ================== INTERVENTION DETAILS ==================
   yPos = addSection("DÉTAILS DE L'INTERVENTION", yPos);
   yPos = addField("Titre", intervention.title, yPos);
-  yPos = addField("Type", intervention.intervention_type, yPos);
+  const typeLabel = interventionTypes?.find(t => t.name === intervention.intervention_type)?.label || intervention.intervention_type;
+  yPos = addField("Type", typeLabel, yPos);
   if (technicianName) {
     yPos = addField("Technicien", technicianName, yPos);
   }
@@ -448,11 +491,8 @@ export const generateInterventionPDF = async (
           const base64 = await loadImageAsBase64(photo.photo_url);
           if (base64) {
             checkNewPage(50);
-            try {
-              doc.addImage(base64, 'JPEG', 15, yPos, 60, 45);
+            if (safeAddImage(doc, base64, 15, yPos, 60, 45)) {
               yPos += 50;
-            } catch (e) {
-              console.error('Error adding SN photo:', e);
             }
           }
         }
@@ -478,12 +518,9 @@ export const generateInterventionPDF = async (
               yPos += 50;
               checkNewPage(50);
             }
-            try {
-              doc.addImage(base64, 'JPEG', xPos, yPos, 60, 45);
+            if (safeAddImage(doc, base64, xPos, yPos, 60, 45)) {
               xPos += 70;
               photoCount++;
-            } catch (e) {
-              console.error('Error adding during photo:', e);
             }
           }
         }
@@ -543,12 +580,9 @@ export const generateInterventionPDF = async (
               yPos += 50;
               checkNewPage(50);
             }
-            try {
-              doc.addImage(base64, 'JPEG', xPos, yPos, 60, 45);
+            if (safeAddImage(doc, base64, xPos, yPos, 60, 45)) {
               xPos += 70;
               photoCount++;
-            } catch (e) {
-              console.error('Error adding after photo:', e);
             }
           }
         }
@@ -600,9 +634,7 @@ export const generateInterventionPDF = async (
               checkNewPage(photoHeight + 10);
             }
 
-            try {
-              doc.addImage(base64, 'JPEG', xPos, yPos, photoWidth, photoHeight);
-            } catch (imgErr) {
+            if (!safeAddImage(doc, base64, xPos, yPos, photoWidth, photoHeight)) {
               doc.setDrawColor(200, 200, 200);
               doc.rect(xPos, yPos, photoWidth, photoHeight);
             }
@@ -625,6 +657,14 @@ export const generateInterventionPDF = async (
   }
 
   // ================== WORKFLOW STEPS ==================
+  console.log('PDF Workflow Debug:', { 
+    docSettings: !!docSettings,
+    showWorkflowSteps: docSettings?.showWorkflowSteps,
+    workflowStepsCount: workflowSteps?.length, 
+    stepCompletionsCount: stepCompletions?.length,
+    stepIds: workflowSteps?.map(s => s.id),
+    completionStepIds: stepCompletions?.map(c => c.step_id)
+  });
   if ((!docSettings || docSettings.showWorkflowSteps) && workflowSteps && workflowSteps.length > 0 && stepCompletions && stepCompletions.length > 0) {
     checkNewPage(40);
     yPos = addSection("ÉTAPES DU WORKFLOW", yPos);
@@ -659,12 +699,9 @@ export const generateInterventionPDF = async (
               yPos += 50;
               checkNewPage(50);
             }
-            try {
-              doc.addImage(base64, 'JPEG', xPos, yPos, 55, 40);
+            if (safeAddImage(doc, base64, xPos, yPos, 55, 40)) {
               xPos += 65;
               photoCount++;
-            } catch (e) {
-              console.error('Error adding step photo:', e);
             }
           }
         }

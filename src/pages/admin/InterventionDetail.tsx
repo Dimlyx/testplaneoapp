@@ -72,6 +72,14 @@ const InterventionDetail = () => {
 
   const handleDownloadPDF = async () => {
     if (intervention && client) {
+      console.log('PDF Generation Debug:', { 
+        interventionType: intervention.intervention_type,
+        matchingTypeId: matchingType?.id,
+        matchingTypeName: matchingType?.name,
+        workflowStepsCount: workflowSteps.length,
+        stepCompletionsCount: stepCompletions.length,
+        interventionTypesCount: interventionTypes.length
+      });
       toast({ title: "Génération du PDF en cours..." });
       await generateInterventionPDF(
         intervention, 
@@ -82,7 +90,8 @@ const InterventionDetail = () => {
         interventionEquipments,
         { company: companySettings!, report: { primaryColor: documentSettings?.primaryColor || '#003057', accentColor: documentSettings?.accentColor || '#0050A0', footerText: documentSettings?.footerText || '' }, documents: documentSettings! },
         stepCompletions,
-        workflowSteps
+        workflowSteps,
+        interventionTypes
       );
       toast({ title: "PDF généré avec succès" });
     }
