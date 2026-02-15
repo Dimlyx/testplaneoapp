@@ -72,9 +72,24 @@ interface ReportSettings {
   footerText: string;
 }
 
+interface DocumentSettings {
+  showClientInfo: boolean;
+  showInterventionAddress: boolean;
+  showScheduledDateTime: boolean;
+  showDescription: boolean;
+  showEquipmentDetails: boolean;
+  showEquipmentPhotos: boolean;
+  showWorkflowSteps: boolean;
+  primaryColor: string;
+  accentColor: string;
+  footerText: string;
+  welcomeMessage: string;
+}
+
 interface PDFSettings {
   company: CompanySettings;
   report: ReportSettings;
+  documents?: DocumentSettings;
 }
 
 const DEFAULT_COMPANY: CompanySettings = {
@@ -230,8 +245,10 @@ export const generateInterventionPDF = async (
   // Use provided settings or defaults
   const company = pdfSettings?.company || DEFAULT_COMPANY;
   const report = pdfSettings?.report || DEFAULT_REPORT;
-  const primaryRgb = hexToRgb(report.primaryColor);
-  const accentRgb = hexToRgb(report.accentColor);
+  const docSettings = pdfSettings?.documents;
+  const primaryRgb = hexToRgb(docSettings?.primaryColor || report.primaryColor);
+  const accentRgb = hexToRgb(docSettings?.accentColor || report.accentColor);
+  const footerText = docSettings?.footerText ?? report.footerText;
   
   // Helper functions
   const centerText = (text: string, y: number, fontSize: number = 12) => {
@@ -339,26 +356,30 @@ export const generateInterventionPDF = async (
   yPos += 15;
 
   // ================== CLIENT SECTION ==================
-  yPos = addSection("INFORMATIONS CLIENT", yPos);
-  yPos = addField("Client", client.name, yPos);
-  yPos = addField("Type", client.client_type === 'individual' ? 'Particulier' : 'Professionnel', yPos);
-  if (client.phone) yPos = addField("Téléphone", client.phone, yPos);
-  if (client.email) yPos = addField("Email", client.email, yPos);
-  const fullAddress = [client.address, client.postal_code, client.city].filter(Boolean).join(', ');
-  if (fullAddress) yPos = addField("Adresse chantier", fullAddress, yPos);
-  yPos += 5;
+  if (!docSettings || docSettings.showClientInfo) {
+    yPos = addSection("INFORMATIONS CLIENT", yPos);
+    yPos = addField("Client", client.name, yPos);
+    yPos = addField("Type", client.client_type === 'individual' ? 'Particulier' : 'Professionnel', yPos);
+    if (client.phone) yPos = addField("Téléphone", client.phone, yPos);
+    if (client.email) yPos = addField("Email", client.email, yPos);
+    const fullAddress = [client.address, client.postal_code, client.city].filter(Boolean).join(', ');
+    if (fullAddress) yPos = addField("Adresse chantier", fullAddress, yPos);
+    yPos += 5;
+  }
 
   // ================== LIEU D'INTERVENTION (si différent) ==================
-  const hasInterventionContact = intervention.intervention_address || intervention.intervention_phone || intervention.intervention_email;
-  if (hasInterventionContact) {
-    yPos = addSection("LIEU D'INTERVENTION", yPos);
-    const interventionFullAddress = [intervention.intervention_address, intervention.intervention_postal_code, intervention.intervention_city].filter(Boolean).join(', ');
-    if (interventionFullAddress) yPos = addField("Adresse", interventionFullAddress, yPos);
-    const buildingFloor = [(intervention as any).intervention_building, (intervention as any).intervention_floor].filter(Boolean).join(' - ');
-    if (buildingFloor) yPos = addField("Bâtiment / Étage", buildingFloor, yPos);
-    if (intervention.intervention_phone) yPos = addField("Téléphone", intervention.intervention_phone, yPos);
-    if (intervention.intervention_email) yPos = addField("Email", intervention.intervention_email, yPos);
-    yPos += 5;
+  if (!docSettings || docSettings.showInterventionAddress) {
+    const hasInterventionContact = intervention.intervention_address || intervention.intervention_phone || intervention.intervention_email;
+    if (hasInterventionContact) {
+      yPos = addSection("LIEU D'INTERVENTION", yPos);
+      const interventionFullAddress = [intervention.intervention_address, intervention.intervention_postal_code, intervention.intervention_city].filter(Boolean).join(', ');
+      if (interventionFullAddress) yPos = addField("Adresse", interventionFullAddress, yPos);
+      const buildingFloor = [(intervention as any).intervention_building, (intervention as any).intervention_floor].filter(Boolean).join(' - ');
+      if (buildingFloor) yPos = addField("Bâtiment / Étage", buildingFloor, yPos);
+      if (intervention.intervention_phone) yPos = addField("Téléphone", intervention.intervention_phone, yPos);
+      if (intervention.intervention_email) yPos = addField("Email", intervention.intervention_email, yPos);
+      yPos += 5;
+    }
   }
 
   // ================== INTERVENTION DETAILS ==================
@@ -368,11 +389,21 @@ export const generateInterventionPDF = async (
   if (technicianName) {
     yPos = addField("Technicien", technicianName, yPos);
   }
+  if ((!docSettings || docSettings.showScheduledDateTime) && intervention.scheduled_date) {
+    yPos = addField("Date prévue", format(new Date(intervention.scheduled_date), 'dd/MM/yyyy', { locale: fr }), yPos);
+  }
+  if ((!docSettings || docSettings.showDescription) && intervention.description) {
+    yPos += 2;
+    doc.setFontSize(9);
+    const descLines = doc.splitTextToSize(intervention.description, pageWidth - 30);
+    doc.text(descLines, 15, yPos);
+    yPos += descLines.length * 5;
+  }
   yPos += 5;
 
 
   // ================== EQUIPMENTS SECTION ==================
-  if (interventionEquipments && interventionEquipments.length > 0) {
+  if ((!docSettings || docSettings.showEquipmentDetails) && interventionEquipments && interventionEquipments.length > 0) {
     for (let i = 0; i < interventionEquipments.length; i++) {
       const eq = interventionEquipments[i];
       const eqInfo = eq.equipment;
@@ -403,8 +434,9 @@ export const generateInterventionPDF = async (
       yPos += 3;
 
       // Photos S/N
+      const showPhotos = !docSettings || docSettings.showEquipmentPhotos;
       const snPhotos = eqPhotos.filter(p => p.photo_type === 'serial_number');
-      if (snPhotos.length > 0) {
+      if (showPhotos && snPhotos.length > 0) {
         checkNewPage(60);
         doc.setFontSize(10);
         doc.setFont("helvetica", "bold");
@@ -428,7 +460,7 @@ export const generateInterventionPDF = async (
 
       // Photo de l'équipement (during photos)
       const duringPhotos = eqPhotos.filter(p => p.photo_type === 'during');
-      if (duringPhotos.length > 0) {
+      if (showPhotos && duringPhotos.length > 0) {
         checkNewPage(60);
         doc.setFontSize(10);
         doc.setFont("helvetica", "bold");
@@ -493,7 +525,7 @@ export const generateInterventionPDF = async (
 
       // Photos après (after photos)
       const afterPhotos = eqPhotos.filter(p => p.photo_type === 'after');
-      if (afterPhotos.length > 0) {
+      if (showPhotos && afterPhotos.length > 0) {
         checkNewPage(60);
         doc.setFontSize(10);
         doc.setFont("helvetica", "bold");
@@ -593,7 +625,7 @@ export const generateInterventionPDF = async (
   }
 
   // ================== WORKFLOW STEPS ==================
-  if (workflowSteps && workflowSteps.length > 0 && stepCompletions && stepCompletions.length > 0) {
+  if ((!docSettings || docSettings.showWorkflowSteps) && workflowSteps && workflowSteps.length > 0 && stepCompletions && stepCompletions.length > 0) {
     checkNewPage(40);
     yPos = addSection("ÉTAPES DU WORKFLOW", yPos);
     
@@ -655,8 +687,8 @@ export const generateInterventionPDF = async (
     doc.setTextColor(128, 128, 128);
     
     // Custom footer text or default
-    const footerContent = report.footerText 
-      ? `${report.footerText} - Page ${i}/${totalPages}`
+    const footerContent = footerText 
+      ? `${footerText} - Page ${i}/${totalPages}`
       : `Document généré le ${format(new Date(), 'dd/MM/yyyy à HH:mm', { locale: fr })} - Page ${i}/${totalPages}`;
     
     centerText(footerContent, footerY, 8);

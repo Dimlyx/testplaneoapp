@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useIntervention, useUpdateIntervention } from "@/hooks/useInterventions";
 import { useClient } from "@/hooks/useClients";
 import { useInterventionEquipment } from "@/hooks/useInterventionEquipment";
-import { useCompanySettings, useReportSettings } from "@/hooks/useAppSettings";
+import { useCompanySettings, useDocumentSettings } from "@/hooks/useAppSettings";
 import { useInterventionTypes } from "@/hooks/useInterventionTypes";
 import { useWorkflowSteps } from "@/hooks/useWorkflowSteps";
 import { useStepCompletions } from "@/hooks/useStepCompletions";
@@ -26,7 +26,7 @@ const TechnicianInterventionDetail = () => {
   const { data: interventionEquipment = [] } = useInterventionEquipment(id || "");
   const { data: photos = [] } = useInterventionPhotos(id || "");
   const { data: companySettings } = useCompanySettings();
-  const { data: reportSettings } = useReportSettings();
+  const { data: documentSettings } = useDocumentSettings();
   const updateIntervention = useUpdateIntervention();
   
   // For PDF generation with step data
@@ -171,7 +171,7 @@ const TechnicianInterventionDetail = () => {
         intervention.profiles?.full_name || undefined,
         photos,
         interventionEquipment,
-        { company: companySettings!, report: reportSettings! },
+        { company: companySettings!, report: { primaryColor: documentSettings?.primaryColor || '#003057', accentColor: documentSettings?.accentColor || '#0050A0', footerText: documentSettings?.footerText || '' }, documents: documentSettings! },
         stepCompletions,
         workflowSteps
       );

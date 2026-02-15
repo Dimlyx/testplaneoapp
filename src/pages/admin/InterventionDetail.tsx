@@ -3,7 +3,7 @@ import { useIntervention, useCreateIntervention, useUpdateIntervention } from "@
 import { useClient } from "@/hooks/useClients";
 import { useInterventionPhotos, PhotoType } from "@/hooks/useInterventionPhotos";
 import { useInterventionEquipment } from "@/hooks/useInterventionEquipment";
-import { useCompanySettings, useReportSettings } from "@/hooks/useAppSettings";
+import { useCompanySettings, useDocumentSettings } from "@/hooks/useAppSettings";
 import { useInterventionTypes } from "@/hooks/useInterventionTypes";
 import { useWorkflowSteps } from "@/hooks/useWorkflowSteps";
 import { useStepCompletions } from "@/hooks/useStepCompletions";
@@ -49,7 +49,7 @@ const InterventionDetail = () => {
   const { data: photos = [] } = useInterventionPhotos(id || "");
   const { data: interventionEquipments = [] } = useInterventionEquipment(id || "");
   const { data: companySettings } = useCompanySettings();
-  const { data: reportSettings } = useReportSettings();
+  const { data: documentSettings } = useDocumentSettings();
   
   // Fetch workflow steps and completions
   const { data: interventionTypes = [] } = useInterventionTypes();
@@ -80,7 +80,7 @@ const InterventionDetail = () => {
         intervention.profiles?.full_name || undefined,
         photos,
         interventionEquipments,
-        { company: companySettings!, report: reportSettings! },
+        { company: companySettings!, report: { primaryColor: documentSettings?.primaryColor || '#003057', accentColor: documentSettings?.accentColor || '#0050A0', footerText: documentSettings?.footerText || '' }, documents: documentSettings! },
         stepCompletions,
         workflowSteps
       );

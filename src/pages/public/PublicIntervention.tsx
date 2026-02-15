@@ -24,14 +24,11 @@ import {
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { 
-  useReportSettings, 
-  useExtranetSettings,
+  useDocumentSettings,
   useCompanySettings,
-  defaultReportSettings,
-  defaultExtranetSettings,
+  defaultDocumentSettings,
   defaultCompanySettings,
-  ReportSettings,
-  ExtranetSettings,
+  DocumentSettings,
   CompanySettings
 } from "@/hooks/useAppSettings";
 
@@ -50,7 +47,6 @@ const PublicIntervention = () => {
   const { data: photos = [] } = useInterventionPhotos(intervention?.id || "");
   const { data: interventionEquipments = [] } = useInterventionEquipment(intervention?.id || "");
   
-  // Fetch step completions for the intervention
   const { data: stepCompletions = [] } = useQuery({
     queryKey: ["public-step-completions", intervention?.id],
     queryFn: async () => {
@@ -64,11 +60,9 @@ const PublicIntervention = () => {
     enabled: !!intervention?.id,
   });
   
-  // Fetch workflow steps for the intervention type
   const { data: workflowSteps = [] } = useQuery({
     queryKey: ["public-workflow-steps", intervention?.intervention_type],
     queryFn: async () => {
-      // First find matching type
       const { data: types } = await supabase
         .from("intervention_types")
         .select("id")
@@ -86,17 +80,13 @@ const PublicIntervention = () => {
     enabled: !!intervention?.intervention_type,
   });
   
-  // Fetch settings from database
-  const { data: reportSettings, isLoading: loadingReportSettings } = useReportSettings();
-  const { data: extranetSettingsData, isLoading: loadingExtranetSettings } = useExtranetSettings();
+  const { data: documentSettingsData, isLoading: loadingDocSettings } = useDocumentSettings();
   const { data: companySettingsData, isLoading: loadingCompanySettings } = useCompanySettings();
   
-  // Use fetched settings or defaults
-  const settings: ReportSettings = reportSettings || defaultReportSettings;
-  const extranetSettings: ExtranetSettings = extranetSettingsData || defaultExtranetSettings;
+  const docSettings: DocumentSettings = documentSettingsData || defaultDocumentSettings;
   const companySettings: CompanySettings = companySettingsData || defaultCompanySettings;
 
-  if (isLoading || loadingReportSettings || loadingExtranetSettings || loadingCompanySettings) {
+  if (isLoading || loadingDocSettings || loadingCompanySettings) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -136,18 +126,11 @@ const PublicIntervention = () => {
   return (
     <div className="min-h-screen bg-muted/30">
       {/* Header */}
-      <header 
-        className="text-white py-6"
-        style={{ backgroundColor: settings.primaryColor }}
-      >
+      <header className="text-white py-6" style={{ backgroundColor: docSettings.primaryColor }}>
         <div className="container max-w-2xl mx-auto px-4">
           <div className="flex items-center gap-3 mb-2">
             {companySettings.logoUrl ? (
-              <img 
-                src={companySettings.logoUrl} 
-                alt="Logo" 
-                className="h-10 w-auto object-contain bg-white rounded p-1"
-              />
+              <img src={companySettings.logoUrl} alt="Logo" className="h-10 w-auto object-contain bg-white rounded p-1" />
             ) : (
               <Wrench className="h-6 w-6" />
             )}
@@ -162,23 +145,19 @@ const PublicIntervention = () => {
         <Card className="border-2" style={{ borderColor: `hsl(var(--${intervention.status === 'completed' ? 'status-completed' : intervention.status === 'in_progress' ? 'status-in-progress' : intervention.status === 'planned' ? 'status-planned' : 'status-to-plan'}))` }}>
           <CardContent className="py-6 text-center">
             <StatusIcon className={`h-12 w-12 mx-auto mb-3 ${currentStatus.color}`} />
-            <p className={`text-lg font-semibold ${currentStatus.color}`}>
-              {currentStatus.message}
-            </p>
+            <p className={`text-lg font-semibold ${currentStatus.color}`}>{currentStatus.message}</p>
             <div className="flex justify-center gap-2 mt-3">
               <StatusBadge status={intervention.status} />
               <TypeBadge type={intervention.intervention_type} />
             </div>
-            {extranetSettings.welcomeMessage && (
-              <p className="text-sm text-muted-foreground mt-4 max-w-md mx-auto">
-                {extranetSettings.welcomeMessage}
-              </p>
+            {docSettings.welcomeMessage && (
+              <p className="text-sm text-muted-foreground mt-4 max-w-md mx-auto">{docSettings.welcomeMessage}</p>
             )}
           </CardContent>
         </Card>
 
         {/* Informations client */}
-        {extranetSettings.showClientInfo && client && (
+        {docSettings.showClientInfo && client && (
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
@@ -216,8 +195,8 @@ const PublicIntervention = () => {
           </Card>
         )}
 
-        {/* Lieu d'intervention (si différent du client) */}
-        {extranetSettings.showInterventionAddress && (intervention.intervention_address || intervention.intervention_phone || intervention.intervention_email) && (
+        {/* Lieu d'intervention */}
+        {docSettings.showInterventionAddress && (intervention.intervention_address || intervention.intervention_phone || intervention.intervention_email) && (
           <Card className="border-primary/20">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
@@ -230,9 +209,7 @@ const PublicIntervention = () => {
                 <div className="flex items-start gap-2">
                   <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
                   <div>
-                    <span>
-                      {[intervention.intervention_address, intervention.intervention_postal_code, intervention.intervention_city].filter(Boolean).join(', ')}
-                    </span>
+                    <span>{[intervention.intervention_address, intervention.intervention_postal_code, intervention.intervention_city].filter(Boolean).join(', ')}</span>
                     {((intervention as any).intervention_building || (intervention as any).intervention_floor) && (
                       <div className="text-sm text-muted-foreground">
                         {[(intervention as any).intervention_building, (intervention as any).intervention_floor].filter(Boolean).join(' - ')}
@@ -263,14 +240,14 @@ const PublicIntervention = () => {
             <CardTitle className="text-lg">{intervention.title}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {extranetSettings.showDescription && intervention.description && (
+            {docSettings.showDescription && intervention.description && (
               <div>
                 <p className="text-sm font-medium text-muted-foreground mb-1">Description</p>
                 <p>{intervention.description}</p>
               </div>
             )}
 
-            {extranetSettings.showScheduledDateTime && (intervention.scheduled_date || intervention.scheduled_time) && (
+            {docSettings.showScheduledDateTime && (intervention.scheduled_date || intervention.scheduled_time) && (
               <div className="flex gap-6">
                 {intervention.scheduled_date && (
                   <div className="flex items-center gap-2">
@@ -289,9 +266,8 @@ const PublicIntervention = () => {
           </CardContent>
         </Card>
 
-
         {/* Équipements */}
-        {extranetSettings.showEquipmentDetails && interventionEquipments.length > 0 && interventionEquipments.map((ie, index) => {
+        {docSettings.showEquipmentDetails && interventionEquipments.length > 0 && interventionEquipments.map((ie, index) => {
           const equipmentPhotos = photos.filter(p => p.equipment_id === ie.equipment_id);
           const serialPhotos = equipmentPhotos.filter(p => p.photo_type === 'serial_number');
           const duringPhotos = equipmentPhotos.filter(p => p.photo_type === 'during');
@@ -306,7 +282,6 @@ const PublicIntervention = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-4 space-y-4">
-                {/* Détails équipement */}
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div>
                     <span className="text-muted-foreground">Type:</span>
@@ -320,8 +295,7 @@ const PublicIntervention = () => {
                   )}
                 </div>
 
-                {/* Photos N° série */}
-                {extranetSettings.showEquipmentPhotos && serialPhotos.length > 0 && (
+                {docSettings.showEquipmentPhotos && serialPhotos.length > 0 && (
                   <div>
                     <p className="text-sm font-medium text-muted-foreground mb-2">Photos N° de série</p>
                     <div className="grid grid-cols-2 gap-2">
@@ -334,8 +308,7 @@ const PublicIntervention = () => {
                   </div>
                 )}
 
-                {/* Photos équipement (pendant) */}
-                {extranetSettings.showEquipmentPhotos && duringPhotos.length > 0 && (
+                {docSettings.showEquipmentPhotos && duringPhotos.length > 0 && (
                   <div>
                     <p className="text-sm font-medium text-muted-foreground mb-2">Photo de l'équipement</p>
                     <div className="grid grid-cols-2 gap-2">
@@ -348,7 +321,6 @@ const PublicIntervention = () => {
                   </div>
                 )}
 
-                {/* Observation / Commentaires techniques */}
                 {ie.technical_comments && (
                   <div className="bg-muted/30 rounded-lg p-3">
                     <p className="text-sm font-medium text-muted-foreground mb-1">Observation</p>
@@ -356,7 +328,6 @@ const PublicIntervention = () => {
                   </div>
                 )}
 
-                {/* État de l'équipement */}
                 <div className="flex items-center justify-between bg-muted/30 rounded-lg p-3">
                   <span className="text-sm font-medium">État de l'équipement</span>
                   {(() => {
@@ -380,8 +351,7 @@ const PublicIntervention = () => {
                   })()}
                 </div>
 
-                {/* Photos après intervention */}
-                {extranetSettings.showEquipmentPhotos && afterPhotos.length > 0 && (
+                {docSettings.showEquipmentPhotos && afterPhotos.length > 0 && (
                   <div>
                     <p className="text-sm font-medium text-muted-foreground mb-2">Photos après intervention</p>
                     <div className="grid grid-cols-2 gap-2">
@@ -398,9 +368,8 @@ const PublicIntervention = () => {
           );
         })}
 
-
-        {/* Photos générales (sans équipement) */}
-        {extranetSettings.showEquipmentPhotos && photos.filter(p => !p.equipment_id).length > 0 && (
+        {/* Photos générales */}
+        {docSettings.showEquipmentPhotos && photos.filter(p => !p.equipment_id).length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
@@ -421,7 +390,7 @@ const PublicIntervention = () => {
         )}
 
         {/* Étapes du workflow */}
-        {workflowSteps.length > 0 && stepCompletions.filter(c => c.completed_at).length > 0 && (
+        {docSettings.showWorkflowSteps && workflowSteps.length > 0 && stepCompletions.filter(c => c.completed_at).length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
@@ -460,32 +429,6 @@ const PublicIntervention = () => {
           </Card>
         )}
 
-        {/* Signature client */}
-        {extranetSettings.showSignature && intervention.client_signature_url && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <User className="h-5 w-5" />
-                Signature du client
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {intervention.client_signature_name && (
-                <p className="text-sm">
-                  Signataire : <span className="font-medium">{intervention.client_signature_name}</span>
-                </p>
-              )}
-              <div className="border rounded-lg bg-white p-4 inline-block">
-                <img 
-                  src={intervention.client_signature_url} 
-                  alt="Signature client" 
-                  className="max-w-[200px] max-h-[100px]"
-                />
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         {/* Info footer */}
         <Card className="bg-muted/50">
           <CardContent className="py-4 text-center text-sm text-muted-foreground">
@@ -496,12 +439,9 @@ const PublicIntervention = () => {
       </main>
 
       {/* Footer */}
-      <footer 
-        className="py-4 mt-8 text-white"
-        style={{ backgroundColor: settings.accentColor }}
-      >
+      <footer className="py-4 mt-8 text-white" style={{ backgroundColor: docSettings.accentColor }}>
         <div className="container max-w-2xl mx-auto px-4 text-center text-sm">
-          <p>{extranetSettings.customFooterText || settings.footerText || `© ${new Date().getFullYear()} ${companySettings.name || "Service Intervention"}`}</p>
+          <p>{docSettings.footerText || `© ${new Date().getFullYear()} ${companySettings.name || "Service Intervention"}`}</p>
           {companySettings.address && <p className="opacity-80 mt-1">{[companySettings.address, companySettings.postalCode, companySettings.city].filter(Boolean).join(', ')}</p>}
         </div>
       </footer>
