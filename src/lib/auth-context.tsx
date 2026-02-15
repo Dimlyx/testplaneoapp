@@ -48,10 +48,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setRole(null);
         }
         setLoading(false);
+
+        // If user signed in and "remember me" is off, mark session as temporary
+        if (event === 'SIGNED_IN') {
+          const rememberMe = localStorage.getItem('rememberMe') === 'true';
+          if (!rememberMe) {
+            sessionStorage.setItem('tempSession', 'true');
+          } else {
+            sessionStorage.removeItem('tempSession');
+          }
+        }
       }
     );
 
     supabase.auth.getSession().then(({ data: { session } }) => {
+      // If session is temporary and page was reloaded (sessionStorage cleared), sign out
+      const isTempSession = sessionStorage.getItem('tempSession') === 'true';
+      const rememberMe = localStorage.getItem('rememberMe') === 'true';
+
+      if (session && !rememberMe && !isTempSession) {
+        // Session exists but not remembered and no sessionStorage flag = new browser session
+        supabase.auth.signOut();
+        setLoading(false);
+        return;
+      }
+
       setSession(session);
       setUser(session?.user ?? null);
       

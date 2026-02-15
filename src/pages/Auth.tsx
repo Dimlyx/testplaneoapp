@@ -4,6 +4,7 @@ import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -40,6 +41,9 @@ export default function Auth() {
     password: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [rememberMe, setRememberMe] = useState(() => {
+    return localStorage.getItem('rememberMe') === 'true';
+  });
 
   useEffect(() => {
     if (user && role) {
@@ -219,6 +223,21 @@ export default function Auth() {
                 {errors.password &&
                 <p className="text-sm text-destructive">{errors.password}</p>
                 }
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="remember-me"
+                  checked={rememberMe}
+                  onCheckedChange={(checked) => {
+                    const value = checked === true;
+                    setRememberMe(value);
+                    localStorage.setItem('rememberMe', String(value));
+                  }}
+                />
+                <Label htmlFor="remember-me" className="text-sm font-normal cursor-pointer">
+                  Se souvenir de moi
+                </Label>
               </div>
 
               <Button type="submit" className="w-full" disabled={loading}>
