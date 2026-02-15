@@ -2,23 +2,31 @@ import { useInterventions } from "@/hooks/useInterventions";
 import { useInterventionTypes } from "@/hooks/useInterventionTypes";
 import { useClients } from "@/hooks/useClients";
 import { useTechnicians } from "@/hooks/useTechnicians";
+import { useMaintenanceAlerts, useUpcomingAlerts } from "@/hooks/useMaintenanceAlerts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   BarChart3, 
   Users, 
   Wrench, 
   TrendingUp,
+  TrendingDown,
   Calendar,
   CheckCircle,
   RefreshCw,
-  Target,
   Award,
   UserCheck,
   Clock,
   Car,
-  LineChart
+  LineChart,
+  AlertTriangle,
+  CalendarClock,
+  ArrowUpRight,
+  ArrowDownRight,
+  Minus,
+  ClipboardList,
+  Bell
 } from "lucide-react";
-import { format, startOfMonth, endOfMonth, isWithinInterval, parseISO } from "date-fns";
+import { format, startOfMonth, endOfMonth, isWithinInterval, parseISO, subMonths, differenceInDays } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState, useEffect } from "react";
@@ -27,15 +35,16 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PerformanceCharts } from "@/components/admin/PerformanceCharts";
+import { Badge } from "@/components/ui/badge";
 
 interface TechnicianStats {
   id: string;
   name: string;
   totalInterventions: number;
   completedInterventions: number;
-  resolutionRate: number;
   avgTravelTime: number;
   avgInterventionTime: number;
+  upcomingCount: number;
 }
 
 export default function Statistics() {
@@ -43,6 +52,8 @@ export default function Statistics() {
   const { data: interventions = [], isLoading: loadingInterventions } = useInterventions();
   const { data: clients = [] } = useClients();
   const { data: technicians = [] } = useTechnicians();
+  const { data: maintenanceAlerts = [] } = useMaintenanceAlerts();
+  const { data: upcomingAlerts = [] } = useUpcomingAlerts(30);
   const [isRealtime, setIsRealtime] = useState(true);
 
   // Subscribe to realtime updates for interventions
@@ -57,7 +68,6 @@ export default function Statistics() {
           table: 'interventions'
         },
         () => {
-          // Refresh interventions data when any change occurs
           queryClient.invalidateQueries({ queryKey: ['interventions'] });
         }
       )
@@ -83,7 +93,6 @@ export default function Statistics() {
   });
 
   // Filter interventions for selected month
-  // Use scheduled_date if available, otherwise fall back to created_at
   const monthStart = startOfMonth(new Date(selectedMonth + '-01'));
   const monthEnd = endOfMonth(monthStart);
   
@@ -94,8 +103,22 @@ export default function Statistics() {
     return isWithinInterval(date, { start: monthStart, end: monthEnd });
   });
 
+  // === Previous month for comparison ===
+  const prevMonthStart = startOfMonth(subMonths(monthStart, 1));
+  const prevMonthEnd = endOfMonth(prevMonthStart);
+  
+  const prevMonthInterventions = interventions.filter(i => {
+    const dateString = i.scheduled_date || i.created_at;
+    if (!dateString) return false;
+    const date = parseISO(dateString);
+    return isWithinInterval(date, { start: prevMonthStart, end: prevMonthEnd });
+  });
+
   // Calculate statistics
   const completedInterventions = monthInterventions.filter(i => 
+    ['completed', 'to_invoice', 'archived'].includes(i.status)
+  );
+  const prevCompletedInterventions = prevMonthInterventions.filter(i => 
     ['completed', 'to_invoice', 'archived'].includes(i.status)
   );
   
@@ -130,13 +153,43 @@ export default function Statistics() {
       count
     }));
 
-  // === KPIs ===
-  
-  // Resolution rate (completed vs total assigned)
-  const assignedInterventions = monthInterventions.filter(i => i.technician_id);
-  const resolutionRate = assignedInterventions.length > 0
-    ? (completedInterventions.length / assignedInterventions.length) * 100
+  // === NEW KPIs ===
+
+  // 1. Planification: planned vs to_plan
+  const toPlanCount = monthInterventions.filter(i => i.status === 'to_plan').length;
+  const plannedOrBeyond = monthInterventions.filter(i => i.status !== 'to_plan').length;
+  const planificationRate = monthInterventions.length > 0
+    ? (plannedOrBeyond / monthInterventions.length) * 100
     : 0;
+
+  // 2. Délai moyen de prise en charge (creation → scheduled_date)
+  const handlingDelays = monthInterventions
+    .filter(i => i.scheduled_date && i.created_at)
+    .map(i => {
+      const created = parseISO(i.created_at);
+      const scheduled = parseISO(i.scheduled_date!);
+      return differenceInDays(scheduled, created);
+    })
+    .filter(d => d >= 0);
+  const avgHandlingDelay = handlingDelays.length > 0
+    ? Math.round(handlingDelays.reduce((a, b) => a + b, 0) / handlingDelays.length)
+    : 0;
+
+  // 3. Maintenance alerts coming
+  const pendingAlerts = maintenanceAlerts.filter(a => a.status === 'pending');
+  const overdueAlerts = pendingAlerts.filter(a => {
+    const alertDate = parseISO(a.alert_date);
+    return alertDate < new Date();
+  });
+
+  // 4. Recurring alerts forecast
+  const recurringAlerts = maintenanceAlerts.filter(a => a.recurrence !== 'once' && a.status !== 'dismissed');
+  const recurrenceLabels: Record<string, string> = {
+    weekly: 'Hebdo',
+    monthly: 'Mensuel',
+    quarterly: 'Trimestriel',
+    yearly: 'Annuel'
+  };
 
   // Calculate time statistics
   const calculateTimeDiff = (start: string | null, end: string | null): number | null => {
@@ -171,14 +224,46 @@ export default function Statistics() {
     return h > 0 ? `${h}h ${m}min` : `${m}min`;
   };
 
-  // Performance by technician
+  // === Comparison N vs N-1 ===
+  const calcEvolution = (current: number, previous: number) => {
+    if (previous === 0) return current > 0 ? 100 : 0;
+    return Math.round(((current - previous) / previous) * 100);
+  };
+
+  const evolutionTotal = calcEvolution(monthInterventions.length, prevMonthInterventions.length);
+  const evolutionCompleted = calcEvolution(completedInterventions.length, prevCompletedInterventions.length);
+
+  const EvolutionBadge = ({ value }: { value: number }) => {
+    if (value > 0) return (
+      <span className="flex items-center gap-0.5 text-xs font-medium text-green-600">
+        <ArrowUpRight className="h-3 w-3" />+{value}%
+      </span>
+    );
+    if (value < 0) return (
+      <span className="flex items-center gap-0.5 text-xs font-medium text-red-600">
+        <ArrowDownRight className="h-3 w-3" />{value}%
+      </span>
+    );
+    return (
+      <span className="flex items-center gap-0.5 text-xs font-medium text-muted-foreground">
+        <Minus className="h-3 w-3" />0%
+      </span>
+    );
+  };
+
+  // Performance by technician (with upcoming workload)
+  const futureInterventions = interventions.filter(i => {
+    if (!i.scheduled_date) return false;
+    const d = parseISO(i.scheduled_date);
+    return d >= new Date() && ['planned', 'to_plan'].includes(i.status);
+  });
+
   const technicianStats: TechnicianStats[] = technicians.map(tech => {
     const techInterventions = monthInterventions.filter(i => i.technician_id === tech.id);
     const techCompleted = techInterventions.filter(i => 
       ['completed', 'to_invoice', 'archived'].includes(i.status)
     );
 
-    // Calculate tech travel time
     const techTravelTimes = techInterventions
       .map(i => calculateTimeDiff(i.travel_departure_time, i.arrival_time))
       .filter((t): t is number => t !== null);
@@ -186,7 +271,6 @@ export default function Statistics() {
       ? Math.round(techTravelTimes.reduce((a, b) => a + b, 0) / techTravelTimes.length) 
       : 0;
 
-    // Calculate tech intervention time
     const techIntTimes = techInterventions
       .map(i => calculateTimeDiff(i.arrival_time, i.departure_time))
       .filter((t): t is number => t !== null);
@@ -194,18 +278,18 @@ export default function Statistics() {
       ? Math.round(techIntTimes.reduce((a, b) => a + b, 0) / techIntTimes.length) 
       : 0;
 
+    const upcomingCount = futureInterventions.filter(i => i.technician_id === tech.id).length;
+
     return {
       id: tech.id,
       name: tech.full_name || tech.email,
       totalInterventions: techInterventions.length,
       completedInterventions: techCompleted.length,
-      resolutionRate: techInterventions.length > 0 
-        ? (techCompleted.length / techInterventions.length) * 100 
-        : 0,
       avgTravelTime: techAvgTravel,
       avgInterventionTime: techAvgInt,
+      upcomingCount,
     };
-  }).filter(t => t.totalInterventions > 0).sort((a, b) => b.completedInterventions - a.completedInterventions);
+  }).filter(t => t.totalInterventions > 0 || t.upcomingCount > 0).sort((a, b) => b.completedInterventions - a.completedInterventions);
 
   // Best performer by completed count
   const bestPerformer = technicianStats.length > 0 
@@ -285,6 +369,10 @@ export default function Statistics() {
             Graphiques
           </TabsTrigger>
           <TabsTrigger value="technicians">Performance techniciens</TabsTrigger>
+          <TabsTrigger value="maintenance" className="flex items-center gap-1">
+            <Bell className="h-4 w-4" />
+            Maintenance
+          </TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
@@ -297,13 +385,65 @@ export default function Statistics() {
                 <Wrench className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{monthInterventions.length}</div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-bold">{monthInterventions.length}</span>
+                  <EvolutionBadge value={evolutionTotal} />
+                </div>
                 <p className="text-xs text-muted-foreground">
                   {completedInterventions.length} terminées
                 </p>
               </CardContent>
             </Card>
 
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Taux de planification</CardTitle>
+                <CalendarClock className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{Math.round(planificationRate)}%</div>
+                <Progress value={planificationRate} className="h-2 mt-2" />
+                <p className="text-xs text-muted-foreground mt-1">
+                  {toPlanCount} à planifier
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Délai prise en charge</CardTitle>
+                <Clock className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {avgHandlingDelay > 0 ? `${avgHandlingDelay}j` : '—'}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {handlingDelays.length > 0 ? `sur ${handlingDelays.length} interventions` : 'Aucune donnée'}
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Meilleur technicien</CardTitle>
+                <Award className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-lg font-bold truncate">
+                  {bestPerformer?.name || '-'}
+                </div>
+                {bestPerformer && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {bestPerformer.completedInterventions} terminées
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Secondary stats row */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Temps trajet moyen</CardTitle>
@@ -332,18 +472,35 @@ export default function Statistics() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Meilleur technicien</CardTitle>
-                <Award className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-sm font-medium">Alertes en attente</CardTitle>
+                <AlertTriangle className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-lg font-bold truncate">
-                  {bestPerformer?.name || '-'}
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-bold">{pendingAlerts.length}</span>
+                  {overdueAlerts.length > 0 && (
+                    <Badge variant="destructive" className="text-xs">{overdueAlerts.length} en retard</Badge>
+                  )}
                 </div>
-                {bestPerformer && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {bestPerformer.completedInterventions} terminées
-                  </p>
-                )}
+                <p className="text-xs text-muted-foreground">
+                  {upcomingAlerts.length} à venir (30j)
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Terminées vs N-1</CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-bold">{completedInterventions.length}</span>
+                  <EvolutionBadge value={evolutionCompleted} />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  vs {prevCompletedInterventions.length} mois précédent
+                </p>
               </CardContent>
             </Card>
           </div>
@@ -459,7 +616,7 @@ export default function Statistics() {
                   </div>
                   <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                     <span className="text-sm">Techniciens actifs</span>
-                    <span className="text-xl font-bold">{technicianStats.length}</span>
+                    <span className="text-xl font-bold">{technicianStats.filter(t => t.totalInterventions > 0).length}</span>
                   </div>
                 </div>
               </CardContent>
@@ -484,14 +641,14 @@ export default function Statistics() {
           ) : (
             <>
               {/* Summary row */}
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 md:grid-cols-3">
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Techniciens actifs</CardTitle>
                     <Users className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">{technicianStats.length}</div>
+                    <div className="text-2xl font-bold">{technicianStats.filter(t => t.totalInterventions > 0).length}</div>
                     <p className="text-xs text-muted-foreground">sur {technicians.length} total</p>
                   </CardContent>
                 </Card>
@@ -502,9 +659,23 @@ export default function Statistics() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">
-                      {(monthInterventions.length / technicianStats.length).toFixed(1)}
+                      {technicianStats.filter(t => t.totalInterventions > 0).length > 0
+                        ? (monthInterventions.length / technicianStats.filter(t => t.totalInterventions > 0).length).toFixed(1)
+                        : '0'}
                     </div>
                     <p className="text-xs text-muted-foreground">moyenne mensuelle</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Charge à venir</CardTitle>
+                    <ClipboardList className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {futureInterventions.length}
+                    </div>
+                    <p className="text-xs text-muted-foreground">interventions planifiées</p>
                   </CardContent>
                 </Card>
               </div>
@@ -512,11 +683,11 @@ export default function Statistics() {
               {/* Technician cards */}
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {technicianStats.map((tech, index) => (
-                  <Card key={tech.id} className={index === 0 ? 'border-2 border-amber-400' : ''}>
+                  <Card key={tech.id} className={index === 0 && tech.completedInterventions > 0 ? 'border-2 border-amber-400' : ''}>
                     <CardHeader className="pb-2">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          {index === 0 && <Award className="h-5 w-5 text-amber-500" />}
+                          {index === 0 && tech.completedInterventions > 0 && <Award className="h-5 w-5 text-amber-500" />}
                           <CardTitle className="text-base truncate">{tech.name}</CardTitle>
                         </div>
                         <span className="text-xs bg-muted px-2 py-1 rounded-full">
@@ -525,7 +696,7 @@ export default function Statistics() {
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                      <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div className="grid grid-cols-3 gap-2 text-sm">
                         <div className="bg-muted/50 p-2 rounded">
                           <p className="text-muted-foreground text-xs">Total</p>
                           <p className="font-bold">{tech.totalInterventions}</p>
@@ -533,6 +704,10 @@ export default function Statistics() {
                         <div className="bg-muted/50 p-2 rounded">
                           <p className="text-muted-foreground text-xs">Terminées</p>
                           <p className="font-bold">{tech.completedInterventions}</p>
+                        </div>
+                        <div className="bg-muted/50 p-2 rounded">
+                          <p className="text-muted-foreground text-xs">À venir</p>
+                          <p className="font-bold text-primary">{tech.upcomingCount}</p>
                         </div>
                       </div>
 
@@ -552,13 +727,128 @@ export default function Statistics() {
                           <p className="font-bold text-green-800">{formatMinutes(tech.avgInterventionTime)}</p>
                         </div>
                       </div>
-                      
                     </CardContent>
                   </Card>
                 ))}
               </div>
             </>
           )}
+        </TabsContent>
+
+        {/* Maintenance Tab */}
+        <TabsContent value="maintenance" className="space-y-6">
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Alertes en attente</CardTitle>
+                <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{pendingAlerts.length}</div>
+                {overdueAlerts.length > 0 && (
+                  <p className="text-xs text-destructive font-medium mt-1">
+                    {overdueAlerts.length} en retard
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">À venir (30 jours)</CardTitle>
+                <CalendarClock className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{upcomingAlerts.length}</div>
+                <p className="text-xs text-muted-foreground">maintenances planifiées</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Contrats récurrents</CardTitle>
+                <RefreshCw className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{recurringAlerts.length}</div>
+                <p className="text-xs text-muted-foreground">alertes automatiques actives</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Recurring alerts breakdown */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <RefreshCw className="h-5 w-5" />
+                Prévision de charge - Alertes récurrentes
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {recurringAlerts.length > 0 ? (
+                <div className="space-y-3">
+                  {Object.entries(
+                    recurringAlerts.reduce((acc, a) => {
+                      acc[a.recurrence] = (acc[a.recurrence] || 0) + 1;
+                      return acc;
+                    }, {} as Record<string, number>)
+                  ).map(([recurrence, count]) => (
+                    <div key={recurrence} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline">{recurrenceLabels[recurrence] || recurrence}</Badge>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-xl font-bold">{count}</span>
+                        <span className="text-sm text-muted-foreground ml-1">alerte{count > 1 ? 's' : ''}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-center py-4">Aucune alerte récurrente configurée</p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Upcoming alerts list */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Bell className="h-5 w-5" />
+                Prochaines maintenances (30 jours)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {upcomingAlerts.length > 0 ? (
+                <div className="space-y-3">
+                  {upcomingAlerts.slice(0, 10).map(alert => (
+                    <div key={alert.id} className="flex items-center justify-between p-3 rounded-lg border bg-card">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{alert.title}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {alert.clients?.name || 'Client non défini'}
+                          {alert.equipment && ` — ${alert.equipment.brand} ${alert.equipment.model}`}
+                        </p>
+                      </div>
+                      <div className="text-right ml-4 shrink-0">
+                        <p className="text-sm font-medium">
+                          {format(parseISO(alert.alert_date), 'dd MMM yyyy', { locale: fr })}
+                        </p>
+                        <Badge variant="outline" className="text-xs">
+                          {recurrenceLabels[alert.recurrence] || alert.recurrence}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                  {upcomingAlerts.length > 10 && (
+                    <p className="text-sm text-muted-foreground text-center">
+                      + {upcomingAlerts.length - 10} autres alertes
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-center py-4">Aucune maintenance prévue dans les 30 prochains jours</p>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
