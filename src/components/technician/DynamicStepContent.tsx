@@ -44,6 +44,7 @@ const DynamicStepContent = ({
   const [comment, setComment] = useState(completion?.comment || "");
   const [photoUrls, setPhotoUrls] = useState<string[]>(parsePhotoUrls(completion?.photo_url || null));
   const [isUploading, setIsUploading] = useState(false);
+  const [localSignerName, setLocalSignerName] = useState(signerName);
 
   const isCompleted = !!completion?.completed_at;
 
@@ -128,8 +129,11 @@ const DynamicStepContent = ({
         ) : isLocked ? null : (
           <SignaturePad
             onSignatureComplete={handleSignatureValidation}
-            signerName={signerName}
-            onSignerNameChange={onSignerNameChange || (() => {})}
+            signerName={localSignerName}
+            onSignerNameChange={(name) => {
+              setLocalSignerName(name);
+              onSignerNameChange?.(name);
+            }}
             existingSignature={null}
           />
         )}
