@@ -668,41 +668,21 @@ export const generateInterventionPDF = async (
     checkNewPage(40);
     yPos = addSection("ÉTAPES RÉALISÉES", yPos);
     
-    let stepIndex = 0;
     for (const step of workflowSteps) {
       const completion = stepCompletions.find(c => c.step_id === step.id);
       if (!completion?.completed_at) continue;
       
-      stepIndex++;
       checkNewPage(30);
       
-      // Styled step card with numbered badge
+      // Styled step card
       doc.setFillColor(245, 247, 250);
       doc.roundedRect(14, yPos - 4, pageWidth - 28, 10, 2, 2, 'F');
       
-      // Step number badge with accent color
-      doc.setFillColor(accentRgb[0], accentRgb[1], accentRgb[2]);
-      doc.circle(22, yPos + 1, 3.5, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(8);
-      doc.setFont("helvetica", "bold");
-      const numStr = String(stepIndex);
-      doc.text(numStr, 22 - doc.getTextWidth(numStr) / 2, yPos + 2.5);
-      
-      // Step label
+      // Step label only
       doc.setTextColor(primaryRgb[0], primaryRgb[1], primaryRgb[2]);
       doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
-      doc.text(step.label, 28, yPos + 2.5);
-      
-      // Completion date
-      if (completion.completed_at) {
-        doc.setFontSize(7);
-        doc.setFont("helvetica", "normal");
-        doc.setTextColor(130, 130, 130);
-        const dateStr = format(new Date(completion.completed_at), 'dd/MM/yyyy HH:mm', { locale: fr });
-        doc.text(dateStr, pageWidth - 15 - doc.getTextWidth(dateStr), yPos + 2.5);
-      }
+      doc.text(step.label, 18, yPos + 2.5);
       
       doc.setTextColor(0, 0, 0);
       doc.setFont("helvetica", "normal");
