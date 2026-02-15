@@ -1,9 +1,10 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useClient } from "@/hooks/useClients";
 import { useInterventions, InterventionStatus } from "@/hooks/useInterventions";
 import { useClientContacts, useCreateClientContact, useDeleteClientContact } from "@/hooks/useClientContacts";
 import { useClientNotes, useCreateClientNote, useDeleteClientNote } from "@/hooks/useClientNotes";
+import { useClientDocuments, useUploadClientDocument, useDeleteClientDocument } from "@/hooks/useClientDocuments";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +26,7 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   ArrowLeft, 
   Edit, 
@@ -38,7 +40,11 @@ import {
   Users,
   StickyNote,
   Trash2,
-  Briefcase
+  Briefcase,
+  FileText,
+  Paperclip,
+  Download,
+  Upload
 } from "lucide-react";
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -77,10 +83,14 @@ const ClientDetail = () => {
   const { data: interventions = [] } = useInterventions();
   const { data: contacts = [] } = useClientContacts(clientId);
   const { data: notes = [] } = useClientNotes(clientId);
+  const { data: documents = [] } = useClientDocuments(clientId);
   const createContact = useCreateClientContact();
   const deleteContact = useDeleteClientContact();
   const createNote = useCreateClientNote();
   const deleteNote = useDeleteClientNote();
+  const uploadDocument = useUploadClientDocument();
+  const deleteDocument = useDeleteClientDocument();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Filtres interventions
   const [statusFilter, setStatusFilter] = useState<InterventionStatus | "all">("all");
@@ -136,6 +146,20 @@ const ClientDetail = () => {
       { client_id: clientId, content: noteContent },
       { onSuccess: () => setNoteContent("") }
     );
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    uploadDocument.mutate({ clientId, file });
+    e.target.value = "";
+  };
+
+  const formatFileSize = (bytes: number | null) => {
+    if (!bytes) return "";
+    if (bytes < 1024) return `${bytes} o`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} Ko`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
   };
 
   if (isLoading) {
@@ -278,50 +302,118 @@ const ClientDetail = () => {
         </CardContent>
       </Card>
 
-      {/* Notes internes */}
+      {/* Notes internes & Documents */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <StickyNote className="h-5 w-5" />
-            Notes internes
+            Notes & Documents
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex gap-2">
-            <Textarea
-              placeholder="Ajouter une note interne..."
-              value={noteContent}
-              onChange={(e) => setNoteContent(e.target.value)}
-              className="min-h-[60px]"
-            />
-            <Button onClick={handleAddNote} disabled={!noteContent.trim() || createNote.isPending} className="self-end">
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
-          {notes.length === 0 ? (
-            <p className="text-muted-foreground text-center py-2">Aucune note</p>
-          ) : (
-            <div className="space-y-3">
-              {notes.map((note) => (
-                <div key={note.id} className="flex items-start justify-between p-3 border rounded-lg bg-muted/30">
-                  <div className="space-y-1 flex-1">
-                    <p className="text-sm whitespace-pre-wrap">{note.content}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {format(new Date(note.created_at), "dd/MM/yyyy à HH:mm", { locale: fr })}
-                    </p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-destructive hover:text-destructive shrink-0"
-                    onClick={() => deleteNote.mutate({ id: note.id, clientId })}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+        <CardContent>
+          <Tabs defaultValue="notes">
+            <TabsList className="mb-4">
+              <TabsTrigger value="notes" className="gap-1.5">
+                <FileText className="h-4 w-4" />
+                Notes ({notes.length})
+              </TabsTrigger>
+              <TabsTrigger value="documents" className="gap-1.5">
+                <Paperclip className="h-4 w-4" />
+                Documents ({documents.length})
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="notes" className="space-y-4">
+              <div className="flex gap-2">
+                <Textarea
+                  placeholder="Ajouter une note interne..."
+                  value={noteContent}
+                  onChange={(e) => setNoteContent(e.target.value)}
+                  className="min-h-[60px]"
+                />
+                <Button onClick={handleAddNote} disabled={!noteContent.trim() || createNote.isPending} className="self-end">
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              {notes.length === 0 ? (
+                <p className="text-muted-foreground text-center py-2">Aucune note</p>
+              ) : (
+                <div className="space-y-3">
+                  {notes.map((note) => (
+                    <div key={note.id} className="flex items-start justify-between p-3 border rounded-lg bg-muted/30">
+                      <div className="space-y-1 flex-1">
+                        <p className="text-sm whitespace-pre-wrap">{note.content}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {format(new Date(note.created_at), "dd/MM/yyyy à HH:mm", { locale: fr })}
+                        </p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive hover:text-destructive shrink-0"
+                        onClick={() => deleteNote.mutate({ id: note.id, clientId })}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
+              )}
+            </TabsContent>
+
+            <TabsContent value="documents" className="space-y-4">
+              <div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  className="hidden"
+                  onChange={handleFileUpload}
+                />
+                <Button
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadDocument.isPending}
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  {uploadDocument.isPending ? "Envoi en cours..." : "Joindre un document"}
+                </Button>
+              </div>
+              {documents.length === 0 ? (
+                <p className="text-muted-foreground text-center py-2">Aucun document</p>
+              ) : (
+                <div className="space-y-3">
+                  {documents.map((doc) => (
+                    <div key={doc.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <Paperclip className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{doc.file_name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatFileSize(doc.file_size)} · {format(new Date(doc.created_at), "dd/MM/yyyy à HH:mm", { locale: fr })}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button variant="ghost" size="icon" asChild>
+                          <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
+                            <Download className="h-4 w-4" />
+                          </a>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => deleteDocument.mutate({ id: doc.id, clientId, fileUrl: doc.file_url })}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
 
