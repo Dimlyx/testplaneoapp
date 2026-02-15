@@ -279,129 +279,17 @@ const PublicIntervention = () => {
               </div>
             )}
 
-            {docSettings.showScheduledDateTime && (intervention.scheduled_date || intervention.scheduled_time) && (
-              <div className="flex gap-6">
-                {intervention.scheduled_date && (
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <span>{format(new Date(intervention.scheduled_date), 'dd MMMM yyyy', { locale: fr })}</span>
-                  </div>
-                )}
-                {intervention.scheduled_time && (
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <span>{intervention.scheduled_time}</span>
-                  </div>
-                )}
+            {docSettings.showScheduledDateTime && intervention.scheduled_date && (
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+                <span>{format(new Date(intervention.scheduled_date), 'dd MMMM yyyy', { locale: fr })}</span>
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Équipements */}
-        {docSettings.showEquipmentDetails && interventionEquipments.length > 0 && interventionEquipments.map((ie, index) => {
-          const equipmentPhotos = photos.filter(p => p.equipment_id === ie.equipment_id);
-          const serialPhotos = equipmentPhotos.filter(p => p.photo_type === 'serial_number');
-          const duringPhotos = equipmentPhotos.filter(p => p.photo_type === 'during');
-          const afterPhotos = equipmentPhotos.filter(p => p.photo_type === 'after');
-          
-          return (
-            <Card key={ie.id} className="border-primary/30">
-              <CardHeader className="bg-primary/5">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Wrench className="h-5 w-5" />
-                  Équipement {index + 1}: {ie.equipment?.equipment_type || "Équipement"}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-4 space-y-4">
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div>
-                    <span className="text-muted-foreground">Type:</span>
-                    <span className="ml-2 font-medium">{ie.equipment?.equipment_type || "N/C"}</span>
-                  </div>
-                  {ie.equipment?.serial_number && (
-                    <div>
-                      <span className="text-muted-foreground">N° Série:</span>
-                      <span className="ml-2 font-medium">{ie.equipment.serial_number}</span>
-                    </div>
-                  )}
-                </div>
-
-                {docSettings.showEquipmentPhotos && serialPhotos.length > 0 && (
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground mb-2">Photos N° de série</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {serialPhotos.map(photo => (
-                        <a key={photo.id} href={photo.photo_url} target="_blank" rel="noopener noreferrer">
-                          <img src={photo.photo_url} alt="N° série" className="w-full aspect-video object-cover rounded-lg border" />
-                        </a>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {docSettings.showEquipmentPhotos && duringPhotos.length > 0 && (
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground mb-2">Photo de l'équipement</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {duringPhotos.map(photo => (
-                        <a key={photo.id} href={photo.photo_url} target="_blank" rel="noopener noreferrer">
-                          <img src={photo.photo_url} alt="Équipement" className="w-full aspect-video object-cover rounded-lg border" />
-                        </a>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {ie.technical_comments && (
-                  <div className="bg-muted/30 rounded-lg p-3">
-                    <p className="text-sm font-medium text-muted-foreground mb-1">Observation</p>
-                    <p className="text-sm whitespace-pre-wrap">{ie.technical_comments}</p>
-                  </div>
-                )}
-
-                <div className="flex items-center justify-between bg-muted/30 rounded-lg p-3">
-                  <span className="text-sm font-medium">État de l'équipement</span>
-                  {(() => {
-                    const getStatusDisplay = (status: string | null) => {
-                      switch (status) {
-                        case 'not_working':
-                          return { label: '✗ Ne fonctionne pas', className: 'bg-red-100 text-red-800' };
-                        case 'needs_intervention':
-                          return { label: '⚠ Pièces ou intervention nécessaire', className: 'bg-orange-100 text-orange-800' };
-                        case 'working':
-                        default:
-                          return { label: '✓ Fonctionne', className: 'bg-green-100 text-green-800' };
-                      }
-                    };
-                    const statusDisplay = getStatusDisplay(ie.equipment_status);
-                    return (
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${statusDisplay.className}`}>
-                        {statusDisplay.label}
-                      </span>
-                    );
-                  })()}
-                </div>
-
-                {docSettings.showEquipmentPhotos && afterPhotos.length > 0 && (
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground mb-2">Photos après intervention</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {afterPhotos.map(photo => (
-                        <a key={photo.id} href={photo.photo_url} target="_blank" rel="noopener noreferrer">
-                          <img src={photo.photo_url} alt="Après" className="w-full aspect-video object-cover rounded-lg border" />
-                        </a>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
-
-        {/* Photos générales */}
-        {docSettings.showEquipmentPhotos && photos.filter(p => !p.equipment_id).length > 0 && (
+        {/* Photos supplémentaires */}
+        {photos.filter(p => !p.equipment_id).length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">

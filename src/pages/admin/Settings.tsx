@@ -483,10 +483,8 @@ export default function Settings() {
                   {([
                     { key: 'showClientInfo' as const, label: 'Informations client' },
                     { key: 'showInterventionAddress' as const, label: "Lieu d'intervention" },
-                    { key: 'showScheduledDateTime' as const, label: 'Date et heure prévues' },
+                    { key: 'showScheduledDateTime' as const, label: 'Date prévue' },
                     { key: 'showDescription' as const, label: 'Description' },
-                    { key: 'showEquipmentDetails' as const, label: 'Détails équipements' },
-                    { key: 'showEquipmentPhotos' as const, label: 'Photos équipements' },
                     { key: 'showWorkflowSteps' as const, label: 'Étapes du workflow' },
                   ]).map(({ key, label }) => (
                     <div key={key} className="flex items-center justify-between p-3 rounded-lg border">
@@ -573,12 +571,6 @@ export default function Settings() {
                       <>
                         <div className="text-sm font-medium mt-2" style={{ color: documentSettings.primaryColor }}>Détails intervention</div>
                         <div className="h-2 bg-muted rounded w-full"></div>
-                      </>
-                    )}
-                    {documentSettings.showEquipmentDetails && (
-                      <>
-                        <div className="text-sm font-medium mt-2" style={{ color: documentSettings.accentColor }}>Équipements</div>
-                        <div className="h-2 bg-muted rounded w-2/3"></div>
                       </>
                     )}
                     {documentSettings.showWorkflowSteps && (
