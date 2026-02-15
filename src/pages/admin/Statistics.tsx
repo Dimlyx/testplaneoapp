@@ -207,11 +207,9 @@ export default function Statistics() {
     };
   }).filter(t => t.totalInterventions > 0).sort((a, b) => b.completedInterventions - a.completedInterventions);
 
-  // Best performer
+  // Best performer by completed count
   const bestPerformer = technicianStats.length > 0 
-    ? technicianStats.reduce((best, current) => 
-        current.resolutionRate > best.resolutionRate ? current : best
-      )
+    ? technicianStats[0]
     : null;
 
   const { data: interventionTypesData = [] } = useInterventionTypes();
@@ -292,7 +290,7 @@ export default function Statistics() {
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-6">
           {/* Summary Cards */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Interventions du mois</CardTitle>
@@ -303,17 +301,6 @@ export default function Statistics() {
                 <p className="text-xs text-muted-foreground">
                   {completedInterventions.length} terminées
                 </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Taux de résolution</CardTitle>
-                <Target className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{Math.round(resolutionRate)}%</div>
-                <Progress value={resolutionRate} className="h-2 mt-2" />
               </CardContent>
             </Card>
 
@@ -354,7 +341,7 @@ export default function Statistics() {
                 </div>
                 {bestPerformer && (
                   <p className="text-xs text-muted-foreground mt-1">
-                    {Math.round(bestPerformer.resolutionRate)}% résolution
+                    {bestPerformer.completedInterventions} terminées
                   </p>
                 )}
               </CardContent>
@@ -497,7 +484,7 @@ export default function Statistics() {
           ) : (
             <>
               {/* Summary row */}
-              <div className="grid gap-4 md:grid-cols-3">
+              <div className="grid gap-4 md:grid-cols-2">
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Techniciens actifs</CardTitle>
@@ -518,18 +505,6 @@ export default function Statistics() {
                       {(monthInterventions.length / technicianStats.length).toFixed(1)}
                     </div>
                     <p className="text-xs text-muted-foreground">moyenne mensuelle</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Résolution moyenne</CardTitle>
-                    <Target className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">
-                      {Math.round(technicianStats.reduce((a, b) => a + b.resolutionRate, 0) / technicianStats.length)}%
-                    </div>
-                    <p className="text-xs text-muted-foreground">tous techniciens</p>
                   </CardContent>
                 </Card>
               </div>
@@ -578,13 +553,6 @@ export default function Statistics() {
                         </div>
                       </div>
                       
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground">Taux résolution</span>
-                          <span className="font-medium">{Math.round(tech.resolutionRate)}%</span>
-                        </div>
-                        <Progress value={tech.resolutionRate} className="h-2" />
-                      </div>
                     </CardContent>
                   </Card>
                 ))}

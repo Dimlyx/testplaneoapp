@@ -419,40 +419,6 @@ export function PerformanceCharts({ interventions, technicians = [] }: Performan
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5" />
-              Taux de résolution
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {resolutionTrend.some(d => d.taux > 0) ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={resolutionTrend}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="name" className="text-xs" />
-                  <YAxis className="text-xs" domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
-                  <Tooltip 
-                    formatter={(value: number) => [`${value}%`, 'Taux de résolution']}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="taux" 
-                    name="Taux" 
-                    stroke="hsl(var(--primary))" 
-                    strokeWidth={2}
-                    dot={{ fill: "hsl(var(--primary))" }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                Aucune donnée disponible
-              </div>
-            )}
-          </CardContent>
-        </Card>
       </div>
 
       {/* Temps moyens et distribution */}
