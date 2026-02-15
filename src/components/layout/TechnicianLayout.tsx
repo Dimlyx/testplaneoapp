@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { OfflineIndicator } from '@/components/technician/OfflineIndicator';
+import { NotificationBell } from '@/components/technician/NotificationBell';
 
 const navigation = [
   { name: 'Mes Interventions', href: '/technician', icon: ClipboardList },
@@ -135,7 +136,8 @@ export default function TechnicianLayout() {
             <Wrench className="h-5 w-5 text-primary" />
             <span className="font-semibold">Planéo</span>
           </div>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-2">
+            <NotificationBell />
             <OfflineIndicator />
           </div>
         </header>
