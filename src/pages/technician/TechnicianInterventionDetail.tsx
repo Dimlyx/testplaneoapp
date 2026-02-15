@@ -173,7 +173,8 @@ const TechnicianInterventionDetail = () => {
         interventionEquipment,
         { company: companySettings!, report: { primaryColor: documentSettings?.primaryColor || '#003057', accentColor: documentSettings?.accentColor || '#0050A0', footerText: documentSettings?.footerText || '' }, documents: documentSettings! },
         stepCompletions,
-        workflowSteps
+        workflowSteps,
+        interventionTypes
       );
       toast({ title: "Rapport téléchargé" });
     }
