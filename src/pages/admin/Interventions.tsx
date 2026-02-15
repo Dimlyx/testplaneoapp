@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useInterventions, useDeleteIntervention, useUpdateIntervention } from "@/hooks/useInterventions";
 import { useClients } from "@/hooks/useClients";
 import { useTechnicians } from "@/hooks/useTechnicians";
+import { useInterventionTypes } from "@/hooks/useInterventionTypes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -62,6 +63,7 @@ const Interventions = () => {
   const { data: technicians = [] } = useTechnicians();
   const deleteIntervention = useDeleteIntervention();
   const updateIntervention = useUpdateIntervention();
+  const { data: interventionTypes = [] } = useInterventionTypes();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -231,9 +233,9 @@ const Interventions = () => {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tous les types</SelectItem>
-            <SelectItem value="sav">SAV</SelectItem>
-            <SelectItem value="maintenance">Maintenance</SelectItem>
-            <SelectItem value="installation">Installation</SelectItem>
+            {interventionTypes.map((t) => (
+              <SelectItem key={t.id} value={t.name}>{t.label}</SelectItem>
+            ))}
           </SelectContent>
         </Select>
         <Select value={technicianFilter} onValueChange={setTechnicianFilter}>

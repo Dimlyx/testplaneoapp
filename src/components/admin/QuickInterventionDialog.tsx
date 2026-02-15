@@ -19,8 +19,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useClients } from '@/hooks/useClients';
-import { useCreateIntervention, InterventionType } from '@/hooks/useInterventions';
+import { useCreateIntervention } from '@/hooks/useInterventions';
 import { useUserOrganization } from '@/hooks/useUserOrganization';
+import { useInterventionTypes } from '@/hooks/useInterventionTypes';
 import { Technician } from '@/hooks/useTechnicians';
 
 interface QuickInterventionDialogProps {
@@ -41,11 +42,12 @@ export function QuickInterventionDialog({
   const { data: clients = [] } = useClients();
   const { data: organizationId } = useUserOrganization();
   const createIntervention = useCreateIntervention(organizationId);
+  const { data: interventionTypes = [] } = useInterventionTypes();
 
   const [formData, setFormData] = useState({
     title: '',
     client_id: '',
-    intervention_type: 'maintenance' as InterventionType,
+    intervention_type: '',
     technician_id: defaultTechnicianId || '',
     scheduled_date: defaultDate ? format(defaultDate, 'yyyy-MM-dd') : '',
     scheduled_time: '',
@@ -80,7 +82,7 @@ export function QuickInterventionDialog({
     setFormData({
       title: '',
       client_id: '',
-      intervention_type: 'maintenance',
+      intervention_type: '',
       technician_id: '',
       scheduled_date: '',
       scheduled_time: '',
@@ -145,15 +147,15 @@ export function QuickInterventionDialog({
               <Label htmlFor="type">Type</Label>
               <Select
                 value={formData.intervention_type}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, intervention_type: value as InterventionType }))}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, intervention_type: value }))}
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="maintenance">Maintenance</SelectItem>
-                  <SelectItem value="sav">SAV</SelectItem>
-                  <SelectItem value="installation">Installation</SelectItem>
+                  {interventionTypes.map((t) => (
+                    <SelectItem key={t.id} value={t.name}>{t.label}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

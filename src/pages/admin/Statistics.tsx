@@ -1,4 +1,5 @@
 import { useInterventions } from "@/hooks/useInterventions";
+import { useInterventionTypes } from "@/hooks/useInterventionTypes";
 import { useClients } from "@/hooks/useClients";
 import { useTechnicians } from "@/hooks/useTechnicians";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -213,11 +214,17 @@ export default function Statistics() {
       )
     : null;
 
-  const typeLabels: Record<string, string> = {
-    sav: 'SAV',
-    maintenance: 'Maintenance',
-    installation: 'Installation'
-  };
+  const { data: interventionTypesData = [] } = useInterventionTypes();
+  const typeLabels: Record<string, string> = Object.fromEntries(
+    interventionTypesData.map(t => [t.name, t.label])
+  );
+  const typeColorMap: Record<string, string> = Object.fromEntries(
+    interventionTypesData.map(t => [t.name, {
+      red: 'bg-red-500', blue: 'bg-blue-500', green: 'bg-green-500',
+      yellow: 'bg-yellow-500', purple: 'bg-purple-500', orange: 'bg-orange-500',
+      pink: 'bg-pink-500', gray: 'bg-gray-500',
+    }[t.color] || 'bg-gray-500'])
+  );
 
   const statusLabels: Record<string, string> = {
     to_plan: 'À planifier',
@@ -368,10 +375,7 @@ export default function Statistics() {
                   {Object.entries(interventionsByType).map(([type, count]) => (
                     <div key={type} className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className={`w-3 h-3 rounded-full ${
-                          type === 'sav' ? 'bg-red-500' : 
-                          type === 'maintenance' ? 'bg-blue-500' : 'bg-green-500'
-                        }`} />
+                        <div className={`w-3 h-3 rounded-full ${typeColorMap[type] || 'bg-gray-500'}`} />
                         <span className="font-medium">{typeLabels[type] || type}</span>
                       </div>
                       <div className="flex items-center gap-2">

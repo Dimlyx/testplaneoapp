@@ -7,6 +7,7 @@ import { ChevronLeft, ChevronRight, Plus, Minus, Calendar as CalendarIcon, Clock
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, addWeeks, subWeeks, isSameDay, parseISO, isToday, addDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Intervention, useUpdateIntervention } from '@/hooks/useInterventions';
+import { useInterventionTypes } from '@/hooks/useInterventionTypes';
 import { Technician } from '@/hooks/useTechnicians';
 import { cn } from '@/lib/utils';
 import {
@@ -23,16 +24,15 @@ interface WeeklyPlanningCalendarProps {
   onInterventionClick?: (intervention: Intervention) => void;
 }
 
-const typeColors: Record<string, string> = {
-  sav: 'bg-purple-600',
-  maintenance: 'bg-emerald-600',
-  installation: 'bg-blue-600',
-};
-
-const typeLabels: Record<string, string> = {
-  sav: 'SAV',
-  maintenance: 'Maintenance',
-  installation: 'Installation',
+const defaultTypeColors: Record<string, string> = {
+  red: 'bg-red-600',
+  blue: 'bg-blue-600',
+  green: 'bg-green-600',
+  yellow: 'bg-yellow-600',
+  purple: 'bg-purple-600',
+  orange: 'bg-orange-600',
+  pink: 'bg-pink-600',
+  gray: 'bg-gray-600',
 };
 
 export function WeeklyPlanningCalendar({ 
@@ -48,6 +48,17 @@ export function WeeklyPlanningCalendar({
   const [endHour, setEndHour] = useState(18);
   
   const updateIntervention = useUpdateIntervention();
+  const { data: interventionTypesData = [] } = useInterventionTypes();
+
+  const getTypeColor = (typeName: string) => {
+    const found = interventionTypesData.find(t => t.name === typeName);
+    return found ? (defaultTypeColors[found.color] || 'bg-gray-600') : 'bg-gray-600';
+  };
+
+  const getTypeLabel = (typeName: string) => {
+    const found = interventionTypesData.find(t => t.name === typeName);
+    return found ? found.label : typeName;
+  };
 
   const weekStart = startOfWeek(currentWeek, { weekStartsOn: 1 }); // Monday
   const weekEnd = endOfWeek(currentWeek, { weekStartsOn: 1 });
@@ -329,7 +340,7 @@ export function WeeklyPlanningCalendar({
                                         <div
                                           className={cn(
                                             "intervention-card absolute left-0.5 right-0.5 text-xs p-1 rounded cursor-pointer text-white truncate transition-opacity z-10",
-                                            typeColors[intervention.intervention_type],
+                                            getTypeColor(intervention.intervention_type),
                                             draggedIntervention?.id === intervention.id && "opacity-50"
                                           )}
                                           style={{ top: `${topPx}px`, minHeight: '24px' }}
@@ -350,7 +361,7 @@ export function WeeklyPlanningCalendar({
                                         <div className="space-y-1">
                                           <p className="font-medium">{intervention.title}</p>
                                           <Badge variant="secondary" className="text-xs">
-                                            {typeLabels[intervention.intervention_type]}
+                                            {getTypeLabel(intervention.intervention_type)}
                                           </Badge>
                                           {intervention.clients?.name && (
                                             <p className="text-sm">Client: {intervention.clients.name}</p>
@@ -376,7 +387,7 @@ export function WeeklyPlanningCalendar({
                                 key={intervention.id}
                                 className={cn(
                                   "w-2 h-2 rounded-full",
-                                  typeColors[intervention.intervention_type]
+                                  getTypeColor(intervention.intervention_type)
                                 )}
                                 title={intervention.title}
                               />
@@ -430,7 +441,7 @@ export function WeeklyPlanningCalendar({
                                   <div
                                     className={cn(
                                       "intervention-card text-xs p-1.5 rounded cursor-pointer text-white truncate border-2 border-dashed border-amber-400",
-                                      typeColors[intervention.intervention_type],
+                                      getTypeColor(intervention.intervention_type),
                                       draggedIntervention?.id === intervention.id && "opacity-50"
                                     )}
                                     draggable
@@ -470,18 +481,12 @@ export function WeeklyPlanningCalendar({
 
         {/* Legend */}
         <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t text-sm">
-          <div className="flex items-center gap-2">
-            <div className={cn("w-3 h-3 rounded", typeColors.sav)} />
-            <span>SAV</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className={cn("w-3 h-3 rounded", typeColors.maintenance)} />
-            <span>Maintenance</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className={cn("w-3 h-3 rounded", typeColors.installation)} />
-            <span>Installation</span>
-          </div>
+          {interventionTypesData.map((t) => (
+            <div key={t.id} className="flex items-center gap-2">
+              <div className={cn("w-3 h-3 rounded", defaultTypeColors[t.color] || 'bg-gray-600')} />
+              <span>{t.label}</span>
+            </div>
+          ))}
           <div className="text-muted-foreground">
             | Glissez-déposez pour réassigner
           </div>

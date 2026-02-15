@@ -364,11 +364,7 @@ export const generateInterventionPDF = async (
   // ================== INTERVENTION DETAILS ==================
   yPos = addSection("DÉTAILS DE L'INTERVENTION", yPos);
   yPos = addField("Titre", intervention.title, yPos);
-  yPos = addField("Type", 
-    intervention.intervention_type === 'sav' ? 'SAV' : 
-    intervention.intervention_type === 'maintenance' ? 'Maintenance' : 'Installation', 
-    yPos
-  );
+  yPos = addField("Type", intervention.intervention_type, yPos);
   if (technicianName) {
     yPos = addField("Technicien", technicianName, yPos);
   }
