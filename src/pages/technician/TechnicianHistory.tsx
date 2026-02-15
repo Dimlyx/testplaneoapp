@@ -45,9 +45,10 @@ export default function TechnicianHistory() {
     return type ? { label: type.label, color: type.color } : { label: typeName, color: 'gray' };
   };
 
-  // Get last 30 interventions sorted by date (most recent first)
+  // Only show completed/to_invoice/archived interventions, sorted by date (most recent first)
   const recentInterventions = interventions
-    ?.sort((a, b) => {
+    ?.filter(i => ['completed', 'to_invoice', 'archived'].includes(i.status))
+    .sort((a, b) => {
       const dateA = a.scheduled_date ? new Date(a.scheduled_date).getTime() : 0;
       const dateB = b.scheduled_date ? new Date(b.scheduled_date).getTime() : 0;
       return dateB - dateA;
