@@ -33,7 +33,7 @@ const AdminCalendar = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
   const [technicianFilter, setTechnicianFilter] = useState<string>("all");
-  const [viewMode, setViewMode] = useState<string>("planning");
+  const [viewMode, setViewMode] = useState<string>("calendar");
   
   // Quick intervention dialog state
   const [quickDialogOpen, setQuickDialogOpen] = useState(false);

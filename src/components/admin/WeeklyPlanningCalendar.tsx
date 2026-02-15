@@ -42,7 +42,7 @@ export function WeeklyPlanningCalendar({
   onInterventionClick 
 }: WeeklyPlanningCalendarProps) {
   const [currentWeek, setCurrentWeek] = useState(new Date());
-  const [expandedTechnicians, setExpandedTechnicians] = useState<Set<string>>(new Set(technicians.map(t => t.id)));
+  const [expandedTechnicians, setExpandedTechnicians] = useState<Set<string>>(new Set());
   const [draggedIntervention, setDraggedIntervention] = useState<Intervention | null>(null);
   const [startHour, setStartHour] = useState(7);
   const [endHour, setEndHour] = useState(18);
