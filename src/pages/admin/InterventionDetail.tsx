@@ -2,6 +2,7 @@ import { useNavigate, useParams, Link } from "react-router-dom";
 import { useIntervention, useCreateIntervention, useUpdateIntervention } from "@/hooks/useInterventions";
 import { useClient } from "@/hooks/useClients";
 import { useInterventionPhotos, PhotoType } from "@/hooks/useInterventionPhotos";
+import { useInterventionPauses } from "@/hooks/useInterventionPauses";
 import { useInterventionEquipment } from "@/hooks/useInterventionEquipment";
 import { useCompanySettings, useDocumentSettings } from "@/hooks/useAppSettings";
 import { useInterventionTypes } from "@/hooks/useInterventionTypes";
@@ -26,6 +27,8 @@ import {
   ClipboardList,
   CheckCircle,
   CopyPlus,
+  Pause,
+  Play,
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -59,6 +62,7 @@ const InterventionDetail = () => {
   const { data: workflowSteps = [] } = useWorkflowSteps(matchingType?.id);
   const { data: stepCompletions = [] } = useStepCompletions(id || "");
   const updateIntervention = useUpdateIntervention();
+  const { data: pauses = [] } = useInterventionPauses(id || "");
   const createIntervention = useCreateIntervention(intervention?.organization_id);
   const getPhotosOfType = (type: PhotoType) => photos.filter(p => p.photo_type === type);
 
@@ -381,6 +385,81 @@ const InterventionDetail = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Pauses */}
+        {pauses.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Pause className="h-5 w-5" />
+                Pauses ({pauses.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {intervention.is_paused && (
+                <div className="flex items-center gap-2 p-2 rounded-md bg-orange-50 dark:bg-orange-950 text-orange-800 dark:text-orange-200 text-sm font-medium mb-2">
+                  <Pause className="h-4 w-4" />
+                  Intervention actuellement en pause
+                </div>
+              )}
+              {pauses.map((pause) => {
+                const pausedAt = new Date(pause.paused_at);
+                const resumedAt = pause.resumed_at ? new Date(pause.resumed_at) : null;
+                const durationMs = resumedAt
+                  ? resumedAt.getTime() - pausedAt.getTime()
+                  : Date.now() - pausedAt.getTime();
+                const durationMin = Math.round(durationMs / 60000);
+                const h = Math.floor(durationMin / 60);
+                const m = durationMin % 60;
+                const durationStr = h > 0 ? `${h}h ${m}min` : `${m}min`;
+
+                return (
+                  <div key={pause.id} className="p-3 rounded-lg border bg-muted/30 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium flex items-center gap-1.5">
+                        {resumedAt ? (
+                          <Play className="h-3.5 w-3.5 text-green-600" />
+                        ) : (
+                          <Pause className="h-3.5 w-3.5 text-orange-500" />
+                        )}
+                        {format(pausedAt, "dd/MM/yyyy HH:mm", { locale: fr })}
+                        {resumedAt && (
+                          <span className="text-muted-foreground">
+                            → {format(resumedAt, "dd/MM/yyyy HH:mm", { locale: fr })}
+                          </span>
+                        )}
+                      </span>
+                      <span className="text-xs font-semibold bg-muted px-2 py-0.5 rounded">
+                        {resumedAt ? durationStr : `${durationStr} (en cours)`}
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground italic">
+                      {pause.pause_reason}
+                    </p>
+                  </div>
+                );
+              })}
+              {/* Total pause time */}
+              {pauses.length > 1 && (
+                <div className="pt-2 border-t flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Temps total de pause</span>
+                  <span className="font-bold">
+                    {(() => {
+                      const totalMin = pauses.reduce((acc, p) => {
+                        const start = new Date(p.paused_at).getTime();
+                        const end = p.resumed_at ? new Date(p.resumed_at).getTime() : Date.now();
+                        return acc + Math.round((end - start) / 60000);
+                      }, 0);
+                      const h = Math.floor(totalMin / 60);
+                      const m = totalMin % 60;
+                      return h > 0 ? `${h}h ${m}min` : `${m}min`;
+                    })()}
+                  </span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Description */}
         <Card>
