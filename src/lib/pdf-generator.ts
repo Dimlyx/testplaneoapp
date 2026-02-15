@@ -121,9 +121,9 @@ const hexToRgb = (hex: string): [number, number, number] => {
     : [0, 48, 87]; // Default navy blue
 };
 
-const MAX_IMAGE_WIDTH = 400;
-const MAX_IMAGE_HEIGHT = 300;
-const JPEG_QUALITY = 0.6;
+const MAX_IMAGE_WIDTH = 800;
+const MAX_IMAGE_HEIGHT = 600;
+const JPEG_QUALITY = 0.85;
 
 const loadImageAsBase64 = async (url: string): Promise<string | null> => {
   try {
@@ -183,7 +183,7 @@ const loadImageAsBase64 = async (url: string): Promise<string | null> => {
           
           if (ctx) {
             ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = 'medium';
+            ctx.imageSmoothingQuality = 'high';
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
             const result = canvas.toDataURL('image/jpeg', JPEG_QUALITY);
             resolve(result);
@@ -490,8 +490,8 @@ export const generateInterventionPDF = async (
           const base64 = await loadImageAsBase64(photo.photo_url);
           if (base64) {
             checkNewPage(50);
-            if (safeAddImage(doc, base64, 15, yPos, 60, 45)) {
-              yPos += 50;
+            if (safeAddImage(doc, base64, 15, yPos, 80, 60)) {
+              yPos += 65;
             }
           }
         }
@@ -514,16 +514,16 @@ export const generateInterventionPDF = async (
           if (base64) {
             if (photoCount > 0 && photoCount % 2 === 0) {
               xPos = 15;
-              yPos += 50;
-              checkNewPage(50);
+              yPos += 65;
+              checkNewPage(65);
             }
-            if (safeAddImage(doc, base64, xPos, yPos, 60, 45)) {
-              xPos += 70;
+            if (safeAddImage(doc, base64, xPos, yPos, 80, 60)) {
+              xPos += 90;
               photoCount++;
             }
           }
         }
-        if (photoCount > 0) yPos += 50;
+        if (photoCount > 0) yPos += 65;
       }
 
       // Technical comments / Observation
@@ -576,16 +576,16 @@ export const generateInterventionPDF = async (
           if (base64) {
             if (photoCount > 0 && photoCount % 2 === 0) {
               xPos = 15;
-              yPos += 50;
-              checkNewPage(50);
+              yPos += 65;
+              checkNewPage(65);
             }
-            if (safeAddImage(doc, base64, xPos, yPos, 60, 45)) {
-              xPos += 70;
+            if (safeAddImage(doc, base64, xPos, yPos, 80, 60)) {
+              xPos += 90;
               photoCount++;
             }
           }
         }
-        if (photoCount > 0) yPos += 55;
+        if (photoCount > 0) yPos += 65;
       }
       
       yPos += 5;
@@ -617,8 +617,8 @@ export const generateInterventionPDF = async (
         checkNewPage(60);
         yPos = addSection(title, yPos);
 
-        const photoWidth = 55;
-        const photoHeight = 40;
+        const photoWidth = 80;
+        const photoHeight = 60;
         const photosPerRow = 3;
         let xPos = 15;
         let photoCount = 0;
@@ -704,16 +704,16 @@ export const generateInterventionPDF = async (
           if (base64) {
             if (photoCount > 0 && photoCount % 2 === 0) {
               xPos = 20;
-              yPos += 50;
-              checkNewPage(50);
+              yPos += 65;
+              checkNewPage(65);
             }
-            if (safeAddImage(doc, base64, xPos, yPos, 55, 40)) {
-              xPos += 65;
+            if (safeAddImage(doc, base64, xPos, yPos, 75, 56)) {
+              xPos += 85;
               photoCount++;
             }
           }
         }
-        if (photoCount > 0) yPos += 45;
+        if (photoCount > 0) yPos += 60;
       }
       
       yPos += 3;
