@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   BarChart, 
   Bar, 
@@ -8,14 +8,13 @@ import {
   CartesianGrid, 
   Tooltip, 
   ResponsiveContainer, 
-  LineChart, 
-  Line, 
-  Legend,
-  PieChart,
+  PieChart, 
   Pie,
-  Cell
+  Cell,
+  AreaChart,
+  Area
 } from "recharts";
-import { TrendingUp, Clock, BarChart3, PieChart as PieChartIcon, Filter, X, Calendar, UserCheck } from "lucide-react";
+import { TrendingUp, Clock, PieChart as PieChartIcon, Filter, X, Calendar, UserCheck, Timer } from "lucide-react";
 import { format, parseISO, startOfMonth, endOfMonth, isWithinInterval, subMonths, isAfter, isBefore, startOfDay, endOfDay } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Tables } from "@/integrations/supabase/types";
@@ -25,6 +24,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { useInterventionTypes } from "@/hooks/useInterventionTypes";
+import { Badge } from "@/components/ui/badge";
 
 type Intervention = Tables<"interventions">;
 
@@ -56,29 +56,21 @@ export function PerformanceCharts({ interventions, technicians = [] }: Performan
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
   const { data: interventionTypes = [] } = useInterventionTypes();
 
-  // Filter interventions based on selected filters
   const filteredInterventions = useMemo(() => {
     let filtered = interventions;
-
-    // Filter by technician
     if (selectedTechnicianId && selectedTechnicianId !== "all") {
       filtered = filtered.filter(i => i.technician_id === selectedTechnicianId);
     }
-
-    // Filter by date range
     if (dateFrom || dateTo) {
       filtered = filtered.filter(i => {
         const dateString = i.scheduled_date || i.created_at;
         if (!dateString) return false;
         const interventionDate = parseISO(dateString);
-        
         if (dateFrom && isBefore(interventionDate, startOfDay(dateFrom))) return false;
         if (dateTo && isAfter(interventionDate, endOfDay(dateTo))) return false;
-        
         return true;
       });
     }
-
     return filtered;
   }, [interventions, selectedTechnicianId, dateFrom, dateTo]);
 
@@ -89,7 +81,7 @@ export function PerformanceCharts({ interventions, technicians = [] }: Performan
     setDateFrom(undefined);
     setDateTo(undefined);
   };
-  // Calculate time difference in minutes
+
   const calculateTimeDiff = (start: string | null, end: string | null): number | null => {
     if (!start || !end) return null;
     const [sh, sm] = start.split(':').map(Number);
@@ -110,14 +102,13 @@ export function PerformanceCharts({ interventions, technicians = [] }: Performan
     });
 
     return months.map(({ date, label, fullLabel }) => {
-      const monthStart = startOfMonth(date);
-      const monthEnd = endOfMonth(date);
+      const mStart = startOfMonth(date);
+      const mEnd = endOfMonth(date);
 
       const monthInterventions = filteredInterventions.filter(i => {
         const dateString = i.scheduled_date || i.created_at;
         if (!dateString) return false;
-        const interventionDate = parseISO(dateString);
-        return isWithinInterval(interventionDate, { start: monthStart, end: monthEnd });
+        return isWithinInterval(parseISO(dateString), { start: mStart, end: mEnd });
       });
 
       const completed = monthInterventions.filter(i => 
@@ -139,6 +130,16 @@ export function PerformanceCharts({ interventions, technicians = [] }: Performan
     });
   }, [filteredInterventions, interventionTypes]);
 
+  // Monthly area trend (total + completed)
+  const trendData = useMemo(() => {
+    return monthlyData.map(d => ({
+      name: d.name,
+      fullName: d.fullName,
+      total: d.total,
+      completed: d.completed,
+    }));
+  }, [monthlyData]);
+
   // Average times by intervention type
   const timesByType = useMemo(() => {
     return interventionTypes.map(typeObj => {
@@ -149,25 +150,23 @@ export function PerformanceCharts({ interventions, technicians = [] }: Performan
         .map(i => calculateTimeDiff(i.travel_departure_time, i.arrival_time))
         .filter((t): t is number => t !== null);
       
-      const interventionTimes = typeInterventions
+      const intTimes = typeInterventions
         .map(i => calculateTimeDiff(i.arrival_time, i.departure_time))
         .filter((t): t is number => t !== null);
 
       const avgTravel = travelTimes.length > 0 
-        ? Math.round(travelTimes.reduce((a, b) => a + b, 0) / travelTimes.length)
-        : 0;
-
-      const avgIntervention = interventionTimes.length > 0 
-        ? Math.round(interventionTimes.reduce((a, b) => a + b, 0) / interventionTimes.length)
-        : 0;
+        ? Math.round(travelTimes.reduce((a, b) => a + b, 0) / travelTimes.length) : 0;
+      const avgInt = intTimes.length > 0 
+        ? Math.round(intTimes.reduce((a, b) => a + b, 0) / intTimes.length) : 0;
 
       return {
         type,
         name: typeObj.label,
         trajet: avgTravel,
-        intervention: avgIntervention,
-        total: avgTravel + avgIntervention,
-        count: typeInterventions.length
+        intervention: avgInt,
+        total: avgTravel + avgInt,
+        count: typeInterventions.length,
+        color: COLOR_MAP[typeObj.color || 'gray'] || '#6b7280',
       };
     }).filter(t => t.count > 0);
   }, [filteredInterventions, interventionTypes]);
@@ -178,7 +177,6 @@ export function PerformanceCharts({ interventions, technicians = [] }: Performan
     filteredInterventions.forEach(i => {
       distribution[i.intervention_type] = (distribution[i.intervention_type] || 0) + 1;
     });
-
     return Object.entries(distribution).map(([type, count]) => {
       const found = interventionTypes.find(t => t.name === type);
       return {
@@ -189,40 +187,7 @@ export function PerformanceCharts({ interventions, technicians = [] }: Performan
     });
   }, [filteredInterventions, interventionTypes]);
 
-  // Monthly trend - resolution rate
-  const resolutionTrend = useMemo(() => {
-    const months = Array.from({ length: 6 }, (_, i) => {
-      const date = subMonths(new Date(), 5 - i);
-      return {
-        date,
-        label: format(date, 'MMM yy', { locale: fr })
-      };
-    });
-
-    return months.map(({ date, label }) => {
-      const monthStart = startOfMonth(date);
-      const monthEnd = endOfMonth(date);
-
-      const monthInterventions = filteredInterventions.filter(i => {
-        const dateString = i.scheduled_date || i.created_at;
-        if (!dateString) return false;
-        const interventionDate = parseISO(dateString);
-        return isWithinInterval(interventionDate, { start: monthStart, end: monthEnd });
-      });
-
-      const assigned = monthInterventions.filter(i => i.technician_id).length;
-      const completed = monthInterventions.filter(i => 
-        ['completed', 'to_invoice', 'archived'].includes(i.status)
-      ).length;
-
-      const rate = assigned > 0 ? Math.round((completed / assigned) * 100) : 0;
-
-      return {
-        name: label,
-        taux: rate
-      };
-    });
-  }, [filteredInterventions]);
+  const totalInterventions = filteredInterventions.length;
 
   const formatMinutes = (minutes: number): string => {
     if (minutes === 0) return "0min";
@@ -234,12 +199,16 @@ export function PerformanceCharts({ interventions, technicians = [] }: Performan
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-background border rounded-lg shadow-lg p-3">
-          <p className="font-medium mb-1">{payload[0]?.payload?.fullName || label}</p>
+        <div className="bg-popover border border-border rounded-xl shadow-xl p-4 min-w-[160px]">
+          <p className="font-semibold text-sm mb-2 text-popover-foreground">{payload[0]?.payload?.fullName || label}</p>
           {payload.map((entry: any, index: number) => (
-            <p key={index} style={{ color: entry.color }} className="text-sm">
-              {entry.name}: {entry.value}
-            </p>
+            <div key={index} className="flex items-center justify-between gap-4 text-sm py-0.5">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
+                {entry.name}
+              </span>
+              <span className="font-semibold" style={{ color: entry.color }}>{entry.value}</span>
+            </div>
           ))}
         </div>
       );
@@ -250,12 +219,36 @@ export function PerformanceCharts({ interventions, technicians = [] }: Performan
   const TimeTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-background border rounded-lg shadow-lg p-3">
-          <p className="font-medium mb-1">{label}</p>
+        <div className="bg-popover border border-border rounded-xl shadow-xl p-4 min-w-[160px]">
+          <p className="font-semibold text-sm mb-2 text-popover-foreground">{label}</p>
           {payload.map((entry: any, index: number) => (
-            <p key={index} style={{ color: entry.color }} className="text-sm">
-              {entry.name}: {formatMinutes(entry.value)}
-            </p>
+            <div key={index} className="flex items-center justify-between gap-4 text-sm py-0.5">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
+                {entry.name}
+              </span>
+              <span className="font-semibold" style={{ color: entry.color }}>{formatMinutes(entry.value)}</span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const TrendTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-popover border border-border rounded-xl shadow-xl p-4 min-w-[140px]">
+          <p className="font-semibold text-sm mb-2 text-popover-foreground">{payload[0]?.payload?.fullName || label}</p>
+          {payload.map((entry: any, index: number) => (
+            <div key={index} className="flex items-center justify-between gap-4 text-sm py-0.5">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
+                {entry.name}
+              </span>
+              <span className="font-semibold">{entry.value}</span>
+            </div>
           ))}
         </div>
       );
@@ -267,147 +260,187 @@ export function PerformanceCharts({ interventions, technicians = [] }: Performan
 
   return (
     <div className="space-y-6">
-      {/* Filtres */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center justify-between">
-            <span className="flex items-center gap-2">
-              <Filter className="h-5 w-5" />
-              Filtres
-            </span>
-            {hasActiveFilters && (
-              <Button variant="ghost" size="sm" onClick={clearFilters}>
-                <X className="h-4 w-4 mr-1" />
-                Effacer
-              </Button>
+      {/* Filters - compact inline bar */}
+      <div className="flex flex-wrap items-end gap-3 p-4 rounded-xl border bg-card">
+        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+          <Filter className="h-4 w-4" />
+          Filtres
+        </div>
+
+        <Select value={selectedTechnicianId} onValueChange={setSelectedTechnicianId}>
+          <SelectTrigger className="w-[180px] h-9">
+            <UserCheck className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+            <SelectValue placeholder="Tous les techniciens" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tous les techniciens</SelectItem>
+            {technicians.map(tech => (
+              <SelectItem key={tech.id} value={tech.id}>
+                {tech.full_name || tech.email}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className={cn("h-9 gap-1.5", !dateFrom && "text-muted-foreground")}
+            >
+              <Calendar className="h-3.5 w-3.5" />
+              {dateFrom ? format(dateFrom, "dd/MM/yy") : "Début"}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <CalendarComponent mode="single" selected={dateFrom} onSelect={setDateFrom} initialFocus className="pointer-events-auto" />
+          </PopoverContent>
+        </Popover>
+
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className={cn("h-9 gap-1.5", !dateTo && "text-muted-foreground")}
+            >
+              <Calendar className="h-3.5 w-3.5" />
+              {dateTo ? format(dateTo, "dd/MM/yy") : "Fin"}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <CalendarComponent mode="single" selected={dateTo} onSelect={setDateTo} initialFocus className="pointer-events-auto" />
+          </PopoverContent>
+        </Popover>
+
+        {hasActiveFilters && (
+          <>
+            <Button variant="ghost" size="sm" className="h-9" onClick={clearFilters}>
+              <X className="h-3.5 w-3.5 mr-1" />
+              Réinitialiser
+            </Button>
+            <Badge variant="secondary" className="h-7">
+              {filteredInterventions.length} résultat{filteredInterventions.length > 1 ? 's' : ''}
+              {selectedTechnicianId !== "all" && selectedTechnician && (
+                <span className="ml-1">· {selectedTechnician.full_name || selectedTechnician.email}</span>
+              )}
+            </Badge>
+          </>
+        )}
+      </div>
+
+      {/* Row 1: Trend + Pie side by side */}
+      <div className="grid gap-6 lg:grid-cols-5">
+        {/* Area chart - wider */}
+        <Card className="lg:col-span-3">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-primary" />
+              Tendance sur 6 mois
+            </CardTitle>
+            <CardDescription>Total et terminées par mois</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {trendData.some(d => d.total > 0) ? (
+              <ResponsiveContainer width="100%" height={280}>
+                <AreaChart data={trendData}>
+                  <defs>
+                    <linearGradient id="gradTotal" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.15} />
+                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="gradCompleted" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#22c55e" stopOpacity={0.15} />
+                      <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted/50" />
+                  <XAxis dataKey="name" className="text-xs" tick={{ fontSize: 12 }} />
+                  <YAxis className="text-xs" tick={{ fontSize: 12 }} />
+                  <Tooltip content={<TrendTooltip />} />
+                  <Area type="monotone" dataKey="total" name="Total" stroke="hsl(var(--primary))" fill="url(#gradTotal)" strokeWidth={2} dot={{ r: 4, fill: "hsl(var(--primary))" }} />
+                  <Area type="monotone" dataKey="completed" name="Terminées" stroke="#22c55e" fill="url(#gradCompleted)" strokeWidth={2} dot={{ r: 4, fill: "#22c55e" }} />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[280px] flex items-center justify-center text-muted-foreground">
+                Aucune donnée disponible
+              </div>
             )}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-4">
-            {/* Filtre technicien */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
-                <UserCheck className="h-3.5 w-3.5" />
-                Technicien
-              </label>
-              <Select value={selectedTechnicianId} onValueChange={setSelectedTechnicianId}>
-                <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="Tous les techniciens" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tous les techniciens</SelectItem>
-                  {technicians.map(tech => (
-                    <SelectItem key={tech.id} value={tech.id}>
-                      {tech.full_name || tech.email}
-                    </SelectItem>
+          </CardContent>
+        </Card>
+
+        {/* Pie chart - narrower */}
+        <Card className="lg:col-span-2">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <PieChartIcon className="h-4 w-4 text-primary" />
+              Répartition par type
+            </CardTitle>
+            <CardDescription>{totalInterventions} intervention{totalInterventions > 1 ? 's' : ''} au total</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {typeDistribution.length > 0 ? (
+              <div className="flex flex-col items-center">
+                <ResponsiveContainer width="100%" height={200}>
+                  <PieChart>
+                    <Pie
+                      data={typeDistribution}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={50}
+                      outerRadius={85}
+                      paddingAngle={3}
+                      dataKey="value"
+                    >
+                      {typeDistribution.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} stroke="transparent" />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+                {/* Legend below */}
+                <div className="flex flex-wrap gap-x-4 gap-y-1.5 justify-center mt-2">
+                  {typeDistribution.map(entry => (
+                    <div key={entry.name} className="flex items-center gap-1.5 text-xs">
+                      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: entry.color }} />
+                      <span className="text-muted-foreground">{entry.name}</span>
+                      <span className="font-semibold">{entry.value}</span>
+                    </div>
                   ))}
-                </SelectContent>
-              </Select>
-            </div>
+                </div>
+              </div>
+            ) : (
+              <div className="h-[200px] flex items-center justify-center text-muted-foreground">
+                Aucune donnée disponible
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
-            {/* Date de début */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
-                <Calendar className="h-3.5 w-3.5" />
-                Date début
-              </label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-[160px] justify-start text-left font-normal",
-                      !dateFrom && "text-muted-foreground"
-                    )}
-                  >
-                    {dateFrom ? format(dateFrom, "dd/MM/yyyy") : "Sélectionner"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <CalendarComponent
-                    mode="single"
-                    selected={dateFrom}
-                    onSelect={setDateFrom}
-                    initialFocus
-                    className="pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            {/* Date de fin */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
-                <Calendar className="h-3.5 w-3.5" />
-                Date fin
-              </label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-[160px] justify-start text-left font-normal",
-                      !dateTo && "text-muted-foreground"
-                    )}
-                  >
-                    {dateTo ? format(dateTo, "dd/MM/yyyy") : "Sélectionner"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <CalendarComponent
-                    mode="single"
-                    selected={dateTo}
-                    onSelect={setDateTo}
-                    initialFocus
-                    className="pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-          </div>
-
-          {/* Résumé des filtres actifs */}
-          {hasActiveFilters && (
-            <div className="mt-4 pt-3 border-t">
-              <p className="text-sm text-muted-foreground">
-                <span className="font-medium">{filteredInterventions.length}</span> intervention{filteredInterventions.length > 1 ? 's' : ''} correspondant{filteredInterventions.length > 1 ? 'es' : 'e'}
-                {selectedTechnicianId !== "all" && selectedTechnician && (
-                  <span> pour <span className="font-medium">{selectedTechnician.full_name || selectedTechnician.email}</span></span>
-                )}
-                {(dateFrom || dateTo) && (
-                  <span>
-                    {dateFrom && dateTo && ` du ${format(dateFrom, "dd/MM/yyyy")} au ${format(dateTo, "dd/MM/yyyy")}`}
-                    {dateFrom && !dateTo && ` à partir du ${format(dateFrom, "dd/MM/yyyy")}`}
-                    {!dateFrom && dateTo && ` jusqu'au ${format(dateTo, "dd/MM/yyyy")}`}
-                  </span>
-                )}
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Evolution mensuelle */}
+      {/* Row 2: Stacked bar by type + Time chart */}
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Évolution mensuelle
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-primary" />
+              Évolution par type
             </CardTitle>
+            <CardDescription>Répartition mensuelle empilée</CardDescription>
           </CardHeader>
           <CardContent>
             {monthlyData.some(d => d.total > 0) ? (
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={monthlyData}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="name" className="text-xs" />
-                  <YAxis className="text-xs" />
+                <BarChart data={monthlyData} barCategoryGap="20%">
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted/50" />
+                  <XAxis dataKey="name" className="text-xs" tick={{ fontSize: 12 }} />
+                  <YAxis className="text-xs" tick={{ fontSize: 12 }} />
                   <Tooltip content={<CustomTooltip />} />
-                  <Legend />
                   {interventionTypes.map((t) => (
-                    <Bar key={t.name} dataKey={t.name} name={t.label} fill={COLOR_MAP[t.color] || "#6b7280"} stackId="a" />
+                    <Bar key={t.name} dataKey={t.name} name={t.label} fill={COLOR_MAP[t.color] || "#6b7280"} stackId="a" radius={[0, 0, 0, 0]} />
                   ))}
                 </BarChart>
               </ResponsiveContainer>
@@ -419,28 +452,24 @@ export function PerformanceCharts({ interventions, technicians = [] }: Performan
           </CardContent>
         </Card>
 
-      </div>
-
-      {/* Temps moyens et distribution */}
-      <div className="grid gap-6 lg:grid-cols-2">
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5" />
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Clock className="h-4 w-4 text-primary" />
               Temps moyens par type
             </CardTitle>
+            <CardDescription>Trajet + intervention (en minutes)</CardDescription>
           </CardHeader>
           <CardContent>
             {timesByType.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={timesByType} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis type="number" className="text-xs" tickFormatter={(v) => formatMinutes(v)} />
-                  <YAxis dataKey="name" type="category" className="text-xs" width={100} />
+                <BarChart data={timesByType} layout="vertical" barCategoryGap="25%">
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted/50" />
+                  <XAxis type="number" className="text-xs" tick={{ fontSize: 12 }} tickFormatter={(v) => formatMinutes(v)} />
+                  <YAxis dataKey="name" type="category" className="text-xs" tick={{ fontSize: 12 }} width={90} />
                   <Tooltip content={<TimeTooltip />} />
-                  <Legend />
-                  <Bar dataKey="trajet" name="Trajet" fill="#3b82f6" stackId="time" />
-                  <Bar dataKey="intervention" name="Intervention" fill="#22c55e" stackId="time" />
+                  <Bar dataKey="trajet" name="Trajet" fill="#3b82f6" stackId="time" radius={[0, 0, 0, 0]} />
+                  <Bar dataKey="intervention" name="Intervention" fill="#22c55e" stackId="time" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -450,78 +479,44 @@ export function PerformanceCharts({ interventions, technicians = [] }: Performan
             )}
           </CardContent>
         </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <PieChartIcon className="h-5 w-5" />
-              Répartition par type
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {typeDistribution.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={typeDistribution}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-                    outerRadius={100}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {typeDistribution.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                Aucune donnée disponible
-              </div>
-            )}
-          </CardContent>
-        </Card>
       </div>
 
-      {/* Tableau récapitulatif des temps */}
+      {/* Row 3: Summary table */}
       <Card>
-        <CardHeader>
-          <CardTitle>Récapitulatif des temps moyens</CardTitle>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Timer className="h-4 w-4 text-primary" />
+            Récapitulatif des temps moyens
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto rounded-lg border">
             <table className="w-full">
               <thead>
-                <tr className="border-b">
-                  <th className="text-left py-3 px-4 font-medium">Type</th>
-                  <th className="text-center py-3 px-4 font-medium">Interventions</th>
-                  <th className="text-center py-3 px-4 font-medium">Temps trajet</th>
-                  <th className="text-center py-3 px-4 font-medium">Temps intervention</th>
-                  <th className="text-center py-3 px-4 font-medium">Temps total</th>
+                <tr className="bg-muted/50">
+                  <th className="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Type</th>
+                  <th className="text-center py-3 px-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Nb</th>
+                  <th className="text-center py-3 px-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Trajet</th>
+                  <th className="text-center py-3 px-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Intervention</th>
+                  <th className="text-center py-3 px-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Total</th>
                 </tr>
               </thead>
               <tbody>
                 {timesByType.length > 0 ? (
-                  timesByType.map((row) => (
-                    <tr key={row.type} className="border-b last:border-0">
+                  timesByType.map((row, idx) => (
+                    <tr key={row.type} className={cn("transition-colors hover:bg-muted/30", idx % 2 === 0 ? "bg-background" : "bg-muted/10")}>
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
-                          <div 
-                            className="w-3 h-3 rounded-full" 
-                            style={{ backgroundColor: COLOR_MAP[interventionTypes.find(t => t.name === row.type)?.color || 'gray'] || '#6b7280' }}
-                          />
-                          {row.name}
+                          <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: row.color }} />
+                          <span className="font-medium text-sm">{row.name}</span>
                         </div>
                       </td>
-                      <td className="text-center py-3 px-4 font-medium">{row.count}</td>
-                      <td className="text-center py-3 px-4 text-blue-600">{formatMinutes(row.trajet)}</td>
-                      <td className="text-center py-3 px-4 text-green-600">{formatMinutes(row.intervention)}</td>
-                      <td className="text-center py-3 px-4 font-bold">{formatMinutes(row.total)}</td>
+                      <td className="text-center py-3 px-4">
+                        <Badge variant="secondary" className="font-semibold">{row.count}</Badge>
+                      </td>
+                      <td className="text-center py-3 px-4 text-sm font-medium text-blue-600">{formatMinutes(row.trajet)}</td>
+                      <td className="text-center py-3 px-4 text-sm font-medium text-green-600">{formatMinutes(row.intervention)}</td>
+                      <td className="text-center py-3 px-4 text-sm font-bold">{formatMinutes(row.total)}</td>
                     </tr>
                   ))
                 ) : (
