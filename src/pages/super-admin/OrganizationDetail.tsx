@@ -302,7 +302,12 @@ export default function OrganizationDetail() {
             if (subStatus === 'active') {
               return <Badge className="bg-green-600">Abonné</Badge>;
             }
-            return <Badge variant="secondary">{subStatus}</Badge>;
+            const statusLabels: Record<string, string> = {
+              past_due: 'En retard',
+              canceled: 'Annulé',
+              unpaid: 'Impayé',
+            };
+            return <Badge variant="destructive">{statusLabels[subStatus] || subStatus}</Badge>;
           })()}
           <Button 
             variant="outline" 
@@ -574,8 +579,9 @@ export default function OrganizationDetail() {
                     <SelectContent>
                       <SelectItem value="trial">Période d'essai</SelectItem>
                       <SelectItem value="active">Abonnement actif</SelectItem>
-                      <SelectItem value="expired">Expiré</SelectItem>
-                      <SelectItem value="cancelled">Annulé</SelectItem>
+                      <SelectItem value="past_due">En retard de paiement</SelectItem>
+                      <SelectItem value="canceled">Annulé</SelectItem>
+                      <SelectItem value="unpaid">Impayé</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
