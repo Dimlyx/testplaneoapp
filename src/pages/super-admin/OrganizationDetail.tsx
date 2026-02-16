@@ -11,10 +11,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Building2, Plus, UserPlus, Trash2, Users, UserCog, Activity, ClipboardList, Eye, Crown } from 'lucide-react';
+import { ArrowLeft, Building2, Plus, UserPlus, Trash2, Users, UserCog, Activity, ClipboardList, Eye, Crown, CalendarClock } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { PLAN_LABELS, FEATURE_LABELS, type PlanType } from '@/hooks/useOrganizationPlan';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { format, differenceInDays, isPast } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -253,7 +255,7 @@ export default function OrganizationDetail() {
             <p className="text-muted-foreground">{organization.slug}</p>
           </div>
         </div>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-2 flex-wrap justify-end">
           <Select
             value={(organization as any).plan || 'essentiel'}
             onValueChange={async (value: string) => {
@@ -279,6 +281,29 @@ export default function OrganizationDetail() {
               <SelectItem value="business">Business</SelectItem>
             </SelectContent>
           </Select>
+          {/* Trial badge */}
+          {(() => {
+            const subStatus = organization.subscription_status || 'trial';
+            const trialEnd = organization.trial_ends_at ? new Date(organization.trial_ends_at) : null;
+            const isTrialExpired = trialEnd ? isPast(trialEnd) : false;
+            const daysLeft = trialEnd ? differenceInDays(trialEnd, new Date()) : 0;
+
+            if (subStatus === 'trial' && trialEnd) {
+              return (
+                <Badge variant={isTrialExpired ? 'destructive' : 'outline'} className="flex items-center gap-1">
+                  <CalendarClock className="h-3 w-3" />
+                  {isTrialExpired
+                    ? 'Essai expiré'
+                    : `Essai : ${daysLeft}j restant${daysLeft > 1 ? 's' : ''}`
+                  }
+                </Badge>
+              );
+            }
+            if (subStatus === 'active') {
+              return <Badge className="bg-green-600">Abonné</Badge>;
+            }
+            return <Badge variant="secondary">{subStatus}</Badge>;
+          })()}
           <Button 
             variant="outline" 
             onClick={() => {
@@ -514,7 +539,95 @@ export default function OrganizationDetail() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="info">
+        <TabsContent value="info" className="space-y-4">
+          {/* Trial / Subscription Management */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CalendarClock className="h-5 w-5" />
+                Abonnement & Période d'essai
+              </CardTitle>
+              <CardDescription>Gérez le statut d'abonnement et la période d'essai</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Statut d'abonnement</Label>
+                  <Select
+                    value={organization.subscription_status || 'trial'}
+                    onValueChange={async (value: string) => {
+                      const { error } = await supabase
+                        .from('organizations')
+                        .update({ subscription_status: value })
+                        .eq('id', id);
+                      if (error) {
+                        toast.error('Erreur lors de la mise à jour');
+                      } else {
+                        toast.success('Statut mis à jour');
+                        queryClient.invalidateQueries({ queryKey: ['organization', id] });
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="trial">Période d'essai</SelectItem>
+                      <SelectItem value="active">Abonnement actif</SelectItem>
+                      <SelectItem value="expired">Expiré</SelectItem>
+                      <SelectItem value="cancelled">Annulé</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Fin de la période d'essai</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="w-full justify-start text-left font-normal">
+                        <CalendarClock className="mr-2 h-4 w-4" />
+                        {organization.trial_ends_at
+                          ? format(new Date(organization.trial_ends_at), 'dd MMMM yyyy', { locale: fr })
+                          : 'Non définie'
+                        }
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={organization.trial_ends_at ? new Date(organization.trial_ends_at) : undefined}
+                        onSelect={async (date) => {
+                          const { error } = await supabase
+                            .from('organizations')
+                            .update({ trial_ends_at: date ? date.toISOString() : null })
+                            .eq('id', id);
+                          if (error) {
+                            toast.error('Erreur lors de la mise à jour');
+                          } else {
+                            toast.success('Date d\'essai mise à jour');
+                            queryClient.invalidateQueries({ queryKey: ['organization', id] });
+                          }
+                        }}
+                        className="p-3 pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
+              {organization.trial_ends_at && organization.subscription_status === 'trial' && (
+                <div className={`p-3 rounded-lg text-sm ${
+                  isPast(new Date(organization.trial_ends_at))
+                    ? 'bg-destructive/10 text-destructive'
+                    : 'bg-primary/10 text-primary'
+                }`}>
+                  {isPast(new Date(organization.trial_ends_at))
+                    ? `⚠️ La période d'essai a expiré le ${format(new Date(organization.trial_ends_at), 'dd MMMM yyyy', { locale: fr })}`
+                    : `✓ Période d'essai active — ${differenceInDays(new Date(organization.trial_ends_at), new Date())} jour(s) restant(s)`
+                  }
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>Informations de l'organisation</CardTitle>
