@@ -29,6 +29,7 @@ import { format, differenceInDays } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { AnnouncementBanner } from "@/components/admin/AnnouncementBanner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -129,6 +130,8 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-6">
+      {/* Annonces non lues */}
+      <AnnouncementBanner />
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Tableau de bord</h1>
