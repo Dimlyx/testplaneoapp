@@ -12,7 +12,8 @@ import {
   X,
   Shield,
   ChevronRight,
-  UserCog
+  UserCog,
+  Megaphone
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -20,6 +21,7 @@ const navigation = [
   { name: 'Tableau de bord', href: '/super-admin', icon: LayoutDashboard },
   { name: 'Organisations', href: '/super-admin/organizations', icon: Building2 },
   { name: 'Utilisateurs', href: '/super-admin/users', icon: Users },
+  { name: 'Communication', href: '/super-admin/announcements', icon: Megaphone },
 ];
 
 export default function SuperAdminLayout() {
