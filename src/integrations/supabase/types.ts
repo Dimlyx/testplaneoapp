@@ -882,6 +882,7 @@ export type Database = {
           max_users: number | null
           name: string
           phone: string | null
+          plan: string
           postal_code: string | null
           siret: string | null
           slug: string
@@ -903,6 +904,7 @@ export type Database = {
           max_users?: number | null
           name: string
           phone?: string | null
+          plan?: string
           postal_code?: string | null
           siret?: string | null
           slug: string
@@ -924,6 +926,7 @@ export type Database = {
           max_users?: number | null
           name?: string
           phone?: string | null
+          plan?: string
           postal_code?: string | null
           siret?: string | null
           slug?: string
