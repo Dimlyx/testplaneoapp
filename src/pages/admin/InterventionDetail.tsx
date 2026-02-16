@@ -33,6 +33,7 @@ import {
   Play,
   Mail,
   Loader2,
+  Lock,
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -288,20 +289,33 @@ const InterventionDetail = () => {
                 {intervention.technician_id ? "Assigné" : "Non assigné"}
               </p>
             </div>
-            {hasFeature('email') && intervention.scheduled_date && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full mt-2"
-                onClick={handleSendClientEmail}
-                disabled={sendingEmail}
-              >
-                {sendingEmail ? (
-                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Envoi...</>
-                ) : (
-                  <><Mail className="h-4 w-4 mr-2" />Notifier le client par email</>
-                )}
-              </Button>
+            {intervention.scheduled_date && (
+              hasFeature('email') ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full mt-2"
+                  onClick={handleSendClientEmail}
+                  disabled={sendingEmail}
+                >
+                  {sendingEmail ? (
+                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Envoi...</>
+                  ) : (
+                    <><Mail className="h-4 w-4 mr-2" />Notifier le client par email</>
+                  )}
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full mt-2 opacity-50 cursor-not-allowed"
+                  disabled
+                >
+                  <Lock className="h-4 w-4 mr-2" />
+                  Notifier le client par email
+                  <span className="ml-auto text-[10px] border border-muted-foreground/20 text-muted-foreground/60 rounded px-1.5">Business</span>
+                </Button>
+              )
             )}
           </CardContent>
         </Card>

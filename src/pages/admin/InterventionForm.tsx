@@ -29,7 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Save, Paperclip, Mail, Loader2 } from "lucide-react";
+import { ArrowLeft, Save, Paperclip, Mail, Loader2, Lock } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import AttachmentsList from "@/components/technician/AttachmentsList";
 import PendingAttachmentsList from "@/components/admin/PendingAttachmentsList";
@@ -411,7 +411,7 @@ const InterventionForm = () => {
                   />
                 </div>
 
-                {hasFeature('email') && (
+                {hasFeature('email') ? (
                   isEditing && id ? (
                     <Button
                       type="button"
@@ -454,6 +454,18 @@ const InterventionForm = () => {
                       Créer et notifier le client par email
                     </Button>
                   )
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-full mt-2 opacity-50 cursor-not-allowed"
+                    disabled
+                  >
+                    <Lock className="h-4 w-4 mr-2" />
+                    Notifier le client par email
+                    <span className="ml-auto text-[10px] border border-muted-foreground/20 text-muted-foreground/60 rounded px-1.5">Business</span>
+                  </Button>
                 )}
               </CardContent>
             </Card>
