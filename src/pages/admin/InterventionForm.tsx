@@ -28,12 +28,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Save, Paperclip, Mail } from "lucide-react";
+import { ArrowLeft, Save, Paperclip, Mail, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import AttachmentsList from "@/components/technician/AttachmentsList";
 import PendingAttachmentsList from "@/components/admin/PendingAttachmentsList";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 
 const interventionSchema = z.object({
@@ -65,7 +63,6 @@ const InterventionForm = () => {
   const [searchParams] = useSearchParams();
   const isEditing = !!id;
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
-  const [sendNotification, setSendNotification] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
 
   const { data: organizationId } = useUserOrganization();
@@ -180,23 +177,6 @@ const InterventionForm = () => {
         
         toast({ title: "Intervention créée avec succès" });
       }
-
-      // Send email notification if requested
-      if (sendNotification && interventionId) {
-        try {
-          setSendingEmail(true);
-          const { error } = await supabase.functions.invoke('send-client-notification', {
-            body: { interventionId },
-          });
-          if (error) throw error;
-          toast({ title: "Notification envoyée au client" });
-        } catch {
-          toast({ title: "Erreur lors de l'envoi de la notification", variant: "destructive" });
-        } finally {
-          setSendingEmail(false);
-        }
-      }
-
       navigate("/admin/interventions");
     } catch (error) {
       toast({ 
@@ -409,6 +389,37 @@ const InterventionForm = () => {
                     )}
                   />
                 </div>
+
+                {isEditing && id && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-full mt-2"
+                    disabled={sendingEmail || !form.watch('scheduled_date')}
+                    onClick={async () => {
+                      setSendingEmail(true);
+                      try {
+                        const { error } = await supabase.functions.invoke('send-client-notification', {
+                          body: { interventionId: id },
+                        });
+                        if (error) throw error;
+                        toast({ title: "Notification envoyée au client" });
+                      } catch {
+                        toast({ title: "Erreur lors de l'envoi", variant: "destructive" });
+                      } finally {
+                        setSendingEmail(false);
+                      }
+                    }}
+                  >
+                    {sendingEmail ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Mail className="h-4 w-4 mr-2" />
+                    )}
+                    Notifier le client par email
+                  </Button>
+                )}
               </CardContent>
             </Card>
 
@@ -553,27 +564,14 @@ const InterventionForm = () => {
             </Card>
           </div>
 
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="send-notification"
-                checked={sendNotification}
-                onCheckedChange={(checked) => setSendNotification(checked === true)}
-              />
-              <Label htmlFor="send-notification" className="flex items-center gap-1.5 text-sm cursor-pointer">
-                <Mail className="h-4 w-4" />
-                Notifier le client par email
-              </Label>
-            </div>
-            <div className="flex gap-4">
-              <Button type="button" variant="outline" onClick={() => navigate(-1)}>
-                Annuler
-              </Button>
-              <Button type="submit" disabled={createIntervention.isPending || updateIntervention.isPending || sendingEmail}>
-                <Save className="h-4 w-4 mr-2" />
-                {isEditing ? "Mettre à jour" : "Créer l'intervention"}
-              </Button>
-            </div>
+          <div className="flex justify-end gap-4">
+            <Button type="button" variant="outline" onClick={() => navigate(-1)}>
+              Annuler
+            </Button>
+            <Button type="submit" disabled={createIntervention.isPending || updateIntervention.isPending}>
+              <Save className="h-4 w-4 mr-2" />
+              {isEditing ? "Mettre à jour" : "Créer l'intervention"}
+            </Button>
           </div>
         </form>
       </Form>
