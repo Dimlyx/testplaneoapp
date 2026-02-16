@@ -135,7 +135,7 @@ export default function Auth() {
           <img
 
             alt="Planéo - Gestion des interventions SAV"
-            className="h-10 mx-auto mb-4" src="/lovable-uploads/42ee7578-b16d-4240-acc5-b9c51d7ebb87.png" />
+            className="h-12 mx-auto mb-4" src="/lovable-uploads/42ee7578-b16d-4240-acc5-b9c51d7ebb87.png" />
 
         </div>
 
