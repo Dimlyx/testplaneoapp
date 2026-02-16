@@ -28,10 +28,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Save, Paperclip } from "lucide-react";
+import { ArrowLeft, Save, Paperclip, Mail } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import AttachmentsList from "@/components/technician/AttachmentsList";
 import PendingAttachmentsList from "@/components/admin/PendingAttachmentsList";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { supabase } from "@/integrations/supabase/client";
 
 const interventionSchema = z.object({
   title: z.string().min(1, "Le titre est requis"),
@@ -62,6 +65,8 @@ const InterventionForm = () => {
   const [searchParams] = useSearchParams();
   const isEditing = !!id;
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [sendNotification, setSendNotification] = useState(false);
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   const { data: organizationId } = useUserOrganization();
   const { data: intervention, isLoading: loadingIntervention } = useIntervention(id || "");
@@ -156,21 +161,42 @@ const InterventionForm = () => {
         intervention_contact_name: values.intervention_contact_name || null,
       };
 
+      let interventionId: string | undefined;
+
       if (isEditing && id) {
         await updateIntervention.mutateAsync({ id, ...data });
+        interventionId = id;
         toast({ title: "Intervention mise à jour avec succès" });
       } else {
         const result = await createIntervention.mutateAsync(data);
+        interventionId = result?.id;
         
         // Upload pending attachments after intervention is created
-        if (pendingFiles.length > 0 && result?.id) {
+        if (pendingFiles.length > 0 && interventionId) {
           for (const file of pendingFiles) {
-            await addAttachment.mutateAsync({ interventionId: result.id, file });
+            await addAttachment.mutateAsync({ interventionId, file });
           }
         }
         
         toast({ title: "Intervention créée avec succès" });
       }
+
+      // Send email notification if requested
+      if (sendNotification && interventionId) {
+        try {
+          setSendingEmail(true);
+          const { error } = await supabase.functions.invoke('send-client-notification', {
+            body: { interventionId },
+          });
+          if (error) throw error;
+          toast({ title: "Notification envoyée au client" });
+        } catch {
+          toast({ title: "Erreur lors de l'envoi de la notification", variant: "destructive" });
+        } finally {
+          setSendingEmail(false);
+        }
+      }
+
       navigate("/admin/interventions");
     } catch (error) {
       toast({ 
@@ -527,14 +553,27 @@ const InterventionForm = () => {
             </Card>
           </div>
 
-          <div className="flex justify-end gap-4">
-            <Button type="button" variant="outline" onClick={() => navigate(-1)}>
-              Annuler
-            </Button>
-            <Button type="submit" disabled={createIntervention.isPending || updateIntervention.isPending}>
-              <Save className="h-4 w-4 mr-2" />
-              {isEditing ? "Mettre à jour" : "Créer l'intervention"}
-            </Button>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="send-notification"
+                checked={sendNotification}
+                onCheckedChange={(checked) => setSendNotification(checked === true)}
+              />
+              <Label htmlFor="send-notification" className="flex items-center gap-1.5 text-sm cursor-pointer">
+                <Mail className="h-4 w-4" />
+                Notifier le client par email
+              </Label>
+            </div>
+            <div className="flex gap-4">
+              <Button type="button" variant="outline" onClick={() => navigate(-1)}>
+                Annuler
+              </Button>
+              <Button type="submit" disabled={createIntervention.isPending || updateIntervention.isPending || sendingEmail}>
+                <Save className="h-4 w-4 mr-2" />
+                {isEditing ? "Mettre à jour" : "Créer l'intervention"}
+              </Button>
+            </div>
           </div>
         </form>
       </Form>
