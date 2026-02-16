@@ -9,6 +9,7 @@ import { useTechnicians } from "@/hooks/useTechnicians";
 import { useUserOrganization } from "@/hooks/useUserOrganization";
 import { useAddInterventionAttachment } from "@/hooks/useInterventionAttachments";
 import { useInterventionTypes } from "@/hooks/useInterventionTypes";
+import { useOrganizationPlan } from "@/hooks/useOrganizationPlan";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -71,6 +72,7 @@ const InterventionForm = () => {
   const { data: clients = [], isLoading: loadingClients } = useClients();
   const { data: technicians = [], isLoading: loadingTechnicians } = useTechnicians(organizationId);
   const { data: interventionTypes = [] } = useInterventionTypes();
+  const { hasFeature } = useOrganizationPlan();
   const createIntervention = useCreateIntervention(organizationId);
   const updateIntervention = useUpdateIntervention();
   const addAttachment = useAddInterventionAttachment();
@@ -409,47 +411,49 @@ const InterventionForm = () => {
                   />
                 </div>
 
-                {isEditing && id ? (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="w-full mt-2"
-                    disabled={sendingEmail || !form.watch('scheduled_date')}
-                    onClick={async () => {
-                      setSendingEmail(true);
-                      try {
-                        const { error } = await supabase.functions.invoke('send-client-notification', {
-                          body: { interventionId: id },
-                        });
-                        if (error) throw error;
-                        toast({ title: "Notification envoyée au client" });
-                      } catch {
-                        toast({ title: "Erreur lors de l'envoi", variant: "destructive" });
-                      } finally {
-                        setSendingEmail(false);
-                      }
-                    }}
-                  >
-                    {sendingEmail ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
+                {hasFeature('email') && (
+                  isEditing && id ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-full mt-2"
+                      disabled={sendingEmail || !form.watch('scheduled_date')}
+                      onClick={async () => {
+                        setSendingEmail(true);
+                        try {
+                          const { error } = await supabase.functions.invoke('send-client-notification', {
+                            body: { interventionId: id },
+                          });
+                          if (error) throw error;
+                          toast({ title: "Notification envoyée au client" });
+                        } catch {
+                          toast({ title: "Erreur lors de l'envoi", variant: "destructive" });
+                        } finally {
+                          setSendingEmail(false);
+                        }
+                      }}
+                    >
+                      {sendingEmail ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Mail className="h-4 w-4 mr-2" />
+                      )}
+                      Notifier le client par email
+                    </Button>
+                  ) : (
+                    <Button
+                      type="submit"
+                      variant="outline"
+                      size="sm"
+                      className="w-full mt-2"
+                      disabled={!form.watch('scheduled_date') || !form.watch('client_id') || !form.watch('title')}
+                      onClick={() => setShouldSendEmail(true)}
+                    >
                       <Mail className="h-4 w-4 mr-2" />
-                    )}
-                    Notifier le client par email
-                  </Button>
-                ) : (
-                  <Button
-                    type="submit"
-                    variant="outline"
-                    size="sm"
-                    className="w-full mt-2"
-                    disabled={!form.watch('scheduled_date') || !form.watch('client_id') || !form.watch('title')}
-                    onClick={() => setShouldSendEmail(true)}
-                  >
-                    <Mail className="h-4 w-4 mr-2" />
-                    Créer et notifier le client par email
-                  </Button>
+                      Créer et notifier le client par email
+                    </Button>
+                  )
                 )}
               </CardContent>
             </Card>

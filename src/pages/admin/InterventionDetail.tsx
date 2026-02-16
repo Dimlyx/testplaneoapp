@@ -6,6 +6,7 @@ import { useInterventionPhotos, PhotoType } from "@/hooks/useInterventionPhotos"
 import { useInterventionPauses } from "@/hooks/useInterventionPauses";
 import { useInterventionEquipment } from "@/hooks/useInterventionEquipment";
 import { useCompanySettings, useDocumentSettings } from "@/hooks/useAppSettings";
+import { useOrganizationPlan } from "@/hooks/useOrganizationPlan";
 import { useInterventionTypes } from "@/hooks/useInterventionTypes";
 import { useWorkflowSteps } from "@/hooks/useWorkflowSteps";
 import { useStepCompletions } from "@/hooks/useStepCompletions";
@@ -57,7 +58,8 @@ const InterventionDetail = () => {
   const { data: interventionEquipments = [] } = useInterventionEquipment(id || "");
   const { data: companySettings } = useCompanySettings();
   const { data: documentSettings } = useDocumentSettings();
-  
+  const { hasFeature } = useOrganizationPlan();
+
   // Fetch workflow steps and completions
   const { data: interventionTypes = [] } = useInterventionTypes();
   const matchingType = interventionTypes.find(
@@ -286,7 +288,7 @@ const InterventionDetail = () => {
                 {intervention.technician_id ? "Assigné" : "Non assigné"}
               </p>
             </div>
-            {intervention.scheduled_date && (
+            {hasFeature('email') && intervention.scheduled_date && (
               <Button
                 variant="outline"
                 size="sm"
