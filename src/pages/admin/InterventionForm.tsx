@@ -64,6 +64,7 @@ const InterventionForm = () => {
   const isEditing = !!id;
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [sendingEmail, setSendingEmail] = useState(false);
+  const [shouldSendEmail, setShouldSendEmail] = useState(false);
 
   const { data: organizationId } = useUserOrganization();
   const { data: intervention, isLoading: loadingIntervention } = useIntervention(id || "");
@@ -177,6 +178,24 @@ const InterventionForm = () => {
         
         toast({ title: "Intervention créée avec succès" });
       }
+
+      // Send email notification if requested
+      if (shouldSendEmail && interventionId) {
+        try {
+          setSendingEmail(true);
+          const { error } = await supabase.functions.invoke('send-client-notification', {
+            body: { interventionId },
+          });
+          if (error) throw error;
+          toast({ title: "Notification envoyée au client" });
+        } catch {
+          toast({ title: "Erreur lors de l'envoi de la notification", variant: "destructive" });
+        } finally {
+          setSendingEmail(false);
+          setShouldSendEmail(false);
+        }
+      }
+
       navigate("/admin/interventions");
     } catch (error) {
       toast({ 
@@ -390,7 +409,7 @@ const InterventionForm = () => {
                   />
                 </div>
 
-                {isEditing && id && (
+                {isEditing && id ? (
                   <Button
                     type="button"
                     variant="outline"
@@ -418,6 +437,18 @@ const InterventionForm = () => {
                       <Mail className="h-4 w-4 mr-2" />
                     )}
                     Notifier le client par email
+                  </Button>
+                ) : (
+                  <Button
+                    type="submit"
+                    variant="outline"
+                    size="sm"
+                    className="w-full mt-2"
+                    disabled={!form.watch('scheduled_date') || !form.watch('client_id') || !form.watch('title')}
+                    onClick={() => setShouldSendEmail(true)}
+                  >
+                    <Mail className="h-4 w-4 mr-2" />
+                    Créer et notifier le client par email
                   </Button>
                 )}
               </CardContent>
