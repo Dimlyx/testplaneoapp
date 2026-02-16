@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { useIntervention, useCreateIntervention, useUpdateIntervention } from "@/hooks/useInterventions";
 import { useClient } from "@/hooks/useClients";
@@ -29,11 +30,14 @@ import {
   CopyPlus,
   Pause,
   Play,
+  Mail,
+  Loader2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "@/hooks/use-toast";
 import { generateInterventionPDF } from "@/lib/pdf-generator";
+import { supabase } from "@/integrations/supabase/client";
 
 const parsePhotoUrls = (photoUrl: string | null): string[] => {
   if (!photoUrl) return [];
@@ -64,6 +68,7 @@ const InterventionDetail = () => {
   const updateIntervention = useUpdateIntervention();
   const { data: pauses = [] } = useInterventionPauses(id || "");
   const createIntervention = useCreateIntervention(intervention?.organization_id);
+  const [sendingEmail, setSendingEmail] = useState(false);
   const getPhotosOfType = (type: PhotoType) => photos.filter(p => p.photo_type === type);
 
   const handleCopyLink = () => {
@@ -129,6 +134,23 @@ const InterventionDetail = () => {
     });
     toast({ title: "Intervention clôturée avec succès" });
     refetch();
+  };
+
+  const handleSendClientEmail = async () => {
+    if (!id) return;
+    setSendingEmail(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-client-notification', {
+        body: { interventionId: id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast({ title: "Email envoyé", description: "Le client a été notifié par email." });
+    } catch (err: any) {
+      toast({ title: "Erreur d'envoi", description: err.message || "Impossible d'envoyer l'email", variant: "destructive" });
+    } finally {
+      setSendingEmail(false);
+    }
   };
 
   if (isLoading) {
@@ -264,6 +286,21 @@ const InterventionDetail = () => {
                 {intervention.technician_id ? "Assigné" : "Non assigné"}
               </p>
             </div>
+            {intervention.scheduled_date && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full mt-2"
+                onClick={handleSendClientEmail}
+                disabled={sendingEmail}
+              >
+                {sendingEmail ? (
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Envoi...</>
+                ) : (
+                  <><Mail className="h-4 w-4 mr-2" />Notifier le client par email</>
+                )}
+              </Button>
+            )}
           </CardContent>
         </Card>
 
