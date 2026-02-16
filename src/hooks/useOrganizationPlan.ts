@@ -25,6 +25,7 @@ const PLAN_FEATURES: Record<PlanType, Set<string>> = {
     'chatbot',
     'export_data',
     'multi_technicians',
+    'email',
   ]),
 };
 
