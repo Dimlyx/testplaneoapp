@@ -11,7 +11,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Trash2, Eye, Edit } from "lucide-react";
+import { Plus, Search, Trash2, Eye, Edit, Upload } from "lucide-react";
+import { ImportCSVDialog } from "@/components/admin/ImportCSVDialog";
 import { useNavigate } from "react-router-dom";
 import {
   AlertDialog,
@@ -32,6 +33,7 @@ const Clients = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   const filteredClients = clients.filter((client) =>
     client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -65,10 +67,16 @@ const Clients = () => {
           <h1 className="text-3xl font-bold text-foreground">Clients</h1>
           <p className="text-muted-foreground">Gérez vos clients</p>
         </div>
-        <Button onClick={() => navigate("/admin/clients/new")}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nouveau client
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setImportOpen(true)}>
+            <Upload className="h-4 w-4 mr-2" />
+            Importer CSV
+          </Button>
+          <Button onClick={() => navigate("/admin/clients/new")}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nouveau client
+          </Button>
+        </div>
       </div>
 
       <div className="relative max-w-md">
@@ -167,6 +175,8 @@ const Clients = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ImportCSVDialog open={importOpen} onOpenChange={setImportOpen} />
     </div>
   );
 };
