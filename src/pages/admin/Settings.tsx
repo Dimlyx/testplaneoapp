@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from "react";
-import { Settings as SettingsIcon, FileText, Palette, Save, Upload, X, Image, Eye, EyeOff, Building2, RotateCcw, ListChecks, Download } from "lucide-react";
+import { Settings as SettingsIcon, FileText, Palette, Save, Upload, X, Image, Eye, EyeOff, Building2, RotateCcw, ListChecks, Download, Lock } from "lucide-react";
+import { useOrganizationPlan } from "@/hooks/useOrganizationPlan";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +34,7 @@ import {
 
 export default function Settings() {
   const { toast } = useToast();
+  const { hasFeature } = useOrganizationPlan();
   
   const { data: dbCompanySettings, isLoading: loadingCompany } = useCompanySettings();
   const { data: dbInterfaceSettings, isLoading: loadingInterface } = useInterfaceSettings();
@@ -422,18 +425,25 @@ export default function Settings() {
         </AccordionItem>
 
         {/* Section: Documents (unified PDF + Extranet) */}
-        <AccordionItem value="documents" className="border rounded-lg px-4">
-          <AccordionTrigger className="hover:no-underline">
+        <AccordionItem value="documents" className="border rounded-lg px-4" disabled={!hasFeature('documents_extranet')}>
+          <AccordionTrigger className="hover:no-underline" disabled={!hasFeature('documents_extranet')}>
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <FileText className="h-5 w-5 text-primary" />
+              <div className={`p-2 rounded-lg ${hasFeature('documents_extranet') ? 'bg-primary/10' : 'bg-muted'}`}>
+                <FileText className={`h-5 w-5 ${hasFeature('documents_extranet') ? 'text-primary' : 'text-muted-foreground/50'}`} />
               </div>
               <div className="text-left">
-                <p className="font-semibold">Documents & Extranet</p>
+                <p className={`font-semibold ${!hasFeature('documents_extranet') ? 'text-muted-foreground/50' : ''}`}>Documents & Extranet</p>
                 <p className="text-sm text-muted-foreground font-normal">Contenu et apparence des rapports PDF et du portail client</p>
               </div>
+              {!hasFeature('documents_extranet') && (
+                <Badge variant="outline" className="ml-auto text-[10px] px-1.5 py-0 border-muted-foreground/20 text-muted-foreground/50">
+                  <Lock className="h-3 w-3 mr-1" />
+                  Business
+                </Badge>
+              )}
             </div>
           </AccordionTrigger>
+          {hasFeature('documents_extranet') && (
           <AccordionContent className="pt-4 space-y-6">
             {/* Visibility toggles */}
             <Card>
@@ -549,6 +559,7 @@ export default function Settings() {
               {updateDocumentSettingsMutation.isPending ? "Enregistrement..." : "Enregistrer les paramètres documents"}
             </Button>
           </AccordionContent>
+          )}
         </AccordionItem>
 
         {/* Section: Export des données */}
