@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useMaintenanceAlerts, useCreateMaintenanceAlert, useUpdateMaintenanceAlert, useDeleteMaintenanceAlert, MaintenanceAlert, AlertRecurrence, AlertStatus } from '@/hooks/useMaintenanceAlerts';
 import { useClients } from '@/hooks/useClients';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,13 +11,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Bell, Plus, Edit, Trash2, Calendar, RefreshCw, CheckCircle, Clock, XCircle, AlertTriangle, CalendarDays } from 'lucide-react';
-import { format, parseISO, isPast, isToday, isFuture, addDays } from 'date-fns';
+import { Bell, Plus, Edit, Trash2, Calendar, RefreshCw, CheckCircle, Clock, XCircle, AlertTriangle, CalendarDays, Search, X, ClipboardList, Filter, ArrowRight } from 'lucide-react';
+import { format, parseISO, isPast, isToday, isFuture, addDays, differenceInDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MaintenanceCalendar } from '@/components/admin/MaintenanceCalendar';
+import { useNavigate } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 
 const recurrenceLabels: Record<AlertRecurrence, string> = {
   once: 'Une fois',
@@ -34,11 +36,11 @@ const statusLabels: Record<AlertStatus, string> = {
   dismissed: 'Ignoré',
 };
 
-const statusColors: Record<AlertStatus, string> = {
-  pending: 'bg-amber-500',
-  acknowledged: 'bg-blue-500',
-  completed: 'bg-green-500',
-  dismissed: 'bg-gray-500',
+const statusConfig: Record<AlertStatus, { bg: string; text: string; dot: string }> = {
+  pending: { bg: 'bg-amber-50 dark:bg-amber-950/30', text: 'text-amber-700 dark:text-amber-400', dot: 'bg-amber-500' },
+  acknowledged: { bg: 'bg-blue-50 dark:bg-blue-950/30', text: 'text-blue-700 dark:text-blue-400', dot: 'bg-blue-500' },
+  completed: { bg: 'bg-green-50 dark:bg-green-950/30', text: 'text-green-700 dark:text-green-400', dot: 'bg-green-500' },
+  dismissed: { bg: 'bg-muted', text: 'text-muted-foreground', dot: 'bg-muted-foreground' },
 };
 
 interface AlertFormData {
@@ -51,6 +53,7 @@ interface AlertFormData {
 
 export default function MaintenanceAlerts() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const { data: alerts = [], isLoading } = useMaintenanceAlerts();
   const { data: clients = [] } = useClients();
   const createAlert = useCreateMaintenanceAlert();
@@ -59,6 +62,9 @@ export default function MaintenanceAlerts() {
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAlert, setEditingAlert] = useState<MaintenanceAlert | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterClient, setFilterClient] = useState<string>('all');
+  const [filterRecurrence, setFilterRecurrence] = useState<string>('all');
   const [formData, setFormData] = useState<AlertFormData>({
     title: '',
     description: '',
@@ -139,6 +145,14 @@ export default function MaintenanceAlerts() {
     await updateAlert.mutateAsync({ id: alert.id, status: newStatus });
   };
 
+  const handleCreateIntervention = (alert: MaintenanceAlert) => {
+    const params = new URLSearchParams();
+    if (alert.client_id) params.set('client_id', alert.client_id);
+    params.set('title', `Maintenance: ${alert.title}`);
+    if (alert.description) params.set('description', alert.description);
+    navigate(`/admin/interventions/new?${params.toString()}`);
+  };
+
   const getAlertUrgency = (alertDate: string) => {
     const date = parseISO(alertDate);
     if (isPast(date) && !isToday(date)) return 'overdue';
@@ -147,26 +161,61 @@ export default function MaintenanceAlerts() {
     return 'future';
   };
 
-  const urgencyBadge = (alertDate: string, status: AlertStatus) => {
+  const getUrgencyBadge = (alertDate: string, status: AlertStatus) => {
     if (status === 'completed' || status === 'dismissed') return null;
-    
     const urgency = getAlertUrgency(alertDate);
+    const daysOverdue = differenceInDays(new Date(), parseISO(alertDate));
     switch (urgency) {
       case 'overdue':
-        return <Badge variant="destructive" className="ml-2">En retard</Badge>;
+        return (
+          <Badge variant="destructive" className="text-xs">
+            {daysOverdue} j. retard
+          </Badge>
+        );
       case 'today':
-        return <Badge className="ml-2 bg-amber-500">Aujourd'hui</Badge>;
+        return <Badge className="bg-amber-500 text-white text-xs">Aujourd'hui</Badge>;
       case 'upcoming':
-        return <Badge variant="secondary" className="ml-2">Cette semaine</Badge>;
+        return <Badge variant="secondary" className="text-xs">Cette semaine</Badge>;
       default:
         return null;
     }
   };
 
-  // Filter alerts by status
-  const pendingAlerts = alerts.filter(a => a.status === 'pending');
-  const acknowledgedAlerts = alerts.filter(a => a.status === 'acknowledged');
-  const completedAlerts = alerts.filter(a => a.status === 'completed' || a.status === 'dismissed');
+  // Filtered alerts
+  const filteredAlerts = useMemo(() => {
+    return alerts.filter(a => {
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchTitle = a.title.toLowerCase().includes(q);
+        const matchClient = a.clients?.name?.toLowerCase().includes(q);
+        const matchDesc = a.description?.toLowerCase().includes(q);
+        if (!matchTitle && !matchClient && !matchDesc) return false;
+      }
+      if (filterClient !== 'all' && a.client_id !== filterClient) return false;
+      if (filterRecurrence !== 'all' && a.recurrence !== filterRecurrence) return false;
+      return true;
+    });
+  }, [alerts, searchQuery, filterClient, filterRecurrence]);
+
+  const pendingAlerts = filteredAlerts.filter(a => a.status === 'pending');
+  const acknowledgedAlerts = filteredAlerts.filter(a => a.status === 'acknowledged');
+  const completedAlerts = filteredAlerts.filter(a => a.status === 'completed' || a.status === 'dismissed');
+  const activeAlerts = [...pendingAlerts, ...acknowledgedAlerts].sort(
+    (a, b) => new Date(a.alert_date).getTime() - new Date(b.alert_date).getTime()
+  );
+
+  // Stats from unfiltered data
+  const overdueCount = alerts.filter(a => a.status === 'pending' && getAlertUrgency(a.alert_date) === 'overdue').length;
+  const todayCount = alerts.filter(a => (a.status === 'pending' || a.status === 'acknowledged') && getAlertUrgency(a.alert_date) === 'today').length;
+  const upcomingCount = alerts.filter(a => (a.status === 'pending' || a.status === 'acknowledged') && getAlertUrgency(a.alert_date) === 'upcoming').length;
+
+  const hasFilters = searchQuery.trim() !== '' || filterClient !== 'all' || filterRecurrence !== 'all';
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setFilterClient('all');
+    setFilterRecurrence('all');
+  };
 
   if (isLoading) {
     return (
@@ -178,20 +227,21 @@ export default function MaintenanceAlerts() {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-primary/10">
+          <div className="p-2.5 rounded-xl bg-primary/10">
             <Bell className="h-6 w-6 text-primary" />
           </div>
           <div>
             <h1 className="text-2xl font-bold">Alertes Maintenance</h1>
-            <p className="text-muted-foreground">Gestion des alertes de maintenance préventive</p>
+            <p className="text-sm text-muted-foreground">Planification et suivi de la maintenance préventive</p>
           </div>
         </div>
 
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => handleOpenDialog()}>
+            <Button onClick={() => handleOpenDialog()} size="default">
               <Plus className="h-4 w-4 mr-2" />
               Nouvelle alerte
             </Button>
@@ -289,53 +339,122 @@ export default function MaintenanceAlerts() {
         </Dialog>
       </div>
 
-      {/* Summary cards */}
+      {/* KPI Cards - Modern design */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">En attente</CardTitle>
-            <Clock className="h-4 w-4 text-amber-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{pendingAlerts.length}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pris en compte</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{acknowledgedAlerts.length}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">En retard</CardTitle>
-            <XCircle className="h-4 w-4 text-destructive" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-destructive">
-              {alerts.filter(a => a.status === 'pending' && getAlertUrgency(a.alert_date) === 'overdue').length}
+        <Card className={cn("border-l-4 border-l-destructive", overdueCount > 0 && "bg-destructive/5")}>
+          <CardContent className="pt-5 pb-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">En retard</p>
+                <p className={cn("text-3xl font-bold mt-1", overdueCount > 0 ? "text-destructive" : "text-foreground")}>
+                  {overdueCount}
+                </p>
+              </div>
+              <div className={cn("p-3 rounded-xl", overdueCount > 0 ? "bg-destructive/10" : "bg-muted")}>
+                <AlertTriangle className={cn("h-5 w-5", overdueCount > 0 ? "text-destructive" : "text-muted-foreground")} />
+              </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Terminées</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{completedAlerts.length}</div>
+
+        <Card className="border-l-4 border-l-amber-500">
+          <CardContent className="pt-5 pb-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Aujourd'hui</p>
+                <p className="text-3xl font-bold mt-1">{todayCount}</p>
+              </div>
+              <div className="p-3 rounded-xl bg-amber-500/10">
+                <Clock className="h-5 w-5 text-amber-500" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-l-4 border-l-blue-500">
+          <CardContent className="pt-5 pb-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Cette semaine</p>
+                <p className="text-3xl font-bold mt-1">{upcomingCount}</p>
+              </div>
+              <div className="p-3 rounded-xl bg-blue-500/10">
+                <CalendarDays className="h-5 w-5 text-blue-500" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-l-4 border-l-green-500">
+          <CardContent className="pt-5 pb-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Terminées</p>
+                <p className="text-3xl font-bold mt-1">
+                  {alerts.filter(a => a.status === 'completed').length}
+                </p>
+              </div>
+              <div className="p-3 rounded-xl bg-green-500/10">
+                <CheckCircle className="h-5 w-5 text-green-500" />
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Alerts table */}
+      {/* Search & Filters */}
+      <Card>
+        <CardContent className="pt-4 pb-4">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Rechercher par titre, client, description..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Select value={filterClient} onValueChange={setFilterClient}>
+              <SelectTrigger className="w-full sm:w-[200px]">
+                <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
+                <SelectValue placeholder="Client" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous les clients</SelectItem>
+                {clients.map((client) => (
+                  <SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={filterRecurrence} onValueChange={setFilterRecurrence}>
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <RefreshCw className="h-4 w-4 mr-2 text-muted-foreground" />
+                <SelectValue placeholder="Récurrence" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Toutes</SelectItem>
+                <SelectItem value="once">Une fois</SelectItem>
+                <SelectItem value="weekly">Hebdomadaire</SelectItem>
+                <SelectItem value="monthly">Mensuel</SelectItem>
+                <SelectItem value="quarterly">Trimestriel</SelectItem>
+                <SelectItem value="yearly">Annuel</SelectItem>
+              </SelectContent>
+            </Select>
+            {hasFilters && (
+              <Button variant="ghost" size="icon" onClick={clearFilters} className="shrink-0">
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Tabs */}
       <Tabs defaultValue="active" className="space-y-4">
         <TabsList>
           <TabsTrigger value="active">
-            Actives ({pendingAlerts.length + acknowledgedAlerts.length})
+            Actives ({activeAlerts.length})
           </TabsTrigger>
           <TabsTrigger value="calendar" className="flex items-center gap-1">
             <CalendarDays className="h-4 w-4" />
@@ -348,173 +467,114 @@ export default function MaintenanceAlerts() {
 
         <TabsContent value="calendar">
           <MaintenanceCalendar 
-            alerts={alerts} 
+            alerts={filteredAlerts} 
             onAlertClick={(alert) => handleOpenDialog(alert)}
           />
         </TabsContent>
 
         <TabsContent value="active">
-          <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Alerte</TableHead>
-                    <TableHead>Client</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Récurrence</TableHead>
-                    <TableHead>Statut</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {[...pendingAlerts, ...acknowledgedAlerts].length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                        Aucune alerte active
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    [...pendingAlerts, ...acknowledgedAlerts]
-                      .sort((a, b) => new Date(a.alert_date).getTime() - new Date(b.alert_date).getTime())
-                      .map((alert) => (
-                        <TableRow key={alert.id}>
-                          <TableCell>
-                            <div>
-                              <p className="font-medium">{alert.title}</p>
-                              {alert.description && (
-                                <p className="text-sm text-muted-foreground truncate max-w-[200px]">
-                                  {alert.description}
-                                </p>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            {alert.clients?.name || <span className="text-muted-foreground">-</span>}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center">
-                              <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
-                              {format(parseISO(alert.alert_date), 'dd MMM yyyy', { locale: fr })}
-                              {urgencyBadge(alert.alert_date, alert.status)}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-1">
-                              {alert.recurrence !== 'once' && (
-                                <RefreshCw className="h-3 w-3 text-muted-foreground" />
-                              )}
-                              {recurrenceLabels[alert.recurrence]}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Select
-                              value={alert.status}
-                              onValueChange={(value: AlertStatus) => handleStatusChange(alert, value)}
-                            >
-                              <SelectTrigger className="w-[140px]">
-                                <div className="flex items-center gap-2">
-                                  <div className={`w-2 h-2 rounded-full ${statusColors[alert.status]}`} />
-                                  {statusLabels[alert.status]}
-                                </div>
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="pending">En attente</SelectItem>
-                                <SelectItem value="acknowledged">Pris en compte</SelectItem>
-                                <SelectItem value="completed">Terminé</SelectItem>
-                                <SelectItem value="dismissed">Ignoré</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleOpenDialog(alert)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button variant="ghost" size="icon">
-                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Supprimer l'alerte ?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      Cette action est irréversible. L'alerte sera définitivement supprimée.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Annuler</AlertDialogCancel>
-                                    <AlertDialogAction
-                                      onClick={() => deleteAlert.mutate(alert.id)}
-                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                    >
-                                      Supprimer
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="completed">
-          <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Alerte</TableHead>
-                    <TableHead>Client</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Récurrence</TableHead>
-                    <TableHead>Statut</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {completedAlerts.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                        Aucune alerte dans l'historique
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    completedAlerts.map((alert) => (
-                      <TableRow key={alert.id} className="opacity-60">
-                        <TableCell>
-                          <div>
-                            <p className="font-medium">{alert.title}</p>
+          {activeAlerts.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="p-4 rounded-full bg-muted mb-4">
+                  <Bell className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <h3 className="font-semibold text-lg mb-1">Aucune alerte active</h3>
+                <p className="text-muted-foreground text-sm max-w-sm">
+                  {hasFilters ? 'Aucun résultat ne correspond à vos filtres.' : 'Créez votre première alerte de maintenance préventive.'}
+                </p>
+                {!hasFilters && (
+                  <Button className="mt-4" onClick={() => handleOpenDialog()}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Créer une alerte
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {activeAlerts.map((alert) => {
+                const urgency = getAlertUrgency(alert.alert_date);
+                const cfg = statusConfig[alert.status];
+                return (
+                  <Card key={alert.id} className={cn(
+                    "transition-all hover:shadow-md",
+                    urgency === 'overdue' && alert.status === 'pending' && "border-destructive/50"
+                  )}>
+                    <CardContent className="p-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                        {/* Left: Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap mb-1">
+                            <h3 className="font-semibold text-base truncate">{alert.title}</h3>
+                            {getUrgencyBadge(alert.alert_date, alert.status)}
                           </div>
-                        </TableCell>
-                        <TableCell>
-                          {alert.clients?.name || <span className="text-muted-foreground">-</span>}
-                        </TableCell>
-                        <TableCell>
-                          {format(parseISO(alert.alert_date), 'dd MMM yyyy', { locale: fr })}
-                        </TableCell>
-                        <TableCell>{recurrenceLabels[alert.recurrence]}</TableCell>
-                        <TableCell>
-                          <Badge variant="secondary" className={statusColors[alert.status]}>
-                            {statusLabels[alert.status]}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
+                          {alert.description && (
+                            <p className="text-sm text-muted-foreground line-clamp-1 mb-2">{alert.description}</p>
+                          )}
+                          <div className="flex items-center gap-3 flex-wrap text-sm text-muted-foreground">
+                            {alert.clients?.name && (
+                              <span className="flex items-center gap-1">
+                                <span className="font-medium text-foreground">{alert.clients.name}</span>
+                              </span>
+                            )}
+                            <span className="flex items-center gap-1">
+                              <Calendar className="h-3.5 w-3.5" />
+                              {format(parseISO(alert.alert_date), 'dd MMM yyyy', { locale: fr })}
+                            </span>
+                            {alert.recurrence !== 'once' && (
+                              <span className="flex items-center gap-1">
+                                <RefreshCw className="h-3.5 w-3.5" />
+                                {recurrenceLabels[alert.recurrence]}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Right: Actions */}
+                        <div className="flex items-center gap-2 shrink-0">
+                          <Select
+                            value={alert.status}
+                            onValueChange={(value: AlertStatus) => handleStatusChange(alert, value)}
+                          >
+                            <SelectTrigger className="w-[145px] h-9">
+                              <div className="flex items-center gap-2">
+                                <div className={cn("w-2 h-2 rounded-full", cfg.dot)} />
+                                <span className="text-sm">{statusLabels[alert.status]}</span>
+                              </div>
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="pending">En attente</SelectItem>
+                              <SelectItem value="acknowledged">Pris en compte</SelectItem>
+                              <SelectItem value="completed">Terminé</SelectItem>
+                              <SelectItem value="dismissed">Ignoré</SelectItem>
+                            </SelectContent>
+                          </Select>
+
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleCreateIntervention(alert)}
+                            className="text-xs gap-1.5"
+                            title="Créer une intervention"
+                          >
+                            <ClipboardList className="h-3.5 w-3.5" />
+                            <span className="hidden lg:inline">Intervention</span>
+                            <ArrowRight className="h-3 w-3" />
+                          </Button>
+
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-9 w-9"
+                            onClick={() => handleOpenDialog(alert)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="icon">
+                              <Button variant="ghost" size="icon" className="h-9 w-9">
                                 <Trash2 className="h-4 w-4 text-destructive" />
                               </Button>
                             </AlertDialogTrigger>
@@ -522,7 +582,7 @@ export default function MaintenanceAlerts() {
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Supprimer l'alerte ?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Cette action est irréversible.
+                                  Cette action est irréversible. L'alerte sera définitivement supprimée.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
@@ -536,14 +596,84 @@ export default function MaintenanceAlerts() {
                               </AlertDialogFooter>
                             </AlertDialogContent>
                           </AlertDialog>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="completed">
+          {completedAlerts.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="p-4 rounded-full bg-muted mb-4">
+                  <CheckCircle className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <h3 className="font-semibold text-lg mb-1">Aucun historique</h3>
+                <p className="text-muted-foreground text-sm">Les alertes terminées ou ignorées apparaîtront ici.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-2">
+              {completedAlerts.map((alert) => {
+                const cfg = statusConfig[alert.status];
+                return (
+                  <Card key={alert.id} className="opacity-70 hover:opacity-100 transition-opacity">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-medium truncate">{alert.title}</h3>
+                            <Badge variant="secondary" className={cn("text-xs", cfg.bg, cfg.text)}>
+                              {statusLabels[alert.status]}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                            {alert.clients?.name && <span>{alert.clients.name}</span>}
+                            <span>{format(parseISO(alert.alert_date), 'dd MMM yyyy', { locale: fr })}</span>
+                            {alert.recurrence !== 'once' && (
+                              <span className="flex items-center gap-1">
+                                <RefreshCw className="h-3 w-3" />
+                                {recurrenceLabels[alert.recurrence]}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0">
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Supprimer l'alerte ?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Cette action est irréversible.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Annuler</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => deleteAlert.mutate(alert.id)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Supprimer
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
         </TabsContent>
       </Tabs>
     </div>

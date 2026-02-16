@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -59,6 +59,7 @@ type InterventionFormValues = z.infer<typeof interventionSchema>;
 const InterventionForm = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const isEditing = !!id;
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
 
@@ -119,6 +120,18 @@ const InterventionForm = () => {
       });
     }
   }, [intervention, isEditing, form]);
+
+  // Pre-fill from URL params (e.g. from maintenance alert)
+  useEffect(() => {
+    if (!isEditing) {
+      const title = searchParams.get('title');
+      const clientId = searchParams.get('client_id');
+      const description = searchParams.get('description');
+      if (title) form.setValue('title', title);
+      if (clientId) form.setValue('client_id', clientId);
+      if (description) form.setValue('description', description);
+    }
+  }, [isEditing, searchParams, form]);
 
   const onSubmit = async (values: InterventionFormValues) => {
     try {
