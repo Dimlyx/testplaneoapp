@@ -26,6 +26,7 @@ const PLAN_FEATURES: Record<PlanType, Set<string>> = {
     'export_data',
     'multi_technicians',
     'email',
+    'documents_extranet',
   ]),
 };
 
@@ -80,4 +81,5 @@ export const FEATURE_LABELS: Record<string, string> = {
   chatbot: 'Assistant IA',
   export_data: 'Export des données',
   multi_technicians: 'Multi-techniciens',
+  documents_extranet: 'Documents & Extranet',
 };
