@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      announcement_reads: {
+        Row: {
+          announcement_id: string
+          id: string
+          organization_id: string
+          read_at: string
+          read_by: string | null
+        }
+        Insert: {
+          announcement_id: string
+          id?: string
+          organization_id: string
+          read_at?: string
+          read_by?: string | null
+        }
+        Update: {
+          announcement_id?: string
+          id?: string
+          organization_id?: string
+          read_at?: string
+          read_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcement_reads_announcement_id_fkey"
+            columns: ["announcement_id"]
+            isOneToOne: false
+            referencedRelation: "announcements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "announcement_reads_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       announcements: {
         Row: {
           content: string
