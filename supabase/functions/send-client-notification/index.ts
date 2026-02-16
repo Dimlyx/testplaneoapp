@@ -12,9 +12,9 @@ serve(async (req) => {
   }
 
   try {
-    const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
-    if (!RESEND_API_KEY) {
-      throw new Error('RESEND_API_KEY is not configured');
+    const BREVO_API_KEY = Deno.env.get('BREVO_API_KEY');
+    if (!BREVO_API_KEY) {
+      throw new Error('BREVO_API_KEY is not configured');
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -119,29 +119,29 @@ serve(async (req) => {
       </div>
     </div>`;
 
-    // Send email via Resend
-    const resendResponse = await fetch('https://api.resend.com/emails', {
+    // Send email via Brevo
+    const brevoResponse = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
+        'api-key': BREVO_API_KEY,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: `${orgName} <noreply@planeo.tech>`,
-        to: [recipientEmail],
+        sender: { name: orgName, email: 'noreply@planeo.tech' },
+        to: [{ email: recipientEmail, name: recipientName }],
         subject: `Intervention planifiée - ${intervention.title}`,
-        html: emailHtml,
+        htmlContent: emailHtml,
       }),
     });
 
-    const resendData = await resendResponse.json();
+    const brevoData = await brevoResponse.json();
 
-    if (!resendResponse.ok) {
-      console.error('Resend error:', resendData);
-      throw new Error(`Erreur Resend: ${resendData.message || JSON.stringify(resendData)}`);
+    if (!brevoResponse.ok) {
+      console.error('Brevo error:', brevoData);
+      throw new Error(`Erreur Brevo: ${brevoData.message || JSON.stringify(brevoData)}`);
     }
 
-    return new Response(JSON.stringify({ success: true, emailId: resendData.id }), {
+    return new Response(JSON.stringify({ success: true, messageId: brevoData.messageId }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
