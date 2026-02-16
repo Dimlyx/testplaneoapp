@@ -127,7 +127,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: `${orgName} <onboarding@resend.dev>`,
+        from: `${orgName} <noreply@planeo.tech>`,
         to: [recipientEmail],
         subject: `Intervention planifiée - ${intervention.title}`,
         html: emailHtml,
