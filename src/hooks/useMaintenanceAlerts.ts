@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useUserOrganization } from '@/hooks/useUserOrganization';
 
 export type AlertRecurrence = 'once' | 'weekly' | 'monthly' | 'quarterly' | 'yearly';
 export type AlertStatus = 'pending' | 'acknowledged' | 'completed' | 'dismissed';
@@ -119,6 +120,7 @@ export function useUpcomingAlerts(days: number = 30) {
 export function useCreateMaintenanceAlert() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { data: organizationId } = useUserOrganization();
 
   return useMutation({
     mutationFn: async (data: CreateMaintenanceAlertData) => {
@@ -131,6 +133,7 @@ export function useCreateMaintenanceAlert() {
           equipment_id: data.equipment_id || null,
           alert_date: data.alert_date,
           recurrence: data.recurrence || 'once',
+          organization_id: organizationId,
         })
         .select()
         .single();
