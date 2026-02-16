@@ -33,22 +33,31 @@ const PLAN_FEATURES: Record<PlanType, Set<string>> = {
 export function useOrganizationPlan() {
   const { data: organizationId } = useUserOrganization();
 
-  const { data: plan, isLoading } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ['organization-plan', organizationId],
     queryFn: async () => {
-      if (!organizationId) return 'essentiel' as PlanType;
+      if (!organizationId) return { plan: 'essentiel' as PlanType, subscriptionStatus: 'trial' as string };
       const { data, error } = await supabase
         .from('organizations')
-        .select('plan')
+        .select('plan, subscription_status, trial_ends_at')
         .eq('id', organizationId)
         .single();
       if (error) throw error;
-      return (data?.plan || 'essentiel') as PlanType;
+      return {
+        plan: (data?.plan || 'essentiel') as PlanType,
+        subscriptionStatus: (data?.subscription_status || 'trial') as string,
+        trialEndsAt: data?.trial_ends_at as string | null,
+      };
     },
     enabled: !!organizationId,
   });
 
-  const currentPlan = plan || 'essentiel';
+  const currentPlan = data?.plan || 'essentiel';
+  const subscriptionStatus = data?.subscriptionStatus || 'trial';
+  const trialEndsAt = data?.trialEndsAt || null;
+
+  // Check if subscription is blocked
+  const isSubscriptionBlocked = ['canceled', 'past_due', 'unpaid'].includes(subscriptionStatus);
 
   const hasFeature = (feature: string): boolean => {
     return PLAN_FEATURES[currentPlan]?.has(feature) ?? false;
@@ -59,6 +68,9 @@ export function useOrganizationPlan() {
     isLoading,
     hasFeature,
     allFeatures: PLAN_FEATURES,
+    subscriptionStatus,
+    trialEndsAt,
+    isSubscriptionBlocked,
   };
 }
 

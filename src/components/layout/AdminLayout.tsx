@@ -24,7 +24,7 @@ import { ChatBot } from '@/components/ChatBot';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useOrganizationPlan } from '@/hooks/useOrganizationPlan';
 import { Badge } from '@/components/ui/badge';
-import { Lock } from 'lucide-react';
+import { Lock, AlertTriangle } from 'lucide-react';
 
 const navigation = [
   { name: 'Tableau de bord', href: '/admin', icon: LayoutDashboard, feature: null },
@@ -42,7 +42,7 @@ export default function AdminLayout() {
   const { user, role, signOut } = useAuth();
   const { viewAsOrgId, clearViewAsOrg } = useOrganizationContext();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { hasFeature } = useOrganizationPlan();
+  const { hasFeature, isSubscriptionBlocked, subscriptionStatus } = useOrganizationPlan();
 
   const isSuperAdminViewing = role === 'super_admin' && viewAsOrgId;
 
@@ -211,7 +211,28 @@ export default function AdminLayout() {
         </header>
 
         {/* Page content */}
-        <main className="p-4 lg:p-8">
+        <main className="p-4 lg:p-8 relative">
+          {isSubscriptionBlocked && !isSuperAdminViewing && (
+            <div className="absolute inset-0 z-20 bg-background/80 backdrop-blur-sm flex items-start justify-center pt-24">
+              <div className="text-center max-w-md p-8 rounded-xl border bg-card shadow-lg">
+                <div className="mx-auto w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+                  <AlertTriangle className="h-8 w-8 text-destructive" />
+                </div>
+                <h2 className="text-xl font-bold mb-2">Accès suspendu</h2>
+                <p className="text-muted-foreground mb-4">
+                  {subscriptionStatus === 'canceled'
+                    ? "Votre abonnement a été annulé. Contactez votre administrateur pour réactiver votre compte."
+                    : subscriptionStatus === 'unpaid'
+                    ? "Votre abonnement est impayé. Veuillez régulariser votre situation pour continuer."
+                    : "Votre paiement est en retard. Veuillez mettre à jour vos informations de paiement."
+                  }
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Contactez le support pour toute question.
+                </p>
+              </div>
+            </div>
+          )}
           <Outlet />
         </main>
       </div>
