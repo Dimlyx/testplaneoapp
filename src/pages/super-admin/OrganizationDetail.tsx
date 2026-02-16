@@ -11,7 +11,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Building2, Plus, UserPlus, Trash2, Users, UserCog, Activity, ClipboardList, Eye } from 'lucide-react';
+import { ArrowLeft, Building2, Plus, UserPlus, Trash2, Users, UserCog, Activity, ClipboardList, Eye, Crown } from 'lucide-react';
+import { PLAN_LABELS, FEATURE_LABELS, type PlanType } from '@/hooks/useOrganizationPlan';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -253,6 +254,31 @@ export default function OrganizationDetail() {
           </div>
         </div>
         <div className="ml-auto flex items-center gap-2">
+          <Select
+            value={(organization as any).plan || 'essentiel'}
+            onValueChange={async (value: string) => {
+              const { error } = await supabase
+                .from('organizations')
+                .update({ plan: value })
+                .eq('id', id);
+              if (error) {
+                toast.error('Erreur lors du changement de plan');
+              } else {
+                toast.success(`Plan changé en ${PLAN_LABELS[value as PlanType]}`);
+                queryClient.invalidateQueries({ queryKey: ['organization', id] });
+                queryClient.invalidateQueries({ queryKey: ['organization-plan'] });
+              }
+            }}
+          >
+            <SelectTrigger className="w-[160px]">
+              <Crown className="h-4 w-4 mr-2" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="essentiel">Essentiel</SelectItem>
+              <SelectItem value="business">Business</SelectItem>
+            </SelectContent>
+          </Select>
           <Button 
             variant="outline" 
             onClick={() => {
