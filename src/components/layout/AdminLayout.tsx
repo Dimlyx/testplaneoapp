@@ -22,15 +22,18 @@ import {
 import { cn } from '@/lib/utils';
 import { ChatBot } from '@/components/ChatBot';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { useOrganizationPlan } from '@/hooks/useOrganizationPlan';
+import { Badge } from '@/components/ui/badge';
+import { Lock } from 'lucide-react';
 
 const navigation = [
-  { name: 'Tableau de bord', href: '/admin', icon: LayoutDashboard },
-  { name: 'Calendrier', href: '/admin/calendar', icon: CalendarDays },
-  { name: 'Interventions', href: '/admin/interventions', icon: ClipboardList },
-  { name: 'Clients', href: '/admin/clients', icon: Users },
-  { name: 'Alertes Maintenance', href: '/admin/maintenance-alerts', icon: Bell },
-  { name: 'Statistiques', href: '/admin/statistics', icon: BarChart3 },
-  { name: 'Paramètres', href: '/admin/settings', icon: Settings },
+  { name: 'Tableau de bord', href: '/admin', icon: LayoutDashboard, feature: null },
+  { name: 'Calendrier', href: '/admin/calendar', icon: CalendarDays, feature: 'calendar' },
+  { name: 'Interventions', href: '/admin/interventions', icon: ClipboardList, feature: 'interventions' },
+  { name: 'Clients', href: '/admin/clients', icon: Users, feature: 'clients' },
+  { name: 'Alertes Maintenance', href: '/admin/maintenance-alerts', icon: Bell, feature: 'maintenance_alerts' },
+  { name: 'Statistiques', href: '/admin/statistics', icon: BarChart3, feature: 'statistics' },
+  { name: 'Paramètres', href: '/admin/settings', icon: Settings, feature: null },
 ];
 
 export default function AdminLayout() {
@@ -39,6 +42,7 @@ export default function AdminLayout() {
   const { user, role, signOut } = useAuth();
   const { viewAsOrgId, clearViewAsOrg } = useOrganizationContext();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { hasFeature } = useOrganizationPlan();
 
   const isSuperAdminViewing = role === 'super_admin' && viewAsOrgId;
 
@@ -115,6 +119,25 @@ export default function AdminLayout() {
             <nav className="space-y-1 px-3">
               {navigation.map((item) => {
                 const isActive = location.pathname === item.href;
+                const isLocked = item.feature !== null && !hasFeature(item.feature);
+                
+                if (isLocked) {
+                  return (
+                    <div
+                      key={item.name}
+                      className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground/30 cursor-not-allowed"
+                      title="Disponible avec le pack Business"
+                    >
+                      <item.icon className="h-5 w-5" />
+                      <span>{item.name}</span>
+                      <Badge variant="outline" className="ml-auto text-[10px] px-1.5 py-0 border-sidebar-foreground/20 text-sidebar-foreground/30">
+                        <Lock className="h-3 w-3 mr-1" />
+                        Business
+                      </Badge>
+                    </div>
+                  );
+                }
+
                 return (
                   <Link
                     key={item.name}
