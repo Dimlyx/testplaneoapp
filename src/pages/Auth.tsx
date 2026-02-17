@@ -22,7 +22,11 @@ import planeoLogo from '@/assets/planeo-logo.png';
 
 const loginSchema = z.object({
   email: z.string().email('Email invalide'),
-  password: z.string().min(6, 'Le mot de passe doit contenir au moins 6 caractères')
+  password: z.string()
+    .min(8, 'Le mot de passe doit contenir au moins 8 caractères')
+    .regex(/[A-Z]/, 'Doit contenir au moins une majuscule')
+    .regex(/[a-z]/, 'Doit contenir au moins une minuscule')
+    .regex(/[0-9]/, 'Doit contenir au moins un chiffre')
 });
 
 const emailSchema = z.string().email('Email invalide');

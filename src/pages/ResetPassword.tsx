@@ -10,8 +10,12 @@ import { Wrench, Loader2, ArrowLeft } from 'lucide-react';
 import { z } from 'zod';
 
 const passwordSchema = z.object({
-  password: z.string().min(6, 'Le mot de passe doit contenir au moins 6 caractères'),
-  confirmPassword: z.string().min(6, 'La confirmation doit contenir au moins 6 caractères'),
+  password: z.string()
+    .min(8, 'Le mot de passe doit contenir au moins 8 caractères')
+    .regex(/[A-Z]/, 'Doit contenir au moins une majuscule')
+    .regex(/[a-z]/, 'Doit contenir au moins une minuscule')
+    .regex(/[0-9]/, 'Doit contenir au moins un chiffre'),
+  confirmPassword: z.string().min(8, 'La confirmation doit contenir au moins 8 caractères'),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Les mots de passe ne correspondent pas",
   path: ["confirmPassword"],
