@@ -95,6 +95,7 @@ serve(async (req) => {
       closing_text: emailTemplate?.closing_text || 'N\'hésitez pas à nous contacter pour toute question.',
       signature_text: emailTemplate?.signature_text || 'Cordialement,',
       header_color: emailTemplate?.header_color || '#003057',
+      footer_text: emailTemplate?.footer_text || '',
     };
 
     // Build address
@@ -150,6 +151,7 @@ serve(async (req) => {
       <div style="background: #f9fafb; padding: 16px 24px; text-align: center; font-size: 12px; color: #9ca3af;">
         ${orgEmail ? `<p style="margin: 0;">${orgEmail}</p>` : ''}
         ${orgPhone ? `<p style="margin: 0;">${orgPhone}</p>` : ''}
+        ${tmpl.footer_text ? `<p style="margin: 8px 0 0 0;">${replaceVars(tmpl.footer_text)}</p>` : ''}
       </div>
     </div>`;
     // Send email via Brevo

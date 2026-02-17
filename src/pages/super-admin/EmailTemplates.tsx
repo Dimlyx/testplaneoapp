@@ -32,6 +32,7 @@ const DEFAULT_TEMPLATE = {
   closing_text: 'N\'hésitez pas à nous contacter pour toute question.',
   signature_text: 'Cordialement,',
   header_color: '#003057',
+  footer_text: '',
 };
 
 interface TemplateForm {
@@ -41,6 +42,7 @@ interface TemplateForm {
   closing_text: string;
   signature_text: string;
   header_color: string;
+  footer_text: string;
 }
 
 export default function EmailTemplates() {
@@ -86,6 +88,7 @@ export default function EmailTemplates() {
         closing_text: tmpl.closing_text,
         signature_text: tmpl.signature_text,
         header_color: tmpl.header_color,
+        footer_text: tmpl.footer_text || '',
       });
     } else {
       setForm({ ...DEFAULT_TEMPLATE });
@@ -117,6 +120,7 @@ export default function EmailTemplates() {
             closing_text: form.closing_text,
             signature_text: form.signature_text,
             header_color: form.header_color,
+            footer_text: form.footer_text,
           })
           .eq('id', template.id);
         if (error) throw error;
@@ -132,6 +136,7 @@ export default function EmailTemplates() {
             closing_text: form.closing_text,
             signature_text: form.signature_text,
             header_color: form.header_color,
+            footer_text: form.footer_text,
           });
         if (error) throw error;
       }
@@ -185,6 +190,7 @@ export default function EmailTemplates() {
       </div>
       <div style="background: #f9fafb; padding: 16px 24px; text-align: center; font-size: 12px; color: #9ca3af;">
         <p style="margin: 0;">contact@example.com</p>
+        ${form.footer_text ? `<p style="margin: 8px 0 0 0;">${form.footer_text}</p>` : ''}
       </div>
     </div>`;
 
@@ -348,6 +354,16 @@ export default function EmailTemplates() {
                       value={form.signature_text}
                       onChange={(e) => setForm(f => ({ ...f, signature_text: e.target.value }))}
                       placeholder="Cordialement,"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Pied de page</Label>
+                    <Textarea
+                      value={form.footer_text}
+                      onChange={(e) => setForm(f => ({ ...f, footer_text: e.target.value }))}
+                      placeholder="Texte additionnel affiché en bas de l'email (ex: mentions légales, horaires...)"
+                      rows={2}
                     />
                   </div>
 
