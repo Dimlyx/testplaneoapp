@@ -6,7 +6,6 @@ import {
   XAxis, 
   YAxis, 
   CartesianGrid, 
-  Tooltip, 
   ResponsiveContainer, 
   PieChart, 
   Pie,
@@ -25,6 +24,7 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { useInterventionTypes } from "@/hooks/useInterventionTypes";
 import { Badge } from "@/components/ui/badge";
+import { ChartClickInfo } from "@/components/charts/ChartClickInfo";
 
 type Intervention = Tables<"interventions">;
 
@@ -37,6 +37,11 @@ interface Technician {
 interface PerformanceChartsProps {
   interventions: Intervention[];
   technicians?: Technician[];
+}
+
+interface ClickInfo {
+  label: string;
+  entries: { name: string; value: string | number; color?: string }[];
 }
 
 const COLOR_MAP: Record<string, string> = {
@@ -55,6 +60,12 @@ export function PerformanceCharts({ interventions, technicians = [] }: Performan
   const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
   const { data: interventionTypes = [] } = useInterventionTypes();
+
+  // Click info states for each chart
+  const [trendClickInfo, setTrendClickInfo] = useState<ClickInfo | null>(null);
+  const [pieClickInfo, setPieClickInfo] = useState<ClickInfo | null>(null);
+  const [stackedClickInfo, setStackedClickInfo] = useState<ClickInfo | null>(null);
+  const [timeClickInfo, setTimeClickInfo] = useState<ClickInfo | null>(null);
 
   const filteredInterventions = useMemo(() => {
     let filtered = interventions;
@@ -196,67 +207,50 @@ export function PerformanceCharts({ interventions, technicians = [] }: Performan
     return h > 0 ? `${h}h${m > 0 ? ` ${m}min` : ''}` : `${m}min`;
   };
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-popover border border-border rounded-xl shadow-xl p-4 min-w-[160px]">
-          <p className="font-semibold text-sm mb-2 text-popover-foreground">{payload[0]?.payload?.fullName || label}</p>
-          {payload.map((entry: any, index: number) => (
-            <div key={index} className="flex items-center justify-between gap-4 text-sm py-0.5">
-              <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
-                {entry.name}
-              </span>
-              <span className="font-semibold" style={{ color: entry.color }}>{entry.value}</span>
-            </div>
-          ))}
-        </div>
-      );
-    }
-    return null;
-  };
-
-  const TimeTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-popover border border-border rounded-xl shadow-xl p-4 min-w-[160px]">
-          <p className="font-semibold text-sm mb-2 text-popover-foreground">{label}</p>
-          {payload.map((entry: any, index: number) => (
-            <div key={index} className="flex items-center justify-between gap-4 text-sm py-0.5">
-              <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
-                {entry.name}
-              </span>
-              <span className="font-semibold" style={{ color: entry.color }}>{formatMinutes(entry.value)}</span>
-            </div>
-          ))}
-        </div>
-      );
-    }
-    return null;
-  };
-
-  const TrendTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-popover border border-border rounded-xl shadow-xl p-4 min-w-[140px]">
-          <p className="font-semibold text-sm mb-2 text-popover-foreground">{payload[0]?.payload?.fullName || label}</p>
-          {payload.map((entry: any, index: number) => (
-            <div key={index} className="flex items-center justify-between gap-4 text-sm py-0.5">
-              <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
-                {entry.name}
-              </span>
-              <span className="font-semibold">{entry.value}</span>
-            </div>
-          ))}
-        </div>
-      );
-    }
-    return null;
-  };
-
   const selectedTechnician = technicians.find(t => t.id === selectedTechnicianId);
+
+  const handleTrendClick = (state: any) => {
+    if (state?.activePayload?.[0]) {
+      const d = state.activePayload[0].payload;
+      setTrendClickInfo({
+        label: d.fullName || d.name,
+        entries: [
+          { name: 'Total', value: d.total, color: 'hsl(var(--primary))' },
+          { name: 'Terminées', value: d.completed, color: '#22c55e' },
+        ],
+      });
+    }
+  };
+
+  const handleStackedClick = (state: any) => {
+    if (state?.activePayload) {
+      const payload = state.activePayload;
+      const d = payload[0]?.payload;
+      setStackedClickInfo({
+        label: d?.fullName || d?.name || '',
+        entries: payload.map((entry: any) => ({
+          name: entry.name,
+          value: entry.value,
+          color: entry.color || entry.fill,
+        })).filter((e: any) => e.value > 0),
+      });
+    }
+  };
+
+  const handleTimeClick = (state: any) => {
+    if (state?.activePayload) {
+      const payload = state.activePayload;
+      const d = payload[0]?.payload;
+      setTimeClickInfo({
+        label: d?.name || '',
+        entries: [
+          { name: 'Trajet', value: formatMinutes(d?.trajet || 0), color: '#3b82f6' },
+          { name: 'Intervention', value: formatMinutes(d?.intervention || 0), color: '#22c55e' },
+          { name: 'Total', value: formatMinutes(d?.total || 0) },
+        ],
+      });
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -339,30 +333,34 @@ export function PerformanceCharts({ interventions, technicians = [] }: Performan
               <TrendingUp className="h-4 w-4 text-primary" />
               Tendance sur 6 mois
             </CardTitle>
-            <CardDescription>Total et terminées par mois</CardDescription>
+            <CardDescription>Appuyez sur un point pour voir le détail</CardDescription>
           </CardHeader>
           <CardContent>
             {trendData.some(d => d.total > 0) ? (
-              <ResponsiveContainer width="100%" height={280}>
-                <AreaChart data={trendData}>
-                  <defs>
-                    <linearGradient id="gradTotal" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.15} />
-                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                    </linearGradient>
-                    <linearGradient id="gradCompleted" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#22c55e" stopOpacity={0.15} />
-                      <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted/50" />
-                  <XAxis dataKey="name" className="text-xs" tick={{ fontSize: 12 }} />
-                  <YAxis className="text-xs" tick={{ fontSize: 12 }} />
-                  <Tooltip content={<TrendTooltip />} />
-                  <Area type="monotone" dataKey="total" name="Total" stroke="hsl(var(--primary))" fill="url(#gradTotal)" strokeWidth={2} dot={{ r: 4, fill: "hsl(var(--primary))" }} />
-                  <Area type="monotone" dataKey="completed" name="Terminées" stroke="#22c55e" fill="url(#gradCompleted)" strokeWidth={2} dot={{ r: 4, fill: "#22c55e" }} />
-                </AreaChart>
-              </ResponsiveContainer>
+              <>
+                <ResponsiveContainer width="100%" height={280}>
+                  <AreaChart data={trendData} onClick={handleTrendClick}>
+                    <defs>
+                      <linearGradient id="gradTotal" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.15} />
+                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="gradCompleted" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#22c55e" stopOpacity={0.15} />
+                        <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted/50" />
+                    <XAxis dataKey="name" className="text-xs" tick={{ fontSize: 12 }} />
+                    <YAxis className="text-xs" tick={{ fontSize: 12 }} />
+                    <Area type="monotone" dataKey="total" name="Total" stroke="hsl(var(--primary))" fill="url(#gradTotal)" strokeWidth={2} dot={{ r: 4, fill: "hsl(var(--primary))" }} />
+                    <Area type="monotone" dataKey="completed" name="Terminées" stroke="#22c55e" fill="url(#gradCompleted)" strokeWidth={2} dot={{ r: 4, fill: "#22c55e" }} />
+                  </AreaChart>
+                </ResponsiveContainer>
+                {trendClickInfo && (
+                  <ChartClickInfo label={trendClickInfo.label} entries={trendClickInfo.entries} />
+                )}
+              </>
             ) : (
               <div className="h-[280px] flex items-center justify-center text-muted-foreground">
                 Aucune donnée disponible
@@ -378,7 +376,7 @@ export function PerformanceCharts({ interventions, technicians = [] }: Performan
               <PieChartIcon className="h-4 w-4 text-primary" />
               Répartition par type
             </CardTitle>
-            <CardDescription>{totalInterventions} intervention{totalInterventions > 1 ? 's' : ''} au total</CardDescription>
+            <CardDescription>{totalInterventions} intervention{totalInterventions > 1 ? 's' : ''} · Appuyez pour le détail</CardDescription>
           </CardHeader>
           <CardContent>
             {typeDistribution.length > 0 ? (
@@ -393,12 +391,17 @@ export function PerformanceCharts({ interventions, technicians = [] }: Performan
                       outerRadius={85}
                       paddingAngle={3}
                       dataKey="value"
+                      onClick={(data) => {
+                        setPieClickInfo({
+                          label: data.name,
+                          entries: [{ name: data.name, value: data.value, color: data.color }],
+                        });
+                      }}
                     >
                       {typeDistribution.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} stroke="transparent" />
                       ))}
                     </Pie>
-                    <Tooltip />
                   </PieChart>
                 </ResponsiveContainer>
                 {/* Legend below */}
@@ -411,6 +414,9 @@ export function PerformanceCharts({ interventions, technicians = [] }: Performan
                     </div>
                   ))}
                 </div>
+                {pieClickInfo && (
+                  <ChartClickInfo label={pieClickInfo.label} entries={pieClickInfo.entries} />
+                )}
               </div>
             ) : (
               <div className="h-[200px] flex items-center justify-center text-muted-foreground">
@@ -429,21 +435,25 @@ export function PerformanceCharts({ interventions, technicians = [] }: Performan
               <TrendingUp className="h-4 w-4 text-primary" />
               Évolution par type
             </CardTitle>
-            <CardDescription>Répartition mensuelle empilée</CardDescription>
+            <CardDescription>Appuyez sur une barre pour le détail</CardDescription>
           </CardHeader>
           <CardContent>
             {monthlyData.some(d => d.total > 0) ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={monthlyData} barCategoryGap="20%">
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted/50" />
-                  <XAxis dataKey="name" className="text-xs" tick={{ fontSize: 12 }} />
-                  <YAxis className="text-xs" tick={{ fontSize: 12 }} />
-                  <Tooltip content={<CustomTooltip />} />
-                  {interventionTypes.map((t) => (
-                    <Bar key={t.name} dataKey={t.name} name={t.label} fill={COLOR_MAP[t.color] || "#6b7280"} stackId="a" radius={[0, 0, 0, 0]} />
-                  ))}
-                </BarChart>
-              </ResponsiveContainer>
+              <>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={monthlyData} barCategoryGap="20%" onClick={handleStackedClick}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted/50" />
+                    <XAxis dataKey="name" className="text-xs" tick={{ fontSize: 12 }} />
+                    <YAxis className="text-xs" tick={{ fontSize: 12 }} />
+                    {interventionTypes.map((t) => (
+                      <Bar key={t.name} dataKey={t.name} name={t.label} fill={COLOR_MAP[t.color] || "#6b7280"} stackId="a" radius={[0, 0, 0, 0]} />
+                    ))}
+                  </BarChart>
+                </ResponsiveContainer>
+                {stackedClickInfo && (
+                  <ChartClickInfo label={stackedClickInfo.label} entries={stackedClickInfo.entries} />
+                )}
+              </>
             ) : (
               <div className="h-[300px] flex items-center justify-center text-muted-foreground">
                 Aucune donnée disponible
@@ -458,20 +468,24 @@ export function PerformanceCharts({ interventions, technicians = [] }: Performan
               <Clock className="h-4 w-4 text-primary" />
               Temps moyens par type
             </CardTitle>
-            <CardDescription>Trajet + intervention (en minutes)</CardDescription>
+            <CardDescription>Appuyez sur une barre pour le détail</CardDescription>
           </CardHeader>
           <CardContent>
             {timesByType.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={timesByType} layout="vertical" barCategoryGap="25%">
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted/50" />
-                  <XAxis type="number" className="text-xs" tick={{ fontSize: 12 }} tickFormatter={(v) => formatMinutes(v)} />
-                  <YAxis dataKey="name" type="category" className="text-xs" tick={{ fontSize: 12 }} width={90} />
-                  <Tooltip content={<TimeTooltip />} />
-                  <Bar dataKey="trajet" name="Trajet" fill="#3b82f6" stackId="time" radius={[0, 0, 0, 0]} />
-                  <Bar dataKey="intervention" name="Intervention" fill="#22c55e" stackId="time" radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              <>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={timesByType} layout="vertical" barCategoryGap="25%" onClick={handleTimeClick}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted/50" />
+                    <XAxis type="number" className="text-xs" tick={{ fontSize: 12 }} tickFormatter={(v) => formatMinutes(v)} />
+                    <YAxis dataKey="name" type="category" className="text-xs" tick={{ fontSize: 12 }} width={90} />
+                    <Bar dataKey="trajet" name="Trajet" fill="#3b82f6" stackId="time" radius={[0, 0, 0, 0]} />
+                    <Bar dataKey="intervention" name="Intervention" fill="#22c55e" stackId="time" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+                {timeClickInfo && (
+                  <ChartClickInfo label={timeClickInfo.label} entries={timeClickInfo.entries} />
+                )}
+              </>
             ) : (
               <div className="h-[300px] flex items-center justify-center text-muted-foreground">
                 Aucune donnée de temps disponible
@@ -504,7 +518,7 @@ export function PerformanceCharts({ interventions, technicians = [] }: Performan
               <tbody>
                 {timesByType.length > 0 ? (
                   timesByType.map((row, idx) => (
-                    <tr key={row.type} className={cn("transition-colors hover:bg-muted/30", idx % 2 === 0 ? "bg-background" : "bg-muted/10")}>
+                    <tr key={row.type} className={cn(idx % 2 === 0 ? "bg-background" : "bg-muted/10")}>
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
                           <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: row.color }} />

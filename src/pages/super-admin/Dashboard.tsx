@@ -1,16 +1,21 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, Users, UserCog, Activity, ClipboardList, TrendingUp, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { Building2, Users, ClipboardList, TrendingUp, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useMemo } from 'react';
+import { ChartClickInfo } from '@/components/charts/ChartClickInfo';
 
 export default function SuperAdminDashboard() {
+  const [barClickInfo, setBarClickInfo] = useState<{ label: string; value: number } | null>(null);
+  const [pieClickInfo, setPieClickInfo] = useState<{ name: string; value: number } | null>(null);
+
   const { data: stats, isLoading } = useQuery({
     queryKey: ['super-admin-stats'],
     queryFn: async () => {
@@ -197,18 +202,30 @@ export default function SuperAdminDashboard() {
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle className="text-base">Évolution des interventions</CardTitle>
-            <CardDescription>6 derniers mois</CardDescription>
+            <CardDescription>6 derniers mois · Appuyez sur une barre pour voir le détail</CardDescription>
           </CardHeader>
           <CardContent>
             {monthlyData ? (
-              <ResponsiveContainer width="100%" height={260}>
-                <BarChart data={monthlyData}>
-                  <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
-                  <Tooltip />
-                  <Bar dataKey="interventions" name="Interventions" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              <>
+                <ResponsiveContainer width="100%" height={260}>
+                  <BarChart data={monthlyData} onClick={(state) => {
+                    if (state?.activePayload?.[0]) {
+                      const d = state.activePayload[0].payload;
+                      setBarClickInfo({ label: d.month, value: d.interventions });
+                    }
+                  }}>
+                    <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                    <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+                    <Bar dataKey="interventions" name="Interventions" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+                {barClickInfo && (
+                  <ChartClickInfo
+                    label={barClickInfo.label}
+                    entries={[{ name: 'Interventions', value: barClickInfo.value, color: 'hsl(var(--primary))' }]}
+                  />
+                )}
+              </>
             ) : (
               <Skeleton className="h-[260px] w-full" />
             )}
@@ -219,21 +236,38 @@ export default function SuperAdminDashboard() {
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Répartition des plans</CardTitle>
-            <CardDescription>Par organisation</CardDescription>
+            <CardDescription>Par organisation · Appuyez pour voir le détail</CardDescription>
           </CardHeader>
-          <CardContent className="flex items-center justify-center">
+          <CardContent className="flex flex-col items-center justify-center">
             {planDistribution.length > 0 ? (
-              <ResponsiveContainer width="100%" height={260}>
-                <PieChart>
-                  <Pie data={planDistribution} cx="50%" cy="50%" innerRadius={55} outerRadius={85} dataKey="value" label={({ name, value }) => `${name} (${value})`}>
-                    {planDistribution.map((_, i) => (
-                      <Cell key={i} fill={PLAN_COLORS[i % PLAN_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Legend />
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
+              <>
+                <ResponsiveContainer width="100%" height={260}>
+                  <PieChart>
+                    <Pie
+                      data={planDistribution}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={55}
+                      outerRadius={85}
+                      dataKey="value"
+                      label={({ name, value }) => `${name} (${value})`}
+                      onClick={(data) => {
+                        setPieClickInfo({ name: data.name, value: data.value });
+                      }}
+                    >
+                      {planDistribution.map((_, i) => (
+                        <Cell key={i} fill={PLAN_COLORS[i % PLAN_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+                {pieClickInfo && (
+                  <ChartClickInfo
+                    entries={[{ name: pieClickInfo.name, value: pieClickInfo.value, color: PLAN_COLORS[planDistribution.findIndex(p => p.name === pieClickInfo.name) % PLAN_COLORS.length] }]}
+                  />
+                )}
+              </>
             ) : (
               <Skeleton className="h-[260px] w-full" />
             )}
