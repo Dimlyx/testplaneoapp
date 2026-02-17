@@ -790,6 +790,7 @@ export type Database = {
           technical_comments: string | null
           technician_id: string | null
           title: string
+          token_expires_at: string | null
           travel_departure_time: string | null
           travel_return_time: string | null
           updated_at: string
@@ -825,6 +826,7 @@ export type Database = {
           technical_comments?: string | null
           technician_id?: string | null
           title: string
+          token_expires_at?: string | null
           travel_departure_time?: string | null
           travel_return_time?: string | null
           updated_at?: string
@@ -860,6 +862,7 @@ export type Database = {
           technical_comments?: string | null
           technician_id?: string | null
           title?: string
+          token_expires_at?: string | null
           travel_departure_time?: string | null
           travel_return_time?: string | null
           updated_at?: string
