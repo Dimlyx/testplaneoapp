@@ -326,6 +326,7 @@ export type Database = {
           body_text: string
           closing_text: string
           created_at: string
+          footer_text: string
           greeting: string
           header_color: string
           id: string
@@ -339,6 +340,7 @@ export type Database = {
           body_text?: string
           closing_text?: string
           created_at?: string
+          footer_text?: string
           greeting?: string
           header_color?: string
           id?: string
@@ -352,6 +354,7 @@ export type Database = {
           body_text?: string
           closing_text?: string
           created_at?: string
+          footer_text?: string
           greeting?: string
           header_color?: string
           id?: string

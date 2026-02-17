@@ -1,0 +1,1 @@
+ALTER TABLE public.email_templates ADD COLUMN footer_text text NOT NULL DEFAULT '';
