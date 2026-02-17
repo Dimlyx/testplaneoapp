@@ -38,6 +38,7 @@ export interface Intervention {
   intervention_email: string | null;
   intervention_contact_name: string | null;
   is_paused: boolean;
+  token_expires_at: string | null;
   created_at: string;
   updated_at: string;
   clients?: {
