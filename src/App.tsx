@@ -45,6 +45,7 @@ import SuperAdminOrganizations from "@/pages/super-admin/Organizations";
 import SuperAdminOrganizationDetail from "@/pages/super-admin/OrganizationDetail";
 import SuperAdminUsers from "@/pages/super-admin/Users";
 import SuperAdminAnnouncements from "@/pages/super-admin/Announcements";
+import SuperAdminEmailTemplates from "@/pages/super-admin/EmailTemplates";
 
 const queryClient = new QueryClient();
 
@@ -135,6 +136,7 @@ const AppRoutes = () => {
         <Route path="organizations/:id" element={<SuperAdminOrganizationDetail />} />
         <Route path="users" element={<SuperAdminUsers />} />
         <Route path="announcements" element={<SuperAdminAnnouncements />} />
+        <Route path="email-templates" element={<SuperAdminEmailTemplates />} />
       </Route>
 
       {/* Admin routes */}

@@ -79,6 +79,24 @@ serve(async (req) => {
     const orgEmail = org?.email || '';
     const orgPhone = org?.phone || '';
 
+    // Fetch custom email template for this organization
+    const { data: emailTemplate } = await supabase
+      .from('email_templates')
+      .select('*')
+      .eq('organization_id', intervention.organization_id)
+      .eq('template_type', 'intervention_notification')
+      .maybeSingle();
+
+    // Template values (custom or defaults)
+    const tmpl = {
+      subject: emailTemplate?.subject || 'Intervention planifiée - {{intervention_title}}',
+      greeting: emailTemplate?.greeting || 'Bonjour {{client_name}},',
+      body_text: emailTemplate?.body_text || 'Nous vous informons qu\'une intervention a été planifiée :',
+      closing_text: emailTemplate?.closing_text || 'N\'hésitez pas à nous contacter pour toute question.',
+      signature_text: emailTemplate?.signature_text || 'Cordialement,',
+      header_color: emailTemplate?.header_color || '#003057',
+    };
+
     // Build address
     const addressParts = [
       intervention.intervention_address,
@@ -91,14 +109,30 @@ serve(async (req) => {
       ? `<p style="margin: 0; color: #374151;">${addressParts.join('<br>')}</p>`
       : '';
 
+    // Replace variables in template strings
+    const replaceVars = (text: string) => {
+      return text
+        .replace(/\{\{client_name\}\}/g, recipientName)
+        .replace(/\{\{intervention_title\}\}/g, intervention.title)
+        .replace(/\{\{scheduled_date\}\}/g, scheduledDate)
+        .replace(/\{\{scheduled_time\}\}/g, scheduledTime || '')
+        .replace(/\{\{address\}\}/g, addressParts.join(', '))
+        .replace(/\{\{description\}\}/g, intervention.description || '')
+        .replace(/\{\{org_name\}\}/g, orgName)
+        .replace(/\{\{org_email\}\}/g, orgEmail)
+        .replace(/\{\{org_phone\}\}/g, orgPhone);
+    };
+
+    const emailSubject = replaceVars(tmpl.subject);
+
     const emailHtml = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
-      <div style="background: #003057; padding: 24px; text-align: center;">
+      <div style="background: ${tmpl.header_color}; padding: 24px; text-align: center;">
         <h1 style="color: #ffffff; margin: 0; font-size: 22px;">${orgName}</h1>
       </div>
       <div style="padding: 32px 24px;">
-        <p style="color: #374151; font-size: 16px;">Bonjour ${recipientName},</p>
-        <p style="color: #374151; font-size: 16px;">Nous vous informons qu'une intervention a été planifiée :</p>
+        <p style="color: #374151; font-size: 16px;">${replaceVars(tmpl.greeting)}</p>
+        <p style="color: #374151; font-size: 16px;">${replaceVars(tmpl.body_text)}</p>
         
         <div style="background: #f3f4f6; border-radius: 8px; padding: 20px; margin: 24px 0;">
           <h2 style="margin: 0 0 12px 0; color: #111827; font-size: 18px;">${intervention.title}</h2>
@@ -110,15 +144,14 @@ serve(async (req) => {
 
         ${intervention.description ? `<p style="color: #6b7280; font-size: 14px;">${intervention.description}</p>` : ''}
         
-        <p style="color: #374151; font-size: 16px;">N'hésitez pas à nous contacter pour toute question.</p>
-        <p style="color: #374151; font-size: 16px;">Cordialement,<br><strong>${orgName}</strong></p>
+        <p style="color: #374151; font-size: 16px;">${replaceVars(tmpl.closing_text)}</p>
+        <p style="color: #374151; font-size: 16px;">${replaceVars(tmpl.signature_text)}<br><strong>${orgName}</strong></p>
       </div>
       <div style="background: #f9fafb; padding: 16px 24px; text-align: center; font-size: 12px; color: #9ca3af;">
         ${orgEmail ? `<p style="margin: 0;">${orgEmail}</p>` : ''}
         ${orgPhone ? `<p style="margin: 0;">${orgPhone}</p>` : ''}
       </div>
     </div>`;
-
     // Send email via Brevo
     const brevoResponse = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
@@ -129,7 +162,7 @@ serve(async (req) => {
       body: JSON.stringify({
         sender: { name: orgName, email: 'noreply@planeo.tech' },
         to: [{ email: recipientEmail, name: recipientName }],
-        subject: `Intervention planifiée - ${intervention.title}`,
+        subject: emailSubject,
         htmlContent: emailHtml,
       }),
     });

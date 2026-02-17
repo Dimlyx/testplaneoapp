@@ -13,7 +13,8 @@ import {
   Shield,
   ChevronRight,
   UserCog,
-  Megaphone
+  Megaphone,
+  Mail
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -22,6 +23,7 @@ const navigation = [
   { name: 'Organisations', href: '/super-admin/organizations', icon: Building2 },
   { name: 'Utilisateurs', href: '/super-admin/users', icon: Users },
   { name: 'Communication', href: '/super-admin/announcements', icon: Megaphone },
+  { name: 'Templates emails', href: '/super-admin/email-templates', icon: Mail },
 ];
 
 export default function SuperAdminLayout() {
