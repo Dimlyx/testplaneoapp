@@ -321,6 +321,56 @@ export type Database = {
           },
         ]
       }
+      email_templates: {
+        Row: {
+          body_text: string
+          closing_text: string
+          created_at: string
+          greeting: string
+          header_color: string
+          id: string
+          organization_id: string | null
+          signature_text: string
+          subject: string
+          template_type: string
+          updated_at: string
+        }
+        Insert: {
+          body_text?: string
+          closing_text?: string
+          created_at?: string
+          greeting?: string
+          header_color?: string
+          id?: string
+          organization_id?: string | null
+          signature_text?: string
+          subject?: string
+          template_type?: string
+          updated_at?: string
+        }
+        Update: {
+          body_text?: string
+          closing_text?: string
+          created_at?: string
+          greeting?: string
+          header_color?: string
+          id?: string
+          organization_id?: string | null
+          signature_text?: string
+          subject?: string
+          template_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_templates_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       equipment: {
         Row: {
           brand: string
