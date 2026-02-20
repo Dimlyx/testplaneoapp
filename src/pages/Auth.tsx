@@ -22,11 +22,11 @@ import planeoLogo from '@/assets/planeo-logo.png';
 
 const loginSchema = z.object({
   email: z.string().email('Email invalide'),
-  password: z.string()
-    .min(8, 'Le mot de passe doit contenir au moins 8 caractères')
-    .regex(/[A-Z]/, 'Doit contenir au moins une majuscule')
-    .regex(/[a-z]/, 'Doit contenir au moins une minuscule')
-    .regex(/[0-9]/, 'Doit contenir au moins un chiffre')
+  password: z.string().
+  min(8, 'Le mot de passe doit contenir au moins 8 caractères').
+  regex(/[A-Z]/, 'Doit contenir au moins une majuscule').
+  regex(/[a-z]/, 'Doit contenir au moins une minuscule').
+  regex(/[0-9]/, 'Doit contenir au moins un chiffre')
 });
 
 const emailSchema = z.string().email('Email invalide');
@@ -138,8 +138,8 @@ export default function Auth() {
         <div className="text-center mb-8">
           <img
 
-            alt="PLANEO - Gestion des interventions SAV"
-            className="h-14 mx-auto mb-4" src="/lovable-uploads/42ee7578-b16d-4240-acc5-b9c51d7ebb87.png" />
+            alt="Planéo - Gestion des interventions SAV"
+            className="h-14 mx-auto mb-4" src="/lovable-uploads/dd9762e6-b150-4235-af1b-39ba04d91d2f.png" />
 
         </div>
 
@@ -237,8 +237,8 @@ export default function Auth() {
                     const value = checked === true;
                     setRememberMe(value);
                     localStorage.setItem('rememberMe', String(value));
-                  }}
-                />
+                  }} />
+
                 <Label htmlFor="remember-me" className="text-sm font-normal cursor-pointer">
                   Se souvenir de moi
                 </Label>
