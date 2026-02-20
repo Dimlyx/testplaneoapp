@@ -94,7 +94,7 @@ export const defaultExtranetSettings: ExtranetSettings = {
 };
 
 export const defaultInterfaceSettings: InterfaceSettings = {
-  primaryColor: "#003057",
+  primaryColor: "#101727",
   accentColor: "#0050A0",
   sidebarColor: "#0a1628",
 };
