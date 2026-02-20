@@ -44,8 +44,8 @@ Deno.serve(async (req) => {
       })
     }
 
-    // 1. Cleanup existing demo users if they exist
-    const demoEmails = ['admin@demo-planeo.fr', 'technicien@demo-planeo.fr']
+    // 1. Cleanup existing demo users
+    const demoEmails = ['demo.admin@planeo.tech', 'demo.technicien@planeo.tech']
     const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers()
     for (const u of existingUsers?.users ?? []) {
       if (demoEmails.includes(u.email ?? '')) {
@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
     }
 
     // Cleanup existing demo organizations
-    await supabaseAdmin.from('organizations').delete().eq('email', 'contact@demo-planeo.fr')
+    await supabaseAdmin.from('organizations').delete().eq('email', 'contact@demo-planeo.tech')
 
     // 2. Create demo organization
     const { data: org, error: orgError } = await supabaseAdmin
@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
       .insert({
         name: 'Entreprise Démo',
         slug: 'demo-' + Date.now(),
-        email: 'contact@demo-planeo.fr',
+        email: 'contact@demo-planeo.tech',
         phone: '01 23 45 67 89',
         address: '12 Rue de la Paix',
         city: 'Paris',
@@ -75,23 +75,22 @@ Deno.serve(async (req) => {
       .single()
 
     if (orgError) throw new Error('Org creation failed: ' + orgError.message)
-
     const orgId = org.id
 
-    // 3. Create admin user
+    // 3. Create admin user — Sophie Martin
     const adminPassword = 'DemoAdmin2024!'
     const { data: adminAuth, error: adminAuthError } = await supabaseAdmin.auth.admin.createUser({
-      email: 'admin@demo-planeo.fr',
+      email: 'demo.admin@planeo.tech',
       password: adminPassword,
       email_confirm: true,
-      user_metadata: { full_name: 'Sophie Dupont' }
+      user_metadata: { full_name: 'Sophie Martin' }
     })
     if (adminAuthError) throw new Error('Admin user creation failed: ' + adminAuthError.message)
 
     await supabaseAdmin.from('profiles').upsert({
       id: adminAuth.user.id,
-      email: 'admin@demo-planeo.fr',
-      full_name: 'Sophie Dupont',
+      email: 'demo.admin@planeo.tech',
+      full_name: 'Sophie Martin',
       organization_id: orgId,
     })
     await supabaseAdmin.from('user_roles').upsert({
@@ -100,20 +99,20 @@ Deno.serve(async (req) => {
       organization_id: orgId,
     })
 
-    // 3. Create technician user
+    // 4. Create technician user — Lucas Bernard
     const techPassword = 'DemoTech2024!'
     const { data: techAuth, error: techAuthError } = await supabaseAdmin.auth.admin.createUser({
-      email: 'technicien@demo-planeo.fr',
+      email: 'demo.technicien@planeo.tech',
       password: techPassword,
       email_confirm: true,
-      user_metadata: { full_name: 'Marc Lefevre' }
+      user_metadata: { full_name: 'Lucas Bernard' }
     })
     if (techAuthError) throw new Error('Tech user creation failed: ' + techAuthError.message)
 
     await supabaseAdmin.from('profiles').upsert({
       id: techAuth.user.id,
-      email: 'technicien@demo-planeo.fr',
-      full_name: 'Marc Lefevre',
+      email: 'demo.technicien@planeo.tech',
+      full_name: 'Lucas Bernard',
       organization_id: orgId,
     })
     await supabaseAdmin.from('user_roles').upsert({
@@ -122,86 +121,36 @@ Deno.serve(async (req) => {
       organization_id: orgId,
     })
 
-    // 4. Create demo clients
+    // 5. Create demo clients
     const { data: clients, error: clientsError } = await supabaseAdmin
       .from('clients')
       .insert([
-        {
-          name: 'Martin Pierre',
-          client_type: 'individual',
-          address: '5 Avenue Victor Hugo',
-          city: 'Lyon',
-          postal_code: '69001',
-          email: 'p.martin@email.fr',
-          phone: '06 12 34 56 78',
-          organization_id: orgId,
-        },
-        {
-          name: 'SCI Les Fontaines',
-          client_type: 'professional',
-          address: '28 Rue du Commerce',
-          city: 'Marseille',
-          postal_code: '13001',
-          email: 'contact@lesfontaines.fr',
-          phone: '04 91 23 45 67',
-          organization_id: orgId,
-        },
-        {
-          name: 'Durand Famille',
-          client_type: 'individual',
-          address: '14 Chemin des Lilas',
-          city: 'Bordeaux',
-          postal_code: '33000',
-          email: 'famille.durand@email.fr',
-          phone: '05 56 78 90 12',
-          organization_id: orgId,
-        },
+        { name: 'Martin Pierre', client_type: 'individual', address: '5 Avenue Victor Hugo', city: 'Lyon', postal_code: '69001', email: 'p.martin@email.fr', phone: '06 12 34 56 78', organization_id: orgId },
+        { name: 'SCI Les Fontaines', client_type: 'professional', address: '28 Rue du Commerce', city: 'Marseille', postal_code: '13001', email: 'contact@lesfontaines.fr', phone: '04 91 23 45 67', organization_id: orgId },
+        { name: 'Durand Famille', client_type: 'individual', address: '14 Chemin des Lilas', city: 'Bordeaux', postal_code: '33000', email: 'famille.durand@email.fr', phone: '05 56 78 90 12', organization_id: orgId },
+        { name: 'Restaurant Le Gourmet', client_type: 'professional', address: '8 Place Bellecour', city: 'Lyon', postal_code: '69002', email: 'contact@legourmet.fr', phone: '04 72 11 22 33', organization_id: orgId },
+        { name: 'Lefebvre Jacques', client_type: 'individual', address: '22 Rue des Roses', city: 'Toulouse', postal_code: '31000', email: 'j.lefebvre@email.fr', phone: '06 98 76 54 32', organization_id: orgId },
       ])
       .select()
 
     if (clientsError) throw new Error('Clients creation failed: ' + clientsError.message)
 
-    const client1 = clients[0]
-    const client2 = clients[1]
-    const client3 = clients[2]
-
-    // 5. Create demo equipment
+    // 6. Create demo equipment
     const { data: equipments, error: eqError } = await supabaseAdmin
       .from('equipment')
       .insert([
-        {
-          client_id: client1.id,
-          organization_id: orgId,
-          brand: 'Atlantic',
-          model: 'Extensa 200',
-          equipment_type: 'Chauffe-eau',
-          serial_number: 'ATL-2023-00421',
-          installation_date: '2021-03-15',
-        },
-        {
-          client_id: client2.id,
-          organization_id: orgId,
-          brand: 'Daikin',
-          model: 'Emura FTXJ25',
-          equipment_type: 'Climatisation',
-          serial_number: 'DAI-2022-88712',
-          installation_date: '2022-06-20',
-        },
-        {
-          client_id: client3.id,
-          organization_id: orgId,
-          brand: 'De Dietrich',
-          model: 'MS 24 Micro',
-          equipment_type: 'Chaudière',
-          serial_number: 'DD-2020-55390',
-          installation_date: '2020-11-08',
-        },
+        { client_id: clients[0].id, organization_id: orgId, brand: 'Atlantic', model: 'Extensa 200', equipment_type: 'Chauffe-eau', serial_number: 'ATL-2023-00421', installation_date: '2021-03-15' },
+        { client_id: clients[1].id, organization_id: orgId, brand: 'Daikin', model: 'Emura FTXJ25', equipment_type: 'Climatisation', serial_number: 'DAI-2022-88712', installation_date: '2022-06-20' },
+        { client_id: clients[2].id, organization_id: orgId, brand: 'De Dietrich', model: 'MS 24 Micro', equipment_type: 'Chaudière', serial_number: 'DD-2020-55390', installation_date: '2020-11-08' },
+        { client_id: clients[3].id, organization_id: orgId, brand: 'Mitsubishi', model: 'MSZ-LN35', equipment_type: 'Climatisation', serial_number: 'MIT-2023-11200', installation_date: '2023-01-10' },
+        { client_id: clients[4].id, organization_id: orgId, brand: 'Saunier Duval', model: 'ThemaPlus F25', equipment_type: 'Chaudière', serial_number: 'SD-2019-44100', installation_date: '2019-09-01' },
+        { client_id: clients[0].id, organization_id: orgId, brand: 'Daikin', model: 'Altherma 3', equipment_type: 'Pompe à chaleur', serial_number: 'DAI-2024-00100', installation_date: '2024-02-15' },
       ])
       .select()
 
     if (eqError) throw new Error('Equipment creation failed: ' + eqError.message)
 
-    // 6. Create intervention types (use unique names with timestamp to avoid conflicts)
+    // 7. Create intervention types
     const ts = Date.now()
     const { data: intTypes, error: intTypesError } = await supabaseAdmin
       .from('intervention_types')
@@ -214,89 +163,64 @@ Deno.serve(async (req) => {
 
     if (intTypesError) throw new Error('Intervention types creation failed: ' + intTypesError.message)
 
-    const maintenanceName = intTypes[0].name
-    const depannageName = intTypes[1].name
+    const maintenance = intTypes[0].name
+    const depannage = intTypes[1].name
+    const installation = intTypes[2].name
+    const techId = techAuth.user.id
 
-    // 7. Create demo interventions
+    // 8. Create 20 demo interventions across all statuses
     const today = new Date()
-    const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1)
-    const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1)
-    const fmt = (d: Date) => d.toISOString().split('T')[0]
+    const day = (offset: number) => {
+      const d = new Date(today)
+      d.setDate(today.getDate() + offset)
+      return d.toISOString().split('T')[0]
+    }
 
-    await supabaseAdmin.from('interventions').insert([
-      {
-        title: 'Entretien chauffe-eau - Martin Pierre',
-        client_id: client1.id,
-        equipment_id: equipments[0].id,
-        technician_id: techAuth.user.id,
-        organization_id: orgId,
-        intervention_type: maintenanceName,
-        status: 'planned',
-        scheduled_date: fmt(tomorrow),
-        scheduled_time: '09:00',
-        description: 'Entretien annuel du chauffe-eau électrique.',
-        intervention_address: '5 Avenue Victor Hugo',
-        intervention_city: 'Lyon',
-        intervention_postal_code: '69001',
-        intervention_contact_name: 'Pierre Martin',
-        intervention_phone: '06 12 34 56 78',
-      },
-      {
-        title: 'Panne climatisation - SCI Les Fontaines',
-        client_id: client2.id,
-        equipment_id: equipments[1].id,
-        technician_id: techAuth.user.id,
-        organization_id: orgId,
-        intervention_type: depannageName,
-        status: 'in_progress',
-        scheduled_date: fmt(today),
-        scheduled_time: '14:00',
-        description: 'Climatisation ne refroidit plus. Vérification gaz et compresseur.',
-        arrival_time: '14:10',
-        intervention_address: '28 Rue du Commerce',
-        intervention_city: 'Marseille',
-        intervention_postal_code: '13001',
-        intervention_contact_name: 'Gérance Les Fontaines',
-        intervention_phone: '04 91 23 45 67',
-      },
-      {
-        title: 'Révision chaudière - Durand',
-        client_id: client3.id,
-        equipment_id: equipments[2].id,
-        technician_id: techAuth.user.id,
-        organization_id: orgId,
-        intervention_type: maintenanceName,
-        status: 'completed',
-        scheduled_date: fmt(yesterday),
-        scheduled_time: '10:30',
-        description: 'Révision annuelle chaudière gaz. Remplacement filtre et nettoyage brûleur.',
-        arrival_time: '10:35',
-        departure_time: '12:00',
-        report: 'Révision effectuée avec succès. Remplacement du filtre à gaz et nettoyage complet du brûleur. Appareil en bon état de fonctionnement.',
-        intervention_address: '14 Chemin des Lilas',
-        intervention_city: 'Bordeaux',
-        intervention_postal_code: '33000',
-        intervention_contact_name: 'Madame Durand',
-        intervention_phone: '05 56 78 90 12',
-      },
-      {
-        title: 'Maintenance préventive - SCI Les Fontaines',
-        client_id: client2.id,
-        organization_id: orgId,
-        intervention_type: maintenanceName,
-        status: 'to_plan',
-        description: 'Contrôle préventif de l\'installation de climatisation. À planifier avant l\'été.',
-      },
-    ])
+    const interventions = [
+      // --- TO_PLAN (3) ---
+      { title: 'Maintenance préventive clim - SCI Les Fontaines', client_id: clients[1].id, organization_id: orgId, intervention_type: maintenance, status: 'to_plan', description: 'Contrôle préventif climatisation avant l\'été.' },
+      { title: 'Vérification chaudière - Lefebvre', client_id: clients[4].id, organization_id: orgId, intervention_type: maintenance, status: 'to_plan', description: 'Contrôle annuel chaudière gaz.' },
+      { title: 'Installation PAC - Restaurant Le Gourmet', client_id: clients[3].id, organization_id: orgId, intervention_type: installation, status: 'to_plan', description: 'Nouvelle installation pompe à chaleur pour la cuisine.' },
+
+      // --- PLANNED (5) ---
+      { title: 'Entretien chauffe-eau - Martin Pierre', client_id: clients[0].id, equipment_id: equipments[0].id, technician_id: techId, organization_id: orgId, intervention_type: maintenance, status: 'planned', scheduled_date: day(1), scheduled_time: '09:00', description: 'Entretien annuel du chauffe-eau.', intervention_address: '5 Avenue Victor Hugo', intervention_city: 'Lyon', intervention_postal_code: '69001', intervention_contact_name: 'Pierre Martin', intervention_phone: '06 12 34 56 78' },
+      { title: 'Révision climatisation - Restaurant Le Gourmet', client_id: clients[3].id, equipment_id: equipments[3].id, technician_id: techId, organization_id: orgId, intervention_type: maintenance, status: 'planned', scheduled_date: day(2), scheduled_time: '10:00', description: 'Révision annuelle climatisation restaurant.', intervention_address: '8 Place Bellecour', intervention_city: 'Lyon', intervention_postal_code: '69002', intervention_contact_name: 'Gérant Le Gourmet', intervention_phone: '04 72 11 22 33' },
+      { title: 'Dépannage chaudière - Lefebvre', client_id: clients[4].id, equipment_id: equipments[4].id, technician_id: techId, organization_id: orgId, intervention_type: depannage, status: 'planned', scheduled_date: day(3), scheduled_time: '14:00', description: 'Chaudière qui fait du bruit, diagnostic nécessaire.', intervention_address: '22 Rue des Roses', intervention_city: 'Toulouse', intervention_postal_code: '31000', intervention_contact_name: 'Jacques Lefebvre', intervention_phone: '06 98 76 54 32' },
+      { title: 'Contrôle PAC - Martin Pierre', client_id: clients[0].id, equipment_id: equipments[5].id, technician_id: techId, organization_id: orgId, intervention_type: maintenance, status: 'planned', scheduled_date: day(5), scheduled_time: '08:30', description: 'Contrôle de la pompe à chaleur récemment installée.', intervention_address: '5 Avenue Victor Hugo', intervention_city: 'Lyon', intervention_postal_code: '69001', intervention_contact_name: 'Pierre Martin', intervention_phone: '06 12 34 56 78' },
+      { title: 'Installation thermostat connecté - Durand', client_id: clients[2].id, technician_id: techId, organization_id: orgId, intervention_type: installation, status: 'planned', scheduled_date: day(7), scheduled_time: '11:00', description: 'Installation thermostat Netatmo.', intervention_address: '14 Chemin des Lilas', intervention_city: 'Bordeaux', intervention_postal_code: '33000', intervention_contact_name: 'Madame Durand', intervention_phone: '05 56 78 90 12' },
+
+      // --- IN_PROGRESS (3) ---
+      { title: 'Panne climatisation - SCI Les Fontaines', client_id: clients[1].id, equipment_id: equipments[1].id, technician_id: techId, organization_id: orgId, intervention_type: depannage, status: 'in_progress', scheduled_date: day(0), scheduled_time: '14:00', arrival_time: '14:10', description: 'Climatisation ne refroidit plus.', intervention_address: '28 Rue du Commerce', intervention_city: 'Marseille', intervention_postal_code: '13001', intervention_contact_name: 'Gérance Les Fontaines', intervention_phone: '04 91 23 45 67' },
+      { title: 'Réparation fuite - Martin Pierre', client_id: clients[0].id, equipment_id: equipments[0].id, technician_id: techId, organization_id: orgId, intervention_type: depannage, status: 'in_progress', scheduled_date: day(0), scheduled_time: '09:00', arrival_time: '09:15', description: 'Fuite détectée au niveau du chauffe-eau.', intervention_address: '5 Avenue Victor Hugo', intervention_city: 'Lyon', intervention_postal_code: '69001', intervention_contact_name: 'Pierre Martin', intervention_phone: '06 12 34 56 78' },
+      { title: 'Mise en service clim - Restaurant Le Gourmet', client_id: clients[3].id, equipment_id: equipments[3].id, technician_id: techId, organization_id: orgId, intervention_type: installation, status: 'in_progress', scheduled_date: day(0), scheduled_time: '16:00', arrival_time: '16:05', description: 'Mise en service après installation nouvelle unité.', intervention_address: '8 Place Bellecour', intervention_city: 'Lyon', intervention_postal_code: '69002', intervention_contact_name: 'Gérant Le Gourmet', intervention_phone: '04 72 11 22 33' },
+
+      // --- COMPLETED (4) ---
+      { title: 'Révision chaudière - Durand', client_id: clients[2].id, equipment_id: equipments[2].id, technician_id: techId, organization_id: orgId, intervention_type: maintenance, status: 'completed', scheduled_date: day(-1), scheduled_time: '10:30', arrival_time: '10:35', departure_time: '12:00', report: 'Révision effectuée. Remplacement filtre à gaz et nettoyage brûleur. Appareil en bon état.', intervention_address: '14 Chemin des Lilas', intervention_city: 'Bordeaux', intervention_postal_code: '33000', intervention_contact_name: 'Madame Durand', intervention_phone: '05 56 78 90 12' },
+      { title: 'Dépannage urgent clim - SCI Les Fontaines', client_id: clients[1].id, equipment_id: equipments[1].id, technician_id: techId, organization_id: orgId, intervention_type: depannage, status: 'completed', scheduled_date: day(-3), scheduled_time: '08:00', arrival_time: '08:10', departure_time: '10:30', report: 'Remplacement du compresseur défectueux. Test OK.', intervention_address: '28 Rue du Commerce', intervention_city: 'Marseille', intervention_postal_code: '13001', intervention_contact_name: 'Gérance Les Fontaines', intervention_phone: '04 91 23 45 67' },
+      { title: 'Entretien PAC - Martin Pierre', client_id: clients[0].id, equipment_id: equipments[5].id, technician_id: techId, organization_id: orgId, intervention_type: maintenance, status: 'completed', scheduled_date: day(-5), scheduled_time: '14:00', arrival_time: '14:00', departure_time: '15:30', report: 'Nettoyage filtres, vérification pression. RAS.', intervention_address: '5 Avenue Victor Hugo', intervention_city: 'Lyon', intervention_postal_code: '69001', intervention_contact_name: 'Pierre Martin', intervention_phone: '06 12 34 56 78' },
+      { title: 'Installation radiateur - Lefebvre', client_id: clients[4].id, technician_id: techId, organization_id: orgId, intervention_type: installation, status: 'completed', scheduled_date: day(-7), scheduled_time: '09:00', arrival_time: '09:10', departure_time: '13:00', report: 'Installation de 3 radiateurs électriques Atlantic. Mise en service OK.', intervention_address: '22 Rue des Roses', intervention_city: 'Toulouse', intervention_postal_code: '31000', intervention_contact_name: 'Jacques Lefebvre', intervention_phone: '06 98 76 54 32' },
+
+      // --- TO_INVOICE (3) ---
+      { title: 'Maintenance complète - Restaurant Le Gourmet', client_id: clients[3].id, equipment_id: equipments[3].id, technician_id: techId, organization_id: orgId, intervention_type: maintenance, status: 'to_invoice', scheduled_date: day(-2), scheduled_time: '09:00', arrival_time: '09:05', departure_time: '11:30', report: 'Maintenance complète du système de climatisation. Recharge gaz effectuée.', intervention_address: '8 Place Bellecour', intervention_city: 'Lyon', intervention_postal_code: '69002', intervention_contact_name: 'Gérant Le Gourmet', intervention_phone: '04 72 11 22 33' },
+      { title: 'Remplacement thermostat - Durand', client_id: clients[2].id, equipment_id: equipments[2].id, technician_id: techId, organization_id: orgId, intervention_type: depannage, status: 'to_invoice', scheduled_date: day(-4), scheduled_time: '15:00', arrival_time: '15:10', departure_time: '16:00', report: 'Thermostat défaillant remplacé par modèle programmable.', intervention_address: '14 Chemin des Lilas', intervention_city: 'Bordeaux', intervention_postal_code: '33000', intervention_contact_name: 'Madame Durand', intervention_phone: '05 56 78 90 12' },
+      { title: 'Détartrage chauffe-eau - Martin Pierre', client_id: clients[0].id, equipment_id: equipments[0].id, technician_id: techId, organization_id: orgId, intervention_type: maintenance, status: 'to_invoice', scheduled_date: day(-6), scheduled_time: '10:00', arrival_time: '10:00', departure_time: '11:30', report: 'Détartrage complet et remplacement anode. Bon fonctionnement.', intervention_address: '5 Avenue Victor Hugo', intervention_city: 'Lyon', intervention_postal_code: '69001', intervention_contact_name: 'Pierre Martin', intervention_phone: '06 12 34 56 78' },
+
+      // --- ARCHIVED (2) ---
+      { title: 'Installation clim bureau - SCI Les Fontaines', client_id: clients[1].id, equipment_id: equipments[1].id, technician_id: techId, organization_id: orgId, intervention_type: installation, status: 'archived', scheduled_date: day(-30), scheduled_time: '08:00', arrival_time: '08:00', departure_time: '17:00', report: 'Installation complète système multi-split 4 unités. Mise en service et formation utilisateur.', intervention_address: '28 Rue du Commerce', intervention_city: 'Marseille', intervention_postal_code: '13001', intervention_contact_name: 'Gérance Les Fontaines', intervention_phone: '04 91 23 45 67' },
+      { title: 'Révision annuelle chaudière - Lefebvre', client_id: clients[4].id, equipment_id: equipments[4].id, technician_id: techId, organization_id: orgId, intervention_type: maintenance, status: 'archived', scheduled_date: day(-60), scheduled_time: '11:00', arrival_time: '11:00', departure_time: '12:30', report: 'Révision annuelle obligatoire. Certificat de conformité délivré.', intervention_address: '22 Rue des Roses', intervention_city: 'Toulouse', intervention_postal_code: '31000', intervention_contact_name: 'Jacques Lefebvre', intervention_phone: '06 98 76 54 32' },
+    ]
+
+    await supabaseAdmin.from('interventions').insert(interventions)
 
     return new Response(
       JSON.stringify({
         success: true,
         credentials: {
-          admin: { email: 'admin@demo-planeo.fr', password: adminPassword },
-          technician: { email: 'technicien@demo-planeo.fr', password: techPassword },
+          admin: { email: 'demo.admin@planeo.tech', password: adminPassword, name: 'Sophie Martin' },
+          technician: { email: 'demo.technicien@planeo.tech', password: techPassword, name: 'Lucas Bernard' },
         },
         organization: { name: 'Entreprise Démo', id: orgId },
+        stats: { clients: clients.length, equipment: equipments.length, interventions: interventions.length },
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )

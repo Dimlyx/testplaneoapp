@@ -100,8 +100,8 @@ Mot de passe : ${result.technician.password}
           <div className="grid gap-2">
             {[
               { icon: Building2, label: 'Entreprise démo', desc: 'Entreprise Démo avec coordonnées fictives' },
-              { icon: UserCircle, label: 'Compte Admin', desc: 'Sophie Dupont — accès tableau de bord complet' },
-              { icon: Wrench, label: 'Compte Technicien', desc: 'Marc Lefevre — accès interventions assignées' },
+              { icon: UserCircle, label: 'Compte Admin', desc: 'Sophie Martin — accès tableau de bord complet' },
+              { icon: Wrench, label: 'Compte Technicien', desc: 'Lucas Bernard — accès interventions assignées' },
             ].map((item) => (
               <div key={item.label} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
                 <div className="p-2 rounded-md bg-primary/10">
@@ -116,9 +116,9 @@ Mot de passe : ${result.technician.password}
           </div>
           <Separator />
           <div className="text-xs text-muted-foreground space-y-1">
-            <p>✓ 3 clients fictifs (particuliers et professionnel)</p>
-            <p>✓ 3 équipements (chauffe-eau, climatisation, chaudière)</p>
-            <p>✓ 4 interventions dans différents statuts (planifiée, en cours, terminée, à planifier)</p>
+            <p>✓ 5 clients fictifs (particuliers et professionnels)</p>
+            <p>✓ 6 équipements variés</p>
+            <p>✓ 20 interventions réparties dans tous les statuts (à planifier, planifiée, en cours, terminée, à facturer, archivée)</p>
             <p>✓ 3 types d'intervention configurés</p>
           </div>
         </CardContent>
