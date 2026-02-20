@@ -44,7 +44,19 @@ Deno.serve(async (req) => {
       })
     }
 
-    // 1. Create demo organization
+    // 1. Cleanup existing demo users if they exist
+    const demoEmails = ['admin@demo-planeo.fr', 'technicien@demo-planeo.fr']
+    const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers()
+    for (const u of existingUsers?.users ?? []) {
+      if (demoEmails.includes(u.email ?? '')) {
+        await supabaseAdmin.auth.admin.deleteUser(u.id)
+      }
+    }
+
+    // Cleanup existing demo organizations
+    await supabaseAdmin.from('organizations').delete().eq('email', 'contact@demo-planeo.fr')
+
+    // 2. Create demo organization
     const { data: org, error: orgError } = await supabaseAdmin
       .from('organizations')
       .insert({
@@ -66,7 +78,7 @@ Deno.serve(async (req) => {
 
     const orgId = org.id
 
-    // 2. Create admin user
+    // 3. Create admin user
     const adminPassword = 'DemoAdmin2024!'
     const { data: adminAuth, error: adminAuthError } = await supabaseAdmin.auth.admin.createUser({
       email: 'admin@demo-planeo.fr',
@@ -189,19 +201,21 @@ Deno.serve(async (req) => {
 
     if (eqError) throw new Error('Equipment creation failed: ' + eqError.message)
 
-    // 6. Create intervention types
+    // 6. Create intervention types (use unique names with timestamp to avoid conflicts)
+    const ts = Date.now()
     const { data: intTypes, error: intTypesError } = await supabaseAdmin
       .from('intervention_types')
       .insert([
-        { name: 'maintenance', label: 'Maintenance', organization_id: orgId, color: 'blue', track_journey: true },
-        { name: 'depannage', label: 'Dépannage', organization_id: orgId, color: 'red', track_journey: true },
-        { name: 'installation', label: 'Installation', organization_id: orgId, color: 'green', track_journey: false },
+        { name: `demo_maintenance_${ts}`, label: 'Maintenance', organization_id: orgId, color: 'blue', track_journey: true },
+        { name: `demo_depannage_${ts}`, label: 'Dépannage', organization_id: orgId, color: 'red', track_journey: true },
+        { name: `demo_installation_${ts}`, label: 'Installation', organization_id: orgId, color: 'green', track_journey: false },
       ])
       .select()
 
     if (intTypesError) throw new Error('Intervention types creation failed: ' + intTypesError.message)
 
-    const typeId = intTypes[0].id
+    const maintenanceName = intTypes[0].name
+    const depannageName = intTypes[1].name
 
     // 7. Create demo interventions
     const today = new Date()
@@ -216,7 +230,7 @@ Deno.serve(async (req) => {
         equipment_id: equipments[0].id,
         technician_id: techAuth.user.id,
         organization_id: orgId,
-        intervention_type: 'maintenance',
+        intervention_type: maintenanceName,
         status: 'planned',
         scheduled_date: fmt(tomorrow),
         scheduled_time: '09:00',
@@ -233,7 +247,7 @@ Deno.serve(async (req) => {
         equipment_id: equipments[1].id,
         technician_id: techAuth.user.id,
         organization_id: orgId,
-        intervention_type: 'depannage',
+        intervention_type: depannageName,
         status: 'in_progress',
         scheduled_date: fmt(today),
         scheduled_time: '14:00',
@@ -251,7 +265,7 @@ Deno.serve(async (req) => {
         equipment_id: equipments[2].id,
         technician_id: techAuth.user.id,
         organization_id: orgId,
-        intervention_type: 'maintenance',
+        intervention_type: maintenanceName,
         status: 'completed',
         scheduled_date: fmt(yesterday),
         scheduled_time: '10:30',
@@ -269,7 +283,7 @@ Deno.serve(async (req) => {
         title: 'Maintenance préventive - SCI Les Fontaines',
         client_id: client2.id,
         organization_id: orgId,
-        intervention_type: 'maintenance',
+        intervention_type: maintenanceName,
         status: 'to_plan',
         description: 'Contrôle préventif de l\'installation de climatisation. À planifier avant l\'été.',
       },
