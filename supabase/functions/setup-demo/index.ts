@@ -210,7 +210,61 @@ Deno.serve(async (req) => {
       { title: 'Révision annuelle chaudière - Lefebvre', client_id: clients[4].id, equipment_id: equipments[4].id, technician_id: techId, organization_id: orgId, intervention_type: maintenance, status: 'archived', scheduled_date: day(-60), scheduled_time: '11:00', arrival_time: '11:00', departure_time: '12:30', report: 'Révision annuelle obligatoire. Certificat de conformité délivré.', intervention_address: '22 Rue des Roses', intervention_city: 'Toulouse', intervention_postal_code: '31000', intervention_contact_name: 'Jacques Lefebvre', intervention_phone: '06 98 76 54 32' },
     ]
 
-    await supabaseAdmin.from('interventions').insert(interventions)
+    const { data: insertedInterventions, error: intError } = await supabaseAdmin.from('interventions').insert(interventions).select()
+    if (intError) throw new Error('Interventions creation failed: ' + intError.message)
+
+    // 9. Create workflow steps for each intervention type
+    const demoPhotoUrl = 'https://gwqjwclvrihumhqzoikv.supabase.co/storage/v1/object/public/intervention-photos/demo/demo-step-photo.png'
+
+    const workflowStepsDefs = intTypes.flatMap(type => [
+      { intervention_type_id: type.id, organization_id: orgId, name: 'verification_visuelle', label: 'Vérification visuelle', description: 'Inspecter visuellement l\'équipement', step_order: 1, is_mandatory: true, requires_photo: true, requires_comment: true },
+      { intervention_type_id: type.id, organization_id: orgId, name: 'controle_technique', label: 'Contrôle technique', description: 'Effectuer les mesures et contrôles techniques', step_order: 2, is_mandatory: true, requires_photo: true, requires_comment: true },
+      { intervention_type_id: type.id, organization_id: orgId, name: 'nettoyage', label: 'Nettoyage', description: 'Nettoyage des composants', step_order: 3, is_mandatory: false, requires_photo: true, requires_comment: false },
+      { intervention_type_id: type.id, organization_id: orgId, name: 'test_final', label: 'Test final', description: 'Vérification du bon fonctionnement après intervention', step_order: 4, is_mandatory: true, requires_photo: false, requires_comment: true },
+    ])
+
+    const { data: createdSteps, error: stepsError } = await supabaseAdmin
+      .from('intervention_workflow_steps')
+      .insert(workflowStepsDefs)
+      .select()
+    if (stepsError) throw new Error('Workflow steps creation failed: ' + stepsError.message)
+
+    // 10. Create step completions with photos for completed/to_invoice/archived interventions
+    const completedInterventions = insertedInterventions.filter(
+      i => ['completed', 'to_invoice', 'archived'].includes(i.status)
+    )
+
+    const stepCompletions: any[] = []
+    for (const interv of completedInterventions) {
+      const matchingType = intTypes.find(t => t.name === interv.intervention_type)
+      if (!matchingType) continue
+      const stepsForType = createdSteps.filter(s => s.intervention_type_id === matchingType.id)
+      for (const step of stepsForType) {
+        const photoJson = step.requires_photo ? JSON.stringify([demoPhotoUrl]) : null
+        const comments = [
+          'RAS - Conforme',
+          'Vérification OK, aucune anomalie détectée',
+          'Intervention réalisée avec succès',
+          'Nettoyage complet effectué',
+        ]
+        stepCompletions.push({
+          intervention_id: interv.id,
+          step_id: step.id,
+          completed_at: new Date().toISOString(),
+          completed_by: techId,
+          loop_index: 0,
+          photo_url: photoJson,
+          comment: step.requires_comment ? comments[step.step_order - 1] || 'OK' : null,
+        })
+      }
+    }
+
+    if (stepCompletions.length > 0) {
+      const { error: compError } = await supabaseAdmin
+        .from('intervention_step_completions')
+        .insert(stepCompletions)
+      if (compError) throw new Error('Step completions creation failed: ' + compError.message)
+    }
 
     return new Response(
       JSON.stringify({
