@@ -24,13 +24,17 @@ export default function SuperAdminDashboard() {
       const startOfLastMonth = startOfMonth(subMonths(now, 1)).toISOString();
       const endOfLastMonth = endOfMonth(subMonths(now, 1)).toISOString();
 
+      // Get demo org IDs to exclude
+      const { data: demoOrgs } = await supabase.from('organizations').select('id').eq('email', 'contact@demo-planeo.tech');
+      const demoOrgIds = (demoOrgs || []).map(o => o.id);
+
       const [orgsResult, usersResult, adminsResult, techniciansResult, interventionsThisMonth, interventionsLastMonth] = await Promise.all([
-        supabase.from('organizations').select('id', { count: 'exact', head: true }).eq('status', 'active'),
-        supabase.from('profiles').select('id', { count: 'exact', head: true }),
-        supabase.from('user_roles').select('id', { count: 'exact', head: true }).eq('role', 'admin'),
-        supabase.from('user_roles').select('id', { count: 'exact', head: true }).eq('role', 'technician'),
-        supabase.from('interventions').select('id', { count: 'exact', head: true }).gte('created_at', startOfCurrentMonth),
-        supabase.from('interventions').select('id', { count: 'exact', head: true }).gte('created_at', startOfLastMonth).lte('created_at', endOfLastMonth),
+        supabase.from('organizations').select('id', { count: 'exact', head: true }).eq('status', 'active').not('email', 'eq', 'contact@demo-planeo.tech'),
+        supabase.from('profiles').select('id', { count: 'exact', head: true }).not('organization_id', 'in', `(${demoOrgIds.join(',')})`),
+        supabase.from('user_roles').select('id', { count: 'exact', head: true }).eq('role', 'admin').not('organization_id', 'in', `(${demoOrgIds.join(',')})`),
+        supabase.from('user_roles').select('id', { count: 'exact', head: true }).eq('role', 'technician').not('organization_id', 'in', `(${demoOrgIds.join(',')})`),
+        supabase.from('interventions').select('id', { count: 'exact', head: true }).gte('created_at', startOfCurrentMonth).not('organization_id', 'in', `(${demoOrgIds.join(',')})`),
+        supabase.from('interventions').select('id', { count: 'exact', head: true }).gte('created_at', startOfLastMonth).lte('created_at', endOfLastMonth).not('organization_id', 'in', `(${demoOrgIds.join(',')})`),
       ]);
 
       const currentCount = interventionsThisMonth.count || 0;
@@ -52,12 +56,19 @@ export default function SuperAdminDashboard() {
   const { data: monthlyData } = useQuery({
     queryKey: ['super-admin-monthly-interventions'],
     queryFn: async () => {
+      const { data: demoOrgs } = await supabase.from('organizations').select('id').eq('email', 'contact@demo-planeo.tech');
+      const demoOrgIds = (demoOrgs || []).map(o => o.id);
+
       const now = new Date();
       const sixMonthsAgo = subMonths(now, 5);
-      const { data, error } = await supabase
+      let query = supabase
         .from('interventions')
-        .select('created_at')
+        .select('created_at, organization_id')
         .gte('created_at', startOfMonth(sixMonthsAgo).toISOString());
+      if (demoOrgIds.length > 0) {
+        query = query.not('organization_id', 'in', `(${demoOrgIds.join(',')})`);
+      }
+      const { data, error } = await query;
       if (error) throw error;
 
       const months: Record<string, number> = {};
@@ -83,21 +94,24 @@ export default function SuperAdminDashboard() {
     queryKey: ['super-admin-org-ranking'],
     queryFn: async () => {
       const [orgsRes, interventionsRes, usersRes] = await Promise.all([
-        supabase.from('organizations').select('id, name, plan, status'),
+        supabase.from('organizations').select('id, name, plan, status').not('email', 'eq', 'contact@demo-planeo.tech'),
         supabase.from('interventions').select('organization_id'),
         supabase.from('user_roles').select('organization_id').in('role', ['admin', 'technician']),
       ]);
+
+      const { data: demoOrgs } = await supabase.from('organizations').select('id').eq('email', 'contact@demo-planeo.tech');
+      const demoOrgIds = new Set((demoOrgs || []).map(o => o.id));
 
       if (orgsRes.error) throw orgsRes.error;
 
       const intCounts: Record<string, number> = {};
       interventionsRes.data?.forEach((i) => {
-        if (i.organization_id) intCounts[i.organization_id] = (intCounts[i.organization_id] || 0) + 1;
+        if (i.organization_id && !demoOrgIds.has(i.organization_id)) intCounts[i.organization_id] = (intCounts[i.organization_id] || 0) + 1;
       });
 
       const userCounts: Record<string, number> = {};
       usersRes.data?.forEach((u) => {
-        if (u.organization_id) userCounts[u.organization_id] = (userCounts[u.organization_id] || 0) + 1;
+        if (u.organization_id && !demoOrgIds.has(u.organization_id)) userCounts[u.organization_id] = (userCounts[u.organization_id] || 0) + 1;
       });
 
       return (orgsRes.data || [])

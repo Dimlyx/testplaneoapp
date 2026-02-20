@@ -47,6 +47,7 @@ import SuperAdminUsers from "@/pages/super-admin/Users";
 import SuperAdminAnnouncements from "@/pages/super-admin/Announcements";
 import SuperAdminEmailTemplates from "@/pages/super-admin/EmailTemplates";
 import DemoSetup from "@/pages/super-admin/DemoSetup";
+import SuperAdminStatistics from "@/pages/super-admin/Statistics";
 
 const queryClient = new QueryClient();
 
@@ -133,6 +134,7 @@ const AppRoutes = () => {
         }
       >
         <Route index element={<SuperAdminDashboard />} />
+        <Route path="statistics" element={<SuperAdminStatistics />} />
         <Route path="organizations" element={<SuperAdminOrganizations />} />
         <Route path="organizations/:id" element={<SuperAdminOrganizationDetail />} />
         <Route path="users" element={<SuperAdminUsers />} />
