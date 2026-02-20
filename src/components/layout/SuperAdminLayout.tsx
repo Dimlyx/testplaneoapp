@@ -14,16 +14,18 @@ import {
   ChevronRight,
   UserCog,
   Megaphone,
-  Mail
+  Mail,
+  PlayCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navigation = [
   { name: 'Tableau de bord', href: '/super-admin', icon: LayoutDashboard },
-  { name: 'Organisations', href: '/super-admin/organizations', icon: Building2 },
+  { name: 'Entreprises', href: '/super-admin/organizations', icon: Building2 },
   { name: 'Utilisateurs', href: '/super-admin/users', icon: Users },
   { name: 'Communication', href: '/super-admin/announcements', icon: Megaphone },
   { name: 'Templates emails', href: '/super-admin/email-templates', icon: Mail },
+  { name: 'Compte démo', href: '/super-admin/demo', icon: PlayCircle },
 ];
 
 export default function SuperAdminLayout() {
