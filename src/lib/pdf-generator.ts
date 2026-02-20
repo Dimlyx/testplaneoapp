@@ -648,12 +648,7 @@ export const generateInterventionPDF = async (
       }
     }
     
-    // Equipment status
-    yPos = addSection("TEST DE L'ÉQUIPEMENT", yPos);
-    doc.setFontSize(9);
-    const funcStatus = intervention.equipment_functional !== false ? "Oui" : "Non";
-    yPos = addField("L'équipement fonctionne correctement", funcStatus, yPos);
-    yPos += 10;
+    yPos += 5;
   }
 
   // ================== WORKFLOW STEPS ==================
