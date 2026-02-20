@@ -74,7 +74,7 @@ export default function Organizations() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['organizations'] });
       queryClient.invalidateQueries({ queryKey: ['super-admin-stats'] });
-      toast.success('Organisation créée avec succès');
+      toast.success('Entreprise créée avec succès');
       setIsDialogOpen(false);
       setFormData(initialFormData);
     },
@@ -90,7 +90,7 @@ export default function Organizations() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['organizations'] });
-      toast.success('Organisation mise à jour');
+      toast.success('Entreprise mise à jour');
       setIsDialogOpen(false);
       setEditingOrg(null);
       setFormData(initialFormData);
@@ -108,7 +108,7 @@ export default function Organizations() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['organizations'] });
       queryClient.invalidateQueries({ queryKey: ['super-admin-stats'] });
-      toast.success('Organisation supprimée');
+      toast.success('Entreprise supprimée');
     },
     onError: (error: Error) => {
       toast.error(`Erreur: ${error.message}`);
@@ -152,7 +152,7 @@ export default function Organizations() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Organisations</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Entreprises</h1>
           <p className="text-muted-foreground">
             Gérez les entreprises clientes de la plateforme
           </p>
@@ -167,16 +167,16 @@ export default function Organizations() {
           <DialogTrigger asChild>
             <Button>
               <Plus className="mr-2 h-4 w-4" />
-              Nouvelle organisation
+              Nouvelle entreprise
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>
-                {editingOrg ? 'Modifier l\'organisation' : 'Créer une organisation'}
+                {editingOrg ? 'Modifier l\'entreprise' : 'Créer une entreprise'}
               </DialogTitle>
               <DialogDescription>
-                {editingOrg ? 'Modifiez les informations de l\'organisation' : 'Remplissez les informations de la nouvelle organisation'}
+                {editingOrg ? 'Modifiez les informations de l\'entreprise' : 'Remplissez les informations de la nouvelle entreprise'}
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit}>
@@ -304,7 +304,7 @@ export default function Organizations() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Organisation</TableHead>
+                  <TableHead>Entreprise</TableHead>
                   <TableHead>Contact</TableHead>
                   <TableHead>Statut</TableHead>
                   <TableHead>Créée le</TableHead>
@@ -365,9 +365,9 @@ export default function Organizations() {
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>Supprimer l'organisation ?</AlertDialogTitle>
+                              <AlertDialogTitle>Supprimer l'entreprise ?</AlertDialogTitle>
                               <AlertDialogDescription>
-                                Cette action est irréversible. Toutes les données associées à cette organisation seront supprimées.
+                                Cette action est irréversible. Toutes les données associées à cette entreprise seront supprimées.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
@@ -390,9 +390,9 @@ export default function Organizations() {
           ) : (
             <div className="text-center py-12">
               <Building2 className="mx-auto h-12 w-12 text-muted-foreground/50" />
-              <h3 className="mt-4 text-lg font-medium">Aucune organisation</h3>
+              <h3 className="mt-4 text-lg font-medium">Aucune entreprise</h3>
               <p className="text-muted-foreground">
-                Créez votre première organisation pour commencer
+                Créez votre première entreprise pour commencer
               </p>
             </div>
           )}

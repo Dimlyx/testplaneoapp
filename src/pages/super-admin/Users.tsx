@@ -163,7 +163,7 @@ export default function AllUsers() {
                 <TableRow>
                   <TableHead>Utilisateur</TableHead>
                   <TableHead>Rôle</TableHead>
-                  <TableHead>Organisation</TableHead>
+                  <TableHead>Entreprise</TableHead>
                   <TableHead>Créé le</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>

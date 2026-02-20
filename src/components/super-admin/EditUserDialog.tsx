@@ -116,14 +116,14 @@ export function EditUserDialog({ user, open, onOpenChange }: EditUserDialogProps
             </div>
 
             <div className="space-y-2">
-              <Label>Organisation</Label>
+              <Label>Entreprise</Label>
               <Select value={organizationId} onValueChange={setOrganizationId}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">
-                    {role === 'super_admin' ? 'Global (pas d\'organisation)' : 'Non assigné'}
+                    {role === 'super_admin' ? 'Global (pas d\'entreprise)' : 'Non assigné'}
                   </SelectItem>
                   {organizations?.map((org) => (
                     <SelectItem key={org.id} value={org.id}>
@@ -134,7 +134,7 @@ export function EditUserDialog({ user, open, onOpenChange }: EditUserDialogProps
               </Select>
               {role !== 'super_admin' && organizationId === 'none' && (
                 <p className="text-xs text-amber-600">
-                  ⚠️ Sans organisation, l'utilisateur n'aura pas accès aux données
+                  ⚠️ Sans entreprise, l'utilisateur n'aura pas accès aux données
                 </p>
               )}
             </div>
