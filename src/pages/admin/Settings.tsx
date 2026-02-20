@@ -584,7 +584,7 @@ export default function Settings() {
                 </CardTitle>
                 <CardDescription>
                   Exportez l'intégralité de vos données (clients, interventions, équipements, notes, documents, etc.) dans un fichier CSV unique. 
-                  Ce fichier contient toutes les informations de votre organisation et peut être utilisé pour migrer vers un autre outil.
+                  Ce fichier contient toutes les informations de votre entreprise et peut être utilisé pour migrer vers un autre outil.
                 </CardDescription>
               </CardHeader>
               <CardContent>

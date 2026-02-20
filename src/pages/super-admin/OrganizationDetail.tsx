@@ -201,7 +201,7 @@ export default function OrganizationDetail() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['organization-users', id] });
       queryClient.invalidateQueries({ queryKey: ['organization-stats', id] });
-      toast.success('Utilisateur retiré de l\'organisation');
+      toast.success('Utilisateur retiré de l\'entreprise');
     },
     onError: (error: Error) => {
       toast.error(`Erreur: ${error.message}`);
@@ -229,9 +229,9 @@ export default function OrganizationDetail() {
   if (!organization) {
     return (
       <div className="text-center py-12">
-        <h3 className="text-lg font-medium">Organisation introuvable</h3>
+        <h3 className="text-lg font-medium">Entreprise introuvable</h3>
         <Button asChild className="mt-4">
-          <Link to="/super-admin/organizations">Retour aux organisations</Link>
+          <Link to="/super-admin/organizations">Retour aux entreprises</Link>
         </Button>
       </div>
     );
@@ -379,7 +379,7 @@ export default function OrganizationDetail() {
 
         <TabsContent value="users" className="space-y-4">
           <div className="flex justify-between items-center">
-            <h2 className="text-lg font-semibold">Utilisateurs de l'organisation</h2>
+            <h2 className="text-lg font-semibold">Utilisateurs de l'entreprise</h2>
             <Dialog open={isAddUserDialogOpen} onOpenChange={setIsAddUserDialogOpen}>
               <DialogTrigger asChild>
                 <Button>
@@ -391,7 +391,7 @@ export default function OrganizationDetail() {
                 <DialogHeader>
                   <DialogTitle>Ajouter un utilisateur</DialogTitle>
                   <DialogDescription>
-                    Créez un nouveau compte utilisateur pour cette organisation
+                    Créez un nouveau compte utilisateur pour cette entreprise
                   </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleCreateUser}>
@@ -512,7 +512,7 @@ export default function OrganizationDetail() {
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Retirer l'utilisateur ?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  L'utilisateur sera retiré de cette organisation mais son compte ne sera pas supprimé.
+                                  L'utilisateur sera retiré de cette entreprise mais son compte ne sera pas supprimé.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
@@ -536,7 +536,7 @@ export default function OrganizationDetail() {
                   <Users className="mx-auto h-12 w-12 text-muted-foreground/50" />
                   <h3 className="mt-4 text-lg font-medium">Aucun utilisateur</h3>
                   <p className="text-muted-foreground">
-                    Ajoutez des utilisateurs à cette organisation
+                    Ajoutez des utilisateurs à cette entreprise
                   </p>
                 </div>
               )}
@@ -636,7 +636,7 @@ export default function OrganizationDetail() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Informations de l'organisation</CardTitle>
+              <CardTitle>Informations de l'entreprise</CardTitle>
               <CardDescription>Détails et coordonnées</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">

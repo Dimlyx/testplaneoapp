@@ -147,7 +147,7 @@ const Dashboard = () => {
               )}
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Organisation</p>
+              <p className="text-sm text-muted-foreground">Entreprise</p>
               <p className="font-semibold text-foreground">{organization.name}</p>
             </div>
           </div>
