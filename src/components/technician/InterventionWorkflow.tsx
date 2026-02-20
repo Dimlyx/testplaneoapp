@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { 
   MapPin, 
-  Wrench, 
   CheckCircle, 
   FileText, 
   Save,
@@ -20,11 +19,8 @@ import DynamicStepContent from "./DynamicStepContent";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
-import AddEquipmentDialog from "@/components/AddEquipmentDialog";
-import EquipmentLoopCard from "@/components/EquipmentLoopCard";
 import AttachmentsList from "@/components/technician/AttachmentsList";
 import JourneyTracker from "@/components/technician/JourneyTracker";
-import { InterventionEquipment } from "@/hooks/useInterventionEquipment";
 import { Tables } from "@/integrations/supabase/types";
 import { useInterventionTypes } from "@/hooks/useInterventionTypes";
 import { useWorkflowSteps } from "@/hooks/useWorkflowSteps";
@@ -48,7 +44,6 @@ type Intervention = Tables<"interventions">;
 interface InterventionWorkflowProps {
   intervention: Intervention;
   client: Client | undefined;
-  interventionEquipment: InterventionEquipment[];
   report: string;
   clientSignatureName: string;
   clientSignatureUrl: string | null;
@@ -66,7 +61,6 @@ interface InterventionWorkflowProps {
 const InterventionWorkflow = ({
   intervention,
   client,
-  interventionEquipment,
   report,
   clientSignatureName,
   clientSignatureUrl,
@@ -81,7 +75,6 @@ const InterventionWorkflow = ({
   isUpdating,
 }: InterventionWorkflowProps) => {
   const [activeStep, setActiveStep] = useState<string | null>(null);
-  const existingEquipmentIds = interventionEquipment.map(ie => ie.equipment_id);
   
   // Fetch intervention type and its workflow steps
   const { data: interventionTypes = [] } = useInterventionTypes();
@@ -544,7 +537,7 @@ const InterventionWorkflow = ({
             return (
               <WorkflowStep
                 key={stepKey}
-                icon={step.requires_photo ? Wrench : ClipboardList}
+                icon={step.requires_photo ? ClipboardList : ClipboardList}
                 label={step.label}
                 isActive={activeStep === stepKey}
                 isCompleted={isStepCompleted}

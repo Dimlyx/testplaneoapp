@@ -60,7 +60,7 @@ export default function SuperAdminStatistics() {
         orgsAll, orgsActive,
         usersAll, admins, technicians, superAdmins,
         intAll, intThisMonth, intLastMonth,
-        equipAll, clientsAll, alertsAll,
+        clientsAll, alertsAll,
       ] = await Promise.all([
         supabase.from('organizations').select('id', { count: 'exact', head: true }).not('email', 'eq', 'contact@demo-planeo.tech'),
         supabase.from('organizations').select('id', { count: 'exact', head: true }).eq('status', 'active').not('email', 'eq', 'contact@demo-planeo.tech'),
@@ -71,7 +71,6 @@ export default function SuperAdminStatistics() {
         supabase.from('interventions').select('id', { count: 'exact', head: true }).not('organization_id', 'in', excludeDemo),
         supabase.from('interventions').select('id', { count: 'exact', head: true }).gte('created_at', startCurrent).not('organization_id', 'in', excludeDemo),
         supabase.from('interventions').select('id', { count: 'exact', head: true }).gte('created_at', startLast).lte('created_at', endLast).not('organization_id', 'in', excludeDemo),
-        supabase.from('equipment').select('id', { count: 'exact', head: true }).not('organization_id', 'in', excludeDemo),
         supabase.from('clients').select('id', { count: 'exact', head: true }).not('organization_id', 'in', excludeDemo),
         supabase.from('maintenance_alerts').select('id', { count: 'exact', head: true }).not('organization_id', 'in', excludeDemo),
       ]);
@@ -91,7 +90,6 @@ export default function SuperAdminStatistics() {
         interventionsThisMonth: currentMonth,
         interventionsLastMonth: lastMonth,
         trend,
-        totalEquipment: equipAll.count || 0,
         totalClients: clientsAll.count || 0,
         totalAlerts: alertsAll.count || 0,
       };
@@ -163,12 +161,11 @@ export default function SuperAdminStatistics() {
   const { data: orgDetails } = useQuery({
     queryKey: ['super-admin-org-details-stats'],
     queryFn: async () => {
-      const [orgsRes, intRes, usersRes, clientsRes, eqRes] = await Promise.all([
+      const [orgsRes, intRes, usersRes, clientsRes] = await Promise.all([
         supabase.from('organizations').select('id, name, plan, status, created_at').not('email', 'eq', 'contact@demo-planeo.tech'),
         supabase.from('interventions').select('organization_id, status'),
         supabase.from('user_roles').select('organization_id, role').in('role', ['admin', 'technician']),
         supabase.from('clients').select('organization_id'),
-        supabase.from('equipment').select('organization_id'),
       ]);
       if (orgsRes.error) throw orgsRes.error;
 
@@ -197,18 +194,10 @@ export default function SuperAdminStatistics() {
         }
       });
 
-      const eqByOrg: Record<string, number> = {};
-      eqRes.data?.forEach(e => {
-        if (e.organization_id && !demoOrgIds.has(e.organization_id)) {
-          eqByOrg[e.organization_id] = (eqByOrg[e.organization_id] || 0) + 1;
-        }
-      });
-
       return (orgsRes.data || []).map(org => ({
         ...org,
         users: usersByOrg[org.id] || 0,
         clients: clientsByOrg[org.id] || 0,
-        equipment: eqByOrg[org.id] || 0,
         interventions: intByOrg[org.id]?.total || 0,
         completionRate: intByOrg[org.id]?.total 
           ? Math.round((intByOrg[org.id].completed / intByOrg[org.id].total) * 100) 
@@ -224,7 +213,6 @@ export default function SuperAdminStatistics() {
     { label: 'Organisations', value: `${coreStats?.activeOrgs || 0} / ${coreStats?.totalOrgs || 0}`, icon: Building2, sub: 'actives / total', color: 'text-emerald-500' },
     { label: 'Utilisateurs', value: coreStats?.totalUsers || 0, icon: Users, sub: `${coreStats?.admins || 0} admins · ${coreStats?.technicians || 0} techs`, color: 'text-orange-500' },
     { label: 'Clients', value: coreStats?.totalClients || 0, icon: Users, color: 'text-purple-500' },
-    { label: 'Équipements', value: coreStats?.totalEquipment || 0, icon: Wrench, color: 'text-cyan-500' },
     { label: 'Alertes maintenance', value: coreStats?.totalAlerts || 0, icon: AlertTriangle, color: 'text-amber-500' },
     { label: 'Moy. inter/org', value: coreStats && coreStats.activeOrgs > 0 ? Math.round(coreStats.totalInterventions / coreStats.activeOrgs) : 0, icon: BarChart3, color: 'text-pink-500' },
   ];
@@ -351,7 +339,6 @@ export default function SuperAdminStatistics() {
                     <TableHead>Plan</TableHead>
                     <TableHead className="text-right">Utilisateurs</TableHead>
                     <TableHead className="text-right">Clients</TableHead>
-                    <TableHead className="text-right">Équipements</TableHead>
                     <TableHead className="text-right">Interventions</TableHead>
                     <TableHead className="text-right">Taux réalisation</TableHead>
                     <TableHead className="text-right">Ancienneté</TableHead>
@@ -369,7 +356,6 @@ export default function SuperAdminStatistics() {
                       </TableCell>
                       <TableCell className="text-right">{org.users}</TableCell>
                       <TableCell className="text-right">{org.clients}</TableCell>
-                      <TableCell className="text-right">{org.equipment}</TableCell>
                       <TableCell className="text-right font-semibold">{org.interventions}</TableCell>
                       <TableCell className="text-right">
                         <Badge variant="outline" className={`text-xs ${org.completionRate >= 70 ? 'border-emerald-500 text-emerald-600' : org.completionRate >= 40 ? 'border-amber-500 text-amber-600' : 'border-red-500 text-red-600'}`}>

@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useIntervention, useUpdateIntervention } from "@/hooks/useInterventions";
-import { useClient } from "@/hooks/useClients";
-import { useInterventionEquipment } from "@/hooks/useInterventionEquipment";
-import { useCompanySettings, useDocumentSettings } from "@/hooks/useAppSettings";
+  import { useIntervention, useUpdateIntervention } from "@/hooks/useInterventions";
+  import { useClient } from "@/hooks/useClients";
+  import { useCompanySettings, useDocumentSettings } from "@/hooks/useAppSettings";
 import { useInterventionTypes } from "@/hooks/useInterventionTypes";
 import { useWorkflowSteps } from "@/hooks/useWorkflowSteps";
 import { useStepCompletions } from "@/hooks/useStepCompletions";
@@ -23,7 +22,6 @@ const TechnicianInterventionDetail = () => {
   const { id } = useParams();
   const { data: intervention, isLoading } = useIntervention(id || "");
   const { data: client } = useClient(intervention?.client_id || "");
-  const { data: interventionEquipment = [] } = useInterventionEquipment(id || "");
   const { data: photos = [] } = useInterventionPhotos(id || "");
   const { data: companySettings } = useCompanySettings();
   const { data: documentSettings } = useDocumentSettings();
@@ -167,10 +165,10 @@ const TechnicianInterventionDetail = () => {
       await generateInterventionPDF(
         intervention, 
         client, 
-        intervention.equipment as any,
+        undefined,
         intervention.profiles?.full_name || undefined,
         photos,
-        interventionEquipment,
+        [],
         { company: companySettings!, report: { primaryColor: documentSettings?.primaryColor || '#003057', accentColor: documentSettings?.accentColor || '#0050A0', footerText: documentSettings?.footerText || '' }, documents: documentSettings! },
         stepCompletions,
         workflowSteps,
@@ -239,7 +237,6 @@ const TechnicianInterventionDetail = () => {
       <InterventionWorkflow
         intervention={intervention}
         client={client}
-        interventionEquipment={interventionEquipment}
         report={report}
         clientSignatureName={clientSignatureName}
         clientSignatureUrl={clientSignatureUrl}

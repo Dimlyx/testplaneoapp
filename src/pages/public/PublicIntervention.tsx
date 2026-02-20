@@ -1,7 +1,6 @@
 import { useParams } from "react-router-dom";
 import { usePublicIntervention } from "@/hooks/useInterventions";
 import { useInterventionPhotos } from "@/hooks/useInterventionPhotos";
-import { useInterventionEquipment } from "@/hooks/useInterventionEquipment";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge, TypeBadge } from "@/components/ui/status-badge";
 import { supabase } from "@/integrations/supabase/client";
@@ -43,7 +42,6 @@ const PublicIntervention = () => {
   const { token } = useParams();
   const { data: intervention, isLoading, error } = usePublicIntervention(token || "");
   const { data: photos = [] } = useInterventionPhotos(intervention?.id || "");
-  const { data: interventionEquipments = [] } = useInterventionEquipment(intervention?.id || "");
   
   const { data: stepCompletions = [] } = useQuery({
     queryKey: ["public-step-completions", intervention?.id],

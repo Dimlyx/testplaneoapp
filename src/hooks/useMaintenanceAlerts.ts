@@ -22,19 +22,12 @@ export interface MaintenanceAlert {
     id: string;
     name: string;
   } | null;
-  equipment?: {
-    id: string;
-    equipment_type: string;
-    brand: string;
-    model: string;
-  } | null;
 }
 
 export interface CreateMaintenanceAlertData {
   title: string;
   description?: string;
   client_id?: string;
-  equipment_id?: string;
   alert_date: string;
   recurrence?: AlertRecurrence;
 }
@@ -44,7 +37,6 @@ export interface UpdateMaintenanceAlertData {
   title?: string;
   description?: string;
   client_id?: string | null;
-  equipment_id?: string | null;
   alert_date?: string;
   recurrence?: AlertRecurrence;
   status?: AlertStatus;
@@ -58,8 +50,7 @@ export function useMaintenanceAlerts() {
         .from('maintenance_alerts')
         .select(`
           *,
-          clients (id, name),
-          equipment (id, equipment_type, brand, model)
+          clients (id, name)
         `)
         .order('alert_date', { ascending: true });
 
@@ -78,8 +69,7 @@ export function usePendingAlerts() {
         .from('maintenance_alerts')
         .select(`
           *,
-          clients (id, name),
-          equipment (id, equipment_type, brand, model)
+          clients (id, name)
         `)
         .eq('status', 'pending')
         .lte('alert_date', today)
@@ -103,8 +93,7 @@ export function useUpcomingAlerts(days: number = 30) {
         .from('maintenance_alerts')
         .select(`
           *,
-          clients (id, name),
-          equipment (id, equipment_type, brand, model)
+          clients (id, name)
         `)
         .in('status', ['pending', 'acknowledged'])
         .gte('alert_date', today.toISOString().split('T')[0])
@@ -130,7 +119,6 @@ export function useCreateMaintenanceAlert() {
           title: data.title,
           description: data.description || null,
           client_id: data.client_id || null,
-          equipment_id: data.equipment_id || null,
           alert_date: data.alert_date,
           recurrence: data.recurrence || 'once',
           organization_id: organizationId,

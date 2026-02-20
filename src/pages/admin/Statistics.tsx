@@ -825,7 +825,6 @@ export default function Statistics() {
                         <p className="font-medium truncate">{alert.title}</p>
                         <p className="text-sm text-muted-foreground">
                           {alert.clients?.name || 'Client non défini'}
-                          {alert.equipment && ` — ${alert.equipment.brand} ${alert.equipment.model}`}
                         </p>
                       </div>
                       <div className="text-right ml-4 shrink-0">
