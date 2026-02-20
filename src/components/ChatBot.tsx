@@ -172,7 +172,7 @@ export function ChatBot() {
           <div className="flex items-center gap-3 px-4 py-3 border-b bg-primary text-primary-foreground rounded-t-2xl">
             <Bot className="h-5 w-5" />
             <div className="flex-1">
-              <p className="text-sm font-semibold">Assistant Planéo</p>
+              <p className="text-sm font-semibold">Assistant PLANEO</p>
               <p className="text-xs opacity-80">Comment puis-je vous aider ?</p>
             </div>
             <Button
@@ -193,7 +193,7 @@ export function ChatBot() {
                 <div>
                   <p className="font-medium text-sm">Bonjour ! 👋</p>
                   <p className="text-xs mt-1">
-                    Posez-moi vos questions sur l'utilisation de Planéo.
+                    Posez-moi vos questions sur l'utilisation de PLANEO.
                   </p>
                 </div>
               </div>
