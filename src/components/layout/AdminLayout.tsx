@@ -19,6 +19,9 @@ import {
   Bell,
   ArrowLeft
 } from 'lucide-react';
+import { useTheme } from 'next-themes';
+import planeoLogoWhite from '@/assets/planeo-logo-white.png';
+import planeoLogoDark from '@/assets/planeo-logo-dark.png';
 import { cn } from '@/lib/utils';
 import { ChatBot } from '@/components/ChatBot';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -40,6 +43,8 @@ export default function AdminLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, role, signOut } = useAuth();
+  const { resolvedTheme } = useTheme();
+  const logo = resolvedTheme === 'dark' ? planeoLogoWhite : planeoLogoDark;
   const { viewAsOrgId, clearViewAsOrg } = useOrganizationContext();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { hasFeature, isSubscriptionBlocked, subscriptionStatus } = useOrganizationPlan();
@@ -95,7 +100,7 @@ export default function AdminLayout() {
           {/* Logo */}
           <div className="flex h-16 items-center gap-3 px-6 border-b border-sidebar-border">
             <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-sidebar-accent">
-              <Wrench className="h-5 w-5 text-sidebar-accent-foreground" />
+              <img src={logo} alt="PLANEO" className="h-7 w-7 object-contain" />
             </div>
             <div>
               <h1 className="text-lg font-semibold text-sidebar-foreground">PLANEO</h1>
@@ -202,7 +207,7 @@ export default function AdminLayout() {
             <Menu className="h-5 w-5" />
           </Button>
           <div className="flex items-center gap-2">
-            <Wrench className="h-5 w-5 text-primary" />
+            <img src={logo} alt="PLANEO" className="h-6 w-6 object-contain" />
             <span className="font-semibold">PLANEO</span>
           </div>
           <div className="ml-auto">
