@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Settings as SettingsIcon, FileText, Palette, Save, Upload, X, Image, Eye, EyeOff, Building2, RotateCcw, ListChecks, Download, Lock } from "lucide-react";
+import { Settings as SettingsIcon, FileText, Palette, Save, Upload, X, Image, Eye, EyeOff, Building2, RotateCcw, ListChecks, Download, Lock, Info, ExternalLink, Shield, FileCheck, HeadphonesIcon } from "lucide-react";
 import { useOrganizationPlan } from "@/hooks/useOrganizationPlan";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -624,6 +624,81 @@ export default function Settings() {
                   <Download className="h-4 w-4 mr-2" />
                   {isExporting ? "Export en cours..." : "Exporter toutes les données (.csv)"}
                 </Button>
+              </CardContent>
+            </Card>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Section: À propos */}
+        <AccordionItem value="about" className="border rounded-lg px-4">
+          <AccordionTrigger className="hover:no-underline">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Info className="h-5 w-5 text-primary" />
+              </div>
+              <div className="text-left">
+                <p className="font-semibold">À propos</p>
+                <p className="text-sm text-muted-foreground font-normal">Informations légales et support</p>
+              </div>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="pt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Info className="h-5 w-5" />
+                  PLANEO
+                </CardTitle>
+                <CardDescription>Ressources et informations légales</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <a
+                  href="https://planeo.tech/politique-de-confidentialite"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors group"
+                >
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <Shield className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium text-sm">Politique de confidentialité</p>
+                    <p className="text-xs text-muted-foreground">Consultez notre politique de traitement des données</p>
+                  </div>
+                  <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                </a>
+
+                <a
+                  href="https://planeo.tech/conditions-utilisation"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors group"
+                >
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <FileCheck className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium text-sm">Conditions d'utilisation</p>
+                    <p className="text-xs text-muted-foreground">Lisez nos conditions générales d'utilisation</p>
+                  </div>
+                  <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                </a>
+
+                <a
+                  href="https://planeo.tech/contact"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors group"
+                >
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <HeadphonesIcon className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium text-sm">Contact / Support</p>
+                    <p className="text-xs text-muted-foreground">Besoin d'aide ? Contactez notre équipe</p>
+                  </div>
+                  <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                </a>
               </CardContent>
             </Card>
           </AccordionContent>
