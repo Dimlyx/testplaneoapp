@@ -266,6 +266,19 @@ Deno.serve(async (req) => {
       if (compError) throw new Error('Step completions creation failed: ' + compError.message)
     }
 
+    // 11. Create maintenance alerts
+    const maintenanceAlerts = [
+      { organization_id: orgId, client_id: clients[0].id, equipment_id: equipments[0].id, title: 'Révision annuelle chauffe-eau', description: 'Contrôle annuel obligatoire du chauffe-eau Atlantic', alert_date: day(-5), recurrence: 'yearly', status: 'pending' },
+      { organization_id: orgId, client_id: clients[1].id, equipment_id: equipments[1].id, title: 'Entretien climatisation été', description: 'Nettoyage filtres et vérification fluide frigorigène', alert_date: day(0), recurrence: 'yearly', status: 'pending' },
+      { organization_id: orgId, client_id: clients[2].id, equipment_id: equipments[2].id, title: 'Maintenance chaudière trimestrielle', description: 'Contrôle pression, purge radiateurs', alert_date: day(7), recurrence: 'quarterly', status: 'pending' },
+      { organization_id: orgId, client_id: clients[3].id, equipment_id: equipments[3].id, title: 'Vérification climatisation Mitsubishi', description: 'Contrôle performance et nettoyage unité extérieure', alert_date: day(14), recurrence: 'monthly', status: 'pending' },
+      { organization_id: orgId, client_id: clients[4].id, equipment_id: equipments[4].id, title: 'Entretien annuel chaudière Saunier Duval', description: 'Révision complète avec certificat de conformité', alert_date: day(-15), recurrence: 'yearly', status: 'acknowledged' },
+      { organization_id: orgId, client_id: clients[0].id, equipment_id: equipments[5].id, title: 'Contrôle pompe à chaleur', description: 'Vérification COP et état du circuit', alert_date: day(-30), recurrence: 'yearly', status: 'completed' },
+    ]
+
+    const { error: alertsError } = await supabaseAdmin.from('maintenance_alerts').insert(maintenanceAlerts)
+    if (alertsError) throw new Error('Maintenance alerts creation failed: ' + alertsError.message)
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -274,7 +287,7 @@ Deno.serve(async (req) => {
           technician: { email: 'demo.technicien@planeo.tech', password: techPassword, name: 'Lucas Bernard' },
         },
         organization: { name: 'Entreprise Démo', id: orgId },
-        stats: { clients: clients.length, equipment: equipments.length, interventions: interventions.length },
+        stats: { clients: clients.length, equipment: equipments.length, interventions: interventions.length, maintenanceAlerts: maintenanceAlerts.length },
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
