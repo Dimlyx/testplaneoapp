@@ -15,12 +15,14 @@ import {
   UserCog,
   Megaphone,
   Mail,
-  PlayCircle
+  PlayCircle,
+  BarChart3
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navigation = [
   { name: 'Tableau de bord', href: '/super-admin', icon: LayoutDashboard },
+  { name: 'Statistiques', href: '/super-admin/statistics', icon: BarChart3 },
   { name: 'Entreprises', href: '/super-admin/organizations', icon: Building2 },
   { name: 'Utilisateurs', href: '/super-admin/users', icon: Users },
   { name: 'Communication', href: '/super-admin/announcements', icon: Megaphone },
