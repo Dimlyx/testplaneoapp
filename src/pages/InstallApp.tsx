@@ -72,7 +72,7 @@ export default function InstallApp() {
           <div className="mx-auto mb-4 w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center">
             <Smartphone className="h-10 w-10 text-primary" />
           </div>
-          <CardTitle className="text-2xl">Installer Planéo</CardTitle>
+          <CardTitle className="text-2xl">Installer PLANEO</CardTitle>
           <CardDescription>
             Installez l'application sur votre appareil pour un accès rapide et un mode hors-ligne complet.
           </CardDescription>

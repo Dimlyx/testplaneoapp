@@ -56,7 +56,7 @@ export default function TechnicianLayout() {
               <Wrench className="h-5 w-5 text-sidebar-accent-foreground" />
             </div>
             <div>
-              <h1 className="text-lg font-semibold text-sidebar-foreground">Planéo</h1>
+              <h1 className="text-lg font-semibold text-sidebar-foreground">PLANEO</h1>
               <p className="text-xs text-sidebar-foreground/60">Espace Technicien</p>
             </div>
             <Button
@@ -134,7 +134,7 @@ export default function TechnicianLayout() {
           </Button>
           <div className="flex items-center gap-2">
             <Wrench className="h-5 w-5 text-primary" />
-            <span className="font-semibold">Planéo</span>
+            <span className="font-semibold">PLANEO</span>
           </div>
           <div className="ml-auto flex items-center gap-2">
             <NotificationBell />
