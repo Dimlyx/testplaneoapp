@@ -214,7 +214,12 @@ Deno.serve(async (req) => {
     if (intError) throw new Error('Interventions creation failed: ' + intError.message)
 
     // 9. Create workflow steps for each intervention type
-    const demoPhotoUrl = 'https://gwqjwclvrihumhqzoikv.supabase.co/storage/v1/object/public/intervention-photos/demo/demo-step-photo.png'
+    // Generate a signed URL for the demo photo (bucket is private)
+    const { data: signedUrlData, error: signedUrlError } = await supabaseAdmin.storage
+      .from('intervention-photos')
+      .createSignedUrl('demo/demo-step-photo.png', 60 * 60 * 24 * 365) // 1 year expiry
+    if (signedUrlError) throw new Error('Failed to create signed URL: ' + signedUrlError.message)
+    const demoPhotoUrl = signedUrlData.signedUrl
 
     const workflowStepsDefs = intTypes.flatMap(type => [
       { intervention_type_id: type.id, organization_id: orgId, name: 'verification_visuelle', label: 'Vérification visuelle', description: 'Inspecter visuellement l\'équipement', step_order: 1, is_mandatory: true, requires_photo: true, requires_comment: true },
