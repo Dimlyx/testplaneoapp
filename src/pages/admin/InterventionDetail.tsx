@@ -4,7 +4,6 @@ import { useIntervention, useCreateIntervention, useUpdateIntervention } from "@
 import { useClient } from "@/hooks/useClients";
 import { useInterventionPhotos, PhotoType } from "@/hooks/useInterventionPhotos";
 import { useInterventionPauses } from "@/hooks/useInterventionPauses";
-import { useInterventionEquipment } from "@/hooks/useInterventionEquipment";
 import { useCompanySettings, useDocumentSettings } from "@/hooks/useAppSettings";
 import { useOrganizationPlan } from "@/hooks/useOrganizationPlan";
 import { useInterventionTypes } from "@/hooks/useInterventionTypes";
@@ -56,7 +55,6 @@ const InterventionDetail = () => {
   const { data: intervention, isLoading, refetch } = useIntervention(id || "");
   const { data: client } = useClient(intervention?.client_id || "");
   const { data: photos = [] } = useInterventionPhotos(id || "");
-  const { data: interventionEquipments = [] } = useInterventionEquipment(id || "");
   const { data: companySettings } = useCompanySettings();
   const { data: documentSettings } = useDocumentSettings();
   const { hasFeature } = useOrganizationPlan();
@@ -96,10 +94,10 @@ const InterventionDetail = () => {
       await generateInterventionPDF(
         intervention, 
         client, 
-        intervention.equipment as any,
+        undefined,
         intervention.profiles?.full_name || undefined,
         photos,
-        interventionEquipments,
+        [],
         { company: companySettings!, report: { primaryColor: documentSettings?.primaryColor || '#003057', accentColor: documentSettings?.accentColor || '#0050A0', footerText: documentSettings?.footerText || '' }, documents: documentSettings! },
         stepCompletions,
         workflowSteps,
@@ -113,7 +111,6 @@ const InterventionDetail = () => {
     try {
       const result = await createIntervention.mutateAsync({
         client_id: intervention.client_id,
-        equipment_id: intervention.equipment_id,
         technician_id: intervention.technician_id,
         intervention_type: intervention.intervention_type,
         title: `${intervention.title} (copie)`,
@@ -561,122 +558,21 @@ const InterventionDetail = () => {
           </CardContent>
         </Card>
 
-        {/* Équipements */}
-        {interventionEquipments.length > 0 && (
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Wrench className="h-5 w-5" />
-                Équipements ({interventionEquipments.length})
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {interventionEquipments.map((ie, index) => {
-                const equipmentPhotos = photos.filter(p => p.equipment_id === ie.equipment_id);
-                const serialPhotos = equipmentPhotos.filter(p => p.photo_type === 'serial_number');
-                const duringPhotos = equipmentPhotos.filter(p => p.photo_type === 'during');
-                const afterPhotos = equipmentPhotos.filter(p => p.photo_type === 'after');
-                
-                const getStatusDisplay = (status: string | null) => {
-                  switch (status) {
-                    case 'not_working':
-                      return { label: 'Ne fonctionne pas', className: 'bg-red-100 text-red-800' };
-                    case 'needs_intervention':
-                      return { label: 'Pièces ou intervention nécessaire', className: 'bg-orange-100 text-orange-800' };
-                    case 'working':
-                    default:
-                      return { label: 'Fonctionne', className: 'bg-green-100 text-green-800' };
-                  }
-                };
-                const statusDisplay = getStatusDisplay(ie.equipment_status);
-                
-                return (
-                  <div key={ie.id} className="border rounded-lg p-4 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-semibold text-lg">
-                        {index + 1}. {ie.equipment?.equipment_type || "Équipement"}
-                      </h4>
-                      <span className={`px-2 py-1 rounded text-sm ${statusDisplay.className}`}>
-                        {statusDisplay.label}
-                      </span>
-                    </div>
-
-                    {ie.equipment?.serial_number && (
-                      <p className="text-sm text-muted-foreground">
-                        N° série : {ie.equipment.serial_number}
-                      </p>
-                    )}
-
-                    {ie.technical_comments && (
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground mb-1">Commentaires techniques</p>
-                        <p className="whitespace-pre-wrap">{ie.technical_comments}</p>
-                      </div>
-                    )}
-
-                    {/* Photos de l'équipement */}
-                    {equipmentPhotos.length > 0 && (
-                      <div className="space-y-3">
-                        {serialPhotos.length > 0 && (
-                          <div>
-                            <p className="text-sm font-medium mb-2">Photos numéro de série</p>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                              {serialPhotos.map(photo => (
-                                <a key={photo.id} href={photo.photo_url} target="_blank" rel="noopener noreferrer">
-                                  <img src={photo.photo_url} alt="Série" className="w-full aspect-square object-cover rounded-lg hover:opacity-90 transition-opacity" />
-                                </a>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                        {duringPhotos.length > 0 && (
-                          <div>
-                            <p className="text-sm font-medium mb-2">Photos pendant intervention</p>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                              {duringPhotos.map(photo => (
-                                <a key={photo.id} href={photo.photo_url} target="_blank" rel="noopener noreferrer">
-                                  <img src={photo.photo_url} alt="Pendant" className="w-full aspect-square object-cover rounded-lg hover:opacity-90 transition-opacity" />
-                                </a>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                        {afterPhotos.length > 0 && (
-                          <div>
-                            <p className="text-sm font-medium mb-2">Photos après intervention</p>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                              {afterPhotos.map(photo => (
-                                <a key={photo.id} href={photo.photo_url} target="_blank" rel="noopener noreferrer">
-                                  <img src={photo.photo_url} alt="Après" className="w-full aspect-square object-cover rounded-lg hover:opacity-90 transition-opacity" />
-                                </a>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Photos sans équipement spécifique */}
-        {photos.filter(p => !p.equipment_id).length > 0 && (
+        {/* Photos */}
+        {photos.length > 0 && (
           <Card className="lg:col-span-2">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <ImageIcon className="h-5 w-5" />
-                Photos générales
+                Photos ({photos.length})
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              {getPhotosOfType('serial_number').filter(p => !p.equipment_id).length > 0 && (
+              {getPhotosOfType('serial_number').length > 0 && (
                 <div>
                   <h4 className="font-medium mb-3">Photo du numéro de série</h4>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {getPhotosOfType('serial_number').filter(p => !p.equipment_id).map((photo) => (
+                    {getPhotosOfType('serial_number').map((photo) => (
                       <a key={photo.id} href={photo.photo_url} target="_blank" rel="noopener noreferrer">
                         <img src={photo.photo_url} alt="Numéro de série" className="w-full aspect-square object-cover rounded-lg hover:opacity-90 transition-opacity" />
                       </a>
@@ -684,11 +580,11 @@ const InterventionDetail = () => {
                   </div>
                 </div>
               )}
-              {getPhotosOfType('during').filter(p => !p.equipment_id).length > 0 && (
+              {getPhotosOfType('during').length > 0 && (
                 <div>
                   <h4 className="font-medium mb-3">Photos pendant intervention</h4>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {getPhotosOfType('during').filter(p => !p.equipment_id).map((photo) => (
+                    {getPhotosOfType('during').map((photo) => (
                       <a key={photo.id} href={photo.photo_url} target="_blank" rel="noopener noreferrer">
                         <img src={photo.photo_url} alt="Pendant intervention" className="w-full aspect-square object-cover rounded-lg hover:opacity-90 transition-opacity" />
                       </a>
@@ -696,11 +592,11 @@ const InterventionDetail = () => {
                   </div>
                 </div>
               )}
-              {getPhotosOfType('after').filter(p => !p.equipment_id).length > 0 && (
+              {getPhotosOfType('after').length > 0 && (
                 <div>
                   <h4 className="font-medium mb-3">Photos après intervention</h4>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {getPhotosOfType('after').filter(p => !p.equipment_id).map((photo) => (
+                    {getPhotosOfType('after').map((photo) => (
                       <a key={photo.id} href={photo.photo_url} target="_blank" rel="noopener noreferrer">
                         <img src={photo.photo_url} alt="Après intervention" className="w-full aspect-square object-cover rounded-lg hover:opacity-90 transition-opacity" />
                       </a>

@@ -52,15 +52,6 @@ export interface Intervention {
     client_type?: string;
     organization_id?: string | null;
   };
-  equipment?: {
-    id: string;
-    brand: string;
-    model: string;
-    equipment_type: string;
-    serial_number: string | null;
-    installation_date?: string | null;
-    organization_id?: string | null;
-  } | null;
   profiles?: {
     id: string;
     full_name: string | null;
@@ -71,7 +62,6 @@ export interface Intervention {
 
 export interface CreateInterventionData {
   client_id: string;
-  equipment_id?: string | null;
   technician_id?: string | null;
   intervention_type: InterventionType;
   title: string;
@@ -89,7 +79,6 @@ export interface CreateInterventionData {
 export interface UpdateInterventionData {
   id: string;
   client_id?: string;
-  equipment_id?: string | null;
   technician_id?: string | null;
   intervention_type?: InterventionType;
   status?: InterventionStatus;
@@ -104,7 +93,6 @@ export interface UpdateInterventionData {
   travel_departure_time?: string | null;
   travel_return_time?: string | null;
   observations?: string;
-  equipment_functional?: boolean;
   client_signature_name?: string;
   client_signature_url?: string;
   intervention_address?: string | null;
@@ -126,8 +114,7 @@ export function useInterventions() {
         .from('interventions')
         .select(`
           *,
-          clients (id, name, email, phone, address, city),
-          equipment (id, brand, model, equipment_type, serial_number)
+          clients (id, name, email, phone, address, city)
         `)
         .order('created_at', { ascending: false });
 
@@ -168,8 +155,7 @@ export function useTechnicianInterventions(technicianId: string | undefined) {
         .from('interventions')
         .select(`
           *,
-          clients (id, name, email, phone, address, city),
-          equipment (id, brand, model, equipment_type, serial_number)
+          clients (id, name, email, phone, address, city)
         `)
         .eq('technician_id', technicianId)
         .order('scheduled_date', { ascending: true });
@@ -189,8 +175,7 @@ export function useIntervention(id: string) {
         .from('interventions')
         .select(`
           *,
-          clients (id, name, email, phone, address, city, postal_code, client_type),
-          equipment (id, brand, model, equipment_type, serial_number, installation_date)
+          clients (id, name, email, phone, address, city, postal_code, client_type)
         `)
         .eq('id', id)
         .maybeSingle();
@@ -221,8 +206,7 @@ export function usePublicIntervention(token: string) {
         .from('interventions')
         .select(`
           *,
-          clients (id, name, email, phone, address, city, postal_code, client_type),
-          equipment (id, brand, model, equipment_type, serial_number)
+          clients (id, name, email, phone, address, city, postal_code, client_type)
         `)
         .eq('public_token', token)
         .maybeSingle();

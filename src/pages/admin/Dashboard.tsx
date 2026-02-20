@@ -189,7 +189,6 @@ const Dashboard = () => {
                         <p className="font-medium">{alert.title}</p>
                         <p className="text-sm text-muted-foreground">
                           {alert.clients?.name || "Client non spécifié"}
-                          {alert.equipment && ` • ${alert.equipment.brand} ${alert.equipment.model}`}
                         </p>
                       </div>
                     </div>
