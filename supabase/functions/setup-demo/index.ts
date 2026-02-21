@@ -141,13 +141,17 @@ Deno.serve(async (req) => {
     })
     if (adminAuthError) throw new Error('Admin user creation failed: ' + adminAuthError.message)
 
-    await supabaseAdmin.from('profiles').upsert({
+    // Delete trigger-created rows first (handle_new_user creates them without org)
+    await supabaseAdmin.from('user_roles').delete().eq('user_id', adminAuth.user.id)
+    await supabaseAdmin.from('profiles').delete().eq('id', adminAuth.user.id)
+
+    await supabaseAdmin.from('profiles').insert({
       id: adminAuth.user.id,
       email: 'demo.admin@planeo.tech',
       full_name: 'Sophie Martin',
       organization_id: orgId,
     })
-    await supabaseAdmin.from('user_roles').upsert({
+    await supabaseAdmin.from('user_roles').insert({
       user_id: adminAuth.user.id,
       role: 'admin',
       organization_id: orgId,
@@ -163,13 +167,17 @@ Deno.serve(async (req) => {
     })
     if (techAuthError) throw new Error('Tech user creation failed: ' + techAuthError.message)
 
-    await supabaseAdmin.from('profiles').upsert({
+    // Delete trigger-created rows first
+    await supabaseAdmin.from('user_roles').delete().eq('user_id', techAuth.user.id)
+    await supabaseAdmin.from('profiles').delete().eq('id', techAuth.user.id)
+
+    await supabaseAdmin.from('profiles').insert({
       id: techAuth.user.id,
       email: 'demo.technicien@planeo.tech',
       full_name: 'Lucas Bernard',
       organization_id: orgId,
     })
-    await supabaseAdmin.from('user_roles').upsert({
+    await supabaseAdmin.from('user_roles').insert({
       user_id: techAuth.user.id,
       role: 'technician',
       organization_id: orgId,
