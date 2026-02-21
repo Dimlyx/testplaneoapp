@@ -18,7 +18,7 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.ico", "placeholder.svg"],
+      includeAssets: ["favicon.png", "placeholder.svg"],
       manifest: {
         name: "Planéo - Gestion Interventions",
         short_name: "Planéo",
