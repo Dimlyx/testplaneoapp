@@ -44,17 +44,71 @@ Deno.serve(async (req) => {
       })
     }
 
-    // 1. Cleanup existing demo users
+    // 1. Cleanup existing demo data thoroughly
+    // Find existing demo org(s)
+    const { data: existingOrgs } = await supabaseAdmin
+      .from('organizations')
+      .select('id')
+      .eq('email', 'contact@demo-planeo.tech')
+
+    for (const existingOrg of existingOrgs ?? []) {
+      const oid = existingOrg.id
+
+      // Delete step completions for interventions in this org
+      const { data: orgInterventions } = await supabaseAdmin
+        .from('interventions')
+        .select('id')
+        .eq('organization_id', oid)
+      const intIds = (orgInterventions ?? []).map(i => i.id)
+      if (intIds.length > 0) {
+        await supabaseAdmin.from('intervention_step_completions').delete().in('intervention_id', intIds)
+        await supabaseAdmin.from('intervention_photos').delete().in('intervention_id', intIds)
+        await supabaseAdmin.from('intervention_attachments').delete().in('intervention_id', intIds)
+        await supabaseAdmin.from('intervention_equipment').delete().in('intervention_id', intIds)
+        await supabaseAdmin.from('intervention_pauses').delete().in('intervention_id', intIds)
+      }
+
+      // Delete interventions, equipment, client data, etc.
+      await supabaseAdmin.from('interventions').delete().eq('organization_id', oid)
+      await supabaseAdmin.from('maintenance_alerts').delete().eq('organization_id', oid)
+      await supabaseAdmin.from('equipment').delete().eq('organization_id', oid)
+      await supabaseAdmin.from('client_contacts').delete().eq('organization_id', oid)
+      await supabaseAdmin.from('client_notes').delete().eq('organization_id', oid)
+      await supabaseAdmin.from('client_documents').delete().eq('organization_id', oid)
+      await supabaseAdmin.from('clients').delete().eq('organization_id', oid)
+      await supabaseAdmin.from('intervention_workflow_steps').delete().eq('organization_id', oid)
+      await supabaseAdmin.from('intervention_types').delete().eq('organization_id', oid)
+      await supabaseAdmin.from('app_settings').delete().eq('organization_id', oid)
+      await supabaseAdmin.from('notifications').delete().in('user_id',
+        (await supabaseAdmin.from('user_roles').select('user_id').eq('organization_id', oid)).data?.map(r => r.user_id) ?? []
+      )
+
+      // Delete user roles and profiles for this org
+      const { data: orgRoles } = await supabaseAdmin
+        .from('user_roles')
+        .select('user_id')
+        .eq('organization_id', oid)
+      const userIds = (orgRoles ?? []).map(r => r.user_id)
+      await supabaseAdmin.from('user_roles').delete().eq('organization_id', oid)
+      for (const uid of userIds) {
+        await supabaseAdmin.from('profiles').delete().eq('id', uid)
+        await supabaseAdmin.auth.admin.deleteUser(uid)
+      }
+
+      // Delete org
+      await supabaseAdmin.from('organizations').delete().eq('id', oid)
+    }
+
+    // Also cleanup any orphaned demo auth users
     const demoEmails = ['demo.admin@planeo.tech', 'demo.technicien@planeo.tech']
     const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers()
     for (const u of existingUsers?.users ?? []) {
       if (demoEmails.includes(u.email ?? '')) {
+        await supabaseAdmin.from('user_roles').delete().eq('user_id', u.id)
+        await supabaseAdmin.from('profiles').delete().eq('id', u.id)
         await supabaseAdmin.auth.admin.deleteUser(u.id)
       }
     }
-
-    // Cleanup existing demo organizations
-    await supabaseAdmin.from('organizations').delete().eq('email', 'contact@demo-planeo.tech')
 
     // 2. Create demo organization
     const { data: org, error: orgError } = await supabaseAdmin
@@ -178,9 +232,9 @@ Deno.serve(async (req) => {
 
     const interventions = [
       // --- TO_PLAN (3) ---
-      { title: 'Maintenance préventive clim - SCI Les Fontaines', client_id: clients[1].id, organization_id: orgId, intervention_type: maintenance, status: 'to_plan', description: 'Contrôle préventif climatisation avant l\'été.' },
-      { title: 'Vérification chaudière - Lefebvre', client_id: clients[4].id, organization_id: orgId, intervention_type: maintenance, status: 'to_plan', description: 'Contrôle annuel chaudière gaz.' },
-      { title: 'Installation PAC - Restaurant Le Gourmet', client_id: clients[3].id, organization_id: orgId, intervention_type: installation, status: 'to_plan', description: 'Nouvelle installation pompe à chaleur pour la cuisine.' },
+      { title: 'Maintenance préventive clim - SCI Les Fontaines', client_id: clients[1].id, organization_id: orgId, intervention_type: maintenance, status: 'to_plan', technician_id: techId, description: 'Contrôle préventif climatisation avant l\'été.' },
+      { title: 'Vérification chaudière - Lefebvre', client_id: clients[4].id, organization_id: orgId, intervention_type: maintenance, status: 'to_plan', technician_id: techId, description: 'Contrôle annuel chaudière gaz.' },
+      { title: 'Installation PAC - Restaurant Le Gourmet', client_id: clients[3].id, organization_id: orgId, intervention_type: installation, status: 'to_plan', technician_id: techId, description: 'Nouvelle installation pompe à chaleur pour la cuisine.' },
 
       // --- PLANNED (5) ---
       { title: 'Entretien chauffe-eau - Martin Pierre', client_id: clients[0].id, equipment_id: equipments[0].id, technician_id: techId, organization_id: orgId, intervention_type: maintenance, status: 'planned', scheduled_date: day(1), scheduled_time: '09:00', description: 'Entretien annuel du chauffe-eau.', intervention_address: '5 Avenue Victor Hugo', intervention_city: 'Lyon', intervention_postal_code: '69001', intervention_contact_name: 'Pierre Martin', intervention_phone: '06 12 34 56 78' },
