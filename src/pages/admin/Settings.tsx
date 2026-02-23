@@ -669,7 +669,7 @@ export default function Settings() {
                 </a>
 
                 <a
-                  href="https://planeo.tech/conditions-utilisation"
+                  href="https://planeo.tech/conditions-generales-dutilisation"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors group"
