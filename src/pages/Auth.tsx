@@ -103,25 +103,30 @@ export default function Auth() {
     }
 
     setResetLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-      redirectTo: `${window.location.origin}/reset-password`
-    });
-    setResetLoading(false);
-
-    if (error) {
-      toast({
-        title: 'Erreur',
-        description: error.message,
-        variant: 'destructive'
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke('send-reset-password', {
+        body: { 
+          email: resetEmail,
+          redirectTo: `${window.location.origin}/reset-password`
+        }
       });
-    } else {
+
+      if (fnError) throw fnError;
+
       toast({
         title: 'Email envoyé',
         description: 'Si un compte existe avec cet email, vous recevrez un lien de réinitialisation.'
       });
       setResetDialogOpen(false);
       setResetEmail('');
+    } catch (error) {
+      toast({
+        title: 'Erreur',
+        description: 'Une erreur est survenue. Veuillez réessayer.',
+        variant: 'destructive'
+      });
     }
+    setResetLoading(false);
   };
 
   if (authLoading) {
