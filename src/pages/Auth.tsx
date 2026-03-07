@@ -105,7 +105,7 @@ export default function Auth() {
     setResetLoading(true);
     try {
       const { data, error: fnError } = await supabase.functions.invoke('send-reset-password', {
-        body: { 
+        body: {
           email: resetEmail,
           redirectTo: `${window.location.origin}/reset-password`
         }
@@ -260,11 +260,11 @@ export default function Auth() {
                 }
               </Button>
 
-              <p className="text-xs text-center text-muted-foreground font-thin">Les comptes sont créés par l'administrateur 
-www.app.planeo.tech contact@planeo.tech numero
+              <p className="text-xs text-center text-muted-foreground font-medium">Les comptes sont créés par l'administrateur www.app.planeo.tech contact@planeo.tech 04 65 10 04 58 
 
 
 
+              
               </p>
             </CardContent>
           </form>
