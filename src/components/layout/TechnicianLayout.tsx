@@ -8,11 +8,11 @@ import {
   LogOut, 
   Menu, 
   X,
-  Wrench,
   ChevronRight,
   User,
   History
 } from 'lucide-react';
+import planeoLogo from '@/assets/planeo-logo-white.png';
 import { cn } from '@/lib/utils';
 import { OfflineIndicator } from '@/components/technician/OfflineIndicator';
 import { NotificationBell } from '@/components/technician/NotificationBell';
