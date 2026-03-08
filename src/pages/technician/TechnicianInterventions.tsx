@@ -79,9 +79,9 @@ export function TechnicianInterventionsByCategory({ category }: { category: Cate
   }, [groups, category]);
 
   const titles: Record<Category, string> = {
-    planning: "Planning",
+    planning: "Planifiées",
     "en-cours": "En cours",
-    "non-planifie": "Non planifié",
+    "non-planifie": "À planifier",
     terminees: "Terminées",
   };
 
@@ -95,7 +95,7 @@ export function TechnicianInterventionsByCategory({ category }: { category: Cate
   const emptyTexts: Record<Category, string> = {
     planning: "Aucune intervention planifiée",
     "en-cours": "Aucune intervention en cours",
-    "non-planifie": "Aucune intervention non planifiée",
+    "non-planifie": "Aucune intervention à planifier",
     terminees: "Aucune intervention terminée",
   };
 
