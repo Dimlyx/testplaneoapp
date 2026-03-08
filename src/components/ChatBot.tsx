@@ -15,8 +15,22 @@ export function ChatBot() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Show tooltip after a short delay on first load
+  useEffect(() => {
+    const dismissed = sessionStorage.getItem('chatbot-tooltip-dismissed');
+    if (dismissed) return;
+    const timer = setTimeout(() => setShowTooltip(true), 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const dismissTooltip = () => {
+    setShowTooltip(false);
+    sessionStorage.setItem('chatbot-tooltip-dismissed', 'true');
+  };
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -156,13 +170,31 @@ export function ChatBot() {
     <>
       {/* Floating button */}
       {!open && (
-        <button
-          onClick={() => setOpen(true)}
-          className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-all flex items-center justify-center hover:scale-105"
-          aria-label="Ouvrir l'assistant"
-        >
-          <MessageCircle className="h-6 w-6" />
-        </button>
+        <div className="fixed bottom-6 right-6 z-50 flex items-end gap-3">
+          {/* Tooltip popup */}
+          {showTooltip && (
+            <div className="relative bg-background border rounded-xl shadow-lg px-4 py-3 max-w-[220px] animate-in slide-in-from-right-2 fade-in duration-300">
+              <button
+                onClick={dismissTooltip}
+                className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-muted flex items-center justify-center hover:bg-muted-foreground/20 transition-colors"
+                aria-label="Fermer"
+              >
+                <X className="h-3 w-3 text-muted-foreground" />
+              </button>
+              <p className="text-xs text-foreground font-medium">Besoin d'aide ? 💡</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                L'assistant PLANEO est là pour vous guider.
+              </p>
+            </div>
+          )}
+          <button
+            onClick={() => { setOpen(true); dismissTooltip(); }}
+            className="h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-all flex items-center justify-center hover:scale-105"
+            aria-label="Ouvrir l'assistant"
+          >
+            <MessageCircle className="h-6 w-6" />
+          </button>
+        </div>
       )}
 
       {/* Chat window */}
