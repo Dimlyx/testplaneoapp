@@ -35,6 +35,7 @@ import ClientDetail from "@/pages/admin/ClientDetail";
 // Technician pages
 import { TechnicianInterventionsByCategory } from "@/pages/technician/TechnicianInterventions";
 import TechnicianInterventionDetail from "@/pages/technician/TechnicianInterventionDetail";
+import TechnicianPlanning from "@/pages/technician/TechnicianPlanning";
 import PublicIntervention from "@/pages/public/PublicIntervention";
 import InstallApp from "@/pages/InstallApp";
 
@@ -161,10 +162,11 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       >
-        <Route index element={<Navigate to="/technician/planning" replace />} />
-        <Route path="planning" element={<TechnicianInterventionsByCategory category="planning" />} />
+        <Route index element={<Navigate to="/technician/planifie" replace />} />
+        <Route path="planifie" element={<TechnicianInterventionsByCategory category="planning" />} />
         <Route path="en-cours" element={<TechnicianInterventionsByCategory category="en-cours" />} />
         <Route path="non-planifie" element={<TechnicianInterventionsByCategory category="non-planifie" />} />
+        <Route path="planning" element={<TechnicianPlanning />} />
         <Route path="terminees" element={<TechnicianInterventionsByCategory category="terminees" />} />
         <Route path="interventions/:id" element={<TechnicianInterventionDetail />} />
       </Route>

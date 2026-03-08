@@ -13,6 +13,7 @@ import {
   Calendar,
   CalendarOff,
   CheckCircle2,
+  CalendarDays as CalendarIcon,
 } from 'lucide-react';
 import planeoLogo from '@/assets/planeo-logo-white.png';
 import { cn } from '@/lib/utils';
@@ -20,9 +21,10 @@ import { OfflineIndicator } from '@/components/technician/OfflineIndicator';
 import { NotificationBell } from '@/components/technician/NotificationBell';
 
 const navigation = [
-  { name: 'Planning', href: '/technician/planning', icon: Calendar },
+  { name: 'Planifié', href: '/technician/planifie', icon: Calendar },
   { name: 'En cours', href: '/technician/en-cours', icon: Clock },
   { name: 'Non planifié', href: '/technician/non-planifie', icon: CalendarOff },
+  { name: 'Planning', href: '/technician/planning', icon: CalendarIcon },
   { name: 'Terminées', href: '/technician/terminees', icon: CheckCircle2 },
 ];
 
