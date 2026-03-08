@@ -61,7 +61,7 @@ export const InterventionDayGroup = ({
             <Card
               key={intervention.id}
               className="cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => navigate(`/technician/interventions/${intervention.id}`)}
+              onClick={() => handleClick(intervention.id)}
             >
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
