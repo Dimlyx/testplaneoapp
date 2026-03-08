@@ -24,7 +24,18 @@ export const InterventionDayGroup = ({
   defaultOpen = false,
 }: InterventionDayGroupProps) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
+  const [viewedIds, setViewedIds] = useState<Set<string>>(() => {
+    const set = new Set<string>();
+    interventions.forEach((i) => { if (isInterventionViewed(i.id)) set.add(i.id); });
+    return set;
+  });
   const navigate = useNavigate();
+
+  const handleClick = useCallback((id: string) => {
+    markInterventionAsViewed(id);
+    setViewedIds((prev) => new Set(prev).add(id));
+    navigate(`/technician/interventions/${id}`);
+  }, [navigate]);
 
   const dayLabel = format(new Date(date + "T00:00:00"), "EEEE dd MMMM yyyy", { locale: fr }).toUpperCase();
 
