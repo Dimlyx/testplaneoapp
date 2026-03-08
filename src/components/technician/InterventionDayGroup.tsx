@@ -76,7 +76,9 @@ export const InterventionDayGroup = ({
                           {getClientName(intervention.client_id)}
                         </p>
                       </div>
-                      <div className="w-2.5 h-2.5 rounded-full bg-primary mt-1.5 shrink-0" />
+                      {!viewedIds.has(intervention.id) && (
+                        <div className="w-2.5 h-2.5 rounded-full mt-1.5 shrink-0" style={{ backgroundColor: '#101727' }} />
+                      )}
                     </div>
                     <div className="mt-2 space-y-1">
                       {intervention.scheduled_time && (
