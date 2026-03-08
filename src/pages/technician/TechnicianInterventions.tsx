@@ -1,228 +1,249 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { useTechnicianInterventions } from "@/hooks/useInterventions";
 import { useClients } from "@/hooks/useClients";
 import { useAuth } from "@/lib/auth-context";
 import { useOffline } from "@/hooks/useOfflineSync";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { StatusBadge, TypeBadge } from "@/components/ui/status-badge";
-import { ClipboardList, Calendar, Clock, MapPin } from "lucide-react";
-import { format } from "date-fns";
-import { fr } from "date-fns/locale";
-import { useNavigate } from "react-router-dom";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TypeBadge } from "@/components/ui/status-badge";
+import { Clock, Calendar, MapPin, CalendarOff, CheckCircle2 } from "lucide-react";
+import { InterventionDayGroup } from "@/components/technician/InterventionDayGroup";
+import type { Intervention } from "@/hooks/useInterventions";
+
+function groupByDate(interventions: Intervention[]): Record<string, Intervention[]> {
+  const groups: Record<string, Intervention[]> = {};
+  interventions.forEach((i) => {
+    const key = i.scheduled_date || "no-date";
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(i);
+  });
+  return groups;
+}
 
 const TechnicianInterventions = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { data: interventions = [], isLoading } = useTechnicianInterventions(user?.id);
   const { data: clients = [] } = useClients();
-  const { cacheInterventions, isOnline } = useOffline();
+  const { cacheInterventions } = useOffline();
 
-  // Cache interventions for offline use
   useEffect(() => {
-    if (interventions.length > 0) {
-      cacheInterventions(interventions);
-    }
+    if (interventions.length > 0) cacheInterventions(interventions);
   }, [interventions, cacheInterventions]);
 
-  const getClientName = (clientId: string) => {
-    const client = clients.find(c => c.id === clientId);
-    return client?.name || "Client";
-  };
+  const getClientName = (clientId: string) =>
+    clients.find((c) => c.id === clientId)?.name || "Client";
 
   const getClientAddress = (clientId: string) => {
-    const client = clients.find(c => c.id === clientId);
+    const client = clients.find((c) => c.id === clientId);
     if (!client) return null;
-    return client.address ? `${client.address}, ${client.postal_code || ''} ${client.city || ''}` : client.city;
+    return client.address
+      ? `${client.address}, ${client.postal_code || ""} ${client.city || ""}`
+      : client.city;
   };
 
-  // Exclude completed/to_invoice/archived — those go to history
-  const activeInterventions = interventions.filter(
-    i => !['completed', 'to_invoice', 'archived'].includes(i.status)
+  const today = new Date().toISOString().split("T")[0];
+
+  const inProgress = useMemo(() => interventions.filter((i) => i.status === "in_progress"), [interventions]);
+
+  const planned = useMemo(
+    () =>
+      interventions
+        .filter((i) => i.status === "planned" && i.scheduled_date)
+        .sort((a, b) => a.scheduled_date!.localeCompare(b.scheduled_date!)),
+    [interventions]
   );
 
-  const todayInterventions = activeInterventions.filter(i => {
-    if (!i.scheduled_date) return false;
-    const today = new Date().toISOString().split('T')[0];
-    return i.scheduled_date === today;
-  });
+  const unplanned = useMemo(() => interventions.filter((i) => i.status === "to_plan"), [interventions]);
 
-  const upcomingInterventions = activeInterventions.filter(i => {
-    if (!i.scheduled_date) return false;
-    const today = new Date().toISOString().split('T')[0];
-    return i.scheduled_date > today;
-  });
+  const completed = useMemo(
+    () =>
+      interventions
+        .filter((i) => ["completed", "to_invoice", "archived"].includes(i.status))
+        .sort((a, b) => {
+          const dA = a.scheduled_date || "";
+          const dB = b.scheduled_date || "";
+          return dB.localeCompare(dA);
+        })
+        .slice(0, 30),
+    [interventions]
+  );
 
-  const inProgressInterventions = activeInterventions.filter(i => i.status === 'in_progress');
-  const toDoInterventions = activeInterventions.filter(i => i.status === 'planned' || i.status === 'to_plan');
+  const plannedGroups = useMemo(() => groupByDate(planned), [planned]);
+  const plannedKeys = useMemo(() => Object.keys(plannedGroups).sort(), [plannedGroups]);
+
+  const completedGroups = useMemo(() => groupByDate(completed), [completed]);
+  const completedKeys = useMemo(
+    () =>
+      Object.keys(completedGroups).sort((a, b) => {
+        if (a === "no-date") return 1;
+        if (b === "no-date") return -1;
+        return b.localeCompare(a);
+      }),
+    [completedGroups]
+  );
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
       </div>
     );
   }
 
+  const InterventionCard = ({
+    intervention,
+    accentClass = "",
+  }: {
+    intervention: Intervention;
+    accentClass?: string;
+  }) => (
+    <Card
+      className={`cursor-pointer hover:shadow-md transition-shadow ${accentClass}`}
+      onClick={() => navigate(`/technician/interventions/${intervention.id}`)}
+    >
+      <CardContent className="p-4">
+        <div className="flex items-start gap-3">
+          <div className="p-2 bg-primary/10 rounded-lg mt-0.5">
+            <Calendar className="h-4 w-4 text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-sm truncate">{intervention.title}</h3>
+            <p className="text-xs text-muted-foreground truncate">
+              {getClientName(intervention.client_id)}
+            </p>
+            <div className="mt-2 space-y-1">
+              {intervention.scheduled_time && (
+                <div className="flex items-center gap-2 text-xs text-primary font-medium">
+                  <Clock className="h-3.5 w-3.5" />
+                  {intervention.scheduled_time}
+                </div>
+              )}
+              <TypeBadge type={intervention.intervention_type} />
+              {getClientAddress(intervention.client_id) && (
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <MapPin className="h-3 w-3" />
+                  <span className="truncate">{getClientAddress(intervention.client_id)}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Mes Interventions</h1>
-        <p className="text-muted-foreground">
-          {activeInterventions.length} intervention{activeInterventions.length > 1 ? 's' : ''} en cours
-        </p>
-      </div>
+    <div className="space-y-4">
+      <h1 className="text-2xl font-bold text-foreground">Mes Interventions</h1>
 
-      {/* Stats rapides */}
-      <div className="grid grid-cols-2 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-status-in-progress/10 rounded-lg">
-                <Clock className="h-5 w-5 text-status-in-progress" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{inProgressInterventions.length}</p>
-                <p className="text-xs text-muted-foreground">En cours</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-status-planned/10 rounded-lg">
-                <Calendar className="h-5 w-5 text-status-planned" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{todayInterventions.length}</p>
-                <p className="text-xs text-muted-foreground">Aujourd'hui</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <Tabs defaultValue="planning" className="w-full">
+        <TabsList className="w-full grid grid-cols-4 h-auto">
+          <TabsTrigger value="in_progress" className="flex flex-col gap-0.5 py-2 text-xs">
+            <Clock className="h-4 w-4" />
+            <span>En cours</span>
+            {inProgress.length > 0 && (
+              <span className="text-[10px] font-bold bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center">
+                {inProgress.length}
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="planning" className="flex flex-col gap-0.5 py-2 text-xs">
+            <Calendar className="h-4 w-4" />
+            <span>Planning</span>
+            {planned.length > 0 && (
+              <span className="text-[10px] font-bold bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center">
+                {planned.length}
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="unplanned" className="flex flex-col gap-0.5 py-2 text-xs">
+            <CalendarOff className="h-4 w-4" />
+            <span>Non planifié</span>
+            {unplanned.length > 0 && (
+              <span className="text-[10px] font-bold bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center">
+                {unplanned.length}
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="completed" className="flex flex-col gap-0.5 py-2 text-xs">
+            <CheckCircle2 className="h-4 w-4" />
+            <span>Terminées</span>
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Interventions du jour */}
-      {todayInterventions.length > 0 && (
-        <div>
-          <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-primary" />
-            Aujourd'hui
-          </h2>
-          <div className="space-y-3">
-            {todayInterventions.map((intervention) => (
-              <Card 
-                key={intervention.id} 
-                className="cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => navigate(`/technician/interventions/${intervention.id}`)}
-              >
-                <CardContent className="p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-medium">{intervention.title}</h3>
-                    <StatusBadge status={intervention.status} />
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    {getClientName(intervention.client_id)}
-                  </p>
-                  <div className="flex items-center gap-4 text-sm">
-                    <TypeBadge type={intervention.intervention_type} />
-                    {intervention.scheduled_time && (
-                      <span className="flex items-center gap-1 text-muted-foreground">
-                        <Clock className="h-3 w-3" />
-                        {intervention.scheduled_time}
-                      </span>
-                    )}
-                  </div>
-                  {getClientAddress(intervention.client_id) && (
-                    <div className="flex items-center gap-1 mt-2 text-sm text-muted-foreground">
-                      <MapPin className="h-3 w-3" />
-                      {getClientAddress(intervention.client_id)}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
+        {/* En cours */}
+        <TabsContent value="in_progress" className="mt-4 space-y-3">
+          {inProgress.length === 0 ? (
+            <EmptyState icon={<Clock className="h-12 w-12" />} text="Aucune intervention en cours" />
+          ) : (
+            inProgress.map((i) => (
+              <InterventionCard key={i.id} intervention={i} accentClass="border-l-4 border-l-yellow-500" />
+            ))
+          )}
+        </TabsContent>
 
-      {/* En cours */}
-      {inProgressInterventions.length > 0 && (
-        <div>
-          <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
-            <Clock className="h-5 w-5 text-status-in-progress" />
-            En cours
-          </h2>
-          <div className="space-y-3">
-            {inProgressInterventions.map((intervention) => (
-              <Card 
-                key={intervention.id} 
-                className="cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-status-in-progress"
-                onClick={() => navigate(`/technician/interventions/${intervention.id}`)}
-              >
-                <CardContent className="p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-medium">{intervention.title}</h3>
-                    <StatusBadge status={intervention.status} />
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    {getClientName(intervention.client_id)}
-                  </p>
-                  <TypeBadge type={intervention.intervention_type} />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
+        {/* Planning */}
+        <TabsContent value="planning" className="mt-4 space-y-1">
+          {plannedKeys.length === 0 ? (
+            <EmptyState icon={<Calendar className="h-12 w-12" />} text="Aucune intervention planifiée" />
+          ) : (
+            plannedKeys.map((dateKey) => (
+              <InterventionDayGroup
+                key={dateKey}
+                date={dateKey}
+                interventions={plannedGroups[dateKey]}
+                getClientName={getClientName}
+                getClientAddress={getClientAddress}
+                defaultOpen={dateKey === today || plannedKeys[0] === dateKey}
+              />
+            ))
+          )}
+        </TabsContent>
 
-      {/* À faire */}
-      {toDoInterventions.length > 0 && (
-        <div>
-          <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
-            <ClipboardList className="h-5 w-5 text-muted-foreground" />
-            À réaliser
-          </h2>
-          <div className="space-y-3">
-            {toDoInterventions.map((intervention) => (
-              <Card 
-                key={intervention.id} 
-                className="cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => navigate(`/technician/interventions/${intervention.id}`)}
-              >
-                <CardContent className="p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-medium">{intervention.title}</h3>
-                    <StatusBadge status={intervention.status} />
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    {getClientName(intervention.client_id)}
-                  </p>
-                  <div className="flex items-center gap-4 text-sm">
-                    <TypeBadge type={intervention.intervention_type} />
-                    {intervention.scheduled_date && (
-                      <span className="text-muted-foreground">
-                        {format(new Date(intervention.scheduled_date), 'dd/MM/yyyy', { locale: fr })}
-                      </span>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
+        {/* Non planifié */}
+        <TabsContent value="unplanned" className="mt-4 space-y-3">
+          {unplanned.length === 0 ? (
+            <EmptyState icon={<CalendarOff className="h-12 w-12" />} text="Aucune intervention non planifiée" />
+          ) : (
+            unplanned.map((i) => <InterventionCard key={i.id} intervention={i} />)
+          )}
+        </TabsContent>
 
-      {activeInterventions.length === 0 && (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <ClipboardList className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">Aucune intervention en cours</p>
-          </CardContent>
-        </Card>
-      )}
+        {/* Terminées */}
+        <TabsContent value="completed" className="mt-4 space-y-1">
+          {completedKeys.length === 0 ? (
+            <EmptyState icon={<CheckCircle2 className="h-12 w-12" />} text="Aucune intervention terminée" />
+          ) : (
+            <>
+              <p className="text-xs text-muted-foreground px-2 mb-2">30 dernières interventions</p>
+              {completedKeys.map((dateKey) => (
+                <InterventionDayGroup
+                  key={dateKey}
+                  date={dateKey === "no-date" ? today : dateKey}
+                  interventions={completedGroups[dateKey]}
+                  getClientName={getClientName}
+                  getClientAddress={getClientAddress}
+                />
+              ))}
+            </>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
+
+function EmptyState({ icon, text }: { icon: React.ReactNode; text: string }) {
+  return (
+    <Card>
+      <CardContent className="py-12 text-center">
+        <div className="text-muted-foreground mx-auto mb-4 flex justify-center">{icon}</div>
+        <p className="text-muted-foreground">{text}</p>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default TechnicianInterventions;
