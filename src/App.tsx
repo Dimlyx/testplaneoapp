@@ -35,6 +35,7 @@ import ClientDetail from "@/pages/admin/ClientDetail";
 // Technician pages
 import { TechnicianInterventionsByCategory } from "@/pages/technician/TechnicianInterventions";
 import TechnicianInterventionDetail from "@/pages/technician/TechnicianInterventionDetail";
+import TechnicianPlanning from "@/pages/technician/TechnicianPlanning";
 import PublicIntervention from "@/pages/public/PublicIntervention";
 import InstallApp from "@/pages/InstallApp";
 
