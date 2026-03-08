@@ -95,7 +95,7 @@ export function TechnicianInterventionsByCategory({ category }: { category: Cate
   const emptyTexts: Record<Category, string> = {
     planning: "Aucune intervention planifiée",
     "en-cours": "Aucune intervention en cours",
-    "non-planifie": "Aucune intervention non planifiée",
+    "non-planifie": "Aucune intervention à planifier",
     terminees: "Aucune intervention terminée",
   };
 
