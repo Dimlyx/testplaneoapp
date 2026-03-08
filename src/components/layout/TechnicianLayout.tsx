@@ -130,8 +130,7 @@ export default function TechnicianLayout() {
             <Menu className="h-5 w-5" />
           </Button>
           <div className="flex items-center gap-2">
-            <Wrench className="h-5 w-5 text-primary" />
-            <span className="font-semibold">PLANEO</span>
+            <img src={planeoLogo} alt="PLANEO" className="h-7" />
           </div>
           <div className="ml-auto flex items-center gap-2">
             <NotificationBell />
