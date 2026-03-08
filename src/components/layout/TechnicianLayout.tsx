@@ -52,11 +52,8 @@ export default function TechnicianLayout() {
         <div className="flex h-full flex-col">
           {/* Logo */}
           <div className="flex h-16 items-center gap-3 px-6 border-b border-sidebar-border">
-            <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-sidebar-accent">
-              <Wrench className="h-5 w-5 text-sidebar-accent-foreground" />
-            </div>
+            <img src={planeoLogo} alt="PLANEO" className="h-8" />
             <div>
-              <h1 className="text-lg font-semibold text-sidebar-foreground">PLANEO</h1>
               <p className="text-xs text-sidebar-foreground/60">Espace Technicien</p>
             </div>
             <Button
