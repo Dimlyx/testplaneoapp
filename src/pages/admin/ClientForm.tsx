@@ -48,7 +48,7 @@ const ClientForm = () => {
   const isEditing = !!id;
 
   const { data: organizationId } = useUserOrganization();
-  const { data: interventionTypes, isLoading: typesLoading } = useInterventionTypes(organizationId);
+  const { data: interventionTypes, isLoading: typesLoading } = useInterventionTypes();
   const hasInterventionTypes = (interventionTypes?.length ?? 0) > 0;
   const { data: client, isLoading } = useClient(id || "");
   const createClient = useCreateClient(organizationId);
