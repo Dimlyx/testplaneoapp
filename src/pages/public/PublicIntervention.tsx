@@ -177,7 +177,6 @@ const PublicIntervention = () => {
             <StatusIcon className={`h-12 w-12 mx-auto mb-3 ${currentStatus.color}`} />
             <p className={`text-lg font-semibold ${currentStatus.color}`}>{currentStatus.message}</p>
             <div className="flex justify-center gap-2 mt-3">
-              <StatusBadge status={intervention.status} />
               <TypeBadge type={intervention.intervention_type} />
             </div>
             {docSettings.welcomeMessage && (
