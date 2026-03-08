@@ -29,6 +29,17 @@ export function TechnicianInterventionsByCategory({ category }: { category: Cate
   const { data: interventions = [], isLoading } = useTechnicianInterventions(user?.id);
   const { data: clients = [] } = useClients();
   const { cacheInterventions } = useOffline();
+  const [viewedIds, setViewedIds] = useState<Set<string>>(() => {
+    const set = new Set<string>();
+    interventions.forEach((i) => { if (isInterventionViewed(i.id)) set.add(i.id); });
+    return set;
+  });
+
+  const handleClick = useCallback((id: string) => {
+    markInterventionAsViewed(id);
+    setViewedIds((prev) => new Set(prev).add(id));
+    navigate(`/technician/interventions/${id}`);
+  }, [navigate]);
 
   useEffect(() => {
     if (interventions.length > 0) cacheInterventions(interventions);
