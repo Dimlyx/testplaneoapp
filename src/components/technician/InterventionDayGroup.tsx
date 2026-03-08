@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { ChevronDown, ChevronUp, Calendar, Clock, MapPin } from "lucide-react";
@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { TypeBadge } from "@/components/ui/status-badge";
 import { useNavigate } from "react-router-dom";
 import type { Intervention } from "@/hooks/useInterventions";
+import { markInterventionAsViewed, isInterventionViewed } from "@/lib/intervention-viewed";
 
 interface InterventionDayGroupProps {
   date: string;
