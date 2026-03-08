@@ -1,11 +1,13 @@
 import { useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { useTechnicianInterventions } from "@/hooks/useInterventions";
 import { useClients } from "@/hooks/useClients";
 import { useAuth } from "@/lib/auth-context";
 import { useOffline } from "@/hooks/useOfflineSync";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Clock, Calendar, ClipboardList, CheckCircle2, CalendarOff } from "lucide-react";
+import { TypeBadge } from "@/components/ui/status-badge";
+import { Clock, Calendar, MapPin, CalendarOff, CheckCircle2 } from "lucide-react";
 import { InterventionDayGroup } from "@/components/technician/InterventionDayGroup";
 import type { Intervention } from "@/hooks/useInterventions";
 
@@ -19,30 +21,19 @@ function groupByDate(interventions: Intervention[]): Record<string, Intervention
   return groups;
 }
 
-function sortedDateKeys(groups: Record<string, Intervention[]>): string[] {
-  return Object.keys(groups).sort((a, b) => {
-    if (a === "no-date") return 1;
-    if (b === "no-date") return -1;
-    return a.localeCompare(b);
-  });
-}
-
 const TechnicianInterventions = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { data: interventions = [], isLoading } = useTechnicianInterventions(user?.id);
   const { data: clients = [] } = useClients();
-  const { cacheInterventions, isOnline } = useOffline();
+  const { cacheInterventions } = useOffline();
 
   useEffect(() => {
-    if (interventions.length > 0) {
-      cacheInterventions(interventions);
-    }
+    if (interventions.length > 0) cacheInterventions(interventions);
   }, [interventions, cacheInterventions]);
 
-  const getClientName = (clientId: string) => {
-    const client = clients.find((c) => c.id === clientId);
-    return client?.name || "Client";
-  };
+  const getClientName = (clientId: string) =>
+    clients.find((c) => c.id === clientId)?.name || "Client";
 
   const getClientAddress = (clientId: string) => {
     const client = clients.find((c) => c.id === clientId);
@@ -54,47 +45,41 @@ const TechnicianInterventions = () => {
 
   const today = new Date().toISOString().split("T")[0];
 
-  const inProgressInterventions = useMemo(
-    () => interventions.filter((i) => i.status === "in_progress"),
-    [interventions]
-  );
+  const inProgress = useMemo(() => interventions.filter((i) => i.status === "in_progress"), [interventions]);
 
-  const plannedInterventions = useMemo(
+  const planned = useMemo(
     () =>
       interventions
         .filter((i) => i.status === "planned" && i.scheduled_date)
-        .sort((a, b) => (a.scheduled_date! > b.scheduled_date! ? 1 : -1)),
+        .sort((a, b) => a.scheduled_date!.localeCompare(b.scheduled_date!)),
     [interventions]
   );
 
-  const unplannedInterventions = useMemo(
-    () => interventions.filter((i) => i.status === "to_plan"),
-    [interventions]
-  );
+  const unplanned = useMemo(() => interventions.filter((i) => i.status === "to_plan"), [interventions]);
 
-  const completedInterventions = useMemo(
+  const completed = useMemo(
     () =>
       interventions
         .filter((i) => ["completed", "to_invoice", "archived"].includes(i.status))
         .sort((a, b) => {
-          const dA = a.scheduled_date ? new Date(a.scheduled_date).getTime() : 0;
-          const dB = b.scheduled_date ? new Date(b.scheduled_date).getTime() : 0;
-          return dB - dA;
+          const dA = a.scheduled_date || "";
+          const dB = b.scheduled_date || "";
+          return dB.localeCompare(dA);
         })
         .slice(0, 30),
     [interventions]
   );
 
-  const plannedGroups = useMemo(() => groupByDate(plannedInterventions), [plannedInterventions]);
-  const plannedKeys = useMemo(() => sortedDateKeys(plannedGroups), [plannedGroups]);
+  const plannedGroups = useMemo(() => groupByDate(planned), [planned]);
+  const plannedKeys = useMemo(() => Object.keys(plannedGroups).sort(), [plannedGroups]);
 
-  const completedGroups = useMemo(() => groupByDate(completedInterventions), [completedInterventions]);
+  const completedGroups = useMemo(() => groupByDate(completed), [completed]);
   const completedKeys = useMemo(
     () =>
       Object.keys(completedGroups).sort((a, b) => {
         if (a === "no-date") return 1;
         if (b === "no-date") return -1;
-        return b.localeCompare(a); // most recent first
+        return b.localeCompare(a);
       }),
     [completedGroups]
   );
@@ -107,157 +92,13 @@ const TechnicianInterventions = () => {
     );
   }
 
-  return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold text-foreground">Mes Interventions</h1>
-
-      <Tabs defaultValue="planning" className="w-full">
-        <TabsList className="w-full grid grid-cols-4 h-auto">
-          <TabsTrigger value="in_progress" className="flex flex-col gap-0.5 py-2 text-xs">
-            <Clock className="h-4 w-4" />
-            <span>En cours</span>
-            {inProgressInterventions.length > 0 && (
-              <span className="text-[10px] font-bold bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center">
-                {inProgressInterventions.length}
-              </span>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="planning" className="flex flex-col gap-0.5 py-2 text-xs">
-            <Calendar className="h-4 w-4" />
-            <span>Planning</span>
-            {plannedInterventions.length > 0 && (
-              <span className="text-[10px] font-bold bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center">
-                {plannedInterventions.length}
-              </span>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="unplanned" className="flex flex-col gap-0.5 py-2 text-xs">
-            <CalendarOff className="h-4 w-4" />
-            <span>Non planifié</span>
-            {unplannedInterventions.length > 0 && (
-              <span className="text-[10px] font-bold bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center">
-                {unplannedInterventions.length}
-              </span>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="completed" className="flex flex-col gap-0.5 py-2 text-xs">
-            <CheckCircle2 className="h-4 w-4" />
-            <span>Terminées</span>
-          </TabsTrigger>
-        </TabsList>
-
-        {/* En cours */}
-        <TabsContent value="in_progress" className="mt-4 space-y-3">
-          {inProgressInterventions.length === 0 ? (
-            <EmptyState icon={<Clock className="h-12 w-12" />} text="Aucune intervention en cours" />
-          ) : (
-            inProgressInterventions.map((intervention) => (
-              <InterventionCardSimple
-                key={intervention.id}
-                intervention={intervention}
-                getClientName={getClientName}
-                getClientAddress={getClientAddress}
-                accentClass="border-l-4 border-l-yellow-500"
-              />
-            ))
-          )}
-        </TabsContent>
-
-        {/* Planning */}
-        <TabsContent value="planning" className="mt-4 space-y-1">
-          {plannedKeys.length === 0 ? (
-            <EmptyState icon={<Calendar className="h-12 w-12" />} text="Aucune intervention planifiée" />
-          ) : (
-            plannedKeys.map((dateKey) => (
-              <InterventionDayGroup
-                key={dateKey}
-                date={dateKey}
-                interventions={plannedGroups[dateKey]}
-                getClientName={getClientName}
-                getClientAddress={getClientAddress}
-                defaultOpen={dateKey === today || plannedKeys.indexOf(dateKey) === 0}
-              />
-            ))
-          )}
-        </TabsContent>
-
-        {/* Non planifié */}
-        <TabsContent value="unplanned" className="mt-4 space-y-3">
-          {unplannedInterventions.length === 0 ? (
-            <EmptyState icon={<CalendarOff className="h-12 w-12" />} text="Aucune intervention non planifiée" />
-          ) : (
-            unplannedInterventions.map((intervention) => (
-              <InterventionCardSimple
-                key={intervention.id}
-                intervention={intervention}
-                getClientName={getClientName}
-                getClientAddress={getClientAddress}
-              />
-            ))
-          )}
-        </TabsContent>
-
-        {/* Terminées */}
-        <TabsContent value="completed" className="mt-4 space-y-1">
-          {completedKeys.length === 0 ? (
-            <EmptyState icon={<CheckCircle2 className="h-12 w-12" />} text="Aucune intervention terminée" />
-          ) : (
-            <>
-              <p className="text-xs text-muted-foreground px-2 mb-2">30 dernières interventions</p>
-              {completedKeys.map((dateKey) => (
-                <InterventionDayGroup
-                  key={dateKey}
-                  date={dateKey === "no-date" ? new Date().toISOString().split("T")[0] : dateKey}
-                  interventions={completedGroups[dateKey]}
-                  getClientName={getClientName}
-                  getClientAddress={getClientAddress}
-                />
-              ))}
-            </>
-          )}
-        </TabsContent>
-      </Tabs>
-    </div>
-  );
-};
-
-// Simple card for in_progress and unplanned (no day grouping needed)
-function InterventionCardSimple({
-  intervention,
-  getClientName,
-  getClientAddress,
-  accentClass = "",
-}: {
-  intervention: Intervention;
-  getClientName: (id: string) => string;
-  getClientAddress: (id: string) => string | null;
-  accentClass?: string;
-}) {
-  const navigate = (await import("react-router-dom")).useNavigate();
-  const nav = navigate;
-
-  return null; // replaced below
-}
-
-// Proper component
-import { useNavigate } from "react-router-dom";
-import { MapPin } from "lucide-react";
-import { TypeBadge } from "@/components/ui/status-badge";
-
-function InterventionCardSimpleImpl({
-  intervention,
-  getClientName,
-  getClientAddress,
-  accentClass = "",
-}: {
-  intervention: Intervention;
-  getClientName: (id: string) => string;
-  getClientAddress: (id: string) => string | null;
-  accentClass?: string;
-}) {
-  const navigate = useNavigate();
-
-  return (
+  const InterventionCard = ({
+    intervention,
+    accentClass = "",
+  }: {
+    intervention: Intervention;
+    accentClass?: string;
+  }) => (
     <Card
       className={`cursor-pointer hover:shadow-md transition-shadow ${accentClass}`}
       onClick={() => navigate(`/technician/interventions/${intervention.id}`)}
@@ -292,7 +133,107 @@ function InterventionCardSimpleImpl({
       </CardContent>
     </Card>
   );
-}
+
+  return (
+    <div className="space-y-4">
+      <h1 className="text-2xl font-bold text-foreground">Mes Interventions</h1>
+
+      <Tabs defaultValue="planning" className="w-full">
+        <TabsList className="w-full grid grid-cols-4 h-auto">
+          <TabsTrigger value="in_progress" className="flex flex-col gap-0.5 py-2 text-xs">
+            <Clock className="h-4 w-4" />
+            <span>En cours</span>
+            {inProgress.length > 0 && (
+              <span className="text-[10px] font-bold bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center">
+                {inProgress.length}
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="planning" className="flex flex-col gap-0.5 py-2 text-xs">
+            <Calendar className="h-4 w-4" />
+            <span>Planning</span>
+            {planned.length > 0 && (
+              <span className="text-[10px] font-bold bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center">
+                {planned.length}
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="unplanned" className="flex flex-col gap-0.5 py-2 text-xs">
+            <CalendarOff className="h-4 w-4" />
+            <span>Non planifié</span>
+            {unplanned.length > 0 && (
+              <span className="text-[10px] font-bold bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center">
+                {unplanned.length}
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="completed" className="flex flex-col gap-0.5 py-2 text-xs">
+            <CheckCircle2 className="h-4 w-4" />
+            <span>Terminées</span>
+          </TabsTrigger>
+        </TabsList>
+
+        {/* En cours */}
+        <TabsContent value="in_progress" className="mt-4 space-y-3">
+          {inProgress.length === 0 ? (
+            <EmptyState icon={<Clock className="h-12 w-12" />} text="Aucune intervention en cours" />
+          ) : (
+            inProgress.map((i) => (
+              <InterventionCard key={i.id} intervention={i} accentClass="border-l-4 border-l-yellow-500" />
+            ))
+          )}
+        </TabsContent>
+
+        {/* Planning */}
+        <TabsContent value="planning" className="mt-4 space-y-1">
+          {plannedKeys.length === 0 ? (
+            <EmptyState icon={<Calendar className="h-12 w-12" />} text="Aucune intervention planifiée" />
+          ) : (
+            plannedKeys.map((dateKey) => (
+              <InterventionDayGroup
+                key={dateKey}
+                date={dateKey}
+                interventions={plannedGroups[dateKey]}
+                getClientName={getClientName}
+                getClientAddress={getClientAddress}
+                defaultOpen={dateKey === today || plannedKeys[0] === dateKey}
+              />
+            ))
+          )}
+        </TabsContent>
+
+        {/* Non planifié */}
+        <TabsContent value="unplanned" className="mt-4 space-y-3">
+          {unplanned.length === 0 ? (
+            <EmptyState icon={<CalendarOff className="h-12 w-12" />} text="Aucune intervention non planifiée" />
+          ) : (
+            unplanned.map((i) => <InterventionCard key={i.id} intervention={i} />)
+          )}
+        </TabsContent>
+
+        {/* Terminées */}
+        <TabsContent value="completed" className="mt-4 space-y-1">
+          {completedKeys.length === 0 ? (
+            <EmptyState icon={<CheckCircle2 className="h-12 w-12" />} text="Aucune intervention terminée" />
+          ) : (
+            <>
+              <p className="text-xs text-muted-foreground px-2 mb-2">30 dernières interventions</p>
+              {completedKeys.map((dateKey) => (
+                <InterventionDayGroup
+                  key={dateKey}
+                  date={dateKey === "no-date" ? today : dateKey}
+                  interventions={completedGroups[dateKey]}
+                  getClientName={getClientName}
+                  getClientAddress={getClientAddress}
+                />
+              ))}
+            </>
+          )}
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+};
 
 function EmptyState({ icon, text }: { icon: React.ReactNode; text: string }) {
   return (
