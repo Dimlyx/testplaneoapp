@@ -136,6 +136,19 @@ const ClientForm = () => {
         </div>
       </div>
 
+      {!isEditing && !typesLoading && !hasInterventionTypes && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            Vous devez d'abord créer au moins un{" "}
+            <Link to="/admin/intervention-types" className="underline font-semibold">
+              type d'intervention
+            </Link>{" "}
+            avant de pouvoir créer un client.
+          </AlertDescription>
+        </Alert>
+      )}
+
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <div className="grid gap-6 lg:grid-cols-2">
