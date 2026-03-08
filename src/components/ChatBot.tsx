@@ -15,8 +15,22 @@ export function ChatBot() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Show tooltip after a short delay on first load
+  useEffect(() => {
+    const dismissed = sessionStorage.getItem('chatbot-tooltip-dismissed');
+    if (dismissed) return;
+    const timer = setTimeout(() => setShowTooltip(true), 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const dismissTooltip = () => {
+    setShowTooltip(false);
+    sessionStorage.setItem('chatbot-tooltip-dismissed', 'true');
+  };
 
   useEffect(() => {
     if (scrollRef.current) {
