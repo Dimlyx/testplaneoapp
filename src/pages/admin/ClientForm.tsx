@@ -296,7 +296,7 @@ const ClientForm = () => {
             <Button type="button" variant="outline" onClick={() => navigate(-1)}>
               Annuler
             </Button>
-            <Button type="submit" disabled={createClient.isPending || updateClient.isPending}>
+            <Button type="submit" disabled={createClient.isPending || updateClient.isPending || (!isEditing && !hasInterventionTypes)}>
               <Save className="h-4 w-4 mr-2" />
               {isEditing ? "Mettre à jour" : "Créer le client"}
             </Button>
