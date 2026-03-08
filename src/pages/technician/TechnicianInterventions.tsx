@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTechnicianInterventions } from "@/hooks/useInterventions";
 import { useClients } from "@/hooks/useClients";
@@ -9,6 +9,7 @@ import { TypeBadge } from "@/components/ui/status-badge";
 import { Clock, Calendar, MapPin, CalendarOff, CheckCircle2 } from "lucide-react";
 import { InterventionDayGroup } from "@/components/technician/InterventionDayGroup";
 import type { Intervention } from "@/hooks/useInterventions";
+import { markInterventionAsViewed, isInterventionViewed } from "@/lib/intervention-viewed";
 
 type Category = "planning" | "en-cours" | "non-planifie" | "terminees";
 
@@ -28,6 +29,17 @@ export function TechnicianInterventionsByCategory({ category }: { category: Cate
   const { data: interventions = [], isLoading } = useTechnicianInterventions(user?.id);
   const { data: clients = [] } = useClients();
   const { cacheInterventions } = useOffline();
+  const [viewedIds, setViewedIds] = useState<Set<string>>(() => {
+    const set = new Set<string>();
+    interventions.forEach((i) => { if (isInterventionViewed(i.id)) set.add(i.id); });
+    return set;
+  });
+
+  const handleClick = useCallback((id: string) => {
+    markInterventionAsViewed(id);
+    setViewedIds((prev) => new Set(prev).add(id));
+    navigate(`/technician/interventions/${id}`);
+  }, [navigate]);
 
   useEffect(() => {
     if (interventions.length > 0) cacheInterventions(interventions);
@@ -145,7 +157,7 @@ export function TechnicianInterventionsByCategory({ category }: { category: Cate
               className={`cursor-pointer hover:shadow-md transition-shadow ${
                 category === "en-cours" ? "border-l-4 border-l-yellow-500" : ""
               }`}
-              onClick={() => navigate(`/technician/interventions/${intervention.id}`)}
+              onClick={() => handleClick(intervention.id)}
             >
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
@@ -153,7 +165,17 @@ export function TechnicianInterventionsByCategory({ category }: { category: Cate
                     <Calendar className="h-4 w-4 text-primary" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-sm truncate">{intervention.title}</h3>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <h3 className="font-semibold text-sm truncate">{intervention.title}</h3>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {getClientName(intervention.client_id)}
+                        </p>
+                      </div>
+                      {!viewedIds.has(intervention.id) && (
+                        <div className="w-2.5 h-2.5 rounded-full mt-1.5 shrink-0" style={{ backgroundColor: '#101727' }} />
+                      )}
+                    </div>
                     <p className="text-xs text-muted-foreground truncate">
                       {getClientName(intervention.client_id)}
                     </p>

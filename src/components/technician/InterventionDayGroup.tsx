@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { ChevronDown, ChevronUp, Calendar, Clock, MapPin } from "lucide-react";
@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { TypeBadge } from "@/components/ui/status-badge";
 import { useNavigate } from "react-router-dom";
 import type { Intervention } from "@/hooks/useInterventions";
+import { markInterventionAsViewed, isInterventionViewed } from "@/lib/intervention-viewed";
 
 interface InterventionDayGroupProps {
   date: string;
@@ -23,7 +24,18 @@ export const InterventionDayGroup = ({
   defaultOpen = false,
 }: InterventionDayGroupProps) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
+  const [viewedIds, setViewedIds] = useState<Set<string>>(() => {
+    const set = new Set<string>();
+    interventions.forEach((i) => { if (isInterventionViewed(i.id)) set.add(i.id); });
+    return set;
+  });
   const navigate = useNavigate();
+
+  const handleClick = useCallback((id: string) => {
+    markInterventionAsViewed(id);
+    setViewedIds((prev) => new Set(prev).add(id));
+    navigate(`/technician/interventions/${id}`);
+  }, [navigate]);
 
   const dayLabel = format(new Date(date + "T00:00:00"), "EEEE dd MMMM yyyy", { locale: fr }).toUpperCase();
 
@@ -49,7 +61,7 @@ export const InterventionDayGroup = ({
             <Card
               key={intervention.id}
               className="cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => navigate(`/technician/interventions/${intervention.id}`)}
+              onClick={() => handleClick(intervention.id)}
             >
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
@@ -64,7 +76,9 @@ export const InterventionDayGroup = ({
                           {getClientName(intervention.client_id)}
                         </p>
                       </div>
-                      <div className="w-2.5 h-2.5 rounded-full bg-primary mt-1.5 shrink-0" />
+                      {!viewedIds.has(intervention.id) && (
+                        <div className="w-2.5 h-2.5 rounded-full mt-1.5 shrink-0" style={{ backgroundColor: '#101727' }} />
+                      )}
                     </div>
                     <div className="mt-2 space-y-1">
                       {intervention.scheduled_time && (
