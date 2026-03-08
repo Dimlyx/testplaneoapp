@@ -33,9 +33,8 @@ import ClientForm from "@/pages/admin/ClientForm";
 import ClientDetail from "@/pages/admin/ClientDetail";
 
 // Technician pages
-import TechnicianInterventions from "@/pages/technician/TechnicianInterventions";
+import { TechnicianInterventionsByCategory } from "@/pages/technician/TechnicianInterventions";
 import TechnicianInterventionDetail from "@/pages/technician/TechnicianInterventionDetail";
-import TechnicianHistory from "@/pages/technician/TechnicianHistory";
 import PublicIntervention from "@/pages/public/PublicIntervention";
 import InstallApp from "@/pages/InstallApp";
 
@@ -68,20 +67,14 @@ const ProtectedRoute = ({ children, requiredRole }: { children: React.ReactNode;
     return <Navigate to="/auth" replace />;
   }
 
-  // Super admins can access admin routes when viewing as an organization
   if (requiredRole === "admin" && role === "super_admin" && viewAsOrgId) {
     return <>{children}</>;
   }
 
   if (requiredRole && role !== requiredRole) {
-    // Redirect to appropriate dashboard based on role
-    if (role === "super_admin") {
-      return <Navigate to="/super-admin" replace />;
-    } else if (role === "admin") {
-      return <Navigate to="/admin" replace />;
-    } else if (role === "technician") {
-      return <Navigate to="/technician" replace />;
-    }
+    if (role === "super_admin") return <Navigate to="/super-admin" replace />;
+    if (role === "admin") return <Navigate to="/admin" replace />;
+    if (role === "technician") return <Navigate to="/technician" replace />;
   }
 
   return <>{children}</>;
@@ -99,28 +92,17 @@ const RootRedirect = () => {
     );
   }
 
-  if (!user) {
-    return <Navigate to="/auth" replace />;
-  }
-
-  if (role === "super_admin") {
-    return <Navigate to="/super-admin" replace />;
-  } else if (role === "admin") {
-    return <Navigate to="/admin" replace />;
-  } else if (role === "technician") {
-    return <Navigate to="/technician" replace />;
-  }
-
+  if (!user) return <Navigate to="/auth" replace />;
+  if (role === "super_admin") return <Navigate to="/super-admin" replace />;
+  if (role === "admin") return <Navigate to="/admin" replace />;
+  if (role === "technician") return <Navigate to="/technician" replace />;
   return <Navigate to="/auth" replace />;
 };
 
 const AppRoutes = () => {
   return (
     <Routes>
-      {/* Root redirect */}
       <Route path="/" element={<RootRedirect />} />
-
-      {/* Auth */}
       <Route path="/auth" element={<Auth />} />
       <Route path="/reset-password" element={<ResetPassword />} />
 
@@ -168,7 +150,7 @@ const AppRoutes = () => {
         <Route path="clients/:id/edit" element={<ClientForm />} />
       </Route>
 
-      {/* Technician routes - wrapped with OfflineProvider */}
+      {/* Technician routes */}
       <Route
         path="/technician"
         element={
@@ -179,18 +161,16 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       >
-        <Route index element={<TechnicianInterventions />} />
-        <Route path="history" element={<TechnicianHistory />} />
+        <Route index element={<Navigate to="/technician/planning" replace />} />
+        <Route path="planning" element={<TechnicianInterventionsByCategory category="planning" />} />
+        <Route path="en-cours" element={<TechnicianInterventionsByCategory category="en-cours" />} />
+        <Route path="non-planifie" element={<TechnicianInterventionsByCategory category="non-planifie" />} />
+        <Route path="terminees" element={<TechnicianInterventionsByCategory category="terminees" />} />
         <Route path="interventions/:id" element={<TechnicianInterventionDetail />} />
       </Route>
 
-      {/* Public intervention page (no auth required) */}
       <Route path="/intervention/:token" element={<PublicIntervention />} />
-      
-      {/* Install PWA page */}
       <Route path="/install" element={<InstallApp />} />
-
-      {/* 404 */}
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
