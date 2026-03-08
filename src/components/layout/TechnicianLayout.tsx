@@ -13,6 +13,7 @@ import {
   Calendar,
   CalendarOff,
   CheckCircle2,
+  CalendarDays as CalendarIcon,
 } from 'lucide-react';
 import planeoLogo from '@/assets/planeo-logo-white.png';
 import { cn } from '@/lib/utils';
