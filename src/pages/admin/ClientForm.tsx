@@ -1,10 +1,11 @@
 import { useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useClient, useCreateClient, useUpdateClient } from "@/hooks/useClients";
 import { useUserOrganization } from "@/hooks/useUserOrganization";
+import { useInterventionTypes } from "@/hooks/useInterventionTypes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -24,8 +25,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Save, AlertTriangle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const clientSchema = z.object({
   name: z.string().min(1, "Le nom est requis"),
@@ -46,6 +48,8 @@ const ClientForm = () => {
   const isEditing = !!id;
 
   const { data: organizationId } = useUserOrganization();
+  const { data: interventionTypes, isLoading: typesLoading } = useInterventionTypes();
+  const hasInterventionTypes = (interventionTypes?.length ?? 0) > 0;
   const { data: client, isLoading } = useClient(id || "");
   const createClient = useCreateClient(organizationId);
   const updateClient = useUpdateClient();
@@ -131,6 +135,19 @@ const ClientForm = () => {
           </p>
         </div>
       </div>
+
+      {!isEditing && !typesLoading && !hasInterventionTypes && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            Vous devez d'abord créer au moins un{" "}
+            <Link to="/admin/intervention-types" className="underline font-semibold">
+              type d'intervention
+            </Link>{" "}
+            avant de pouvoir créer un client.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -279,7 +296,7 @@ const ClientForm = () => {
             <Button type="button" variant="outline" onClick={() => navigate(-1)}>
               Annuler
             </Button>
-            <Button type="submit" disabled={createClient.isPending || updateClient.isPending}>
+            <Button type="submit" disabled={createClient.isPending || updateClient.isPending || (!isEditing && !hasInterventionTypes)}>
               <Save className="h-4 w-4 mr-2" />
               {isEditing ? "Mettre à jour" : "Créer le client"}
             </Button>
