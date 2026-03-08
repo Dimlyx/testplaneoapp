@@ -9,6 +9,7 @@ import { TypeBadge } from "@/components/ui/status-badge";
 import { Clock, Calendar, MapPin, CalendarOff, CheckCircle2 } from "lucide-react";
 import { InterventionDayGroup } from "@/components/technician/InterventionDayGroup";
 import type { Intervention } from "@/hooks/useInterventions";
+import { markInterventionAsViewed, isInterventionViewed } from "@/lib/intervention-viewed";
 
 type Category = "planning" | "en-cours" | "non-planifie" | "terminees";
 
