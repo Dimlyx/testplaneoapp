@@ -4,13 +4,15 @@ import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
-  ClipboardList, 
   LogOut, 
   Menu, 
   X,
   ChevronRight,
   User,
-  History
+  Clock,
+  Calendar,
+  CalendarOff,
+  CheckCircle2,
 } from 'lucide-react';
 import planeoLogo from '@/assets/planeo-logo-white.png';
 import { cn } from '@/lib/utils';
@@ -18,8 +20,10 @@ import { OfflineIndicator } from '@/components/technician/OfflineIndicator';
 import { NotificationBell } from '@/components/technician/NotificationBell';
 
 const navigation = [
-  { name: 'Mes Interventions', href: '/technician', icon: ClipboardList },
-  { name: 'Historique', href: '/technician/history', icon: History },
+  { name: 'Planning', href: '/technician/planning', icon: Calendar },
+  { name: 'En cours', href: '/technician/en-cours', icon: Clock },
+  { name: 'Non planifié', href: '/technician/non-planifie', icon: CalendarOff },
+  { name: 'Terminées', href: '/technician/terminees', icon: CheckCircle2 },
 ];
 
 export default function TechnicianLayout() {
@@ -35,7 +39,6 @@ export default function TechnicianLayout() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div 
           className="fixed inset-0 bg-foreground/50 z-40 lg:hidden"
@@ -43,14 +46,12 @@ export default function TechnicianLayout() {
         />
       )}
 
-      {/* Sidebar */}
       <aside className={cn(
         "fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-200 ease-in-out lg:translate-x-0",
         sidebarOpen ? "translate-x-0" : "-translate-x-full",
         "bg-sidebar"
       )}>
         <div className="flex h-full flex-col">
-          {/* Logo */}
           <div className="flex h-16 items-center gap-3 px-6 border-b border-sidebar-border">
             <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-sidebar-accent">
               <img src={planeoLogo} alt="PLANEO" className="h-7 w-7 object-contain" />
@@ -69,7 +70,6 @@ export default function TechnicianLayout() {
             </Button>
           </div>
 
-          {/* Navigation */}
           <ScrollArea className="flex-1 py-4">
             <nav className="space-y-1 px-3">
               {navigation.map((item) => {
@@ -93,19 +93,14 @@ export default function TechnicianLayout() {
             </nav>
           </ScrollArea>
 
-          {/* User section */}
           <div className="border-t border-sidebar-border p-4">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-9 h-9 rounded-full bg-sidebar-accent flex items-center justify-center">
                 <User className="h-5 w-5 text-sidebar-accent-foreground" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-sidebar-foreground truncate">
-                  Technicien
-                </p>
-                <p className="text-xs text-sidebar-foreground/60 truncate">
-                  {user?.email}
-                </p>
+                <p className="text-sm font-medium text-sidebar-foreground truncate">Technicien</p>
+                <p className="text-xs text-sidebar-foreground/60 truncate">{user?.email}</p>
               </div>
             </div>
             <Button
@@ -121,15 +116,9 @@ export default function TechnicianLayout() {
         </div>
       </aside>
 
-      {/* Main content */}
       <div className="lg:pl-64">
-        {/* Mobile header */}
         <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background px-4 lg:hidden">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setSidebarOpen(true)}
-          >
+          <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(true)}>
             <Menu className="h-5 w-5" />
           </Button>
           <div className="flex items-center gap-2">
@@ -141,7 +130,6 @@ export default function TechnicianLayout() {
           </div>
         </header>
 
-        {/* Page content */}
         <main className="p-4 lg:p-8">
           <Outlet />
         </main>
