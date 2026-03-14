@@ -507,7 +507,7 @@ const ClientDetail = () => {
                   >
                     <TableCell className="font-medium">{intervention.title}</TableCell>
                     <TableCell><TypeBadge type={intervention.intervention_type} /></TableCell>
-                    <TableCell><StatusBadge status={intervention.status} /></TableCell>
+                    <TableCell><StatusBadge status={intervention.status} customStatusId={intervention.custom_status_id} /></TableCell>
                     <TableCell>
                       {intervention.scheduled_date 
                         ? format(new Date(intervention.scheduled_date), 'dd/MM/yyyy', { locale: fr })

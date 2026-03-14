@@ -252,7 +252,7 @@ const AdminCalendar = () => {
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <h3 className="font-semibold">{intervention.title}</h3>
                                   <TypeBadge type={intervention.intervention_type} />
-                                  <StatusBadge status={intervention.status} />
+                                  <StatusBadge status={intervention.status} customStatusId={intervention.custom_status_id} />
                                 </div>
                                 
                                 <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 text-sm text-muted-foreground">
