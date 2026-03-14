@@ -740,9 +740,8 @@ const Dashboard = () => {
             {sectionOrder.map((sectionKey) => {
               const content = sectionRenderers[sectionKey]();
               const isCollapsed = collapsedSections.includes(sectionKey);
-              // Full-width sections
-              const fullWidthSections: SectionKey[] = ['statusFilters', 'searchBar', 'interventionsMap'];
-              const isFullWidth = fullWidthSections.includes(sectionKey);
+              const sectionSize = sectionSizes[sectionKey] || 'full';
+              const isFullWidth = sectionSize === 'full';
               if (!content && !isCollapsed) return null;
               return (
                 <div key={sectionKey} className={cn(isFullWidth && "lg:col-span-2")}>
@@ -752,6 +751,8 @@ const Dashboard = () => {
                     isCollapsed={isCollapsed}
                     onToggleCollapse={() => toggleCollapse(sectionKey)}
                     label={SECTION_LABELS[sectionKey]}
+                    size={sectionSize}
+                    onToggleSize={() => toggleSectionSize(sectionKey)}
                   >
                     {content}
                   </DashboardSortableSection>

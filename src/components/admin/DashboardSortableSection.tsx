@@ -1,6 +1,6 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, ChevronDown, ChevronRight } from "lucide-react";
+import { GripVertical, ChevronDown, ChevronRight, Maximize2, Minimize2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ReactNode } from "react";
 
@@ -11,9 +11,11 @@ interface DashboardSortableSectionProps {
   isCollapsed: boolean;
   onToggleCollapse: () => void;
   label: string;
+  size?: 'half' | 'full';
+  onToggleSize?: () => void;
 }
 
-export function DashboardSortableSection({ id, children, isDragMode, isCollapsed, onToggleCollapse, label }: DashboardSortableSectionProps) {
+export function DashboardSortableSection({ id, children, isDragMode, isCollapsed, onToggleCollapse, label, size = 'full', onToggleSize }: DashboardSortableSectionProps) {
   const {
     attributes,
     listeners,
@@ -55,6 +57,15 @@ export function DashboardSortableSection({ id, children, isDragMode, isCollapsed
             {isCollapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
             {label}
           </button>
+          {onToggleSize && (
+            <button
+              onClick={onToggleSize}
+              className="p-1.5 rounded-md bg-muted border shadow-sm hover:bg-accent transition-colors"
+              aria-label={size === 'full' ? 'Réduire en demi-largeur' : 'Agrandir en pleine largeur'}
+            >
+              {size === 'full' ? <Minimize2 className="h-3.5 w-3.5 text-muted-foreground" /> : <Maximize2 className="h-3.5 w-3.5 text-muted-foreground" />}
+            </button>
+          )}
         </div>
       )}
 
@@ -79,7 +90,20 @@ export function DashboardSortableSection({ id, children, isDragMode, isCollapsed
           </span>
         </div>
       ) : (
-        children
+        <div className="relative">
+          {children}
+          {/* Resize toggle icon — bottom right */}
+          {onToggleSize && (
+            <button
+              onClick={onToggleSize}
+              className="absolute bottom-2 right-2 p-1.5 rounded-md bg-background/80 border shadow-sm opacity-0 group-hover/section:opacity-100 hover:bg-accent transition-all backdrop-blur-sm z-10"
+              aria-label={size === 'full' ? 'Réduire en demi-largeur' : 'Agrandir en pleine largeur'}
+              title={size === 'full' ? 'Demi-largeur' : 'Pleine largeur'}
+            >
+              {size === 'full' ? <Minimize2 className="h-3.5 w-3.5 text-muted-foreground" /> : <Maximize2 className="h-3.5 w-3.5 text-muted-foreground" />}
+            </button>
+          )}
+        </div>
       )}
     </div>
   );
