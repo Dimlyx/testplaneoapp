@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, lazy, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useInterventions } from "@/hooks/useInterventions";
 import { useClients } from "@/hooks/useClients";
@@ -27,7 +27,8 @@ import {
   Bell,
   Wrench,
   Building2,
-  Settings2
+  Settings2,
+  MapPin
 } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -36,6 +37,8 @@ import { cn } from "@/lib/utils";
 import { AnnouncementBanner } from "@/components/admin/AnnouncementBanner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+
+const InterventionsMap = lazy(() => import("@/components/admin/InterventionsMap"));
 
 type InterventionStatus = 'to_plan' | 'planned' | 'in_progress' | 'completed' | 'to_invoice' | 'archived';
 
@@ -47,6 +50,7 @@ interface DashboardVisibility {
   toPlanList: boolean;
   maintenanceAlerts: boolean;
   companyInfo: boolean;
+  interventionsMap: boolean;
 }
 
 const DEFAULT_VISIBILITY: DashboardVisibility = {
@@ -57,6 +61,7 @@ const DEFAULT_VISIBILITY: DashboardVisibility = {
   toPlanList: true,
   maintenanceAlerts: true,
   companyInfo: true,
+  interventionsMap: true,
 };
 
 const STORAGE_KEY = 'planeo-dashboard-visibility';
@@ -68,6 +73,7 @@ const visibilityLabels: Record<keyof DashboardVisibility, { label: string; icon:
   statusFilters: { label: "Filtres par statut", icon: Calendar },
   searchBar: { label: "Barre de recherche", icon: Search },
   recentInterventions: { label: "Interventions récentes", icon: Clock },
+  interventionsMap: { label: "Carte des interventions", icon: MapPin },
   toPlanList: { label: "Interventions à planifier", icon: AlertTriangle },
 };
 
@@ -459,6 +465,23 @@ const Dashboard = () => {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Carte des interventions */}
+      {visibility.interventionsMap && (
+        <Suspense fallback={
+          <Card>
+            <CardContent className="flex items-center justify-center h-64">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </CardContent>
+          </Card>
+        }>
+          <InterventionsMap
+            interventions={interventions}
+            clients={clients}
+            technicians={technicians}
+          />
+        </Suspense>
       )}
 
       <div className="grid gap-6 lg:grid-cols-2">
