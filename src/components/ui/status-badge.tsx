@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 import { useInterventionTypes } from '@/hooks/useInterventionTypes';
+import { useCustomStatuses } from '@/hooks/useCustomStatuses';
 
 // Status and Type badges with forwardRef support
 
@@ -35,10 +36,34 @@ const statusConfig: Record<InterventionStatus, { label: string; className: strin
 
 interface StatusBadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   status: InterventionStatus;
+  customStatusId?: string | null;
 }
 
 export const StatusBadge = React.forwardRef<HTMLSpanElement, StatusBadgeProps>(
-  ({ status, className, ...props }, ref) => {
+  ({ status, customStatusId, className, ...props }, ref) => {
+    const { data: customStatuses = [] } = useCustomStatuses();
+    
+    // If there's a custom status, show it instead
+    if (customStatusId) {
+      const custom = customStatuses.find(s => s.id === customStatusId);
+      if (custom) {
+        return (
+          <span
+            ref={ref}
+            className={cn('status-badge', className)}
+            style={{
+              backgroundColor: custom.color + '20',
+              color: custom.color,
+              borderColor: custom.color + '40',
+            }}
+            {...props}
+          >
+            {custom.label}
+          </span>
+        );
+      }
+    }
+
     const config = statusConfig[status];
     
     return (
