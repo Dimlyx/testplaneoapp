@@ -118,6 +118,7 @@ const Dashboard = () => {
   };
 
   const [selectedStatus, setSelectedStatus] = useState<InterventionStatus | null>(null);
+  const [selectedCustomStatus, setSelectedCustomStatus] = useState<string | null>(null);
   const [clientSearch, setClientSearch] = useState("");
 
   const stats = {
