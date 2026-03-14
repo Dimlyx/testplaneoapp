@@ -634,7 +634,7 @@ const Dashboard = () => {
       )}
 
       {/* Carte des interventions */}
-      {visibility.interventionsMap && interventions.some(i => i.intervention_latitude && i.intervention_longitude) && (
+      {visibility.interventionsMap && (
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-lg">Carte des interventions</CardTitle>
@@ -647,13 +647,15 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="h-[400px] rounded-lg overflow-hidden border">
-              <Suspense fallback={
-                <div className="flex items-center justify-center h-full">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                </div>
-              }>
-                <InterventionsMap interventions={interventions} />
-              </Suspense>
+              <InterventionsMap 
+                interventions={interventions} 
+                clients={clients.map(c => ({ id: c.id, name: c.name }))}
+                technicians={technicians.map(t => ({ 
+                  id: t.id, 
+                  full_name: t.full_name, 
+                  email: t.email 
+                }))}
+              />
             </div>
           </CardContent>
         </Card>
