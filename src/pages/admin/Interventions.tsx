@@ -95,7 +95,7 @@ const Interventions = () => {
     const matchesSearch = 
       intervention.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       getClientName(intervention.client_id).toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "all" || intervention.status === statusFilter;
+    const matchesStatus = statusFilter === "all" || intervention.status === statusFilter || intervention.custom_status_id === statusFilter;
     const matchesType = typeFilter === "all" || intervention.intervention_type === typeFilter;
     const matchesTechnician = technicianFilter === "all" || intervention.technician_id === technicianFilter;
     const matchesClient = clientFilter === "all" || intervention.client_id === clientFilter;
