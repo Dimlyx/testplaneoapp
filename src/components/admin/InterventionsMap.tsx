@@ -222,7 +222,7 @@ export default function InterventionsMap({ interventions, clients, technicians }
       </CardHeader>
       <CardContent className="space-y-3">
         {/* Filters */}
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 relative z-[1000]">
           <div className="flex items-center gap-1.5">
             <Filter className="h-3.5 w-3.5 text-muted-foreground" />
           </div>
