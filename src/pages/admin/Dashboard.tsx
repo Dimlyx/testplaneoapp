@@ -527,7 +527,9 @@ const Dashboard = () => {
                         status={intervention.status} 
                         customStatusId={intervention.custom_status_id}
                       />
-                      <TypeBadge typeName={intervention.intervention_type} />
+                      <span className="text-xs text-muted-foreground">
+                        {intervention.intervention_type}
+                      </span>
                     </div>
                   </Link>
                 ))}
