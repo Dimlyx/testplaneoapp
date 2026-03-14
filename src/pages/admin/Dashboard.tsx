@@ -448,7 +448,7 @@ const Dashboard = () => {
                       <p className="text-sm text-muted-foreground">{getClientName(intervention.client_id)}</p>
                       <div className="flex items-center gap-2">
                         <TypeBadge type={intervention.intervention_type} />
-                        <StatusBadge status={intervention.status} />
+                        <StatusBadge status={intervention.status} customStatusId={intervention.custom_status_id} />
                       </div>
                     </div>
                     <div className="text-sm text-muted-foreground text-right">
