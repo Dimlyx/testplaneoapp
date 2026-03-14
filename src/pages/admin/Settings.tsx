@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Settings as SettingsIcon, FileText, Palette, Save, Upload, X, Image, Eye, EyeOff, Building2, RotateCcw, ListChecks, Download, Lock, Info, ExternalLink, Shield, FileCheck, HeadphonesIcon } from "lucide-react";
+import { Settings as SettingsIcon, FileText, Palette, Save, Upload, X, Image, Eye, EyeOff, Building2, RotateCcw, ListChecks, Download, Lock, Info, ExternalLink, Shield, FileCheck, HeadphonesIcon, Tags } from "lucide-react";
 import { useOrganizationPlan } from "@/hooks/useOrganizationPlan";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
