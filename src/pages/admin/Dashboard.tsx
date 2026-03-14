@@ -84,6 +84,7 @@ const Dashboard = () => {
   const { data: technicians = [], isLoading: loadingTechnicians } = useTechnicians();
   const { data: overdueAlerts = [] } = usePendingAlerts();
   const { data: organizationId } = useUserOrganization();
+  const { data: customStatuses = [] } = useCustomStatuses();
 
   const { data: organization } = useQuery({
     queryKey: ['organization', organizationId],
