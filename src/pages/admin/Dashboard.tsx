@@ -29,7 +29,9 @@ import {
   Wrench,
   Building2,
   Settings2,
-  MapPin
+  MapPin,
+  Filter,
+  Check
 } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -117,8 +119,7 @@ const Dashboard = () => {
     setVisibility(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const [selectedStatus, setSelectedStatus] = useState<InterventionStatus | null>(null);
-  const [selectedCustomStatus, setSelectedCustomStatus] = useState<string | null>(null);
+  const [selectedStatuses, setSelectedStatuses] = useState<Set<string>>(new Set());
   const [clientSearch, setClientSearch] = useState("");
 
   const stats = {
@@ -138,11 +139,10 @@ const Dashboard = () => {
 
   const filteredInterventions = useMemo(() => {
     let filtered = interventions;
-    if (selectedStatus) {
-      filtered = filtered.filter(i => i.status === selectedStatus);
-    }
-    if (selectedCustomStatus) {
-      filtered = filtered.filter(i => i.custom_status_id === selectedCustomStatus);
+    if (selectedStatuses.size > 0) {
+      filtered = filtered.filter(i => 
+        selectedStatuses.has(i.status) || (i.custom_status_id && selectedStatuses.has(i.custom_status_id))
+      );
     }
     if (clientSearch.trim()) {
       const searchLower = clientSearch.toLowerCase();
@@ -152,7 +152,7 @@ const Dashboard = () => {
       });
     }
     return filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-  }, [interventions, selectedStatus, selectedCustomStatus, clientSearch, clients]);
+  }, [interventions, selectedStatuses, clientSearch, clients]);
 
   const recentInterventions = interventions
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
@@ -160,23 +160,24 @@ const Dashboard = () => {
 
   const urgentInterventions = interventions.filter(i => i.status === 'to_plan');
 
-  const handleStatusClick = (status: InterventionStatus) => {
-    setSelectedCustomStatus(null);
-    setSelectedStatus(prev => prev === status ? null : status);
-  };
-
-  const handleCustomStatusClick = (customStatusId: string) => {
-    setSelectedStatus(null);
-    setSelectedCustomStatus(prev => prev === customStatusId ? null : customStatusId);
+  const toggleStatus = (statusKey: string) => {
+    setSelectedStatuses(prev => {
+      const next = new Set(prev);
+      if (next.has(statusKey)) {
+        next.delete(statusKey);
+      } else {
+        next.add(statusKey);
+      }
+      return next;
+    });
   };
 
   const clearFilters = () => {
-    setSelectedStatus(null);
-    setSelectedCustomStatus(null);
+    setSelectedStatuses(new Set());
     setClientSearch("");
   };
 
-  const hasActiveFilters = selectedStatus !== null || selectedCustomStatus !== null || clientSearch.trim() !== "";
+  const hasActiveFilters = selectedStatuses.size > 0 || clientSearch.trim() !== "";
 
   if (loadingInterventions || loadingClients || loadingTechnicians) {
     return (
@@ -377,14 +378,100 @@ const Dashboard = () => {
       {visibility.statusFilters && (
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-semibold">Filtrer par statut</h2>
-            {hasActiveFilters && (
-              <Button variant="ghost" size="sm" onClick={clearFilters} className="text-muted-foreground">
-                <X className="h-4 w-4 mr-1" />
-                Effacer les filtres
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-semibold">Filtrer par statut</h2>
+              {selectedStatuses.size > 0 && (
+                <Badge variant="secondary" className="text-xs">
+                  {selectedStatuses.size} sélectionné{selectedStatuses.size > 1 ? 's' : ''}
+                </Badge>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {/* Multi-select status popover */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-1.5">
+                    <Filter className="h-3.5 w-3.5" />
+                    Choisir les statuts
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-64 p-0">
+                  <div className="p-3 border-b">
+                    <p className="text-sm font-semibold">Statuts à afficher</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Cochez les statuts à filtrer</p>
+                  </div>
+                  <div className="p-2 space-y-0.5">
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground px-2 pt-1 pb-1.5 font-medium">Statuts de base</p>
+                    {statusCards.map(({ status, label, icon: Icon, colorClass, count }) => (
+                      <button
+                        key={status}
+                        onClick={() => toggleStatus(status)}
+                        className={cn(
+                          "flex items-center gap-2.5 w-full px-2 py-1.5 rounded-md text-sm transition-colors hover:bg-muted",
+                          selectedStatuses.has(status) && "bg-muted"
+                        )}
+                      >
+                        <div className={cn(
+                          "w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors",
+                          selectedStatuses.has(status) ? "bg-primary border-primary" : "border-muted-foreground/30"
+                        )}>
+                          {selectedStatuses.has(status) && <Check className="h-3 w-3 text-primary-foreground" />}
+                        </div>
+                        <Icon className={`h-3.5 w-3.5 text-${colorClass}-500 shrink-0`} />
+                        <span className="flex-1 text-left">{label}</span>
+                        <span className="text-xs text-muted-foreground">{count}</span>
+                      </button>
+                    ))}
+
+                    {customStatuses.length > 0 && (
+                      <>
+                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground px-2 pt-3 pb-1.5 font-medium">Statuts personnalisés</p>
+                        {customStatuses.map((cs) => {
+                          const count = interventions.filter(i => i.custom_status_id === cs.id).length;
+                          return (
+                            <button
+                              key={cs.id}
+                              onClick={() => toggleStatus(cs.id)}
+                              className={cn(
+                                "flex items-center gap-2.5 w-full px-2 py-1.5 rounded-md text-sm transition-colors hover:bg-muted",
+                                selectedStatuses.has(cs.id) && "bg-muted"
+                              )}
+                            >
+                              <div className={cn(
+                                "w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors",
+                                selectedStatuses.has(cs.id) ? "bg-primary border-primary" : "border-muted-foreground/30"
+                              )}>
+                                {selectedStatuses.has(cs.id) && <Check className="h-3 w-3 text-primary-foreground" />}
+                              </div>
+                              <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: cs.color }} />
+                              <span className="flex-1 text-left">{cs.label}</span>
+                              <span className="text-xs text-muted-foreground">{count}</span>
+                            </button>
+                          );
+                        })}
+                      </>
+                    )}
+                  </div>
+                  {selectedStatuses.size > 0 && (
+                    <div className="p-2 border-t">
+                      <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => setSelectedStatuses(new Set())}>
+                        Tout décocher
+                      </Button>
+                    </div>
+                  )}
+                </PopoverContent>
+              </Popover>
+
+              {hasActiveFilters && (
+                <Button variant="ghost" size="sm" onClick={clearFilters} className="text-muted-foreground">
+                  <X className="h-4 w-4 mr-1" />
+                  Effacer
+                </Button>
+              )}
+            </div>
           </div>
+
+          {/* Status cards - clickable */}
           <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
             {statusCards.map(({ status, label, count, icon: Icon, colorClass }) => (
               <Card 
@@ -392,9 +479,9 @@ const Dashboard = () => {
                 className={cn(
                   `border-l-4 cursor-pointer transition-all hover:shadow-md`,
                   `border-l-${colorClass}-500`,
-                  selectedStatus === status && "ring-2 ring-primary ring-offset-2 bg-muted/50"
+                  selectedStatuses.has(status) && "ring-2 ring-primary ring-offset-2 bg-muted/50"
                 )}
-                onClick={() => handleStatusClick(status)}
+                onClick={() => toggleStatus(status)}
               >
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -419,10 +506,10 @@ const Dashboard = () => {
                     key={cs.id}
                     className={cn(
                       "border-l-4 cursor-pointer transition-all hover:shadow-md",
-                      selectedCustomStatus === cs.id && "ring-2 ring-primary ring-offset-2 bg-muted/50"
+                      selectedStatuses.has(cs.id) && "ring-2 ring-primary ring-offset-2 bg-muted/50"
                     )}
                     style={{ borderLeftColor: cs.color }}
-                    onClick={() => handleCustomStatusClick(cs.id)}
+                    onClick={() => toggleStatus(cs.id)}
                   >
                     <CardHeader className="pb-2">
                       <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -461,8 +548,10 @@ const Dashboard = () => {
             <CardTitle className="flex items-center justify-between">
               <span>
                 Résultats 
-                {selectedStatus && (
-                  <StatusBadge status={selectedStatus} className="ml-2" />
+                {selectedStatuses.size > 0 && (
+                  <Badge variant="secondary" className="ml-2 text-xs">
+                    {selectedStatuses.size} statut{selectedStatuses.size > 1 ? 's' : ''}
+                  </Badge>
                 )}
                 {clientSearch && (
                   <span className="ml-2 text-sm font-normal text-muted-foreground">
