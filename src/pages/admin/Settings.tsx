@@ -15,6 +15,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import InterventionTypesSettings from "@/components/settings/InterventionTypesSettings";
+import CustomStatusesSettings from "@/components/settings/CustomStatusesSettings";
 import WorkflowStepsSettings from "@/components/settings/WorkflowStepsSettings";
 import { supabase } from "@/integrations/supabase/client";
 import { 
