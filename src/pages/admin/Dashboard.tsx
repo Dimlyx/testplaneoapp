@@ -68,6 +68,9 @@ const DEFAULT_VISIBILITY: DashboardVisibility = {
 };
 
 const STORAGE_KEY = 'planeo-dashboard-visibility';
+const STATUS_VISIBILITY_KEY = 'planeo-dashboard-visible-statuses';
+
+const DEFAULT_VISIBLE_STATUSES = ['to_plan', 'planned', 'in_progress', 'completed', 'to_invoice'];
 
 const visibilityLabels: Record<keyof DashboardVisibility, { label: string; icon: any }> = {
   companyInfo: { label: "Entreprise", icon: Building2 },
