@@ -126,6 +126,24 @@ const Dashboard = () => {
   const [selectedCustomStatus, setSelectedCustomStatus] = useState<string | null>(null);
   const [clientSearch, setClientSearch] = useState("");
 
+  const [visibleStatuses, setVisibleStatuses] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem(STATUS_VISIBILITY_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return DEFAULT_VISIBLE_STATUSES;
+  });
+
+  useEffect(() => {
+    localStorage.setItem(STATUS_VISIBILITY_KEY, JSON.stringify(visibleStatuses));
+  }, [visibleStatuses]);
+
+  const toggleStatusVisibility = (key: string) => {
+    setVisibleStatuses(prev => 
+      prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
+    );
+  };
+
   const stats = {
     total: interventions.length,
     toPlan: interventions.filter(i => i.status === 'to_plan').length,
