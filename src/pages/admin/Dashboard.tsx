@@ -196,6 +196,27 @@ const Dashboard = () => {
     );
   };
 
+  // --- Section sizes ---
+  type SectionSize = 'half' | 'full';
+  const [sectionSizes, setSectionSizes] = useState<Record<string, SectionSize>>(() => {
+    try {
+      const saved = localStorage.getItem(SECTION_SIZES_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return {};
+  });
+
+  useEffect(() => {
+    localStorage.setItem(SECTION_SIZES_KEY, JSON.stringify(sectionSizes));
+  }, [sectionSizes]);
+
+  const toggleSectionSize = (key: string) => {
+    setSectionSizes(prev => ({
+      ...prev,
+      [key]: (prev[key] || 'full') === 'full' ? 'half' : 'full',
+    }));
+  };
+
   const [visibleStatuses, setVisibleStatuses] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem(STATUS_VISIBILITY_KEY);
