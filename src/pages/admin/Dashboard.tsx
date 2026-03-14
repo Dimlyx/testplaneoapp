@@ -60,6 +60,7 @@ const DEFAULT_VISIBILITY: DashboardVisibility = {
   toPlanList: true,
   maintenanceAlerts: true,
   companyInfo: true,
+  interventionsMap: true,
 };
 
 const STORAGE_KEY = 'planeo-dashboard-visibility';
