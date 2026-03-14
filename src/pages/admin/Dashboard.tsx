@@ -87,6 +87,16 @@ const DEFAULT_SECTION_ORDER: SectionKey[] = [
   'interventionsMap',
 ];
 
+const SECTION_LABELS: Record<SectionKey, string> = {
+  maintenanceAlerts: "Alertes de maintenance",
+  statsCards: "Statistiques",
+  statusFilters: "Filtres par statut",
+  searchBar: "Recherche",
+  recentInterventions: "Interventions récentes",
+  toPlanList: "À planifier",
+  interventionsMap: "Carte des interventions",
+};
+
 const visibilityLabels: Record<keyof DashboardVisibility, { label: string; icon: any }> = {
   companyInfo: { label: "Entreprise", icon: Building2 },
   statsCards: { label: "Statistiques", icon: ClipboardList },
