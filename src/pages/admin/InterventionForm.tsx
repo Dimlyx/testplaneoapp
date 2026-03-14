@@ -89,6 +89,7 @@ const InterventionForm = () => {
       technician_id: "",
       intervention_type: "",
       status: "to_plan",
+      custom_status_id: null,
       scheduled_date: "",
       scheduled_time: "",
       report: "",
