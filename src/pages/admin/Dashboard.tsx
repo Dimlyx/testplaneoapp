@@ -27,7 +27,8 @@ import {
   Bell,
   Wrench,
   Building2,
-  Settings2
+  Settings2,
+  MapPin
 } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { fr } from "date-fns/locale";
