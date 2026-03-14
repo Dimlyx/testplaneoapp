@@ -117,8 +117,7 @@ const Dashboard = () => {
     setVisibility(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const [selectedStatus, setSelectedStatus] = useState<InterventionStatus | null>(null);
-  const [selectedCustomStatus, setSelectedCustomStatus] = useState<string | null>(null);
+  const [selectedStatuses, setSelectedStatuses] = useState<Set<string>>(new Set());
   const [clientSearch, setClientSearch] = useState("");
 
   const stats = {
@@ -138,11 +137,10 @@ const Dashboard = () => {
 
   const filteredInterventions = useMemo(() => {
     let filtered = interventions;
-    if (selectedStatus) {
-      filtered = filtered.filter(i => i.status === selectedStatus);
-    }
-    if (selectedCustomStatus) {
-      filtered = filtered.filter(i => i.custom_status_id === selectedCustomStatus);
+    if (selectedStatuses.size > 0) {
+      filtered = filtered.filter(i => 
+        selectedStatuses.has(i.status) || (i.custom_status_id && selectedStatuses.has(i.custom_status_id))
+      );
     }
     if (clientSearch.trim()) {
       const searchLower = clientSearch.toLowerCase();
@@ -152,7 +150,7 @@ const Dashboard = () => {
       });
     }
     return filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-  }, [interventions, selectedStatus, selectedCustomStatus, clientSearch, clients]);
+  }, [interventions, selectedStatuses, clientSearch, clients]);
 
   const recentInterventions = interventions
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
@@ -160,14 +158,16 @@ const Dashboard = () => {
 
   const urgentInterventions = interventions.filter(i => i.status === 'to_plan');
 
-  const handleStatusClick = (status: InterventionStatus) => {
-    setSelectedCustomStatus(null);
-    setSelectedStatus(prev => prev === status ? null : status);
-  };
-
-  const handleCustomStatusClick = (customStatusId: string) => {
-    setSelectedStatus(null);
-    setSelectedCustomStatus(prev => prev === customStatusId ? null : customStatusId);
+  const toggleStatus = (statusKey: string) => {
+    setSelectedStatuses(prev => {
+      const next = new Set(prev);
+      if (next.has(statusKey)) {
+        next.delete(statusKey);
+      } else {
+        next.add(statusKey);
+      }
+      return next;
+    });
   };
 
   const clearFilters = () => {
