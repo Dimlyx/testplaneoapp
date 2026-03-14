@@ -548,8 +548,10 @@ const Dashboard = () => {
             <CardTitle className="flex items-center justify-between">
               <span>
                 Résultats 
-                {selectedStatus && (
-                  <StatusBadge status={selectedStatus} className="ml-2" />
+                {selectedStatuses.size > 0 && (
+                  <Badge variant="secondary" className="ml-2 text-xs">
+                    {selectedStatuses.size} statut{selectedStatuses.size > 1 ? 's' : ''}
+                  </Badge>
                 )}
                 {clientSearch && (
                   <span className="ml-2 text-sm font-normal text-muted-foreground">
