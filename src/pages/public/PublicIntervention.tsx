@@ -2,7 +2,7 @@ import { useParams } from "react-router-dom";
 import { usePublicIntervention } from "@/hooks/useInterventions";
 import { useInterventionPhotos } from "@/hooks/useInterventionPhotos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { StatusBadge, TypeBadge } from "@/components/ui/status-badge";
+import { TypeBadge } from "@/components/ui/status-badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { 
