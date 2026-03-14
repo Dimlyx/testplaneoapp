@@ -31,9 +31,9 @@ export default defineConfig(({ mode }) => ({
         scope: "/",
         icons: [
           {
-            src: "/favicon.ico",
+            src: "/favicon.png",
             sizes: "64x64",
-            type: "image/x-icon",
+            type: "image/png",
           },
           {
             src: "/pwa-192x192.png",
