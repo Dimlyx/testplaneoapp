@@ -171,12 +171,11 @@ const Dashboard = () => {
   };
 
   const clearFilters = () => {
-    setSelectedStatus(null);
-    setSelectedCustomStatus(null);
+    setSelectedStatuses(new Set());
     setClientSearch("");
   };
 
-  const hasActiveFilters = selectedStatus !== null || selectedCustomStatus !== null || clientSearch.trim() !== "";
+  const hasActiveFilters = selectedStatuses.size > 0 || clientSearch.trim() !== "";
 
   if (loadingInterventions || loadingClients || loadingTechnicians) {
     return (
