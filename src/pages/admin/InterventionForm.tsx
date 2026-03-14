@@ -114,6 +114,7 @@ const InterventionForm = () => {
         technician_id: intervention.technician_id || "",
         intervention_type: intervention.intervention_type,
         status: intervention.status,
+        custom_status_id: intervention.custom_status_id || null,
         scheduled_date: intervention.scheduled_date || "",
         scheduled_time: intervention.scheduled_time || "",
         report: intervention.report || "",
