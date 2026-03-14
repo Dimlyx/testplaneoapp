@@ -142,8 +142,7 @@ export default function Auth() {
       <div className="w-full max-w-md animate-fade-in">
         <div className="text-center mb-8">
           <img
-
-            alt="Planéo - Gestion des interventions SAV"
+            alt="PLANEO - Gestion des interventions SAV"
             className="h-14 mx-auto mb-4" src="/lovable-uploads/dd9762e6-b150-4235-af1b-39ba04d91d2f.png" />
 
         </div>
