@@ -161,7 +161,13 @@ const Dashboard = () => {
   const urgentInterventions = interventions.filter(i => i.status === 'to_plan');
 
   const handleStatusClick = (status: InterventionStatus) => {
+    setSelectedCustomStatus(null);
     setSelectedStatus(prev => prev === status ? null : status);
+  };
+
+  const handleCustomStatusClick = (customStatusId: string) => {
+    setSelectedStatus(null);
+    setSelectedCustomStatus(prev => prev === customStatusId ? null : customStatusId);
   };
 
   const clearFilters = () => {
