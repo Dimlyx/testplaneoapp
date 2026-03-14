@@ -5,6 +5,7 @@ import { useClients } from "@/hooks/useClients";
 import { useTechnicians } from "@/hooks/useTechnicians";
 import { usePendingAlerts } from "@/hooks/useMaintenanceAlerts";
 import { useUserOrganization } from "@/hooks/useUserOrganization";
+import { useCustomStatuses } from "@/hooks/useCustomStatuses";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge, TypeBadge } from "@/components/ui/status-badge";
@@ -83,6 +84,7 @@ const Dashboard = () => {
   const { data: technicians = [], isLoading: loadingTechnicians } = useTechnicians();
   const { data: overdueAlerts = [] } = usePendingAlerts();
   const { data: organizationId } = useUserOrganization();
+  const { data: customStatuses = [] } = useCustomStatuses();
 
   const { data: organization } = useQuery({
     queryKey: ['organization', organizationId],
@@ -116,6 +118,7 @@ const Dashboard = () => {
   };
 
   const [selectedStatus, setSelectedStatus] = useState<InterventionStatus | null>(null);
+  const [selectedCustomStatus, setSelectedCustomStatus] = useState<string | null>(null);
   const [clientSearch, setClientSearch] = useState("");
 
   const stats = {
@@ -138,6 +141,9 @@ const Dashboard = () => {
     if (selectedStatus) {
       filtered = filtered.filter(i => i.status === selectedStatus);
     }
+    if (selectedCustomStatus) {
+      filtered = filtered.filter(i => i.custom_status_id === selectedCustomStatus);
+    }
     if (clientSearch.trim()) {
       const searchLower = clientSearch.toLowerCase();
       filtered = filtered.filter(i => {
@@ -146,7 +152,7 @@ const Dashboard = () => {
       });
     }
     return filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-  }, [interventions, selectedStatus, clientSearch, clients]);
+  }, [interventions, selectedStatus, selectedCustomStatus, clientSearch, clients]);
 
   const recentInterventions = interventions
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
@@ -155,15 +161,22 @@ const Dashboard = () => {
   const urgentInterventions = interventions.filter(i => i.status === 'to_plan');
 
   const handleStatusClick = (status: InterventionStatus) => {
+    setSelectedCustomStatus(null);
     setSelectedStatus(prev => prev === status ? null : status);
+  };
+
+  const handleCustomStatusClick = (customStatusId: string) => {
+    setSelectedStatus(null);
+    setSelectedCustomStatus(prev => prev === customStatusId ? null : customStatusId);
   };
 
   const clearFilters = () => {
     setSelectedStatus(null);
+    setSelectedCustomStatus(null);
     setClientSearch("");
   };
 
-  const hasActiveFilters = selectedStatus !== null || clientSearch.trim() !== "";
+  const hasActiveFilters = selectedStatus !== null || selectedCustomStatus !== null || clientSearch.trim() !== "";
 
   if (loadingInterventions || loadingClients || loadingTechnicians) {
     return (
@@ -395,6 +408,36 @@ const Dashboard = () => {
               </Card>
             ))}
           </div>
+
+          {/* Custom status cards */}
+          {customStatuses.length > 0 && (
+            <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6 mt-4">
+              {customStatuses.map((cs) => {
+                const count = interventions.filter(i => i.custom_status_id === cs.id).length;
+                return (
+                  <Card
+                    key={cs.id}
+                    className={cn(
+                      "border-l-4 cursor-pointer transition-all hover:shadow-md",
+                      selectedCustomStatus === cs.id && "ring-2 ring-primary ring-offset-2 bg-muted/50"
+                    )}
+                    style={{ borderLeftColor: cs.color }}
+                    onClick={() => handleCustomStatusClick(cs.id)}
+                  >
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium flex items-center gap-2">
+                        <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: cs.color }} />
+                        {cs.label}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold" style={{ color: cs.color }}>{count}</div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
