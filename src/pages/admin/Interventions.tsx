@@ -3,6 +3,7 @@ import { useInterventions, useDeleteIntervention, useUpdateIntervention } from "
 import { useClients } from "@/hooks/useClients";
 import { useTechnicians } from "@/hooks/useTechnicians";
 import { useInterventionTypes } from "@/hooks/useInterventionTypes";
+import { useCustomStatuses } from "@/hooks/useCustomStatuses";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
