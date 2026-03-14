@@ -13,9 +13,8 @@ import {
   arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
+  rectSortingStrategy,
 } from "@dnd-kit/sortable";
-import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { useInterventions } from "@/hooks/useInterventions";
 import { useClients } from "@/hooks/useClients";
 import { useTechnicians } from "@/hooks/useTechnicians";
@@ -74,6 +73,7 @@ const DEFAULT_VISIBILITY: DashboardVisibility = {
 const STORAGE_KEY = 'planeo-dashboard-visibility';
 const STATUS_VISIBILITY_KEY = 'planeo-dashboard-visible-statuses';
 const SECTION_ORDER_KEY = 'planeo-dashboard-section-order';
+const COLLAPSED_SECTIONS_KEY = 'planeo-dashboard-collapsed-sections';
 
 const DEFAULT_VISIBLE_STATUSES = ['to_plan', 'planned', 'in_progress', 'completed', 'to_invoice'];
 
@@ -86,6 +86,16 @@ const DEFAULT_SECTION_ORDER: SectionKey[] = [
   'toPlanList',
   'interventionsMap',
 ];
+
+const SECTION_LABELS: Record<SectionKey, string> = {
+  maintenanceAlerts: "Alertes de maintenance",
+  statsCards: "Statistiques",
+  statusFilters: "Filtres par statut",
+  searchBar: "Recherche",
+  recentInterventions: "Interventions récentes",
+  toPlanList: "À planifier",
+  interventionsMap: "Carte des interventions",
+};
 
 const visibilityLabels: Record<keyof DashboardVisibility, { label: string; icon: any }> = {
   companyInfo: { label: "Entreprise", icon: Building2 },
@@ -165,6 +175,25 @@ const Dashboard = () => {
   const [selectedStatus, setSelectedStatus] = useState<InterventionStatus | null>(null);
   const [selectedCustomStatus, setSelectedCustomStatus] = useState<string | null>(null);
   const [clientSearch, setClientSearch] = useState("");
+
+  // --- Collapsed sections ---
+  const [collapsedSections, setCollapsedSections] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem(COLLAPSED_SECTIONS_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return [];
+  });
+
+  useEffect(() => {
+    localStorage.setItem(COLLAPSED_SECTIONS_KEY, JSON.stringify(collapsedSections));
+  }, [collapsedSections]);
+
+  const toggleCollapse = (key: string) => {
+    setCollapsedSections(prev =>
+      prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
+    );
+  };
 
   const [visibleStatuses, setVisibleStatuses] = useState<string[]>(() => {
     try {
@@ -630,7 +659,7 @@ const Dashboard = () => {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h4 className="font-semibold text-sm">Personnaliser l'affichage</h4>
-                  <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => { setVisibility(DEFAULT_VISIBILITY); setSectionOrder(DEFAULT_SECTION_ORDER); }}>
+                  <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => { setVisibility(DEFAULT_VISIBILITY); setSectionOrder(DEFAULT_SECTION_ORDER); setCollapsedSections([]); }}>
                     Réinitialiser
                   </Button>
                 </div>
@@ -679,17 +708,28 @@ const Dashboard = () => {
         sensors={sensors}
         collisionDetection={closestCenter}
         onDragEnd={handleDragEnd}
-        modifiers={[restrictToVerticalAxis]}
       >
-        <SortableContext items={sectionOrder} strategy={verticalListSortingStrategy}>
-          <div className="space-y-6">
+        <SortableContext items={sectionOrder} strategy={rectSortingStrategy}>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {sectionOrder.map((sectionKey) => {
               const content = sectionRenderers[sectionKey]();
-              if (!content) return null;
+              const isCollapsed = collapsedSections.includes(sectionKey);
+              // Full-width sections
+              const fullWidthSections: SectionKey[] = ['statusFilters', 'searchBar', 'interventionsMap'];
+              const isFullWidth = fullWidthSections.includes(sectionKey);
+              if (!content && !isCollapsed) return null;
               return (
-                <DashboardSortableSection key={sectionKey} id={sectionKey} isDragMode={isDragMode}>
-                  {content}
-                </DashboardSortableSection>
+                <div key={sectionKey} className={cn(isFullWidth && "lg:col-span-2")}>
+                  <DashboardSortableSection
+                    id={sectionKey}
+                    isDragMode={isDragMode}
+                    isCollapsed={isCollapsed}
+                    onToggleCollapse={() => toggleCollapse(sectionKey)}
+                    label={SECTION_LABELS[sectionKey]}
+                  >
+                    {content}
+                  </DashboardSortableSection>
+                </div>
               );
             })}
           </div>
