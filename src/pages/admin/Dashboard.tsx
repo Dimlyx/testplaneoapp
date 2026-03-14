@@ -176,6 +176,25 @@ const Dashboard = () => {
   const [selectedCustomStatus, setSelectedCustomStatus] = useState<string | null>(null);
   const [clientSearch, setClientSearch] = useState("");
 
+  // --- Collapsed sections ---
+  const [collapsedSections, setCollapsedSections] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem(COLLAPSED_SECTIONS_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return [];
+  });
+
+  useEffect(() => {
+    localStorage.setItem(COLLAPSED_SECTIONS_KEY, JSON.stringify(collapsedSections));
+  }, [collapsedSections]);
+
+  const toggleCollapse = (key: string) => {
+    setCollapsedSections(prev =>
+      prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
+    );
+  };
+
   const [visibleStatuses, setVisibleStatuses] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem(STATUS_VISIBILITY_KEY);
