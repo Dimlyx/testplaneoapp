@@ -74,6 +74,7 @@ const STORAGE_KEY = 'planeo-dashboard-visibility';
 const STATUS_VISIBILITY_KEY = 'planeo-dashboard-visible-statuses';
 const SECTION_ORDER_KEY = 'planeo-dashboard-section-order';
 const COLLAPSED_SECTIONS_KEY = 'planeo-dashboard-collapsed-sections';
+const SECTION_SIZES_KEY = 'planeo-dashboard-section-sizes';
 
 const DEFAULT_VISIBLE_STATUSES = ['to_plan', 'planned', 'in_progress', 'completed', 'to_invoice'];
 
@@ -193,6 +194,27 @@ const Dashboard = () => {
     setCollapsedSections(prev =>
       prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
     );
+  };
+
+  // --- Section sizes ---
+  type SectionSize = 'half' | 'full';
+  const [sectionSizes, setSectionSizes] = useState<Record<string, SectionSize>>(() => {
+    try {
+      const saved = localStorage.getItem(SECTION_SIZES_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return {};
+  });
+
+  useEffect(() => {
+    localStorage.setItem(SECTION_SIZES_KEY, JSON.stringify(sectionSizes));
+  }, [sectionSizes]);
+
+  const toggleSectionSize = (key: string) => {
+    setSectionSizes(prev => ({
+      ...prev,
+      [key]: (prev[key] || 'full') === 'full' ? 'half' : 'full',
+    }));
   };
 
   const [visibleStatuses, setVisibleStatuses] = useState<string[]>(() => {
@@ -659,9 +681,13 @@ const Dashboard = () => {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h4 className="font-semibold text-sm">Personnaliser l'affichage</h4>
-                  <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => { setVisibility(DEFAULT_VISIBILITY); setSectionOrder(DEFAULT_SECTION_ORDER); setCollapsedSections([]); }}>
+                  <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => { setVisibility(DEFAULT_VISIBILITY); setSectionOrder(DEFAULT_SECTION_ORDER); setCollapsedSections([]); setSectionSizes({}); }}>
                     Réinitialiser
                   </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">Utilisez l'icône ↔ en bas à droite de chaque module pour changer sa taille.</p>
+                <div className="space-y-3">
+                  {/* This is a hint, no extra UI needed here */}
                 </div>
                 <div className="space-y-3">
                   {(Object.entries(visibilityLabels) as [keyof DashboardVisibility, { label: string; icon: any }][]).map(([key, { label, icon: Icon }]) => (
@@ -714,9 +740,8 @@ const Dashboard = () => {
             {sectionOrder.map((sectionKey) => {
               const content = sectionRenderers[sectionKey]();
               const isCollapsed = collapsedSections.includes(sectionKey);
-              // Full-width sections
-              const fullWidthSections: SectionKey[] = ['statusFilters', 'searchBar', 'interventionsMap'];
-              const isFullWidth = fullWidthSections.includes(sectionKey);
+              const sectionSize = sectionSizes[sectionKey] || 'full';
+              const isFullWidth = sectionSize === 'full';
               if (!content && !isCollapsed) return null;
               return (
                 <div key={sectionKey} className={cn(isFullWidth && "lg:col-span-2")}>
@@ -726,6 +751,8 @@ const Dashboard = () => {
                     isCollapsed={isCollapsed}
                     onToggleCollapse={() => toggleCollapse(sectionKey)}
                     label={SECTION_LABELS[sectionKey]}
+                    size={sectionSize}
+                    onToggleSize={() => toggleSectionSize(sectionKey)}
                   >
                     {content}
                   </DashboardSortableSection>
