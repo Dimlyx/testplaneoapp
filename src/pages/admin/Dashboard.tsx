@@ -407,9 +407,64 @@ const Dashboard = () => {
       {/* Statuts des interventions - Cliquables */}
       {visibility.statusFilters && (
         <div>
-          <h2 className="text-lg font-semibold mb-3">Filtrer par statut</h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-semibold">Filtrer par statut</h2>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="icon" className="h-8 w-8">
+                  <Settings className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-64 p-0">
+                <div className="p-3 border-b">
+                  <p className="text-sm font-semibold">Statuts visibles</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Choisissez les statuts affichés sur le tableau de bord</p>
+                </div>
+                <div className="p-2 space-y-0.5">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground px-2 pt-1 pb-1.5 font-medium">Statuts de base</p>
+                  {statusCards.map(({ status, label, icon: Icon }) => (
+                    <button
+                      key={status}
+                      onClick={() => toggleStatusVisibility(status)}
+                      className={cn(
+                        "flex items-center gap-2.5 w-full px-2 py-1.5 rounded-md text-sm transition-colors hover:bg-muted",
+                      )}
+                    >
+                      {visibleStatuses.includes(status) ? (
+                        <Eye className="h-3.5 w-3.5 text-primary shrink-0" />
+                      ) : (
+                        <EyeOff className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      )}
+                      <Icon className="h-3.5 w-3.5 shrink-0" />
+                      <span className={cn(!visibleStatuses.includes(status) && "text-muted-foreground")}>{label}</span>
+                    </button>
+                  ))}
+                  {customStatuses.length > 0 && (
+                    <>
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground px-2 pt-2 pb-1.5 font-medium">Personnalisés</p>
+                      {customStatuses.map((cs) => (
+                        <button
+                          key={cs.id}
+                          onClick={() => toggleStatusVisibility(cs.id)}
+                          className="flex items-center gap-2.5 w-full px-2 py-1.5 rounded-md text-sm transition-colors hover:bg-muted"
+                        >
+                          {visibleStatuses.includes(cs.id) ? (
+                            <Eye className="h-3.5 w-3.5 text-primary shrink-0" />
+                          ) : (
+                            <EyeOff className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                          )}
+                          <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: cs.color }} />
+                          <span className={cn(!visibleStatuses.includes(cs.id) && "text-muted-foreground")}>{cs.label}</span>
+                        </button>
+                      ))}
+                    </>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
           <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
-            {statusCards.map(({ status, label, count, icon: Icon, colorClass }) => {
+            {statusCards.filter(({ status }) => visibleStatuses.includes(status)).map(({ status, label, count, icon: Icon, colorClass }) => {
               const isSelected = selectedStatus === status;
               return (
                 <Card
@@ -440,44 +495,35 @@ const Dashboard = () => {
                 </Card>
               );
             })}
+            {customStatuses.filter((cs) => visibleStatuses.includes(cs.id)).map((cs) => {
+              const count = interventions.filter(i => i.custom_status_id === cs.id).length;
+              const isSelected = selectedCustomStatus === cs.id;
+              return (
+                <Card
+                  key={cs.id}
+                  className={cn(
+                    "cursor-pointer transition-all hover:shadow-md",
+                    isSelected && "ring-2 ring-primary ring-offset-2"
+                  )}
+                  style={{ borderLeft: `4px solid ${cs.color}` }}
+                  onClick={() => handleCustomStatusClick(cs.id)}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div
+                        className="p-2 rounded-lg"
+                        style={{ backgroundColor: `${cs.color}20`, color: cs.color }}
+                      >
+                        <Clock className="h-4 w-4" />
+                      </div>
+                      <span className="text-2xl font-bold">{count}</span>
+                    </div>
+                    <p className="text-sm font-medium mt-2">{cs.label}</p>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
-
-          {/* Cartes des statuts personnalisés */}
-          {customStatuses.length > 0 && (
-            <div className="mt-4">
-              <h3 className="text-sm font-medium text-muted-foreground mb-2">Statuts personnalisés</h3>
-              <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
-                {customStatuses.map((cs) => {
-                  const count = interventions.filter(i => i.custom_status_id === cs.id).length;
-                  const isSelected = selectedCustomStatus === cs.id;
-                  return (
-                    <Card
-                      key={cs.id}
-                      className={cn(
-                        "cursor-pointer transition-all hover:shadow-md",
-                        isSelected && "ring-2 ring-primary ring-offset-2"
-                      )}
-                      style={{ borderLeft: `4px solid ${cs.color}` }}
-                      onClick={() => handleCustomStatusClick(cs.id)}
-                    >
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                          <div
-                            className="p-2 rounded-lg"
-                            style={{ backgroundColor: `${cs.color}20`, color: cs.color }}
-                          >
-                            <Clock className="h-4 w-4" />
-                          </div>
-                          <span className="text-2xl font-bold">{count}</span>
-                        </div>
-                        <p className="text-sm font-medium mt-2">{cs.label}</p>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            </div>
-          )}
         </div>
       )}
 
