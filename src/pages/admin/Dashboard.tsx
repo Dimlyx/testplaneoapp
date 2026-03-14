@@ -172,10 +172,11 @@ const Dashboard = () => {
 
   const clearFilters = () => {
     setSelectedStatus(null);
+    setSelectedCustomStatus(null);
     setClientSearch("");
   };
 
-  const hasActiveFilters = selectedStatus !== null || clientSearch.trim() !== "";
+  const hasActiveFilters = selectedStatus !== null || selectedCustomStatus !== null || clientSearch.trim() !== "";
 
   if (loadingInterventions || loadingClients || loadingTechnicians) {
     return (
