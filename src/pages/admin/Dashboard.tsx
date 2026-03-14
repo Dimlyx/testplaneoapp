@@ -708,17 +708,28 @@ const Dashboard = () => {
         sensors={sensors}
         collisionDetection={closestCenter}
         onDragEnd={handleDragEnd}
-        modifiers={[restrictToVerticalAxis]}
       >
-        <SortableContext items={sectionOrder} strategy={verticalListSortingStrategy}>
-          <div className="space-y-6">
+        <SortableContext items={sectionOrder} strategy={rectSortingStrategy}>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {sectionOrder.map((sectionKey) => {
               const content = sectionRenderers[sectionKey]();
-              if (!content) return null;
+              const isCollapsed = collapsedSections.includes(sectionKey);
+              // Full-width sections
+              const fullWidthSections: SectionKey[] = ['statusFilters', 'searchBar', 'interventionsMap'];
+              const isFullWidth = fullWidthSections.includes(sectionKey);
+              if (!content && !isCollapsed) return null;
               return (
-                <DashboardSortableSection key={sectionKey} id={sectionKey} isDragMode={isDragMode}>
-                  {content}
-                </DashboardSortableSection>
+                <div key={sectionKey} className={cn(isFullWidth && "lg:col-span-2")}>
+                  <DashboardSortableSection
+                    id={sectionKey}
+                    isDragMode={isDragMode}
+                    isCollapsed={isCollapsed}
+                    onToggleCollapse={() => toggleCollapse(sectionKey)}
+                    label={SECTION_LABELS[sectionKey]}
+                  >
+                    {content}
+                  </DashboardSortableSection>
+                </div>
               );
             })}
           </div>
