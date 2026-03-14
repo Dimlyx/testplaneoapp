@@ -141,6 +141,9 @@ const Dashboard = () => {
     if (selectedStatus) {
       filtered = filtered.filter(i => i.status === selectedStatus);
     }
+    if (selectedCustomStatus) {
+      filtered = filtered.filter(i => i.custom_status_id === selectedCustomStatus);
+    }
     if (clientSearch.trim()) {
       const searchLower = clientSearch.toLowerCase();
       filtered = filtered.filter(i => {
@@ -149,7 +152,7 @@ const Dashboard = () => {
       });
     }
     return filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-  }, [interventions, selectedStatus, clientSearch, clients]);
+  }, [interventions, selectedStatus, selectedCustomStatus, clientSearch, clients]);
 
   const recentInterventions = interventions
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
