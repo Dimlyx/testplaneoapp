@@ -5,6 +5,7 @@ import { useClients } from "@/hooks/useClients";
 import { useTechnicians } from "@/hooks/useTechnicians";
 import { usePendingAlerts } from "@/hooks/useMaintenanceAlerts";
 import { useUserOrganization } from "@/hooks/useUserOrganization";
+import { useCustomStatuses } from "@/hooks/useCustomStatuses";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge, TypeBadge } from "@/components/ui/status-badge";
