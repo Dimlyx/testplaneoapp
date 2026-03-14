@@ -171,12 +171,10 @@ const PublicIntervention = () => {
       </header>
 
       <main className="container max-w-2xl mx-auto px-4 py-6 space-y-4">
-        {/* Statut principal */}
+        {/* Type d'intervention */}
         <Card>
           <CardContent className="py-6 text-center">
-            <StatusIcon className={`h-12 w-12 mx-auto mb-3 ${currentStatus.color}`} />
-            <p className={`text-lg font-semibold ${currentStatus.color}`}>{currentStatus.message}</p>
-            <div className="flex justify-center gap-2 mt-3">
+            <div className="flex justify-center gap-2">
               <TypeBadge type={intervention.intervention_type} />
             </div>
             {docSettings.welcomeMessage && (
