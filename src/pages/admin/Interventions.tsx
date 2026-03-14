@@ -227,6 +227,14 @@ const Interventions = () => {
             <SelectItem value="completed">Terminée</SelectItem>
             <SelectItem value="to_invoice">À facturer</SelectItem>
             <SelectItem value="archived">Archivée</SelectItem>
+            {customStatuses.map((cs) => (
+              <SelectItem key={cs.id} value={cs.id}>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: cs.color }} />
+                  {cs.label}
+                </span>
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
         <Select value={typeFilter} onValueChange={setTypeFilter}>
