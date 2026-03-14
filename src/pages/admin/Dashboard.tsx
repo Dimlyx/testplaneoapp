@@ -685,6 +685,10 @@ const Dashboard = () => {
                     Réinitialiser
                   </Button>
                 </div>
+                <p className="text-xs text-muted-foreground">Utilisez l'icône ↔ en bas à droite de chaque module pour changer sa taille.</p>
+                <div className="space-y-3">
+                  {/* This is a hint, no extra UI needed here */}
+                </div>
                 <div className="space-y-3">
                   {(Object.entries(visibilityLabels) as [keyof DashboardVisibility, { label: string; icon: any }][]).map(([key, { label, icon: Icon }]) => (
                     <div key={key} className="flex items-center justify-between gap-3">
