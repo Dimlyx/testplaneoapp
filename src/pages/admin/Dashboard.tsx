@@ -460,7 +460,7 @@ const Dashboard = () => {
               </PopoverContent>
             </Popover>
           </div>
-          <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
+          <div className={cn("grid gap-3", sectionSizes['statusFilters'] === 'half' ? "grid-cols-3" : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-6")}>
             {statusCards.filter(({ status }) => visibleStatuses.includes(status)).map(({ status, label, count, icon: Icon, colorClass }) => {
               const isSelected = selectedStatus === status;
               return (
