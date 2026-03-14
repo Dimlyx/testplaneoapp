@@ -183,7 +183,7 @@ const InterventionDetail = () => {
             <h1 className="text-3xl font-bold text-foreground">{intervention.title}</h1>
             <div className="flex items-center gap-2 mt-2">
               <TypeBadge type={intervention.intervention_type} />
-              <StatusBadge status={intervention.status} />
+              <StatusBadge status={intervention.status} customStatusId={intervention.custom_status_id} />
             </div>
           </div>
         </div>

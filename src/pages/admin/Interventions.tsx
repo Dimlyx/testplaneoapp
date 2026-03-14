@@ -3,6 +3,7 @@ import { useInterventions, useDeleteIntervention, useUpdateIntervention } from "
 import { useClients } from "@/hooks/useClients";
 import { useTechnicians } from "@/hooks/useTechnicians";
 import { useInterventionTypes } from "@/hooks/useInterventionTypes";
+import { useCustomStatuses } from "@/hooks/useCustomStatuses";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -64,6 +65,7 @@ const Interventions = () => {
   const deleteIntervention = useDeleteIntervention();
   const updateIntervention = useUpdateIntervention();
   const { data: interventionTypes = [] } = useInterventionTypes();
+  const { data: customStatuses = [] } = useCustomStatuses();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -93,7 +95,7 @@ const Interventions = () => {
     const matchesSearch = 
       intervention.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       getClientName(intervention.client_id).toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "all" || intervention.status === statusFilter;
+    const matchesStatus = statusFilter === "all" || intervention.status === statusFilter || intervention.custom_status_id === statusFilter;
     const matchesType = typeFilter === "all" || intervention.intervention_type === typeFilter;
     const matchesTechnician = technicianFilter === "all" || intervention.technician_id === technicianFilter;
     const matchesClient = clientFilter === "all" || intervention.client_id === clientFilter;
@@ -225,6 +227,14 @@ const Interventions = () => {
             <SelectItem value="completed">Terminée</SelectItem>
             <SelectItem value="to_invoice">À facturer</SelectItem>
             <SelectItem value="archived">Archivée</SelectItem>
+            {customStatuses.map((cs) => (
+              <SelectItem key={cs.id} value={cs.id}>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: cs.color }} />
+                  {cs.label}
+                </span>
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
         <Select value={typeFilter} onValueChange={setTypeFilter}>
@@ -383,7 +393,7 @@ const Interventions = () => {
                   <TableCell className="font-medium">{intervention.title}</TableCell>
                   <TableCell>{getClientName(intervention.client_id)}</TableCell>
                   <TableCell><TypeBadge type={intervention.intervention_type} /></TableCell>
-                  <TableCell><StatusBadge status={intervention.status} /></TableCell>
+                  <TableCell><StatusBadge status={intervention.status} customStatusId={intervention.custom_status_id} /></TableCell>
                   <TableCell>{getTechnicianName(intervention.technician_id)}</TableCell>
                   <TableCell>
                     {intervention.scheduled_date 

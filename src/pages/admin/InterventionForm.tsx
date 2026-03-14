@@ -9,6 +9,7 @@ import { useTechnicians } from "@/hooks/useTechnicians";
 import { useUserOrganization } from "@/hooks/useUserOrganization";
 import { useAddInterventionAttachment } from "@/hooks/useInterventionAttachments";
 import { useInterventionTypes } from "@/hooks/useInterventionTypes";
+import { useCustomStatuses } from "@/hooks/useCustomStatuses";
 import { useOrganizationPlan } from "@/hooks/useOrganizationPlan";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,6 +43,7 @@ const interventionSchema = z.object({
   technician_id: z.string().optional(),
   intervention_type: z.string().min(1, "Le type est requis"),
   status: z.enum(["to_plan", "planned", "in_progress", "completed", "to_invoice", "archived"]),
+  custom_status_id: z.string().optional().nullable(),
   scheduled_date: z.string().optional(),
   scheduled_time: z.string().optional(),
   report: z.string().optional(),
@@ -72,6 +74,7 @@ const InterventionForm = () => {
   const { data: clients = [], isLoading: loadingClients } = useClients();
   const { data: technicians = [], isLoading: loadingTechnicians } = useTechnicians(organizationId);
   const { data: interventionTypes = [] } = useInterventionTypes();
+  const { data: customStatuses = [] } = useCustomStatuses();
   const { hasFeature } = useOrganizationPlan();
   const createIntervention = useCreateIntervention(organizationId);
   const updateIntervention = useUpdateIntervention();
@@ -86,6 +89,7 @@ const InterventionForm = () => {
       technician_id: "",
       intervention_type: "",
       status: "to_plan",
+      custom_status_id: null,
       scheduled_date: "",
       scheduled_time: "",
       report: "",
@@ -110,6 +114,7 @@ const InterventionForm = () => {
         technician_id: intervention.technician_id || "",
         intervention_type: intervention.intervention_type,
         status: intervention.status,
+        custom_status_id: intervention.custom_status_id || null,
         scheduled_date: intervention.scheduled_date || "",
         scheduled_time: intervention.scheduled_time || "",
         report: intervention.report || "",
@@ -145,6 +150,7 @@ const InterventionForm = () => {
         client_id: values.client_id,
         intervention_type: values.intervention_type,
         status: values.status,
+        custom_status_id: values.custom_status_id || null,
         technician_id: values.technician_id || null,
         scheduled_date: values.scheduled_date || null,
         scheduled_time: values.scheduled_time || null,
@@ -319,6 +325,37 @@ const InterventionForm = () => {
                       </FormItem>
                     )}
                   />
+
+                  {customStatuses.length > 0 && (
+                    <FormField
+                      control={form.control}
+                      name="custom_status_id"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Statut personnalisé</FormLabel>
+                          <Select onValueChange={(v) => field.onChange(v === "none" ? null : v)} value={field.value || "none"}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Aucun" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="none">Aucun</SelectItem>
+                              {customStatuses.map((cs) => (
+                                <SelectItem key={cs.id} value={cs.id}>
+                                  <span className="flex items-center gap-1.5">
+                                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: cs.color }} />
+                                    {cs.label}
+                                  </span>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
                 </div>
               </CardContent>
             </Card>

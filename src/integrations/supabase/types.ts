@@ -321,6 +321,47 @@ export type Database = {
           },
         ]
       }
+      custom_intervention_statuses: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          label: string
+          name: string
+          organization_id: string
+          status_order: number
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          label: string
+          name: string
+          organization_id: string
+          status_order?: number
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          label?: string
+          name?: string
+          organization_id?: string
+          status_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_intervention_statuses_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_templates: {
         Row: {
           body_text: string
@@ -765,6 +806,7 @@ export type Database = {
           client_signature_name: string | null
           client_signature_url: string | null
           created_at: string
+          custom_status_id: string | null
           departure_time: string | null
           description: string | null
           equipment_functional: boolean | null
@@ -801,6 +843,7 @@ export type Database = {
           client_signature_name?: string | null
           client_signature_url?: string | null
           created_at?: string
+          custom_status_id?: string | null
           departure_time?: string | null
           description?: string | null
           equipment_functional?: boolean | null
@@ -837,6 +880,7 @@ export type Database = {
           client_signature_name?: string | null
           client_signature_url?: string | null
           created_at?: string
+          custom_status_id?: string | null
           departure_time?: string | null
           description?: string | null
           equipment_functional?: boolean | null
@@ -873,6 +917,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "interventions_custom_status_id_fkey"
+            columns: ["custom_status_id"]
+            isOneToOne: false
+            referencedRelation: "custom_intervention_statuses"
             referencedColumns: ["id"]
           },
           {

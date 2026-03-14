@@ -39,6 +39,7 @@ export interface Intervention {
   intervention_contact_name: string | null;
   is_paused: boolean;
   token_expires_at: string | null;
+  custom_status_id: string | null;
   created_at: string;
   updated_at: string;
   clients?: {
