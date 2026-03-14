@@ -37,6 +37,8 @@ import { AnnouncementBanner } from "@/components/admin/AnnouncementBanner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
+const InterventionsMap = lazy(() => import("@/components/admin/InterventionsMap"));
+
 type InterventionStatus = 'to_plan' | 'planned' | 'in_progress' | 'completed' | 'to_invoice' | 'archived';
 
 interface DashboardVisibility {
