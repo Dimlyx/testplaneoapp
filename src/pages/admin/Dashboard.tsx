@@ -30,8 +30,6 @@ import {
   Building2,
   Settings2,
   MapPin,
-  Filter,
-  Check
 } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -119,7 +117,8 @@ const Dashboard = () => {
     setVisibility(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const [selectedStatuses, setSelectedStatuses] = useState<Set<string>>(new Set());
+  const [selectedStatus, setSelectedStatus] = useState<InterventionStatus | null>(null);
+  const [selectedCustomStatus, setSelectedCustomStatus] = useState<string | null>(null);
   const [clientSearch, setClientSearch] = useState("");
 
   const stats = {
@@ -139,10 +138,11 @@ const Dashboard = () => {
 
   const filteredInterventions = useMemo(() => {
     let filtered = interventions;
-    if (selectedStatuses.size > 0) {
-      filtered = filtered.filter(i => 
-        selectedStatuses.has(i.status) || (i.custom_status_id && selectedStatuses.has(i.custom_status_id))
-      );
+    if (selectedStatus) {
+      filtered = filtered.filter(i => i.status === selectedStatus);
+    }
+    if (selectedCustomStatus) {
+      filtered = filtered.filter(i => i.custom_status_id === selectedCustomStatus);
     }
     if (clientSearch.trim()) {
       const searchLower = clientSearch.toLowerCase();
@@ -152,7 +152,7 @@ const Dashboard = () => {
       });
     }
     return filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-  }, [interventions, selectedStatuses, clientSearch, clients]);
+  }, [interventions, selectedStatus, selectedCustomStatus, clientSearch, clients]);
 
   const recentInterventions = interventions
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
@@ -160,24 +160,31 @@ const Dashboard = () => {
 
   const urgentInterventions = interventions.filter(i => i.status === 'to_plan');
 
-  const toggleStatus = (statusKey: string) => {
-    setSelectedStatuses(prev => {
-      const next = new Set(prev);
-      if (next.has(statusKey)) {
-        next.delete(statusKey);
-      } else {
-        next.add(statusKey);
-      }
-      return next;
-    });
+  const handleStatusClick = (status: InterventionStatus) => {
+    if (selectedStatus === status) {
+      setSelectedStatus(null);
+    } else {
+      setSelectedStatus(status);
+      setSelectedCustomStatus(null);
+    }
+  };
+
+  const handleCustomStatusClick = (customStatusId: string) => {
+    if (selectedCustomStatus === customStatusId) {
+      setSelectedCustomStatus(null);
+    } else {
+      setSelectedCustomStatus(customStatusId);
+      setSelectedStatus(null);
+    }
   };
 
   const clearFilters = () => {
-    setSelectedStatuses(new Set());
+    setSelectedStatus(null);
+    setSelectedCustomStatus(null);
     setClientSearch("");
   };
 
-  const hasActiveFilters = selectedStatuses.size > 0 || clientSearch.trim() !== "";
+  const hasActiveFilters = selectedStatus !== null || selectedCustomStatus !== null || clientSearch.trim() !== "";
 
   if (loadingInterventions || loadingClients || loadingTechnicians) {
     return (
@@ -377,219 +384,197 @@ const Dashboard = () => {
       {/* Statuts des interventions - Cliquables */}
       {visibility.statusFilters && (
         <div>
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <h2 className="text-lg font-semibold">Filtrer par statut</h2>
-              {selectedStatuses.size > 0 && (
-                <Badge variant="secondary" className="text-xs">
-                  {selectedStatuses.size} sélectionné{selectedStatuses.size > 1 ? 's' : ''}
-                </Badge>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              {/* Multi-select status popover */}
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm" className="gap-1.5">
-                    <Filter className="h-3.5 w-3.5" />
-                    Choisir les statuts
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent align="end" className="w-64 p-0">
-                  <div className="p-3 border-b">
-                    <p className="text-sm font-semibold">Statuts à afficher</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Cochez les statuts à filtrer</p>
-                  </div>
-                  <div className="p-2 space-y-0.5">
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground px-2 pt-1 pb-1.5 font-medium">Statuts de base</p>
-                    {statusCards.map(({ status, label, icon: Icon, colorClass, count }) => (
-                      <button
-                        key={status}
-                        onClick={() => toggleStatus(status)}
-                        className={cn(
-                          "flex items-center gap-2.5 w-full px-2 py-1.5 rounded-md text-sm transition-colors hover:bg-muted",
-                          selectedStatuses.has(status) && "bg-muted"
-                        )}
-                      >
-                        <div className={cn(
-                          "w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors",
-                          selectedStatuses.has(status) ? "bg-primary border-primary" : "border-muted-foreground/30"
-                        )}>
-                          {selectedStatuses.has(status) && <Check className="h-3 w-3 text-primary-foreground" />}
-                        </div>
-                        <Icon className={`h-3.5 w-3.5 text-${colorClass}-500 shrink-0`} />
-                        <span className="flex-1 text-left">{label}</span>
-                        <span className="text-xs text-muted-foreground">{count}</span>
-                      </button>
-                    ))}
-
-                    {customStatuses.length > 0 && (
-                      <>
-                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground px-2 pt-3 pb-1.5 font-medium">Statuts personnalisés</p>
-                        {customStatuses.map((cs) => {
-                          const count = interventions.filter(i => i.custom_status_id === cs.id).length;
-                          return (
-                            <button
-                              key={cs.id}
-                              onClick={() => toggleStatus(cs.id)}
-                              className={cn(
-                                "flex items-center gap-2.5 w-full px-2 py-1.5 rounded-md text-sm transition-colors hover:bg-muted",
-                                selectedStatuses.has(cs.id) && "bg-muted"
-                              )}
-                            >
-                              <div className={cn(
-                                "w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors",
-                                selectedStatuses.has(cs.id) ? "bg-primary border-primary" : "border-muted-foreground/30"
-                              )}>
-                                {selectedStatuses.has(cs.id) && <Check className="h-3 w-3 text-primary-foreground" />}
-                              </div>
-                              <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: cs.color }} />
-                              <span className="flex-1 text-left">{cs.label}</span>
-                              <span className="text-xs text-muted-foreground">{count}</span>
-                            </button>
-                          );
-                        })}
-                      </>
-                    )}
-                  </div>
-                  {selectedStatuses.size > 0 && (
-                    <div className="p-2 border-t">
-                      <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => setSelectedStatuses(new Set())}>
-                        Tout décocher
-                      </Button>
-                    </div>
+          <h2 className="text-lg font-semibold mb-3">Filtrer par statut</h2>
+          <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
+            {statusCards.map(({ status, label, count, icon: Icon, colorClass }) => {
+              const isSelected = selectedStatus === status;
+              return (
+                <Card
+                  key={status}
+                  className={cn(
+                    "cursor-pointer transition-all hover:shadow-md",
+                    isSelected && "ring-2 ring-primary ring-offset-2"
                   )}
-                </PopoverContent>
-              </Popover>
-
-              {hasActiveFilters && (
-                <Button variant="ghost" size="sm" onClick={clearFilters} className="text-muted-foreground">
-                  <X className="h-4 w-4 mr-1" />
-                  Effacer
-                </Button>
-              )}
-            </div>
+                  onClick={() => handleStatusClick(status)}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className={cn(
+                        "p-2 rounded-lg",
+                        colorClass === 'amber' && "bg-amber-100 text-amber-600",
+                        colorClass === 'blue' && "bg-blue-100 text-blue-600",
+                        colorClass === 'purple' && "bg-purple-100 text-purple-600",
+                        colorClass === 'green' && "bg-green-100 text-green-600",
+                        colorClass === 'orange' && "bg-orange-100 text-orange-600",
+                        colorClass === 'gray' && "bg-gray-100 text-gray-600",
+                      )}>
+                        <Icon className="h-4 w-4" />
+                      </div>
+                      <span className="text-2xl font-bold">{count}</span>
+                    </div>
+                    <p className="text-sm font-medium mt-2">{label}</p>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
 
-          {/* Status cards - clickable */}
-          <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
-            {statusCards.map(({ status, label, count, icon: Icon, colorClass }) => (
-              <Card 
-                key={status}
-                className={cn(
-                  `border-l-4 cursor-pointer transition-all hover:shadow-md`,
-                  `border-l-${colorClass}-500`,
-                  selectedStatuses.has(status) && "ring-2 ring-primary ring-offset-2 bg-muted/50"
-                )}
-                onClick={() => toggleStatus(status)}
-              >
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <Icon className={`h-4 w-4 text-${colorClass}-500`} />
-                    {label}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className={`text-2xl font-bold text-${colorClass}-600`}>{count}</div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {/* Custom status cards */}
+          {/* Cartes des statuts personnalisés */}
           {customStatuses.length > 0 && (
-            <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6 mt-4">
-              {customStatuses.map((cs) => {
-                const count = interventions.filter(i => i.custom_status_id === cs.id).length;
-                return (
-                  <Card
-                    key={cs.id}
-                    className={cn(
-                      "border-l-4 cursor-pointer transition-all hover:shadow-md",
-                      selectedStatuses.has(cs.id) && "ring-2 ring-primary ring-offset-2 bg-muted/50"
-                    )}
-                    style={{ borderLeftColor: cs.color }}
-                    onClick={() => toggleStatus(cs.id)}
-                  >
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium flex items-center gap-2">
-                        <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: cs.color }} />
-                        {cs.label}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold" style={{ color: cs.color }}>{count}</div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+            <div className="mt-4">
+              <h3 className="text-sm font-medium text-muted-foreground mb-2">Statuts personnalisés</h3>
+              <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
+                {customStatuses.map((cs) => {
+                  const count = interventions.filter(i => i.custom_status_id === cs.id).length;
+                  const isSelected = selectedCustomStatus === cs.id;
+                  return (
+                    <Card
+                      key={cs.id}
+                      className={cn(
+                        "cursor-pointer transition-all hover:shadow-md",
+                        isSelected && "ring-2 ring-primary ring-offset-2"
+                      )}
+                      style={{ borderLeft: `4px solid ${cs.color}` }}
+                      onClick={() => handleCustomStatusClick(cs.id)}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div
+                            className="p-2 rounded-lg"
+                            style={{ backgroundColor: `${cs.color}20`, color: cs.color }}
+                          >
+                            <Clock className="h-4 w-4" />
+                          </div>
+                          <span className="text-2xl font-bold">{count}</span>
+                        </div>
+                        <p className="text-sm font-medium mt-2">{cs.label}</p>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>
       )}
 
-      {/* Barre de recherche par client */}
+      {/* Recherche et résultats */}
       {visibility.searchBar && (
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Rechercher par client ou titre d'intervention..."
-            value={clientSearch}
-            onChange={(e) => setClientSearch(e.target.value)}
-            className="pl-10"
-          />
+        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+          <div className="relative w-full sm:w-96">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Rechercher une intervention ou un client..."
+              className="pl-9"
+              value={clientSearch}
+              onChange={(e) => setClientSearch(e.target.value)}
+            />
+            {clientSearch && (
+              <button
+                onClick={() => setClientSearch("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2"
+              >
+                <X className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+              </button>
+            )}
+          </div>
+          {hasActiveFilters && (
+            <div className="flex items-center gap-2">
+              {(selectedStatus || selectedCustomStatus) && (
+                <Badge variant="secondary" className="gap-1">
+                  Filtre actif
+                  <button onClick={() => { setSelectedStatus(null); setSelectedCustomStatus(null); }}>
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              )}
+              <Button variant="ghost" size="sm" onClick={clearFilters}>
+                Réinitialiser
+              </Button>
+            </div>
+          )}
         </div>
       )}
 
-      {/* Résultats filtrés */}
-      {hasActiveFilters && (
+      {/* Interventions filtrées */}
+      {hasActiveFilters && visibility.searchBar && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>
-                Résultats 
-                {selectedStatuses.size > 0 && (
-                  <Badge variant="secondary" className="ml-2 text-xs">
-                    {selectedStatuses.size} statut{selectedStatuses.size > 1 ? 's' : ''}
-                  </Badge>
-                )}
-                {clientSearch && (
-                  <span className="ml-2 text-sm font-normal text-muted-foreground">
-                    - Recherche: "{clientSearch}"
-                  </span>
-                )}
-              </span>
-              <span className="text-sm font-normal text-muted-foreground">
-                {filteredInterventions.length} résultat{filteredInterventions.length > 1 ? 's' : ''}
-              </span>
+            <CardTitle className="text-lg">
+              Résultats ({filteredInterventions.length} intervention{filteredInterventions.length > 1 ? 's' : ''})
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4 max-h-96 overflow-y-auto">
-              {filteredInterventions.length === 0 ? (
-                <p className="text-muted-foreground text-center py-4">Aucune intervention trouvée</p>
-              ) : (
-                filteredInterventions.map((intervention) => (
+            {filteredInterventions.length === 0 ? (
+              <p className="text-muted-foreground text-center py-8">
+                Aucune intervention ne correspond aux critères sélectionnés.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {filteredInterventions.map((intervention) => (
                   <Link
                     key={intervention.id}
                     to={`/admin/interventions/${intervention.id}`}
-                    className="flex items-center justify-between border-b pb-3 last:border-0 hover:bg-muted/50 -mx-2 px-2 py-2 rounded transition-colors"
+                    className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors"
                   >
-                    <div className="space-y-1">
+                    <div>
                       <p className="font-medium">{intervention.title}</p>
-                      <p className="text-sm text-muted-foreground">{getClientName(intervention.client_id)}</p>
-                      <div className="flex items-center gap-2">
-                        <TypeBadge type={intervention.intervention_type} />
-                        <StatusBadge status={intervention.status} customStatusId={intervention.custom_status_id} />
-                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {getClientName(intervention.client_id)}
+                      </p>
                     </div>
-                    <div className="text-sm text-muted-foreground text-right">
-                      <div>{format(new Date(intervention.created_at), 'dd MMM yyyy', { locale: fr })}</div>
-                      {intervention.scheduled_date && (
-                        <div className="text-xs">
-                          Prévu: {format(new Date(intervention.scheduled_date), 'dd/MM/yyyy', { locale: fr })}
-                        </div>
-                      )}
+                    <div className="flex items-center gap-2">
+                      <StatusBadge 
+                        status={intervention.status} 
+                        customStatusId={intervention.custom_status_id}
+                      />
+                      <TypeBadge typeName={intervention.intervention_type} />
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Interventions récentes */}
+      {visibility.recentInterventions && (
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-lg">Interventions récentes</CardTitle>
+            <Link 
+              to="/admin/interventions" 
+              className="text-sm text-primary hover:underline"
+            >
+              Voir tout
+            </Link>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {recentInterventions.length === 0 ? (
+                <p className="text-muted-foreground text-center py-8">
+                  Aucune intervention pour le moment.
+                </p>
+              ) : (
+                recentInterventions.map((intervention) => (
+                  <Link
+                    key={intervention.id}
+                    to={`/admin/interventions/${intervention.id}`}
+                    className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                  >
+                    <div>
+                      <p className="font-medium">{intervention.title}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {getClientName(intervention.client_id)} • {format(new Date(intervention.created_at), 'dd/MM/yyyy', { locale: fr })}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <StatusBadge 
+                        status={intervention.status} 
+                        customStatusId={intervention.custom_status_id}
+                      />
+                      <TypeBadge typeName={intervention.intervention_type} />
                     </div>
                   </Link>
                 ))
@@ -599,100 +584,77 @@ const Dashboard = () => {
         </Card>
       )}
 
-      {/* Carte des interventions */}
-      {visibility.interventionsMap && (
-        <Suspense fallback={
-          <Card>
-            <CardContent className="flex items-center justify-center h-64">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </CardContent>
-          </Card>
-        }>
-          <InterventionsMap
-            interventions={interventions}
-            clients={clients}
-            technicians={technicians}
-          />
-        </Suspense>
+      {/* Interventions à planifier (urgentes) */}
+      {visibility.toPlanList && urgentInterventions.length > 0 && (
+        <Card className="border-amber-500 border-2">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              Interventions à planifier
+              <Badge variant="secondary">{urgentInterventions.length}</Badge>
+            </CardTitle>
+            <Link 
+              to="/admin/interventions"
+              className="text-sm text-primary hover:underline"
+            >
+              Voir tout
+            </Link>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3 max-h-64 overflow-y-auto">
+              {urgentInterventions.slice(0, 5).map((intervention) => (
+                <Link
+                  key={intervention.id}
+                  to={`/admin/interventions/${intervention.id}`}
+                  className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                >
+                  <div>
+                    <p className="font-medium">{intervention.title}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {getClientName(intervention.client_id)}
+                    </p>
+                  </div>
+                  <StatusBadge 
+                    status={intervention.status} 
+                    customStatusId={intervention.custom_status_id}
+                  />
+                </Link>
+              ))}
+              {urgentInterventions.length > 5 && (
+                <p className="text-sm text-center text-muted-foreground pt-2">
+                  Et {urgentInterventions.length - 5} autre(s) intervention(s)...
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Interventions récentes */}
-        {visibility.recentInterventions && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>Interventions récentes</span>
-                <Link to="/admin/interventions" className="text-sm text-primary hover:underline">
-                  Voir tout
-                </Link>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {recentInterventions.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-4">Aucune intervention</p>
-                ) : (
-                  recentInterventions.map((intervention) => (
-                    <Link
-                      key={intervention.id}
-                      to={`/admin/interventions/${intervention.id}`}
-                      className="flex items-center justify-between border-b pb-3 last:border-0 hover:bg-muted/50 -mx-2 px-2 py-1 rounded transition-colors block"
-                    >
-                      <div className="space-y-1">
-                        <p className="font-medium">{intervention.title}</p>
-                        <p className="text-sm text-muted-foreground">{getClientName(intervention.client_id)}</p>
-                        <div className="flex items-center gap-2">
-                          <TypeBadge type={intervention.intervention_type} />
-                          <StatusBadge status={intervention.status} customStatusId={intervention.custom_status_id} />
-                        </div>
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        {format(new Date(intervention.created_at), 'dd MMM', { locale: fr })}
-                      </div>
-                    </Link>
-                  ))
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* À planifier */}
-        {visibility.toPlanList && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-status-to-plan">
-                <AlertTriangle className="h-5 w-5" />
-                Interventions à planifier
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {urgentInterventions.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-4">Aucune intervention à planifier</p>
-                ) : (
-                  urgentInterventions.slice(0, 5).map((intervention) => (
-                    <div key={intervention.id} className="flex items-center justify-between border-b pb-3 last:border-0">
-                      <div className="space-y-1">
-                        <p className="font-medium">{intervention.title}</p>
-                        <p className="text-sm text-muted-foreground">{getClientName(intervention.client_id)}</p>
-                        <TypeBadge type={intervention.intervention_type} />
-                      </div>
-                      <Link 
-                        to={`/admin/interventions/${intervention.id}`}
-                        className="text-sm text-primary hover:underline"
-                      >
-                        Planifier
-                      </Link>
-                    </div>
-                  ))
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+      {/* Carte des interventions */}
+      {visibility.interventionsMap && interventions.some(i => i.intervention_latitude && i.intervention_longitude) && (
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-lg">Carte des interventions</CardTitle>
+            <Link 
+              to="/admin/calendar" 
+              className="text-sm text-primary hover:underline"
+            >
+              Voir le planning
+            </Link>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[400px] rounded-lg overflow-hidden border">
+              <Suspense fallback={
+                <div className="flex items-center justify-center h-full">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+              }>
+                <InterventionsMap interventions={interventions} />
+              </Suspense>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
