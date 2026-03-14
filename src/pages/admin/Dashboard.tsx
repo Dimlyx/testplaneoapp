@@ -408,6 +408,36 @@ const Dashboard = () => {
               </Card>
             ))}
           </div>
+
+          {/* Custom status cards */}
+          {customStatuses.length > 0 && (
+            <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6 mt-4">
+              {customStatuses.map((cs) => {
+                const count = interventions.filter(i => i.custom_status_id === cs.id).length;
+                return (
+                  <Card
+                    key={cs.id}
+                    className={cn(
+                      "border-l-4 cursor-pointer transition-all hover:shadow-md",
+                      selectedCustomStatus === cs.id && "ring-2 ring-primary ring-offset-2 bg-muted/50"
+                    )}
+                    style={{ borderLeftColor: cs.color }}
+                    onClick={() => handleCustomStatusClick(cs.id)}
+                  >
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium flex items-center gap-2">
+                        <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: cs.color }} />
+                        {cs.label}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold" style={{ color: cs.color }}>{count}</div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
