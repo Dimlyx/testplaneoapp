@@ -1,6 +1,6 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical } from "lucide-react";
+import { GripVertical, ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ReactNode } from "react";
 
@@ -8,9 +8,12 @@ interface DashboardSortableSectionProps {
   id: string;
   children: ReactNode;
   isDragMode: boolean;
+  isCollapsed: boolean;
+  onToggleCollapse: () => void;
+  label: string;
 }
 
-export function DashboardSortableSection({ id, children, isDragMode }: DashboardSortableSectionProps) {
+export function DashboardSortableSection({ id, children, isDragMode, isCollapsed, onToggleCollapse, label }: DashboardSortableSectionProps) {
   const {
     attributes,
     listeners,
@@ -36,16 +39,48 @@ export function DashboardSortableSection({ id, children, isDragMode }: Dashboard
       )}
     >
       {isDragMode && (
+        <div className="flex items-center gap-1 mb-1">
+          <button
+            {...attributes}
+            {...listeners}
+            className="p-1.5 rounded-md bg-muted border shadow-sm cursor-grab active:cursor-grabbing hover:bg-accent transition-colors"
+            aria-label="Glisser pour réorganiser"
+          >
+            <GripVertical className="h-4 w-4 text-muted-foreground" />
+          </button>
+          <button
+            onClick={onToggleCollapse}
+            className="flex items-center gap-1.5 px-2 py-1.5 rounded-md bg-muted border shadow-sm hover:bg-accent transition-colors text-xs font-medium text-muted-foreground"
+          >
+            {isCollapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+            {label}
+          </button>
+        </div>
+      )}
+
+      {!isDragMode && (
         <button
-          {...attributes}
-          {...listeners}
-          className="absolute -left-2 top-1/2 -translate-y-1/2 z-10 p-1.5 rounded-md bg-muted border shadow-sm cursor-grab active:cursor-grabbing hover:bg-accent transition-colors"
-          aria-label="Glisser pour réorganiser"
+          onClick={onToggleCollapse}
+          className="absolute -left-6 top-2 opacity-0 group-hover/section:opacity-100 transition-opacity p-0.5 rounded hover:bg-muted"
+          aria-label={isCollapsed ? "Déplier" : "Replier"}
         >
-          <GripVertical className="h-4 w-4 text-muted-foreground" />
+          {isCollapsed ? <ChevronRight className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
         </button>
       )}
-      {children}
+
+      {isCollapsed ? (
+        <div 
+          className="px-4 py-2 rounded-lg border border-dashed border-muted-foreground/20 bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
+          onClick={onToggleCollapse}
+        >
+          <span className="text-sm text-muted-foreground font-medium flex items-center gap-2">
+            <ChevronRight className="h-4 w-4" />
+            {label}
+          </span>
+        </div>
+      ) : (
+        children
+      )}
     </div>
   );
 }
