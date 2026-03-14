@@ -2,7 +2,7 @@ import { useParams } from "react-router-dom";
 import { usePublicIntervention } from "@/hooks/useInterventions";
 import { useInterventionPhotos } from "@/hooks/useInterventionPhotos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { StatusBadge, TypeBadge } from "@/components/ui/status-badge";
+import { TypeBadge } from "@/components/ui/status-badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { 
@@ -140,15 +140,6 @@ const PublicIntervention = () => {
     );
   }
 
-  const statusConfig: Record<string, { icon: any; color: string; message: string }> = {
-    to_plan: { icon: AlertTriangle, color: "text-status-to-plan", message: "En attente de planification" },
-    planned: { icon: Calendar, color: "text-status-planned", message: "Intervention planifiée" },
-    in_progress: { icon: Wrench, color: "text-status-in-progress", message: "Intervention en cours" },
-    completed: { icon: CheckCircle, color: "text-status-completed", message: "Intervention terminée" },
-  };
-
-  const currentStatus = statusConfig[intervention.status] || statusConfig.to_plan;
-  const StatusIcon = currentStatus.icon;
 
   const client = (intervention as any).clients;
   const fullAddress = client ? [client.address, client.postal_code, client.city].filter(Boolean).join(', ') : null;
@@ -171,12 +162,10 @@ const PublicIntervention = () => {
       </header>
 
       <main className="container max-w-2xl mx-auto px-4 py-6 space-y-4">
-        {/* Statut principal */}
+        {/* Type d'intervention */}
         <Card>
           <CardContent className="py-6 text-center">
-            <StatusIcon className={`h-12 w-12 mx-auto mb-3 ${currentStatus.color}`} />
-            <p className={`text-lg font-semibold ${currentStatus.color}`}>{currentStatus.message}</p>
-            <div className="flex justify-center gap-2 mt-3">
+            <div className="flex justify-center gap-2">
               <TypeBadge type={intervention.intervention_type} />
             </div>
             {docSettings.welcomeMessage && (
