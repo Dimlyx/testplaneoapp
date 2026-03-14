@@ -90,19 +90,8 @@ export function DashboardSortableSection({ id, children, isDragMode, isCollapsed
           </span>
         </div>
       ) : (
-        <div className="relative">
+        <div>
           {children}
-          {/* Resize toggle icon — bottom right */}
-          {onToggleSize && (
-            <button
-              onClick={onToggleSize}
-              className="absolute bottom-2 right-2 p-1.5 rounded-md bg-background/80 border shadow-sm opacity-0 group-hover/section:opacity-100 hover:bg-accent transition-all backdrop-blur-sm z-10"
-              aria-label={size === 'full' ? 'Réduire en demi-largeur' : 'Agrandir en pleine largeur'}
-              title={size === 'full' ? 'Demi-largeur' : 'Pleine largeur'}
-            >
-              {size === 'full' ? <Minimize2 className="h-3.5 w-3.5 text-muted-foreground" /> : <Maximize2 className="h-3.5 w-3.5 text-muted-foreground" />}
-            </button>
-          )}
         </div>
       )}
     </div>
