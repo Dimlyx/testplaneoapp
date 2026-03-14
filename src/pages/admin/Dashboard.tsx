@@ -49,6 +49,7 @@ interface DashboardVisibility {
   toPlanList: boolean;
   maintenanceAlerts: boolean;
   companyInfo: boolean;
+  interventionsMap: boolean;
 }
 
 const DEFAULT_VISIBILITY: DashboardVisibility = {
