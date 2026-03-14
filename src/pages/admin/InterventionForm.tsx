@@ -324,6 +324,37 @@ const InterventionForm = () => {
                       </FormItem>
                     )}
                   />
+
+                  {customStatuses.length > 0 && (
+                    <FormField
+                      control={form.control}
+                      name="custom_status_id"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Statut personnalisé</FormLabel>
+                          <Select onValueChange={(v) => field.onChange(v === "none" ? null : v)} value={field.value || "none"}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Aucun" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="none">Aucun</SelectItem>
+                              {customStatuses.map((cs) => (
+                                <SelectItem key={cs.id} value={cs.id}>
+                                  <span className="flex items-center gap-1.5">
+                                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: cs.color }} />
+                                    {cs.label}
+                                  </span>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
                 </div>
               </CardContent>
             </Card>
