@@ -72,6 +72,7 @@ const visibilityLabels: Record<keyof DashboardVisibility, { label: string; icon:
   statusFilters: { label: "Filtres par statut", icon: Calendar },
   searchBar: { label: "Barre de recherche", icon: Search },
   recentInterventions: { label: "Interventions récentes", icon: Clock },
+  interventionsMap: { label: "Carte des interventions", icon: MapPin },
   toPlanList: { label: "Interventions à planifier", icon: AlertTriangle },
 };
 
