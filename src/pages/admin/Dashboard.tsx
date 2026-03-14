@@ -30,6 +30,9 @@ import {
   Building2,
   Settings2,
   MapPin,
+  Settings,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { fr } from "date-fns/locale";
