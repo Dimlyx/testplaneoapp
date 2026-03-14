@@ -65,6 +65,7 @@ const Interventions = () => {
   const deleteIntervention = useDeleteIntervention();
   const updateIntervention = useUpdateIntervention();
   const { data: interventionTypes = [] } = useInterventionTypes();
+  const { data: customStatuses = [] } = useCustomStatuses();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
