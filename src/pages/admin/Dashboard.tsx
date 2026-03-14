@@ -8,7 +8,7 @@ import { useUserOrganization } from "@/hooks/useUserOrganization";
 import { useCustomStatuses } from "@/hooks/useCustomStatuses";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { StatusBadge, TypeBadge } from "@/components/ui/status-badge";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -38,8 +38,7 @@ import { cn } from "@/lib/utils";
 import { AnnouncementBanner } from "@/components/admin/AnnouncementBanner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-
-const InterventionsMap = lazy(() => import("@/components/admin/InterventionsMap"));
+import InterventionsMap from "@/components/admin/InterventionsMap";
 
 type InterventionStatus = 'to_plan' | 'planned' | 'in_progress' | 'completed' | 'to_invoice' | 'archived';
 
