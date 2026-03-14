@@ -73,6 +73,7 @@ const DEFAULT_VISIBILITY: DashboardVisibility = {
 const STORAGE_KEY = 'planeo-dashboard-visibility';
 const STATUS_VISIBILITY_KEY = 'planeo-dashboard-visible-statuses';
 const SECTION_ORDER_KEY = 'planeo-dashboard-section-order';
+const COLLAPSED_SECTIONS_KEY = 'planeo-dashboard-collapsed-sections';
 
 const DEFAULT_VISIBLE_STATUSES = ['to_plan', 'planned', 'in_progress', 'completed', 'to_invoice'];
 
