@@ -29,7 +29,9 @@ import {
   Wrench,
   Building2,
   Settings2,
-  MapPin
+  MapPin,
+  Filter,
+  Check
 } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { fr } from "date-fns/locale";
