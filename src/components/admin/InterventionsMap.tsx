@@ -113,6 +113,13 @@ export default function InterventionsMap({ interventions, clients, technicians }
     return clients.find(c => c.id === clientId)?.name || "Client inconnu";
   };
 
+  const getClientAddress = (clientId: string) => {
+    const client = clients.find(c => c.id === clientId) as any;
+    if (!client) return null;
+    const parts = [client.address, client.postal_code, client.city].filter(Boolean);
+    return parts.length > 0 ? parts.join(", ") : null;
+  };
+
   const getTechnicianName = (techId: string | null) => {
     if (!techId) return "Non assigné";
     const tech = technicians.find(t => t.id === techId);
@@ -125,21 +132,24 @@ export default function InterventionsMap({ interventions, clients, technicians }
 
     async function geocodeAll() {
       setLoading(true);
-      const addressable = interventions.filter(
-        i => i.intervention_address || i.intervention_city
-      );
-
       const results: GeocodedIntervention[] = [];
 
-      for (const intervention of addressable) {
+      for (const intervention of interventions) {
         if (cancelled) break;
-        const fullAddress = [
+
+        // Try intervention address first, then fall back to client address
+        const interventionAddr = [
           intervention.intervention_address,
           intervention.intervention_postal_code,
           intervention.intervention_city,
-          "France",
         ].filter(Boolean).join(", ");
 
+        const clientAddr = getClientAddress(intervention.client_id);
+        const addressToGeocode = interventionAddr || clientAddr;
+
+        if (!addressToGeocode) continue;
+
+        const fullAddress = addressToGeocode + ", France";
         const coords = await geocodeAddress(fullAddress);
         if (coords) {
           results.push({
@@ -152,12 +162,12 @@ export default function InterventionsMap({ interventions, clients, technicians }
             scheduled_date: intervention.scheduled_date,
             lat: coords.lat,
             lng: coords.lng,
-            address: fullAddress.replace(", France", ""),
+            address: addressToGeocode,
           });
         }
 
         // Small delay to respect Nominatim rate limits
-        await new Promise(r => setTimeout(r, 200));
+        await new Promise(r => setTimeout(r, 150));
       }
 
       if (!cancelled) {
