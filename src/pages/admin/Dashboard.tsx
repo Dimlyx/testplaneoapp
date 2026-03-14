@@ -659,7 +659,7 @@ const Dashboard = () => {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h4 className="font-semibold text-sm">Personnaliser l'affichage</h4>
-                  <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => { setVisibility(DEFAULT_VISIBILITY); setSectionOrder(DEFAULT_SECTION_ORDER); }}>
+                  <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => { setVisibility(DEFAULT_VISIBILITY); setSectionOrder(DEFAULT_SECTION_ORDER); setCollapsedSections([]); }}>
                     Réinitialiser
                   </Button>
                 </div>
