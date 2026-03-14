@@ -140,15 +140,6 @@ const PublicIntervention = () => {
     );
   }
 
-  const statusConfig: Record<string, { icon: any; color: string; message: string }> = {
-    to_plan: { icon: AlertTriangle, color: "text-status-to-plan", message: "En attente de planification" },
-    planned: { icon: Calendar, color: "text-status-planned", message: "Intervention planifiée" },
-    in_progress: { icon: Wrench, color: "text-status-in-progress", message: "Intervention en cours" },
-    completed: { icon: CheckCircle, color: "text-status-completed", message: "Intervention terminée" },
-  };
-
-  const currentStatus = statusConfig[intervention.status] || statusConfig.to_plan;
-  const StatusIcon = currentStatus.icon;
 
   const client = (intervention as any).clients;
   const fullAddress = client ? [client.address, client.postal_code, client.city].filter(Boolean).join(', ') : null;
