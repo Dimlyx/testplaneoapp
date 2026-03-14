@@ -422,6 +422,7 @@ export default function Settings() {
           <AccordionContent className="pt-4 space-y-6">
             <InterventionTypesSettings />
             <WorkflowStepsSettings />
+            <CustomStatusesSettings />
           </AccordionContent>
         </AccordionItem>
 
