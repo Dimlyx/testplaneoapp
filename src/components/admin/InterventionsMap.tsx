@@ -262,7 +262,7 @@ export default function InterventionsMap({ interventions, clients, technicians }
         </div>
 
         {/* Map */}
-        <div className="rounded-lg overflow-hidden border" style={{ height: 400 }}>
+        <div className="rounded-lg overflow-hidden border relative z-0" style={{ height: 400 }}>
           <MapContainer
             center={center}
             zoom={filtered.length > 0 ? 7 : 6}
