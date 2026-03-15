@@ -46,6 +46,7 @@ const interventionSchema = z.object({
   custom_status_id: z.string().optional().nullable(),
   scheduled_date: z.string().optional(),
   scheduled_time: z.string().optional(),
+  estimated_duration: z.coerce.number().optional().nullable(),
   report: z.string().optional(),
   technical_comments: z.string().optional(),
   intervention_address: z.string().optional(),
