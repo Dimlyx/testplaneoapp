@@ -333,17 +333,19 @@ export function WeeklyPlanningCalendar({
                                   const [h, m] = time.split(':').map(Number);
                                   const hourIndex = Math.max(0, Math.min(h - startHour, hours.length - 1));
                                   const topPx = hourIndex * 28 + (m / 60) * 28;
+                                  const durationMin = intervention.estimated_duration || 30;
+                                  const heightPx = Math.max(24, (durationMin / 60) * 28);
                                   
                                   return (
                                     <Tooltip key={intervention.id}>
                                       <TooltipTrigger asChild>
                                         <div
                                           className={cn(
-                                            "intervention-card absolute left-0.5 right-0.5 text-xs p-1 rounded cursor-pointer text-white truncate transition-opacity z-10",
+                                            "intervention-card absolute left-0.5 right-0.5 text-xs p-1 rounded cursor-pointer text-white truncate transition-opacity z-10 overflow-hidden",
                                             getTypeColor(intervention.intervention_type),
                                             draggedIntervention?.id === intervention.id && "opacity-50"
                                           )}
-                                          style={{ top: `${topPx}px`, minHeight: '24px' }}
+                                          style={{ top: `${topPx}px`, height: `${heightPx}px`, minHeight: '24px' }}
                                           draggable
                                           onDragStart={(e) => handleDragStart(e, intervention)}
                                           onDragEnd={handleDragEnd}
@@ -355,6 +357,9 @@ export function WeeklyPlanningCalendar({
                                           <div className="font-medium truncate text-[10px]">
                                             {intervention.scheduled_time?.slice(0, 5)} {intervention.title}
                                           </div>
+                                          {heightPx > 30 && intervention.estimated_duration && (
+                                            <div className="text-[9px] opacity-80">{intervention.estimated_duration} min</div>
+                                          )}
                                         </div>
                                       </TooltipTrigger>
                                       <TooltipContent side="right" className="max-w-[250px]">
@@ -368,6 +373,9 @@ export function WeeklyPlanningCalendar({
                                           )}
                                           {intervention.scheduled_time && (
                                             <p className="text-sm">Heure: {intervention.scheduled_time.slice(0, 5)}</p>
+                                          )}
+                                          {intervention.estimated_duration && (
+                                            <p className="text-sm">Durée: {intervention.estimated_duration} min</p>
                                           )}
                                           {intervention.intervention_city && (
                                             <p className="text-sm text-muted-foreground">{intervention.intervention_city}</p>

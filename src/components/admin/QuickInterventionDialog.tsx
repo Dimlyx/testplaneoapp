@@ -51,6 +51,7 @@ export function QuickInterventionDialog({
     technician_id: defaultTechnicianId || '',
     scheduled_date: defaultDate ? format(defaultDate, 'yyyy-MM-dd') : '',
     scheduled_time: '',
+    estimated_duration: '',
     description: '',
   });
 
@@ -75,6 +76,7 @@ export function QuickInterventionDialog({
       technician_id: formData.technician_id || null,
       scheduled_date: formData.scheduled_date || null,
       scheduled_time: formData.scheduled_time || null,
+      estimated_duration: formData.estimated_duration ? Number(formData.estimated_duration) : null,
       description: formData.description || null,
     });
 
@@ -86,6 +88,7 @@ export function QuickInterventionDialog({
       technician_id: '',
       scheduled_date: '',
       scheduled_time: '',
+      estimated_duration: '',
       description: '',
     });
     
@@ -161,7 +164,7 @@ export function QuickInterventionDialog({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="technician">Technicien</Label>
               <Select
@@ -189,6 +192,19 @@ export function QuickInterventionDialog({
                 type="time"
                 value={formData.scheduled_time}
                 onChange={(e) => setFormData(prev => ({ ...prev, scheduled_time: e.target.value }))}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="duration">Durée (min)</Label>
+              <Input
+                id="duration"
+                type="number"
+                min={0}
+                step={15}
+                placeholder="60"
+                value={formData.estimated_duration}
+                onChange={(e) => setFormData(prev => ({ ...prev, estimated_duration: e.target.value }))}
               />
             </div>
           </div>

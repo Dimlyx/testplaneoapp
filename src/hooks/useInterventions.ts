@@ -40,6 +40,7 @@ export interface Intervention {
   is_paused: boolean;
   token_expires_at: string | null;
   custom_status_id: string | null;
+  estimated_duration: number | null;
   created_at: string;
   updated_at: string;
   clients?: {
@@ -74,6 +75,7 @@ export interface CreateInterventionData {
   intervention_postal_code?: string | null;
   intervention_phone?: string | null;
   intervention_email?: string | null;
+  estimated_duration?: number | null;
   organization_id?: string | null;
 }
 
@@ -102,6 +104,7 @@ export interface UpdateInterventionData {
   intervention_phone?: string | null;
   intervention_email?: string | null;
   intervention_contact_name?: string | null;
+  estimated_duration?: number | null;
   is_paused?: boolean;
 }
 
