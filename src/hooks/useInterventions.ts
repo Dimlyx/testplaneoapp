@@ -104,6 +104,7 @@ export interface UpdateInterventionData {
   intervention_phone?: string | null;
   intervention_email?: string | null;
   intervention_contact_name?: string | null;
+  estimated_duration?: number | null;
   is_paused?: boolean;
 }
 
