@@ -157,6 +157,7 @@ const InterventionForm = () => {
         technician_id: values.technician_id || null,
         scheduled_date: values.scheduled_date || null,
         scheduled_time: values.scheduled_time || null,
+        estimated_duration: values.estimated_duration || null,
         description: values.description || null,
         report: values.report || null,
         technical_comments: values.technical_comments || null,
