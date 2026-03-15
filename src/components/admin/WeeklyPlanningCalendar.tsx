@@ -374,6 +374,9 @@ export function WeeklyPlanningCalendar({
                                           {intervention.scheduled_time && (
                                             <p className="text-sm">Heure: {intervention.scheduled_time.slice(0, 5)}</p>
                                           )}
+                                          {intervention.estimated_duration && (
+                                            <p className="text-sm">Durée: {intervention.estimated_duration} min</p>
+                                          )}
                                           {intervention.intervention_city && (
                                             <p className="text-sm text-muted-foreground">{intervention.intervention_city}</p>
                                           )}
