@@ -75,6 +75,7 @@ export interface CreateInterventionData {
   intervention_postal_code?: string | null;
   intervention_phone?: string | null;
   intervention_email?: string | null;
+  estimated_duration?: number | null;
   organization_id?: string | null;
 }
 
