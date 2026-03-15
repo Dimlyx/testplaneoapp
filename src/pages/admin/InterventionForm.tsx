@@ -452,62 +452,88 @@ const InterventionForm = () => {
                   />
                 </div>
 
-                {hasFeature('email') ? (
-                  isEditing && id ? (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="w-full mt-2"
-                      disabled={sendingEmail || !form.watch('scheduled_date')}
-                      onClick={async () => {
-                        setSendingEmail(true);
-                        try {
-                          const { error } = await supabase.functions.invoke('send-client-notification', {
-                            body: { interventionId: id },
-                          });
-                          if (error) throw error;
-                          toast({ title: "Notification envoyée au client" });
-                        } catch {
-                          toast({ title: "Erreur lors de l'envoi", variant: "destructive" });
-                        } finally {
-                          setSendingEmail(false);
-                        }
-                      }}
-                    >
-                      {sendingEmail ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <div className="grid gap-4 sm:grid-cols-2 mt-2">
+                  <FormField
+                    control={form.control}
+                    name="estimated_duration"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Durée estimée (min)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min={0}
+                            step={15}
+                            placeholder="Ex: 60"
+                            {...field}
+                            value={field.value ?? ''}
+                            onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="flex items-end">
+                    {hasFeature('email') ? (
+                      isEditing && id ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="w-full h-10"
+                          disabled={sendingEmail || !form.watch('scheduled_date')}
+                          onClick={async () => {
+                            setSendingEmail(true);
+                            try {
+                              const { error } = await supabase.functions.invoke('send-client-notification', {
+                                body: { interventionId: id },
+                              });
+                              if (error) throw error;
+                              toast({ title: "Notification envoyée au client" });
+                            } catch {
+                              toast({ title: "Erreur lors de l'envoi", variant: "destructive" });
+                            } finally {
+                              setSendingEmail(false);
+                            }
+                          }}
+                        >
+                          {sendingEmail ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <Mail className="h-4 w-4 mr-2" />
+                          )}
+                          Notifier le client
+                        </Button>
                       ) : (
-                        <Mail className="h-4 w-4 mr-2" />
-                      )}
-                      Notifier le client par email
-                    </Button>
-                  ) : (
-                    <Button
-                      type="submit"
-                      variant="outline"
-                      size="sm"
-                      className="w-full mt-2"
-                      disabled={!form.watch('scheduled_date') || !form.watch('client_id') || !form.watch('title')}
-                      onClick={() => setShouldSendEmail(true)}
-                    >
-                      <Mail className="h-4 w-4 mr-2" />
-                      Créer et notifier le client par email
-                    </Button>
-                  )
-                ) : (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="w-full mt-2 opacity-50 cursor-not-allowed"
-                    disabled
-                  >
-                    <Lock className="h-4 w-4 mr-2" />
-                    Notifier le client par email
-                    <span className="ml-auto text-[10px] border border-muted-foreground/20 text-muted-foreground/60 rounded px-1.5">Business</span>
-                  </Button>
-                )}
+                        <Button
+                          type="submit"
+                          variant="outline"
+                          size="sm"
+                          className="w-full h-10"
+                          disabled={!form.watch('scheduled_date') || !form.watch('client_id') || !form.watch('title')}
+                          onClick={() => setShouldSendEmail(true)}
+                        >
+                          <Mail className="h-4 w-4 mr-2" />
+                          Créer et notifier
+                        </Button>
+                      )
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="w-full h-10 opacity-50 cursor-not-allowed"
+                        disabled
+                      >
+                        <Lock className="h-4 w-4 mr-2" />
+                        Notifier le client
+                        <span className="ml-auto text-[10px] border border-muted-foreground/20 text-muted-foreground/60 rounded px-1.5">Business</span>
+                      </Button>
+                    )}
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
