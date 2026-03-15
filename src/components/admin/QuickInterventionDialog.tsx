@@ -76,6 +76,7 @@ export function QuickInterventionDialog({
       technician_id: formData.technician_id || null,
       scheduled_date: formData.scheduled_date || null,
       scheduled_time: formData.scheduled_time || null,
+      estimated_duration: formData.estimated_duration ? Number(formData.estimated_duration) : null,
       description: formData.description || null,
     });
 
