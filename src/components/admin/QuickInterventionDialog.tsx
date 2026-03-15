@@ -164,7 +164,7 @@ export function QuickInterventionDialog({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="technician">Technicien</Label>
               <Select
@@ -192,6 +192,19 @@ export function QuickInterventionDialog({
                 type="time"
                 value={formData.scheduled_time}
                 onChange={(e) => setFormData(prev => ({ ...prev, scheduled_time: e.target.value }))}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="duration">Durée (min)</Label>
+              <Input
+                id="duration"
+                type="number"
+                min={0}
+                step={15}
+                placeholder="60"
+                value={formData.estimated_duration}
+                onChange={(e) => setFormData(prev => ({ ...prev, estimated_duration: e.target.value }))}
               />
             </div>
           </div>
