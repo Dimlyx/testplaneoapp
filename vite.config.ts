@@ -20,7 +20,7 @@ export default defineConfig(({ mode }) => ({
       registerType: "autoUpdate",
       includeAssets: ["favicon.png", "placeholder.svg"],
       manifest: {
-        name: "PLANEO - Gestion Interventions",
+        name: "PLANEO",
         short_name: "PLANEO",
         description: "Application de gestion des interventions SAV",
         theme_color: "#1e3a5f",
