@@ -811,6 +811,7 @@ export type Database = {
           description: string | null
           equipment_functional: boolean | null
           equipment_id: string | null
+          estimated_duration: number | null
           id: string
           intervention_address: string | null
           intervention_building: string | null
@@ -848,6 +849,7 @@ export type Database = {
           description?: string | null
           equipment_functional?: boolean | null
           equipment_id?: string | null
+          estimated_duration?: number | null
           id?: string
           intervention_address?: string | null
           intervention_building?: string | null
@@ -885,6 +887,7 @@ export type Database = {
           description?: string | null
           equipment_functional?: boolean | null
           equipment_id?: string | null
+          estimated_duration?: number | null
           id?: string
           intervention_address?: string | null
           intervention_building?: string | null

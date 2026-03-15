@@ -1,0 +1,1 @@
+ALTER TABLE public.interventions ADD COLUMN estimated_duration integer NULL;
