@@ -88,6 +88,7 @@ export function QuickInterventionDialog({
       technician_id: '',
       scheduled_date: '',
       scheduled_time: '',
+      estimated_duration: '',
       description: '',
     });
     
