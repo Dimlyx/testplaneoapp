@@ -51,6 +51,7 @@ export function QuickInterventionDialog({
     technician_id: defaultTechnicianId || '',
     scheduled_date: defaultDate ? format(defaultDate, 'yyyy-MM-dd') : '',
     scheduled_time: '',
+    estimated_duration: '',
     description: '',
   });
 
