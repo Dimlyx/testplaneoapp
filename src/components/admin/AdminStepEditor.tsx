@@ -92,7 +92,6 @@ const StepItem = ({ step, completion, interventionId, index, loopIndex }: StepIt
 
   const removePhoto = (idx: number) => {
     setPhotoUrls(prev => prev.filter((_, i) => i !== idx));
-    setDisplayPhotoUrls(prev => prev.filter((_, i) => i !== idx));
   };
 
   const handleSave = async () => {
