@@ -35,6 +35,7 @@ import { toast } from "@/hooks/use-toast";
 import AttachmentsList from "@/components/technician/AttachmentsList";
 import PendingAttachmentsList from "@/components/admin/PendingAttachmentsList";
 import { QuickCreateClientDialog } from "@/components/admin/QuickCreateClientDialog";
+import { ClientCombobox } from "@/components/admin/ClientCombobox";
 import { supabase } from "@/integrations/supabase/client";
 
 const interventionSchema = z.object({
@@ -378,23 +379,15 @@ const InterventionForm = () => {
                     <FormItem>
                       <FormLabel>Client *</FormLabel>
                       <div className="flex gap-2">
-                        <Select 
-                          onValueChange={field.onChange} 
-                          value={field.value}
-                        >
+                        <div className="flex-1">
                           <FormControl>
-                            <SelectTrigger className="flex-1">
-                              <SelectValue placeholder="Sélectionner un client" />
-                            </SelectTrigger>
+                            <ClientCombobox
+                              clients={clients}
+                              value={field.value}
+                              onValueChange={field.onChange}
+                            />
                           </FormControl>
-                          <SelectContent>
-                            {clients.map((client) => (
-                              <SelectItem key={client.id} value={client.id}>
-                                {client.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        </div>
                         <Button
                           type="button"
                           size="icon"
