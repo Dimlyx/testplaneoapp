@@ -57,7 +57,6 @@ const DynamicStepContent = ({
     setIsUploading(true);
     try {
       const newUrls: string[] = [];
-      const newDisplayUrls: string[] = [];
       for (const file of Array.from(files)) {
         const fileName = `steps/${interventionId}/${step.id}-loop${loopIndex}-${Date.now()}-${Math.random().toString(36).slice(2)}.${file.name.split('.').pop()}`;
         const { error: uploadError } = await supabase.storage
@@ -71,23 +70,18 @@ const DynamicStepContent = ({
           .getPublicUrl(fileName);
 
         newUrls.push(urlData.publicUrl);
-        const signedUrl = await getSignedUrl(urlData.publicUrl);
-        newDisplayUrls.push(signedUrl);
       }
       setPhotoUrls(prev => [...prev, ...newUrls]);
-      setDisplayPhotoUrls(prev => [...prev, ...newDisplayUrls]);
     } catch (error: any) {
       console.error("Upload error:", error);
     } finally {
       setIsUploading(false);
-      // Reset input
       e.target.value = '';
     }
   };
 
   const removePhoto = (index: number) => {
     setPhotoUrls(prev => prev.filter((_, i) => i !== index));
-    setDisplayPhotoUrls(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleValidate = async () => {
@@ -95,7 +89,7 @@ const DynamicStepContent = ({
     await onComplete(step.id, comment || undefined, serializedPhotos);
   };
 
-  // Handle signature step: upload signature and complete the step (does NOT close the intervention)
+  // Handle signature step
   const handleSignatureValidation = async (signatureDataUrl: string, sName: string) => {
     try {
       const response = await fetch(signatureDataUrl);
@@ -114,7 +108,6 @@ const DynamicStepContent = ({
     }
   };
 
-  // If this step requires signature, use the signature pad (only validates the step, does not close the intervention)
   if (step.requires_signature) {
     return (
       <div className="space-y-4">
@@ -125,8 +118,8 @@ const DynamicStepContent = ({
                 <CheckCircle className="h-5 w-5" />
                 <span className="font-medium text-sm">Étape validée</span>
               </div>
-              {signedSignatureUrl && (
-                <img src={signedSignatureUrl} alt="Signature" className="mt-3 max-h-32 border rounded" />
+              {completion?.photo_url && (
+                <img src={completion.photo_url} alt="Signature" className="mt-3 max-h-32 border rounded" />
               )}
               {completion?.comment && (
                 <p className="text-sm text-muted-foreground mt-2">Signataire : {completion.comment}</p>
@@ -161,13 +154,12 @@ const DynamicStepContent = ({
             <label className="text-sm font-medium mb-2 flex items-center gap-2">
               <Camera className="h-4 w-4" />
               Photos {step.is_mandatory && <span className="text-destructive">*</span>}
-              {displayPhotoUrls.length > 0 && <span className="text-muted-foreground text-xs">({displayPhotoUrls.length})</span>}
+              {photoUrls.length > 0 && <span className="text-muted-foreground text-xs">({photoUrls.length})</span>}
             </label>
             
-            {/* Photo grid */}
-            {displayPhotoUrls.length > 0 && (
+            {photoUrls.length > 0 && (
               <div className="grid grid-cols-2 gap-2 mb-3">
-                {displayPhotoUrls.map((url, index) => (
+                {photoUrls.map((url, index) => (
                   <div key={index} className="relative">
                     <img src={url} alt={`Photo ${index + 1}`} className="w-full h-32 object-cover rounded-lg" />
                     {!isLocked && (
@@ -185,16 +177,15 @@ const DynamicStepContent = ({
               </div>
             )}
 
-            {/* Add more photos button */}
             {!isLocked && (
               <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-muted-foreground/30 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
-                {displayPhotoUrls.length > 0 ? (
+                {photoUrls.length > 0 ? (
                   <Plus className="h-6 w-6 text-muted-foreground mb-1" />
                 ) : (
                   <Upload className="h-6 w-6 text-muted-foreground mb-1" />
                 )}
                 <span className="text-sm text-muted-foreground">
-                  {isUploading ? "Envoi en cours..." : displayPhotoUrls.length > 0 ? "Ajouter une photo" : "Prendre une photo"}
+                  {isUploading ? "Envoi en cours..." : photoUrls.length > 0 ? "Ajouter une photo" : "Prendre une photo"}
                 </span>
                 <input
                   type="file"
@@ -210,7 +201,6 @@ const DynamicStepContent = ({
           </div>
         )}
 
-        {/* Comment section */}
         {step.requires_comment && (
           <div>
             <label className="text-sm font-medium mb-2 flex items-center gap-2">
@@ -227,14 +217,12 @@ const DynamicStepContent = ({
           </div>
         )}
 
-        {/* No requirements - just a validation button */}
         {!step.requires_photo && !step.requires_comment && !isCompleted && !isLocked && (
           <p className="text-sm text-muted-foreground">
             Validez cette étape une fois terminée.
           </p>
         )}
 
-        {/* Validation button */}
         {!isLocked && (
           <div>
             {isCompleted ? (
