@@ -1163,45 +1163,81 @@ export type Database = {
       technician_details: {
         Row: {
           address: string | null
+          birth_date: string | null
           city: string | null
+          collaboration_end_date: string | null
+          collaboration_start_date: string | null
           contract_end_date: string | null
+          contract_link: string | null
           contract_type: string | null
           created_at: string
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
           hire_date: string | null
           id: string
+          kbis_url: string | null
           notes: string | null
           organization_id: string | null
+          personal_email: string | null
+          personal_phone: string | null
+          position: string | null
           postal_code: string | null
+          social_security_number: string | null
+          specialties: string | null
           technician_type: string
           updated_at: string
           user_id: string
         }
         Insert: {
           address?: string | null
+          birth_date?: string | null
           city?: string | null
+          collaboration_end_date?: string | null
+          collaboration_start_date?: string | null
           contract_end_date?: string | null
+          contract_link?: string | null
           contract_type?: string | null
           created_at?: string
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
           hire_date?: string | null
           id?: string
+          kbis_url?: string | null
           notes?: string | null
           organization_id?: string | null
+          personal_email?: string | null
+          personal_phone?: string | null
+          position?: string | null
           postal_code?: string | null
+          social_security_number?: string | null
+          specialties?: string | null
           technician_type?: string
           updated_at?: string
           user_id: string
         }
         Update: {
           address?: string | null
+          birth_date?: string | null
           city?: string | null
+          collaboration_end_date?: string | null
+          collaboration_start_date?: string | null
           contract_end_date?: string | null
+          contract_link?: string | null
           contract_type?: string | null
           created_at?: string
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
           hire_date?: string | null
           id?: string
+          kbis_url?: string | null
           notes?: string | null
           organization_id?: string | null
+          personal_email?: string | null
+          personal_phone?: string | null
+          position?: string | null
           postal_code?: string | null
+          social_security_number?: string | null
+          specialties?: string | null
           technician_type?: string
           updated_at?: string
           user_id?: string
@@ -1209,6 +1245,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "technician_details_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      technician_documents: {
+        Row: {
+          created_at: string
+          document_type: string
+          expiration_date: string | null
+          file_name: string
+          file_size: number | null
+          file_url: string
+          id: string
+          organization_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          document_type: string
+          expiration_date?: string | null
+          file_name: string
+          file_size?: number | null
+          file_url: string
+          id?: string
+          organization_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          document_type?: string
+          expiration_date?: string | null
+          file_name?: string
+          file_size?: number | null
+          file_url?: string
+          id?: string
+          organization_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "technician_documents_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
