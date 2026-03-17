@@ -104,7 +104,7 @@ export default function TechnicianEditDialog({ tech, onClose, onSave, onUploadDo
       return <Badge variant="destructive" className="text-xs"><AlertTriangle className="h-3 w-3 mr-1" />Expiré</Badge>;
     }
     if (daysLeft <= 30) {
-      return <Badge variant="secondary" className="text-xs bg-orange-100 text-orange-700"><AlertTriangle className="h-3 w-3 mr-1" />Expire dans {daysLeft}j</Badge>;
+      return <Badge variant="secondary" className="text-xs bg-destructive/10 text-destructive"><AlertTriangle className="h-3 w-3 mr-1" />Expire dans {daysLeft}j</Badge>;
     }
     return <Badge variant="outline" className="text-xs">Expire le {format(expDate, 'dd/MM/yyyy')}</Badge>;
   };
