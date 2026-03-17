@@ -139,8 +139,8 @@ const DynamicStepContent = ({
                 <CheckCircle className="h-5 w-5" />
                 <span className="font-medium text-sm">Étape validée</span>
               </div>
-              {completion?.photo_url && (
-                <img src={completion.photo_url} alt="Signature" className="mt-3 max-h-32 border rounded" />
+              {signedSignatureUrl && (
+                <img src={signedSignatureUrl} alt="Signature" className="mt-3 max-h-32 border rounded" />
               )}
               {completion?.comment && (
                 <p className="text-sm text-muted-foreground mt-2">Signataire : {completion.comment}</p>
