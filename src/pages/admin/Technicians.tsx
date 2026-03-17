@@ -69,7 +69,7 @@ export default function Technicians() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-          <HardHat className="h-6 w-6 text-primary" />
+          <Users className="h-6 w-6 text-primary" />
           Intervenants
         </h1>
         <p className="text-muted-foreground">Gestion des techniciens et sous-traitants de votre équipe</p>
