@@ -1,4 +1,5 @@
 import { useInterventions } from "@/hooks/useInterventions";
+import { useCustomStatuses } from "@/hooks/useCustomStatuses";
 import { useInterventionTypes } from "@/hooks/useInterventionTypes";
 import { useClients } from "@/hooks/useClients";
 import { useTechnicians } from "@/hooks/useTechnicians";
