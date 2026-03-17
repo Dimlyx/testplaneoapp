@@ -135,21 +135,14 @@ export function QuickInterventionDialog({
             <div className="space-y-2">
               <Label htmlFor="client">Client *</Label>
               <div className="flex gap-2">
-                <Select
-                  value={formData.client_id}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, client_id: value }))}
-                >
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Sélectionner" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clients.map(client => (
-                      <SelectItem key={client.id} value={client.id}>
-                        {client.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex-1">
+                  <ClientCombobox
+                    clients={clients}
+                    value={formData.client_id}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, client_id: value }))}
+                    placeholder="Sélectionner"
+                  />
+                </div>
                 <Button
                   type="button"
                   size="icon"
