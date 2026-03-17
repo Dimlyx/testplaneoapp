@@ -108,6 +108,7 @@ const DynamicStepContent = ({
 
   const removePhoto = (index: number) => {
     setPhotoUrls(prev => prev.filter((_, i) => i !== index));
+    setDisplayPhotoUrls(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleValidate = async () => {
