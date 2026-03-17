@@ -155,13 +155,15 @@ const PublicIntervention = () => {
   const client = (intervention as any).clients;
   const fullAddress = client ? [client.address, client.postal_code, client.city].filter(Boolean).join(', ') : null;
 
-    const headerTextColor = isLightColor(docSettings.primaryColor) ? '#1a1a1a' : '#ffffff';
-    const footerTextColor = isLightColor(docSettings.accentColor) ? '#1a1a1a' : '#ffffff';
+    const effectivePrimaryColor = docSettings.primaryColor || defaultDocumentSettings.primaryColor;
+    const effectiveAccentColor = docSettings.accentColor || defaultDocumentSettings.accentColor;
+    const headerTextColor = isLightColor(effectivePrimaryColor) ? '#1a1a1a' : '#ffffff';
+    const footerTextColor = isLightColor(effectiveAccentColor) ? '#1a1a1a' : '#ffffff';
 
     return (
     <div className="min-h-screen bg-muted/30">
       {/* Header */}
-      <header className="py-6" style={{ backgroundColor: docSettings.primaryColor, color: headerTextColor }}>
+      <header className="py-6" style={{ backgroundColor: effectivePrimaryColor, color: headerTextColor }}>
         <div className="container max-w-2xl mx-auto px-4">
           <div className="flex items-center gap-3 mb-2">
             {companySettings.logoUrl ? (
@@ -411,7 +413,7 @@ const PublicIntervention = () => {
       </main>
 
       {/* Footer */}
-      <footer className="py-4 mt-8" style={{ backgroundColor: docSettings.accentColor, color: footerTextColor }}>
+      <footer className="py-4 mt-8" style={{ backgroundColor: effectiveAccentColor, color: footerTextColor }}>
         <div className="container max-w-2xl mx-auto px-4 text-center text-sm">
           <p>{docSettings.footerText || `© ${new Date().getFullYear()} ${companySettings.name || "Service Intervention"}`}</p>
           {companySettings.address && <p className="opacity-80 mt-1">{[companySettings.address, companySettings.postalCode, companySettings.city].filter(Boolean).join(', ')}</p>}
