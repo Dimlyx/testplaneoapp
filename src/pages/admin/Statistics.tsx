@@ -55,6 +55,7 @@ export default function Statistics() {
   const { data: technicians = [] } = useTechnicians();
   const { data: maintenanceAlerts = [] } = useMaintenanceAlerts();
   const { data: upcomingAlerts = [] } = useUpcomingAlerts(30);
+  const { data: customStatuses = [] } = useCustomStatuses();
   const [isRealtime, setIsRealtime] = useState(true);
 
   // Subscribe to realtime updates for interventions
