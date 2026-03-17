@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -30,10 +30,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Save, Paperclip, Mail, Loader2, Lock } from "lucide-react";
+import { ArrowLeft, Save, Paperclip, Mail, Loader2, Lock, Plus } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import AttachmentsList from "@/components/technician/AttachmentsList";
 import PendingAttachmentsList from "@/components/admin/PendingAttachmentsList";
+import { QuickCreateClientDialog } from "@/components/admin/QuickCreateClientDialog";
 import { supabase } from "@/integrations/supabase/client";
 
 const interventionSchema = z.object({
@@ -69,6 +70,7 @@ const InterventionForm = () => {
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [sendingEmail, setSendingEmail] = useState(false);
   const [shouldSendEmail, setShouldSendEmail] = useState(false);
+  const [showCreateClient, setShowCreateClient] = useState(false);
 
   const { data: organizationId } = useUserOrganization();
   const { data: intervention, isLoading: loadingIntervention } = useIntervention(id || "");
@@ -375,23 +377,34 @@ const InterventionForm = () => {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Client *</FormLabel>
-                      <Select 
-                        onValueChange={field.onChange} 
-                        value={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Sélectionner un client" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {clients.map((client) => (
-                            <SelectItem key={client.id} value={client.id}>
-                              {client.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="flex gap-2">
+                        <Select 
+                          onValueChange={field.onChange} 
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="flex-1">
+                              <SelectValue placeholder="Sélectionner un client" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {clients.map((client) => (
+                              <SelectItem key={client.id} value={client.id}>
+                                {client.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="outline"
+                          onClick={() => setShowCreateClient(true)}
+                          title="Nouveau client"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -689,6 +702,12 @@ const InterventionForm = () => {
           </div>
         </form>
       </Form>
+
+      <QuickCreateClientDialog
+        open={showCreateClient}
+        onOpenChange={setShowCreateClient}
+        onClientCreated={(clientId) => form.setValue('client_id', clientId)}
+      />
     </div>
   );
 };
