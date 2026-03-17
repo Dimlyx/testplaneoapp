@@ -86,7 +86,7 @@ export function useTechnicianDetails() {
       contract_end_date?: string | null;
       notes?: string | null;
     }) => {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('technician_details')
         .upsert({
           ...data,
