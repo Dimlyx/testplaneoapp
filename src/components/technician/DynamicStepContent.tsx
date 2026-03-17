@@ -44,31 +44,11 @@ const DynamicStepContent = ({
   loopIndex = 0,
 }: DynamicStepContentProps) => {
   const [comment, setComment] = useState(completion?.comment || "");
-  const [photoUrls, setPhotoUrls] = useState<string[]>([]); // original URLs for saving
-  const [displayPhotoUrls, setDisplayPhotoUrls] = useState<string[]>([]); // signed URLs for display
+  const [photoUrls, setPhotoUrls] = useState<string[]>(parsePhotoUrls(completion?.photo_url || null));
   const [isUploading, setIsUploading] = useState(false);
   const [localSignerName, setLocalSignerName] = useState(signerName);
-  const [signedSignatureUrl, setSignedSignatureUrl] = useState<string | null>(null);
 
   const isCompleted = !!completion?.completed_at;
-
-  // Resolve stored URLs to signed URLs on mount
-  useEffect(() => {
-    const rawUrls = parsePhotoUrls(completion?.photo_url || null);
-    setPhotoUrls(rawUrls);
-    if (rawUrls.length > 0) {
-      getSignedUrls(rawUrls).then(setDisplayPhotoUrls);
-    } else {
-      setDisplayPhotoUrls([]);
-    }
-  }, [completion?.photo_url]);
-
-  // Resolve signature URL
-  useEffect(() => {
-    if (completion?.photo_url && step.requires_signature) {
-      getSignedUrl(completion.photo_url).then(setSignedSignatureUrl);
-    }
-  }, [completion?.photo_url, step.requires_signature]);
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
