@@ -80,11 +80,8 @@ const StepItem = ({ step, completion, interventionId, index, loopIndex }: StepIt
           .from("intervention-photos")
           .getPublicUrl(fileName);
         newUrls.push(urlData.publicUrl);
-        const signedUrl = await getSignedUrl(urlData.publicUrl);
-        newDisplayUrls.push(signedUrl);
       }
       setPhotoUrls(prev => [...prev, ...newUrls]);
-      setDisplayPhotoUrls(prev => [...prev, ...newDisplayUrls]);
     } catch (error: any) {
       toast.error("Erreur upload: " + error.message);
     } finally {
