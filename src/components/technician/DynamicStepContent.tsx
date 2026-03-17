@@ -91,8 +91,11 @@ const DynamicStepContent = ({
           .getPublicUrl(fileName);
 
         newUrls.push(urlData.publicUrl);
+        const signedUrl = await getSignedUrl(urlData.publicUrl);
+        newDisplayUrls.push(signedUrl);
       }
       setPhotoUrls(prev => [...prev, ...newUrls]);
+      setDisplayPhotoUrls(prev => [...prev, ...newDisplayUrls]);
     } catch (error: any) {
       console.error("Upload error:", error);
     } finally {
