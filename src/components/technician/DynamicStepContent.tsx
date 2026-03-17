@@ -45,7 +45,8 @@ const DynamicStepContent = ({
   loopIndex = 0,
 }: DynamicStepContentProps) => {
   const [comment, setComment] = useState(completion?.comment || "");
-  const [photoUrls, setPhotoUrls] = useState<string[]>([]);
+  const [photoUrls, setPhotoUrls] = useState<string[]>([]); // original URLs for saving
+  const [displayPhotoUrls, setDisplayPhotoUrls] = useState<string[]>([]); // signed URLs for display
   const [isUploading, setIsUploading] = useState(false);
   const [localSignerName, setLocalSignerName] = useState(signerName);
   const [signedSignatureUrl, setSignedSignatureUrl] = useState<string | null>(null);
@@ -55,10 +56,11 @@ const DynamicStepContent = ({
   // Resolve stored URLs to signed URLs on mount
   useEffect(() => {
     const rawUrls = parsePhotoUrls(completion?.photo_url || null);
+    setPhotoUrls(rawUrls);
     if (rawUrls.length > 0) {
-      getSignedUrls(rawUrls).then(setPhotoUrls);
+      getSignedUrls(rawUrls).then(setDisplayPhotoUrls);
     } else {
-      setPhotoUrls([]);
+      setDisplayPhotoUrls([]);
     }
   }, [completion?.photo_url]);
 
