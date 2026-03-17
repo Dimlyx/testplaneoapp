@@ -182,13 +182,13 @@ const DynamicStepContent = ({
             <label className="text-sm font-medium mb-2 flex items-center gap-2">
               <Camera className="h-4 w-4" />
               Photos {step.is_mandatory && <span className="text-destructive">*</span>}
-              {photoUrls.length > 0 && <span className="text-muted-foreground text-xs">({photoUrls.length})</span>}
+              {displayPhotoUrls.length > 0 && <span className="text-muted-foreground text-xs">({displayPhotoUrls.length})</span>}
             </label>
             
             {/* Photo grid */}
-            {photoUrls.length > 0 && (
+            {displayPhotoUrls.length > 0 && (
               <div className="grid grid-cols-2 gap-2 mb-3">
-                {photoUrls.map((url, index) => (
+                {displayPhotoUrls.map((url, index) => (
                   <div key={index} className="relative">
                     <img src={url} alt={`Photo ${index + 1}`} className="w-full h-32 object-cover rounded-lg" />
                     {!isLocked && (
