@@ -246,9 +246,9 @@ const StepItem = ({ step, completion, interventionId, index, loopIndex }: StepIt
           {/* Photo editor */}
           <div>
             <label className="text-xs font-medium text-muted-foreground mb-2 block">Photos</label>
-            {displayPhotoUrls.length > 0 && (
+            {photoUrls.length > 0 && (
               <div className="grid grid-cols-3 md:grid-cols-4 gap-2 mb-2">
-                {displayPhotoUrls.map((url, photoIdx) => (
+                {photoUrls.map((url, photoIdx) => (
                   <div key={photoIdx} className="relative">
                     <img src={url} alt={`Photo ${photoIdx + 1}`} className="w-full aspect-square object-cover rounded-lg" />
                     <Button
