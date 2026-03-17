@@ -70,6 +70,7 @@ const InterventionForm = () => {
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [sendingEmail, setSendingEmail] = useState(false);
   const [shouldSendEmail, setShouldSendEmail] = useState(false);
+  const [showCreateClient, setShowCreateClient] = useState(false);
 
   const { data: organizationId } = useUserOrganization();
   const { data: intervention, isLoading: loadingIntervention } = useIntervention(id || "");
