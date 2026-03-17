@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, UserCog, Pencil, Phone, Mail, MapPin, FileText, HardHat, AlertTriangle } from 'lucide-react';
+import { Search, UserCog, Pencil, Phone, Mail, MapPin, FileText, Users, AlertTriangle } from 'lucide-react';
 import { useTechnicianDetails, TechnicianWithDetails } from '@/hooks/useTechnicianDetails';
 import TechnicianEditDialog from '@/components/admin/TechnicianEditDialog';
 import { toast } from 'sonner';
@@ -69,7 +69,7 @@ export default function Technicians() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-          <HardHat className="h-6 w-6 text-primary" />
+          <Users className="h-6 w-6 text-primary" />
           Intervenants
         </h1>
         <p className="text-muted-foreground">Gestion des techniciens et sous-traitants de votre équipe</p>
