@@ -95,6 +95,9 @@ const StepItem = ({ step, completion, interventionId, index, loopIndex }: StepIt
           .from("intervention-photos")
           .getPublicUrl(fileName);
         newUrls.push(urlData.publicUrl);
+        // Get signed URL for display
+        const signedUrl = await getSignedUrl(urlData.publicUrl);
+        newDisplayUrls.push(signedUrl);
       }
       setPhotoUrls(prev => [...prev, ...newUrls]);
     } catch (error: any) {
