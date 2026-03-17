@@ -85,6 +85,7 @@ const StepItem = ({ step, completion, interventionId, index, loopIndex }: StepIt
     setIsUploading(true);
     try {
       const newUrls: string[] = [];
+      const newDisplayUrls: string[] = [];
       for (const file of Array.from(files)) {
         const fileName = `steps/${interventionId}/${step.id}-loop${loopIndex}-${Date.now()}-${Math.random().toString(36).slice(2)}.${file.name.split('.').pop()}`;
         const { error: uploadError } = await supabase.storage
@@ -95,11 +96,11 @@ const StepItem = ({ step, completion, interventionId, index, loopIndex }: StepIt
           .from("intervention-photos")
           .getPublicUrl(fileName);
         newUrls.push(urlData.publicUrl);
-        // Get signed URL for display
         const signedUrl = await getSignedUrl(urlData.publicUrl);
         newDisplayUrls.push(signedUrl);
       }
       setPhotoUrls(prev => [...prev, ...newUrls]);
+      setDisplayPhotoUrls(prev => [...prev, ...newDisplayUrls]);
     } catch (error: any) {
       toast.error("Erreur upload: " + error.message);
     } finally {
