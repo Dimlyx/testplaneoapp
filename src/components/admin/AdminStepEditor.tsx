@@ -69,7 +69,6 @@ const StepItem = ({ step, completion, interventionId, index, loopIndex }: StepIt
     setIsUploading(true);
     try {
       const newUrls: string[] = [];
-      const newDisplayUrls: string[] = [];
       for (const file of Array.from(files)) {
         const fileName = `steps/${interventionId}/${step.id}-loop${loopIndex}-${Date.now()}-${Math.random().toString(36).slice(2)}.${file.name.split('.').pop()}`;
         const { error: uploadError } = await supabase.storage
