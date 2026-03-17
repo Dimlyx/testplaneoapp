@@ -207,13 +207,13 @@ const StepItem = ({ step, completion, interventionId, index, loopIndex }: StepIt
               <p className="text-sm whitespace-pre-wrap">{completion.comment}</p>
             </div>
           )}
-          {displayPhotoUrls.length > 0 && (
+          {parsePhotoUrls(completion?.photo_url || null).length > 0 && (
             <div>
               <p className="text-xs font-medium text-muted-foreground mb-2">
-                Photos ({displayPhotoUrls.length})
+                Photos ({parsePhotoUrls(completion?.photo_url || null).length})
               </p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                {displayPhotoUrls.map((url, photoIdx) => (
+                {parsePhotoUrls(completion?.photo_url || null).map((url, photoIdx) => (
                   <a key={photoIdx} href={url} target="_blank" rel="noopener noreferrer">
                     <img src={url} alt={`Photo ${photoIdx + 1}`} className="w-full aspect-square object-cover rounded-lg hover:opacity-90 transition-opacity" />
                   </a>
