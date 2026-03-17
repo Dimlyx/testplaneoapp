@@ -12,6 +12,7 @@ import {
   Menu, 
   X,
   Wrench,
+  HardHat,
   ChevronRight,
   CalendarDays,
   BarChart3,
