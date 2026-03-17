@@ -702,6 +702,12 @@ const InterventionForm = () => {
           </div>
         </form>
       </Form>
+
+      <QuickCreateClientDialog
+        open={showCreateClient}
+        onOpenChange={setShowCreateClient}
+        onClientCreated={(clientId) => form.setValue('client_id', clientId)}
+      />
     </div>
   );
 };
