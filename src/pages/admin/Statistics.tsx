@@ -1,4 +1,5 @@
 import { useInterventions } from "@/hooks/useInterventions";
+import { useCustomStatuses } from "@/hooks/useCustomStatuses";
 import { useInterventionTypes } from "@/hooks/useInterventionTypes";
 import { useClients } from "@/hooks/useClients";
 import { useTechnicians } from "@/hooks/useTechnicians";
@@ -54,6 +55,7 @@ export default function Statistics() {
   const { data: technicians = [] } = useTechnicians();
   const { data: maintenanceAlerts = [] } = useMaintenanceAlerts();
   const { data: upcomingAlerts = [] } = useUpcomingAlerts(30);
+  const { data: customStatuses = [] } = useCustomStatuses();
   const [isRealtime, setIsRealtime] = useState(true);
 
   // Subscribe to realtime updates for interventions
@@ -547,6 +549,7 @@ export default function Statistics() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
+                  {/* Base statuses */}
                   {Object.entries(interventionsByStatus).map(([status, count]) => (
                     <div key={status} className="flex items-center justify-between">
                       <span className="text-sm">{statusLabels[status] || status}</span>
@@ -561,7 +564,32 @@ export default function Statistics() {
                       </div>
                     </div>
                   ))}
-                  {Object.keys(interventionsByStatus).length === 0 && (
+                  {/* Custom statuses */}
+                  {customStatuses.map((cs) => {
+                    const count = monthInterventions.filter(i => i.custom_status_id === cs.id).length;
+                    if (count === 0) return null;
+                    return (
+                      <div key={cs.id} className="flex items-center justify-between">
+                        <span className="flex items-center gap-2 text-sm">
+                          <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: cs.color }} />
+                          {cs.label}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
+                            <div 
+                              className="h-full rounded-full"
+                              style={{ 
+                                width: `${(count / monthInterventions.length) * 100}%`,
+                                backgroundColor: cs.color 
+                              }}
+                            />
+                          </div>
+                          <span className="font-medium w-8 text-right">{count}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {Object.keys(interventionsByStatus).length === 0 && customStatuses.every(cs => monthInterventions.filter(i => i.custom_status_id === cs.id).length === 0) && (
                     <p className="text-muted-foreground text-center py-4">Aucune donnée</p>
                   )}
                 </div>
