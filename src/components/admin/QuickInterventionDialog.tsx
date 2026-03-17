@@ -25,6 +25,7 @@ import { useUserOrganization } from '@/hooks/useUserOrganization';
 import { useInterventionTypes } from '@/hooks/useInterventionTypes';
 import { Technician } from '@/hooks/useTechnicians';
 import { QuickCreateClientDialog } from './QuickCreateClientDialog';
+import { ClientCombobox } from './ClientCombobox';
 
 interface QuickInterventionDialogProps {
   open: boolean;
