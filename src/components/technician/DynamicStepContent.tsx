@@ -209,13 +209,13 @@ const DynamicStepContent = ({
             {/* Add more photos button */}
             {!isLocked && (
               <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-muted-foreground/30 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
-                {photoUrls.length > 0 ? (
+                {displayPhotoUrls.length > 0 ? (
                   <Plus className="h-6 w-6 text-muted-foreground mb-1" />
                 ) : (
                   <Upload className="h-6 w-6 text-muted-foreground mb-1" />
                 )}
                 <span className="text-sm text-muted-foreground">
-                  {isUploading ? "Envoi en cours..." : photoUrls.length > 0 ? "Ajouter une photo" : "Prendre une photo"}
+                  {isUploading ? "Envoi en cours..." : displayPhotoUrls.length > 0 ? "Ajouter une photo" : "Prendre une photo"}
                 </span>
                 <input
                   type="file"

@@ -69,6 +69,7 @@ const TechnicianInterventionDetail = () => {
       
       if (uploadError) throw uploadError;
       
+      // Store the public URL path in DB (will be resolved to signed URL on display)
       const { data: urlData } = supabase.storage
         .from('intervention-photos')
         .getPublicUrl(fileName);
