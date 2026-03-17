@@ -245,6 +245,12 @@ export function QuickInterventionDialog({
           </div>
         </form>
       </DialogContent>
+
+      <QuickCreateClientDialog
+        open={showCreateClient}
+        onOpenChange={setShowCreateClient}
+        onClientCreated={(clientId) => setFormData(prev => ({ ...prev, client_id: clientId }))}
+      />
     </Dialog>
   );
 }
