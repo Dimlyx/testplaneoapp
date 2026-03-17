@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Plus } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useClients } from '@/hooks/useClients';
@@ -23,6 +24,7 @@ import { useCreateIntervention } from '@/hooks/useInterventions';
 import { useUserOrganization } from '@/hooks/useUserOrganization';
 import { useInterventionTypes } from '@/hooks/useInterventionTypes';
 import { Technician } from '@/hooks/useTechnicians';
+import { QuickCreateClientDialog } from './QuickCreateClientDialog';
 
 interface QuickInterventionDialogProps {
   open: boolean;
