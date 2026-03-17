@@ -58,7 +58,7 @@ export default function Technicians() {
   const getTypeBadgeVariant = (type: string) => type === 'subcontractor' ? 'secondary' as const : 'default' as const;
 
   const getDocAlerts = (tech: TechnicianWithDetails) => {
-    return tech.documents.filter(d => {
+    return (tech.documents || []).filter(d => {
       if (!d.expiration_date) return false;
       const exp = parseISO(d.expiration_date);
       return isPast(exp) || differenceInDays(exp, new Date()) <= 30;

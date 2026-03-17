@@ -111,10 +111,15 @@ export function useTechnicianDetails() {
 
   const upsertDetails = useMutation({
     mutationFn: async (data: Partial<TechnicianDetail> & { user_id: string; technician_type: 'internal' | 'subcontractor' }) => {
+      // Convert empty strings to null for date and nullable fields
+      const cleanData = Object.fromEntries(
+        Object.entries(data).map(([key, value]) => [key, value === '' ? null : value])
+      );
+
       const { error } = await (supabase as any)
         .from('technician_details')
         .upsert({
-          ...data,
+          ...cleanData,
           organization_id: organizationId!,
         }, { onConflict: 'user_id,organization_id' });
 
