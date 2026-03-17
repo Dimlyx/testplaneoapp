@@ -155,10 +155,13 @@ const PublicIntervention = () => {
   const client = (intervention as any).clients;
   const fullAddress = client ? [client.address, client.postal_code, client.city].filter(Boolean).join(', ') : null;
 
-  return (
+    const headerTextColor = isLightColor(docSettings.primaryColor) ? '#1a1a1a' : '#ffffff';
+    const footerTextColor = isLightColor(docSettings.accentColor) ? '#1a1a1a' : '#ffffff';
+
+    return (
     <div className="min-h-screen bg-muted/30">
       {/* Header */}
-      <header className="text-white py-6" style={{ backgroundColor: docSettings.primaryColor }}>
+      <header className="py-6" style={{ backgroundColor: docSettings.primaryColor, color: headerTextColor }}>
         <div className="container max-w-2xl mx-auto px-4">
           <div className="flex items-center gap-3 mb-2">
             {companySettings.logoUrl ? (
