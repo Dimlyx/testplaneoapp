@@ -229,6 +229,28 @@ const PublicIntervention = () => {
           </Card>
         )}
 
+        {/* Détails intervention */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">{intervention.title}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {docSettings.showDescription && intervention.description && (
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-1">Description</p>
+                <p>{intervention.description}</p>
+              </div>
+            )}
+
+            {docSettings.showScheduledDateTime && intervention.scheduled_date && (
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+                <span>{format(new Date(intervention.scheduled_date), 'dd MMMM yyyy', { locale: fr })}</span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Lieu d'intervention */}
         {docSettings.showInterventionAddress && (intervention.intervention_address || intervention.intervention_phone || intervention.intervention_email) && (
           <Card className="border-primary/20">
@@ -267,28 +289,6 @@ const PublicIntervention = () => {
             </CardContent>
           </Card>
         )}
-
-        {/* Détails intervention */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">{intervention.title}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {docSettings.showDescription && intervention.description && (
-              <div>
-                <p className="text-sm font-medium text-muted-foreground mb-1">Description</p>
-                <p>{intervention.description}</p>
-              </div>
-            )}
-
-            {docSettings.showScheduledDateTime && intervention.scheduled_date && (
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                <span>{format(new Date(intervention.scheduled_date), 'dd MMMM yyyy', { locale: fr })}</span>
-              </div>
-            )}
-          </CardContent>
-        </Card>
 
         {/* Photos supplémentaires */}
         {photos.filter(p => !p.equipment_id).length > 0 && (
