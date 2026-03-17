@@ -56,24 +56,9 @@ const StepItem = ({ step, completion, interventionId, index, loopIndex }: StepIt
   const isCompleted = !!completion?.completed_at;
   const [editing, setEditing] = useState(false);
   const [comment, setComment] = useState(completion?.comment || "");
-  const [photoUrls, setPhotoUrls] = useState<string[]>([]);
-  const [displayPhotoUrls, setDisplayPhotoUrls] = useState<string[]>([]);
+  const [photoUrls, setPhotoUrls] = useState<string[]>(parsePhotoUrls(completion?.photo_url || null));
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-
-  // Resolve signed URLs for display
-  useEffect(() => {
-    const rawUrls = parsePhotoUrls(completion?.photo_url || null);
-    if (rawUrls.length > 0) {
-      getSignedUrls(rawUrls).then((signed) => {
-        setDisplayPhotoUrls(signed);
-        setPhotoUrls(rawUrls); // Keep original URLs for saving
-      });
-    } else {
-      setDisplayPhotoUrls([]);
-      setPhotoUrls([]);
-    }
-  }, [completion?.photo_url]);
 
   const completeStep = useCompleteStep();
   const uncompleteStep = useUncompleteStep();
