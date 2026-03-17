@@ -1160,6 +1160,62 @@ export type Database = {
           },
         ]
       }
+      technician_details: {
+        Row: {
+          address: string | null
+          city: string | null
+          contract_end_date: string | null
+          contract_type: string | null
+          created_at: string
+          hire_date: string | null
+          id: string
+          notes: string | null
+          organization_id: string | null
+          postal_code: string | null
+          technician_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          contract_end_date?: string | null
+          contract_type?: string | null
+          created_at?: string
+          hire_date?: string | null
+          id?: string
+          notes?: string | null
+          organization_id?: string | null
+          postal_code?: string | null
+          technician_type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          contract_end_date?: string | null
+          contract_type?: string | null
+          created_at?: string
+          hire_date?: string | null
+          id?: string
+          notes?: string | null
+          organization_id?: string | null
+          postal_code?: string | null
+          technician_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "technician_details_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
