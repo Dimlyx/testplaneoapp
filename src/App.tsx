@@ -31,6 +31,7 @@ import Settings from "@/pages/admin/Settings";
 import Clients from "@/pages/admin/Clients";
 import ClientForm from "@/pages/admin/ClientForm";
 import ClientDetail from "@/pages/admin/ClientDetail";
+import Technicians from "@/pages/admin/Technicians";
 
 // Technician pages
 import { TechnicianInterventionsByCategory } from "@/pages/technician/TechnicianInterventions";
