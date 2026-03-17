@@ -30,10 +30,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Save, Paperclip, Mail, Loader2, Lock } from "lucide-react";
+import { ArrowLeft, Save, Paperclip, Mail, Loader2, Lock, Plus } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import AttachmentsList from "@/components/technician/AttachmentsList";
 import PendingAttachmentsList from "@/components/admin/PendingAttachmentsList";
+import { QuickCreateClientDialog } from "@/components/admin/QuickCreateClientDialog";
 import { supabase } from "@/integrations/supabase/client";
 
 const interventionSchema = z.object({
