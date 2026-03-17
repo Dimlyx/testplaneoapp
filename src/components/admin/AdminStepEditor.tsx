@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,6 +28,7 @@ import { WorkflowStep } from "@/hooks/useWorkflowSteps";
 import { StepCompletion, useCompleteStep, useUncompleteStep } from "@/hooks/useStepCompletions";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { getSignedUrls, getSignedUrl } from "@/lib/storage-utils";
 
 interface AdminStepEditorProps {
   steps: WorkflowStep[];
