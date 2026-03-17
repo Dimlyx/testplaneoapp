@@ -35,6 +35,7 @@ const navigation = [
   { name: 'Clients', href: '/admin/clients', icon: Users, feature: 'clients' },
   { name: 'Alertes Maintenance', href: '/admin/maintenance-alerts', icon: Bell, feature: 'maintenance_alerts' },
   { name: 'Statistiques', href: '/admin/statistics', icon: BarChart3, feature: 'statistics' },
+  { name: 'Intervenants', href: '/admin/technicians', icon: HardHat, feature: null },
   { name: 'Paramètres', href: '/admin/settings', icon: Settings, feature: null },
 ];
 

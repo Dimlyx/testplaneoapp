@@ -146,6 +146,7 @@ const AppRoutes = () => {
         <Route path="statistics" element={<Statistics />} />
         <Route path="maintenance-alerts" element={<MaintenanceAlerts />} />
         <Route path="settings" element={<Settings />} />
+        <Route path="technicians" element={<Technicians />} />
         <Route path="clients" element={<Clients />} />
         <Route path="clients/new" element={<ClientForm />} />
         <Route path="clients/:id" element={<ClientDetail />} />
