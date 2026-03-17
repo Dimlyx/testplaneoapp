@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { getSignedUrl } from '@/lib/storage-utils';
 
 export type PhotoType = 'serial_number' | 'during' | 'after';
 
@@ -24,7 +25,16 @@ export function useInterventionPhotos(interventionId: string) {
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      return data as InterventionPhoto[];
+      
+      // Generate signed URLs for private bucket
+      const photos = data as InterventionPhoto[];
+      const withSignedUrls = await Promise.all(
+        photos.map(async (photo) => ({
+          ...photo,
+          photo_url: await getSignedUrl(photo.photo_url),
+        }))
+      );
+      return withSignedUrls;
     },
     enabled: !!interventionId,
   });
