@@ -155,8 +155,10 @@ const PublicIntervention = () => {
   const client = (intervention as any).clients;
   const fullAddress = client ? [client.address, client.postal_code, client.city].filter(Boolean).join(', ') : null;
 
-    const headerTextColor = isLightColor(docSettings.primaryColor) ? '#1a1a1a' : '#ffffff';
-    const footerTextColor = isLightColor(docSettings.accentColor) ? '#1a1a1a' : '#ffffff';
+    const effectivePrimaryColor = docSettings.primaryColor || defaultDocumentSettings.primaryColor;
+    const effectiveAccentColor = docSettings.accentColor || defaultDocumentSettings.accentColor;
+    const headerTextColor = isLightColor(effectivePrimaryColor) ? '#1a1a1a' : '#ffffff';
+    const footerTextColor = isLightColor(effectiveAccentColor) ? '#1a1a1a' : '#ffffff';
 
     return (
     <div className="min-h-screen bg-muted/30">
