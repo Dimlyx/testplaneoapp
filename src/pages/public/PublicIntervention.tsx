@@ -411,7 +411,7 @@ const PublicIntervention = () => {
       </main>
 
       {/* Footer */}
-      <footer className="py-4 mt-8 text-white" style={{ backgroundColor: docSettings.accentColor }}>
+      <footer className="py-4 mt-8" style={{ backgroundColor: docSettings.accentColor, color: footerTextColor }}>
         <div className="container max-w-2xl mx-auto px-4 text-center text-sm">
           <p>{docSettings.footerText || `© ${new Date().getFullYear()} ${companySettings.name || "Service Intervention"}`}</p>
           {companySettings.address && <p className="opacity-80 mt-1">{[companySettings.address, companySettings.postalCode, companySettings.city].filter(Boolean).join(', ')}</p>}
