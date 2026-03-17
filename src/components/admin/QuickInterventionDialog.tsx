@@ -46,6 +46,8 @@ export function QuickInterventionDialog({
   const createIntervention = useCreateIntervention(organizationId);
   const { data: interventionTypes = [] } = useInterventionTypes();
 
+  const [showCreateClient, setShowCreateClient] = useState(false);
+
   const [formData, setFormData] = useState({
     title: '',
     client_id: '',
