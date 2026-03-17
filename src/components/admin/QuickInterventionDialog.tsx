@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Plus } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useClients } from '@/hooks/useClients';
@@ -23,6 +24,7 @@ import { useCreateIntervention } from '@/hooks/useInterventions';
 import { useUserOrganization } from '@/hooks/useUserOrganization';
 import { useInterventionTypes } from '@/hooks/useInterventionTypes';
 import { Technician } from '@/hooks/useTechnicians';
+import { QuickCreateClientDialog } from './QuickCreateClientDialog';
 
 interface QuickInterventionDialogProps {
   open: boolean;
@@ -43,6 +45,8 @@ export function QuickInterventionDialog({
   const { data: organizationId } = useUserOrganization();
   const createIntervention = useCreateIntervention(organizationId);
   const { data: interventionTypes = [] } = useInterventionTypes();
+
+  const [showCreateClient, setShowCreateClient] = useState(false);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -129,21 +133,32 @@ export function QuickInterventionDialog({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="client">Client *</Label>
-              <Select
-                value={formData.client_id}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, client_id: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner" />
-                </SelectTrigger>
-                <SelectContent>
-                  {clients.map(client => (
-                    <SelectItem key={client.id} value={client.id}>
-                      {client.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex gap-2">
+                <Select
+                  value={formData.client_id}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, client_id: value }))}
+                >
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Sélectionner" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients.map(client => (
+                      <SelectItem key={client.id} value={client.id}>
+                        {client.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="outline"
+                  onClick={() => setShowCreateClient(true)}
+                  title="Nouveau client"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -230,6 +245,12 @@ export function QuickInterventionDialog({
           </div>
         </form>
       </DialogContent>
+
+      <QuickCreateClientDialog
+        open={showCreateClient}
+        onOpenChange={setShowCreateClient}
+        onClientCreated={(clientId) => setFormData(prev => ({ ...prev, client_id: clientId }))}
+      />
     </Dialog>
   );
 }
