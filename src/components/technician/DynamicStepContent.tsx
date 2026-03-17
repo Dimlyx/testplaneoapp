@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,7 +7,6 @@ import { WorkflowStep as WorkflowStepType } from "@/hooks/useWorkflowSteps";
 import { StepCompletion } from "@/hooks/useStepCompletions";
 import { supabase } from "@/integrations/supabase/client";
 import SignaturePad from "@/components/SignaturePad";
-import { getSignedUrls, getSignedUrl } from "@/lib/storage-utils";
 
 interface DynamicStepContentProps {
   step: WorkflowStepType;
