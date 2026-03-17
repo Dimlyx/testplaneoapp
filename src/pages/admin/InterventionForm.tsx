@@ -35,6 +35,7 @@ import { toast } from "@/hooks/use-toast";
 import AttachmentsList from "@/components/technician/AttachmentsList";
 import PendingAttachmentsList from "@/components/admin/PendingAttachmentsList";
 import { QuickCreateClientDialog } from "@/components/admin/QuickCreateClientDialog";
+import { ClientCombobox } from "@/components/admin/ClientCombobox";
 import { supabase } from "@/integrations/supabase/client";
 
 const interventionSchema = z.object({
