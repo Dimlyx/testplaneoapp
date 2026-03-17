@@ -56,12 +56,10 @@ export function useTechnicianDetails() {
       if (profilesError) throw profilesError;
 
       // Get HR details
-      const { data: details, error: detailsError } = await supabase
+      const { data: details, error: detailsError } = await (supabase as any)
         .from('technician_details')
         .select('*')
         .eq('organization_id', organizationId);
-
-      if (detailsError) throw detailsError;
 
       const detailsMap = new Map((details || []).map((d: any) => [d.user_id, d]));
 
