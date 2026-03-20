@@ -38,7 +38,7 @@ import { TechnicianInterventionsByCategory } from "@/pages/technician/Technician
 import TechnicianInterventionDetail from "@/pages/technician/TechnicianInterventionDetail";
 import TechnicianPlanning from "@/pages/technician/TechnicianPlanning";
 import PublicIntervention from "@/pages/public/PublicIntervention";
-import InstallApp from "@/pages/InstallApp";
+
 
 // Super Admin pages
 import SuperAdminDashboard from "@/pages/super-admin/Dashboard";
