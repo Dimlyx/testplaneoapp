@@ -163,7 +163,7 @@ export default function Technicians() {
                   <div className="pt-2">
                     <Button variant="outline" size="sm" className="w-full" onClick={() => setEditingTech(tech)}>
                       <Pencil className="h-3.5 w-3.5 mr-2" />
-                      Modifier les infos RH
+                      Modifier les infos
                     </Button>
                   </div>
                 </CardContent>
