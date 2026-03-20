@@ -174,7 +174,7 @@ const AppRoutes = () => {
       </Route>
 
       <Route path="/intervention/:token" element={<PublicIntervention />} />
-      <Route path="/install" element={<InstallApp />} />
+      
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
