@@ -95,6 +95,12 @@ function SortableStepItem({ step, index, onEdit, onDelete }: SortableStepItemPro
               Obligatoire
             </Badge>
           )}
+          {(step as any).is_loop_trigger && (
+            <Badge variant="outline" className="text-xs border-primary text-primary">
+              <RefreshCw className="h-3 w-3 mr-1" />
+              Début boucle
+            </Badge>
+          )}
         </div>
         {step.description && (
           <p className="text-xs text-muted-foreground mt-1 truncate">
