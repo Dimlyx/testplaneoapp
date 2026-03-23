@@ -169,6 +169,8 @@ export default function WorkflowSchemaBuilder({ typeId, steps, allowLoop }: Work
   const [editChecklistItems, setEditChecklistItems] = useState<{ id: string; label: string }[]>([]);
   const [editHasMultipleChoice, setEditHasMultipleChoice] = useState(false);
   const [editMultipleChoiceItems, setEditMultipleChoiceItems] = useState<{ id: string; label: string }[]>([]);
+  const [editLoopYesStepId, setEditLoopYesStepId] = useState<string | null>(null);
+  const [editLoopNoStepId, setEditLoopNoStepId] = useState<string | null>(null);
 
   // Sub-sheets
   const [checklistSheetOpen, setChecklistSheetOpen] = useState(false);
