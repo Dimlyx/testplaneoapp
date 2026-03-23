@@ -198,7 +198,6 @@ export default function WorkflowStepsSettings() {
   const [multipleChoiceItems, setMultipleChoiceItems] = useState<{ id: string; label: string }[]>([]);
   const [newMultipleChoiceItem, setNewMultipleChoiceItem] = useState("");
   const [isLoopTrigger, setIsLoopTrigger] = useState(false);
-  const [newMultipleChoiceItem, setNewMultipleChoiceItem] = useState("");
 
   const resetForm = () => {
     setName("");
