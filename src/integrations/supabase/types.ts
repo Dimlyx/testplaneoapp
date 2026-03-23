@@ -752,6 +752,8 @@ export type Database = {
           is_loop_trigger: boolean
           is_mandatory: boolean | null
           label: string
+          loop_no_step_id: string | null
+          loop_yes_step_id: string | null
           multiple_choice_items: Json | null
           name: string
           organization_id: string | null
@@ -770,6 +772,8 @@ export type Database = {
           is_loop_trigger?: boolean
           is_mandatory?: boolean | null
           label: string
+          loop_no_step_id?: string | null
+          loop_yes_step_id?: string | null
           multiple_choice_items?: Json | null
           name: string
           organization_id?: string | null
@@ -788,6 +792,8 @@ export type Database = {
           is_loop_trigger?: boolean
           is_mandatory?: boolean | null
           label?: string
+          loop_no_step_id?: string | null
+          loop_yes_step_id?: string | null
           multiple_choice_items?: Json | null
           name?: string
           organization_id?: string | null
@@ -803,6 +809,20 @@ export type Database = {
             columns: ["intervention_type_id"]
             isOneToOne: false
             referencedRelation: "intervention_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "intervention_workflow_steps_loop_no_step_id_fkey"
+            columns: ["loop_no_step_id"]
+            isOneToOne: false
+            referencedRelation: "intervention_workflow_steps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "intervention_workflow_steps_loop_yes_step_id_fkey"
+            columns: ["loop_yes_step_id"]
+            isOneToOne: false
+            referencedRelation: "intervention_workflow_steps"
             referencedColumns: ["id"]
           },
           {

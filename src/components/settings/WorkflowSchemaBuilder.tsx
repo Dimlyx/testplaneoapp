@@ -6,6 +6,7 @@ import {
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -168,6 +169,8 @@ export default function WorkflowSchemaBuilder({ typeId, steps, allowLoop }: Work
   const [editChecklistItems, setEditChecklistItems] = useState<{ id: string; label: string }[]>([]);
   const [editHasMultipleChoice, setEditHasMultipleChoice] = useState(false);
   const [editMultipleChoiceItems, setEditMultipleChoiceItems] = useState<{ id: string; label: string }[]>([]);
+  const [editLoopYesStepId, setEditLoopYesStepId] = useState<string | null>(null);
+  const [editLoopNoStepId, setEditLoopNoStepId] = useState<string | null>(null);
 
   // Sub-sheets
   const [checklistSheetOpen, setChecklistSheetOpen] = useState(false);
@@ -184,11 +187,13 @@ export default function WorkflowSchemaBuilder({ typeId, steps, allowLoop }: Work
     setEditPhoto(step.requires_photo);
     setEditComment(step.requires_comment);
     setEditSignature(step.requires_signature);
-    setEditLoopTrigger((step as any).is_loop_trigger || false);
+    setEditLoopTrigger(step.is_loop_trigger || false);
     setEditHasChecklist((step.checklist_items || []).length > 0);
     setEditChecklistItems(step.checklist_items || []);
     setEditHasMultipleChoice((step.multiple_choice_items || []).length > 0);
     setEditMultipleChoiceItems(step.multiple_choice_items || []);
+    setEditLoopYesStepId(step.loop_yes_step_id || null);
+    setEditLoopNoStepId(step.loop_no_step_id || null);
   };
 
   const handleAddFromPalette = async (paletteItem: typeof STEP_PALETTE[number]) => {
@@ -223,6 +228,8 @@ export default function WorkflowSchemaBuilder({ typeId, steps, allowLoop }: Work
       requires_comment: editComment,
       requires_signature: editSignature,
       is_loop_trigger: editLoopTrigger,
+      loop_yes_step_id: editLoopTrigger ? editLoopYesStepId : null,
+      loop_no_step_id: editLoopTrigger ? editLoopNoStepId : null,
       checklist_items: editHasChecklist ? editChecklistItems : [],
       multiple_choice_items: editHasMultipleChoice ? editMultipleChoiceItems : [],
     } as any);
@@ -372,12 +379,48 @@ export default function WorkflowSchemaBuilder({ typeId, steps, allowLoop }: Work
                 </div>
 
                 {allowLoop && (
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />
-                      <Label className="text-xs">Début boucle</Label>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />
+                        <Label className="text-xs">Début boucle</Label>
+                      </div>
+                      <Switch checked={editLoopTrigger} onCheckedChange={setEditLoopTrigger} />
                     </div>
-                    <Switch checked={editLoopTrigger} onCheckedChange={setEditLoopTrigger} />
+
+                    {editLoopTrigger && (
+                      <div className="border rounded-md p-3 space-y-3 bg-muted/30">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Redirection</p>
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-medium text-green-600 w-8">Oui</span>
+                            <Select value={editLoopYesStepId || ""} onValueChange={(v) => setEditLoopYesStepId(v || null)}>
+                              <SelectTrigger className="h-8 text-xs flex-1">
+                                <SelectValue placeholder="Rediriger vers..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {steps.filter(s => s.id !== selectedStep?.id).map(s => (
+                                  <SelectItem key={s.id} value={s.id} className="text-xs">{s.label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-medium text-red-600 w-8">Non</span>
+                            <Select value={editLoopNoStepId || ""} onValueChange={(v) => setEditLoopNoStepId(v || null)}>
+                              <SelectTrigger className="h-8 text-xs flex-1">
+                                <SelectValue placeholder="Rediriger vers..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {steps.filter(s => s.id !== selectedStep?.id).map(s => (
+                                  <SelectItem key={s.id} value={s.id} className="text-xs">{s.label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 

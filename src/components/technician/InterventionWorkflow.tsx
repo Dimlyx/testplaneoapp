@@ -109,6 +109,11 @@ const InterventionWorkflow = ({
   // If there's a loop trigger step, only steps from the trigger onward (excluding signature) are looped
   const signatureSteps = useMemo(() => workflowSteps.filter(s => s.requires_signature), [workflowSteps]);
   
+  // Find the loop trigger step (the step that asks Oui/Non for branching)
+  const loopTriggerStep = useMemo(() => 
+    workflowSteps.find(s => s.is_loop_trigger), [workflowSteps]
+  );
+  
   const { preLoopSteps, loopableSteps } = useMemo(() => {
     const nonSignatureSteps = workflowSteps.filter(s => !s.requires_signature);
     
@@ -117,7 +122,7 @@ const InterventionWorkflow = ({
     }
     
     // Find the loop trigger step
-    const triggerIndex = nonSignatureSteps.findIndex(s => (s as any).is_loop_trigger);
+    const triggerIndex = nonSignatureSteps.findIndex(s => s.is_loop_trigger);
     
     if (triggerIndex === -1) {
       // No trigger found, all steps are loopable (legacy behavior)
@@ -635,16 +640,37 @@ const InterventionWorkflow = ({
                   <div className="flex items-center gap-2">
                     <RefreshCw className="h-5 w-5 text-primary" />
                     <div>
-                      <p className="font-medium text-sm">Souhaitez-vous ajouter un autre équipement ?</p>
+                      <p className="font-medium text-sm">Souhaitez-vous continuer ?</p>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        Un nouvel équipement reprendra toutes les étapes sans supprimer les données existantes.
+                        Choisissez pour reprendre les étapes ou passer à la suite.
                       </p>
                     </div>
                   </div>
-                  <Button size="sm" onClick={handleAddLoop}>
-                    <RefreshCw className="h-4 w-4 mr-1" />
-                    Oui, ajouter
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        // "Non" → navigate to the configured step or signature/finish
+                        if (loopTriggerStep?.loop_no_step_id) {
+                          setActiveStep(`step-${loopTriggerStep.loop_no_step_id}`);
+                        } else {
+                          // Default: go to first signature step or finish
+                          if (signatureSteps.length > 0) {
+                            setActiveStep(`step-${signatureSteps[0].id}`);
+                          } else {
+                            setActiveStep('finish');
+                          }
+                        }
+                      }}
+                    >
+                      Non
+                    </Button>
+                    <Button size="sm" onClick={handleAddLoop}>
+                      <RefreshCw className="h-4 w-4 mr-1" />
+                      Oui
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
