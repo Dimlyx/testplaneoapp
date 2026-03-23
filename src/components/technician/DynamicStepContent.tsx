@@ -96,7 +96,7 @@ const DynamicStepContent = ({
 
   const handleValidate = async () => {
     const serializedPhotos = photoUrls.length > 0 ? JSON.stringify(photoUrls) : undefined;
-    await onComplete(step.id, comment || undefined, serializedPhotos);
+    await onComplete(step.id, comment || undefined, serializedPhotos, checklistState.length > 0 ? checklistState : undefined);
   };
 
   // Handle signature step
