@@ -257,7 +257,7 @@ export default function WorkflowSchemaBuilder({ typeId, steps, allowLoop }: Work
   };
 
   return (
-    <div className="flex gap-4 min-h-[400px]">
+    <div className="flex gap-4 min-h-[400px] max-h-[calc(90vh-120px)]">
       {/* Left palette */}
       <div className="w-40 shrink-0 space-y-2">
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
