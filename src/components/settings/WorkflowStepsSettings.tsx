@@ -77,8 +77,10 @@ export default function WorkflowStepsSettings() {
   const [requiresPhoto, setRequiresPhoto] = useState(false);
   const [requiresComment, setRequiresComment] = useState(false);
   const [requiresSignature, setRequiresSignature] = useState(false);
+  const [hasChecklist, setHasChecklist] = useState(false);
   const [checklistItems, setChecklistItems] = useState<{ id: string; label: string }[]>([]);
   const [newChecklistItem, setNewChecklistItem] = useState("");
+  const [hasMultipleChoice, setHasMultipleChoice] = useState(false);
   const [multipleChoiceItems, setMultipleChoiceItems] = useState<{ id: string; label: string }[]>([]);
   const [newMultipleChoiceItem, setNewMultipleChoiceItem] = useState("");
 
