@@ -187,11 +187,13 @@ export default function WorkflowSchemaBuilder({ typeId, steps, allowLoop }: Work
     setEditPhoto(step.requires_photo);
     setEditComment(step.requires_comment);
     setEditSignature(step.requires_signature);
-    setEditLoopTrigger((step as any).is_loop_trigger || false);
+    setEditLoopTrigger(step.is_loop_trigger || false);
     setEditHasChecklist((step.checklist_items || []).length > 0);
     setEditChecklistItems(step.checklist_items || []);
     setEditHasMultipleChoice((step.multiple_choice_items || []).length > 0);
     setEditMultipleChoiceItems(step.multiple_choice_items || []);
+    setEditLoopYesStepId(step.loop_yes_step_id || null);
+    setEditLoopNoStepId(step.loop_no_step_id || null);
   };
 
   const handleAddFromPalette = async (paletteItem: typeof STEP_PALETTE[number]) => {
