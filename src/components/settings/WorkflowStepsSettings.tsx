@@ -152,6 +152,7 @@ export default function WorkflowStepsSettings() {
         requires_comment: requiresComment,
         requires_signature: requiresSignature,
         checklist_items: checklistItems,
+        multiple_choice_items: multipleChoiceItems,
       } as any);
     }
 
