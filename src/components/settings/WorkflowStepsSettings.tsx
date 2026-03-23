@@ -262,6 +262,7 @@ export default function WorkflowStepsSettings() {
         requires_photo: requiresPhoto,
         requires_comment: requiresComment,
         requires_signature: requiresSignature,
+        is_loop_trigger: isLoopTrigger,
         checklist_items: hasChecklist ? checklistItems : [],
         multiple_choice_items: hasMultipleChoice ? multipleChoiceItems : [],
       } as any);
