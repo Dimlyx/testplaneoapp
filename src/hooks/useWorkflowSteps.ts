@@ -16,6 +16,7 @@ export interface WorkflowStep {
   requires_comment: boolean;
   requires_signature: boolean;
   checklist_items: { id: string; label: string }[];
+  multiple_choice_items: { id: string; label: string }[];
   created_at: string;
   updated_at: string;
 }
