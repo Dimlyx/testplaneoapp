@@ -226,6 +226,20 @@ const StepItem = ({ step, completion, interventionId, index, loopIndex }: StepIt
               Validée le {new Date(completion.completed_at).toLocaleString("fr-FR")}
             </p>
           )}
+          {/* Checklist read-only */}
+          {completion?.checklist_data && Array.isArray(completion.checklist_data) && completion.checklist_data.length > 0 && (
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-2">Checklist</p>
+              <div className="space-y-1">
+                {completion.checklist_data.map((item: any) => (
+                  <div key={item.id} className="flex items-center gap-2 text-sm">
+                    <Checkbox checked={item.checked} disabled />
+                    <span className={item.checked ? "line-through text-muted-foreground" : ""}>{item.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
