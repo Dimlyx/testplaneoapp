@@ -320,6 +320,12 @@ export default function WorkflowStepsSettings() {
                                         Checklist ({step.checklist_items.length})
                                       </div>
                                     )}
+                                    {step.multiple_choice_items && step.multiple_choice_items.length > 0 && (
+                                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                        <List className="h-3 w-3" />
+                                        Choix multiple ({step.multiple_choice_items.length})
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                                 <div className="flex items-center gap-1">
