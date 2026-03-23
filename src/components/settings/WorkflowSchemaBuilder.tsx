@@ -379,12 +379,48 @@ export default function WorkflowSchemaBuilder({ typeId, steps, allowLoop }: Work
                 </div>
 
                 {allowLoop && (
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />
-                      <Label className="text-xs">Début boucle</Label>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />
+                        <Label className="text-xs">Début boucle</Label>
+                      </div>
+                      <Switch checked={editLoopTrigger} onCheckedChange={setEditLoopTrigger} />
                     </div>
-                    <Switch checked={editLoopTrigger} onCheckedChange={setEditLoopTrigger} />
+
+                    {editLoopTrigger && (
+                      <div className="border rounded-md p-3 space-y-3 bg-muted/30">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Redirection</p>
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-medium text-green-600 w-8">Oui</span>
+                            <Select value={editLoopYesStepId || ""} onValueChange={(v) => setEditLoopYesStepId(v || null)}>
+                              <SelectTrigger className="h-8 text-xs flex-1">
+                                <SelectValue placeholder="Rediriger vers..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {steps.filter(s => s.id !== selectedStep?.id).map(s => (
+                                  <SelectItem key={s.id} value={s.id} className="text-xs">{s.label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-medium text-red-600 w-8">Non</span>
+                            <Select value={editLoopNoStepId || ""} onValueChange={(v) => setEditLoopNoStepId(v || null)}>
+                              <SelectTrigger className="h-8 text-xs flex-1">
+                                <SelectValue placeholder="Rediriger vers..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {steps.filter(s => s.id !== selectedStep?.id).map(s => (
+                                  <SelectItem key={s.id} value={s.id} className="text-xs">{s.label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
