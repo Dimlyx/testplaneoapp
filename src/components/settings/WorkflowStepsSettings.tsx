@@ -179,13 +179,32 @@ export default function WorkflowStepsSettings() {
     const targetIndex = direction === "up" ? stepIndex - 1 : stepIndex + 1;
     if (targetIndex < 0 || targetIndex >= steps.length) return;
 
-    // Swap
     const temp = steps[stepIndex];
     steps[stepIndex] = steps[targetIndex];
     steps[targetIndex] = temp;
 
     await reorderSteps.mutateAsync(
       steps.map((s, i) => ({ id: s.id, step_order: i }))
+    );
+  };
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor)
+  );
+
+  const handleDragEnd = async (event: DragEndEvent, typeId: string) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const steps = [...(stepsByType[typeId] || [])];
+    const oldIndex = steps.findIndex(s => s.id === active.id);
+    const newIndex = steps.findIndex(s => s.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = arrayMove(steps, oldIndex, newIndex);
+    await reorderSteps.mutateAsync(
+      reordered.map((s, i) => ({ id: s.id, step_order: i }))
     );
   };
 
