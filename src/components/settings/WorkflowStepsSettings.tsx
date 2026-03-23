@@ -141,7 +141,8 @@ export default function WorkflowStepsSettings() {
         requires_photo: requiresPhoto,
         requires_comment: requiresComment,
         requires_signature: requiresSignature,
-      });
+        checklist_items: checklistItems,
+      } as any);
     }
 
     setDialogOpen(false);
