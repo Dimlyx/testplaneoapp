@@ -64,7 +64,7 @@ export default function WorkflowStepsSettings() {
 
   const [openTypes, setOpenTypes] = useState<Record<string, boolean>>({});
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedTypeId, setSelectedTypeId] = useState<string | null>(null);
+  const [checklistSheetOpen, setChecklistSheetOpen] = useState(false);
   const [editingStep, setEditingStep] = useState<WorkflowStep | null>(null);
 
   // Form state
