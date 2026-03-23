@@ -88,7 +88,7 @@ export function useWorkflowStepsByType() {
 
       // Group by intervention type
       const grouped: Record<string, WorkflowStep[]> = {};
-      (data as WorkflowStep[]).forEach((step) => {
+      (data as unknown as WorkflowStep[]).forEach((step) => {
         if (!grouped[step.intervention_type_id]) {
           grouped[step.intervention_type_id] = [];
         }

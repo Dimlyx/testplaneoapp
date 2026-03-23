@@ -74,6 +74,7 @@ export function useCompleteStep() {
             comment: comment || null,
             photo_url: photoUrl || null,
             checklist_data: checklistData || null,
+            multiple_choice_data: multipleChoiceData || null,
           } as any)
           .eq("id", existing.id);
         if (updateError) throw updateError;
@@ -89,6 +90,7 @@ export function useCompleteStep() {
             photo_url: photoUrl || null,
             loop_index: loopIndex,
             checklist_data: checklistData || null,
+            multiple_choice_data: multipleChoiceData || null,
           } as any);
         if (insertError) throw insertError;
       }
