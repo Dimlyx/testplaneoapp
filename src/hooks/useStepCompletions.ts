@@ -68,7 +68,8 @@ export function useCompleteStep() {
             completed_by: user?.id || null,
             comment: comment || null,
             photo_url: photoUrl || null,
-          })
+            checklist_data: checklistData || null,
+          } as any)
           .eq("id", existing.id);
         if (updateError) throw updateError;
       } else {
