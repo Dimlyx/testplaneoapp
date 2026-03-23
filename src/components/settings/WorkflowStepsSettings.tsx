@@ -214,6 +214,7 @@ export default function WorkflowStepsSettings() {
     setHasMultipleChoice(false);
     setMultipleChoiceItems([]);
     setNewMultipleChoiceItem("");
+    setIsLoopTrigger(false);
     setEditingStep(null);
   };
 
