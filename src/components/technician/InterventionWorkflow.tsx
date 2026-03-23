@@ -184,7 +184,16 @@ const InterventionWorkflow = ({
       return;
     }
     
-    // Find first incomplete step across all loops
+    // Check pre-loop steps first
+    const firstIncompletePreLoop = preLoopSteps.find(
+      step => !stepCompletions.some(c => c.step_id === step.id && c.loop_index === 0 && c.completed_at)
+    );
+    if (firstIncompletePreLoop) {
+      setActiveStep(`step-${firstIncompletePreLoop.id}-loop-0`);
+      return;
+    }
+    
+    // Find first incomplete loopable step across all loops
     for (let loopIdx = 0; loopIdx <= maxLoopIndex; loopIdx++) {
       const firstIncomplete = loopableSteps.find(
         step => !stepCompletions.some(c => c.step_id === step.id && c.loop_index === loopIdx && c.completed_at)
