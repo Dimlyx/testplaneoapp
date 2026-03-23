@@ -1,6 +1,9 @@
-import { useState, useEffect } from "react";
-import { Plus, Trash2, ArrowUp, ArrowDown, Camera, MessageSquare, PenTool, ChevronDown, ChevronRight, ListChecks, Settings2, ClipboardList, List } from "lucide-react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
+import { useState } from "react";
+import { Plus, Trash2, Camera, MessageSquare, PenTool, ChevronDown, ChevronRight, ListChecks, Settings2, ClipboardList, List, GripVertical } from "lucide-react";
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
