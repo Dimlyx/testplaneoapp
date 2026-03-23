@@ -13,7 +13,7 @@ interface DynamicStepContentProps {
   step: WorkflowStepType;
   interventionId: string;
   completion: StepCompletion | undefined;
-  onComplete: (stepId: string, comment?: string, photoUrl?: string) => Promise<void>;
+  onComplete: (stepId: string, comment?: string, photoUrl?: string, checklistData?: { id: string; label: string; checked: boolean }[]) => Promise<void>;
   isLocked: boolean;
   isCompleting: boolean;
   signerName?: string;
