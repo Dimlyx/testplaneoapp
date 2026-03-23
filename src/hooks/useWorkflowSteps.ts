@@ -16,6 +16,8 @@ export interface WorkflowStep {
   requires_comment: boolean;
   requires_signature: boolean;
   is_loop_trigger: boolean;
+  loop_yes_step_id: string | null;
+  loop_no_step_id: string | null;
   checklist_items: { id: string; label: string }[];
   multiple_choice_items: { id: string; label: string }[];
   created_at: string;
@@ -33,6 +35,8 @@ export interface CreateWorkflowStepInput {
   requires_comment?: boolean;
   requires_signature?: boolean;
   is_loop_trigger?: boolean;
+  loop_yes_step_id?: string | null;
+  loop_no_step_id?: string | null;
   checklist_items?: { id: string; label: string }[];
   multiple_choice_items?: { id: string; label: string }[];
 }
@@ -48,6 +52,8 @@ export interface UpdateWorkflowStepInput {
   requires_comment?: boolean;
   requires_signature?: boolean;
   is_loop_trigger?: boolean;
+  loop_yes_step_id?: string | null;
+  loop_no_step_id?: string | null;
   checklist_items?: { id: string; label: string }[];
   multiple_choice_items?: { id: string; label: string }[];
 }
