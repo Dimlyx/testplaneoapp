@@ -65,6 +65,7 @@ export default function WorkflowStepsSettings() {
   const [openTypes, setOpenTypes] = useState<Record<string, boolean>>({});
   const [dialogOpen, setDialogOpen] = useState(false);
   const [checklistSheetOpen, setChecklistSheetOpen] = useState(false);
+  const [multipleChoiceSheetOpen, setMultipleChoiceSheetOpen] = useState(false);
   const [selectedTypeId, setSelectedTypeId] = useState<string | null>(null);
   const [editingStep, setEditingStep] = useState<WorkflowStep | null>(null);
 
@@ -78,6 +79,8 @@ export default function WorkflowStepsSettings() {
   const [requiresSignature, setRequiresSignature] = useState(false);
   const [checklistItems, setChecklistItems] = useState<{ id: string; label: string }[]>([]);
   const [newChecklistItem, setNewChecklistItem] = useState("");
+  const [multipleChoiceItems, setMultipleChoiceItems] = useState<{ id: string; label: string }[]>([]);
+  const [newMultipleChoiceItem, setNewMultipleChoiceItem] = useState("");
 
   const resetForm = () => {
     setName("");
