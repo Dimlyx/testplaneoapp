@@ -240,6 +240,8 @@ export default function WorkflowStepsSettings() {
     setHasMultipleChoice((step.multiple_choice_items || []).length > 0);
     setMultipleChoiceItems(step.multiple_choice_items || []);
     setNewMultipleChoiceItem("");
+    setIsLoopTrigger((step as any).is_loop_trigger || false);
+    setDialogOpen(true);
     setDialogOpen(true);
   };
 
