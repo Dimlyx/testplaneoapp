@@ -501,7 +501,6 @@ export default function WorkflowStepsSettings() {
                   </div>
                 </div>
               </div>
-              </div>
             </div>
             <DialogFooter>
               <DialogClose asChild>
