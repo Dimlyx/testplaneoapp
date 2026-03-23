@@ -143,8 +143,8 @@ export default function WorkflowStepsSettings() {
         requires_photo: requiresPhoto,
         requires_comment: requiresComment,
         requires_signature: requiresSignature,
-        checklist_items: checklistItems,
-        multiple_choice_items: multipleChoiceItems,
+        checklist_items: hasChecklist ? checklistItems : [],
+        multiple_choice_items: hasMultipleChoice ? multipleChoiceItems : [],
       } as any);
     } else {
       await createStep.mutateAsync({
