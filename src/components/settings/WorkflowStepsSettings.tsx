@@ -495,6 +495,80 @@ export default function WorkflowStepsSettings() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Checklist Sheet (side panel) */}
+        <Sheet open={checklistSheetOpen} onOpenChange={setChecklistSheetOpen}>
+          <SheetContent side="right" className="sm:max-w-md">
+            <SheetHeader>
+              <SheetTitle className="flex items-center gap-2">
+                <ClipboardList className="h-5 w-5" />
+                Checklist de l'étape
+              </SheetTitle>
+            </SheetHeader>
+            <div className="space-y-4 py-6">
+              <p className="text-sm text-muted-foreground">
+                Ajoutez les éléments que le technicien devra cocher lors de cette étape.
+              </p>
+
+              {checklistItems.length > 0 && (
+                <div className="space-y-2">
+                  {checklistItems.map((item) => (
+                    <div key={item.id} className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
+                      <span className="text-sm flex-1">{item.label}</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 shrink-0"
+                        onClick={() => setChecklistItems(prev => prev.filter(i => i.id !== item.id))}
+                      >
+                        <Trash2 className="h-3 w-3 text-destructive" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {checklistItems.length === 0 && (
+                <div className="text-center py-6 text-muted-foreground text-sm border-2 border-dashed rounded-lg">
+                  Aucun item dans la checklist
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Nouvel item..."
+                  value={newChecklistItem}
+                  onChange={(e) => setNewChecklistItem(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && newChecklistItem.trim()) {
+                      e.preventDefault();
+                      setChecklistItems(prev => [...prev, { id: crypto.randomUUID(), label: newChecklistItem.trim() }]);
+                      setNewChecklistItem("");
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  disabled={!newChecklistItem.trim()}
+                  onClick={() => {
+                    setChecklistItems(prev => [...prev, { id: crypto.randomUUID(), label: newChecklistItem.trim() }]);
+                    setNewChecklistItem("");
+                  }}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+            <SheetFooter>
+              <Button onClick={() => setChecklistSheetOpen(false)} className="w-full">
+                Terminé ({checklistItems.length} item{checklistItems.length !== 1 ? "s" : ""})
+              </Button>
+            </SheetFooter>
+          </SheetContent>
+        </Sheet>
       </CardContent>
     </Card>
   );
