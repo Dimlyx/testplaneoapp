@@ -109,6 +109,11 @@ const InterventionWorkflow = ({
   // If there's a loop trigger step, only steps from the trigger onward (excluding signature) are looped
   const signatureSteps = useMemo(() => workflowSteps.filter(s => s.requires_signature), [workflowSteps]);
   
+  // Find the loop trigger step (the step that asks Oui/Non for branching)
+  const loopTriggerStep = useMemo(() => 
+    workflowSteps.find(s => s.is_loop_trigger), [workflowSteps]
+  );
+  
   const { preLoopSteps, loopableSteps } = useMemo(() => {
     const nonSignatureSteps = workflowSteps.filter(s => !s.requires_signature);
     
@@ -117,7 +122,7 @@ const InterventionWorkflow = ({
     }
     
     // Find the loop trigger step
-    const triggerIndex = nonSignatureSteps.findIndex(s => (s as any).is_loop_trigger);
+    const triggerIndex = nonSignatureSteps.findIndex(s => s.is_loop_trigger);
     
     if (triggerIndex === -1) {
       // No trigger found, all steps are loopable (legacy behavior)
