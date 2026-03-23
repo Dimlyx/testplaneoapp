@@ -117,8 +117,10 @@ export default function WorkflowStepsSettings() {
     setRequiresPhoto(step.requires_photo);
     setRequiresComment(step.requires_comment);
     setRequiresSignature(step.requires_signature);
+    setHasChecklist((step.checklist_items || []).length > 0);
     setChecklistItems(step.checklist_items || []);
     setNewChecklistItem("");
+    setHasMultipleChoice((step.multiple_choice_items || []).length > 0);
     setMultipleChoiceItems(step.multiple_choice_items || []);
     setNewMultipleChoiceItem("");
     setDialogOpen(true);
