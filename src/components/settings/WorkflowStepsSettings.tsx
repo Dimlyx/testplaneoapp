@@ -77,8 +77,10 @@ export default function WorkflowStepsSettings() {
   const [requiresPhoto, setRequiresPhoto] = useState(false);
   const [requiresComment, setRequiresComment] = useState(false);
   const [requiresSignature, setRequiresSignature] = useState(false);
+  const [hasChecklist, setHasChecklist] = useState(false);
   const [checklistItems, setChecklistItems] = useState<{ id: string; label: string }[]>([]);
   const [newChecklistItem, setNewChecklistItem] = useState("");
+  const [hasMultipleChoice, setHasMultipleChoice] = useState(false);
   const [multipleChoiceItems, setMultipleChoiceItems] = useState<{ id: string; label: string }[]>([]);
   const [newMultipleChoiceItem, setNewMultipleChoiceItem] = useState("");
 
@@ -90,8 +92,10 @@ export default function WorkflowStepsSettings() {
     setRequiresPhoto(false);
     setRequiresComment(false);
     setRequiresSignature(false);
+    setHasChecklist(false);
     setChecklistItems([]);
     setNewChecklistItem("");
+    setHasMultipleChoice(false);
     setMultipleChoiceItems([]);
     setNewMultipleChoiceItem("");
     setEditingStep(null);
@@ -113,8 +117,10 @@ export default function WorkflowStepsSettings() {
     setRequiresPhoto(step.requires_photo);
     setRequiresComment(step.requires_comment);
     setRequiresSignature(step.requires_signature);
+    setHasChecklist((step.checklist_items || []).length > 0);
     setChecklistItems(step.checklist_items || []);
     setNewChecklistItem("");
+    setHasMultipleChoice((step.multiple_choice_items || []).length > 0);
     setMultipleChoiceItems(step.multiple_choice_items || []);
     setNewMultipleChoiceItem("");
     setDialogOpen(true);
@@ -137,8 +143,8 @@ export default function WorkflowStepsSettings() {
         requires_photo: requiresPhoto,
         requires_comment: requiresComment,
         requires_signature: requiresSignature,
-        checklist_items: checklistItems,
-        multiple_choice_items: multipleChoiceItems,
+        checklist_items: hasChecklist ? checklistItems : [],
+        multiple_choice_items: hasMultipleChoice ? multipleChoiceItems : [],
       } as any);
     } else {
       await createStep.mutateAsync({
@@ -151,8 +157,8 @@ export default function WorkflowStepsSettings() {
         requires_photo: requiresPhoto,
         requires_comment: requiresComment,
         requires_signature: requiresSignature,
-        checklist_items: checklistItems,
-        multiple_choice_items: multipleChoiceItems,
+        checklist_items: hasChecklist ? checklistItems : [],
+        multiple_choice_items: hasMultipleChoice ? multipleChoiceItems : [],
       } as any);
     }
 
@@ -468,52 +474,66 @@ export default function WorkflowStepsSettings() {
                   />
                 </div>
 
-                {/* Checklist button to open sheet */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <ClipboardList className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <Label>Checklist</Label>
-                      {checklistItems.length > 0 && (
-                        <p className="text-xs text-muted-foreground">
-                          {checklistItems.length} item{checklistItems.length > 1 ? "s" : ""} configuré{checklistItems.length > 1 ? "s" : ""}
-                        </p>
-                      )}
+                {/* Checklist toggle + config */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <ClipboardList className="h-4 w-4 text-muted-foreground" />
+                      <Label htmlFor="hasChecklist">Checklist</Label>
                     </div>
+                    <Switch
+                      id="hasChecklist"
+                      checked={hasChecklist}
+                      onCheckedChange={setHasChecklist}
+                    />
                   </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setChecklistSheetOpen(true)}
-                  >
-                    <ClipboardList className="h-4 w-4 mr-1" />
-                    {checklistItems.length > 0 ? "Modifier" : "Configurer"}
-                  </Button>
+                  {hasChecklist && (
+                    <div className="flex items-center justify-between pl-6">
+                      <p className="text-xs text-muted-foreground">
+                        {checklistItems.length} item{checklistItems.length > 1 ? "s" : ""} configuré{checklistItems.length > 1 ? "s" : ""}
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setChecklistSheetOpen(true)}
+                      >
+                        <ClipboardList className="h-4 w-4 mr-1" />
+                        {checklistItems.length > 0 ? "Modifier" : "Configurer"}
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
-                {/* Multiple choice button to open sheet */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <List className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <Label>Choix multiple</Label>
-                      {multipleChoiceItems.length > 0 && (
-                        <p className="text-xs text-muted-foreground">
-                          {multipleChoiceItems.length} choix configuré{multipleChoiceItems.length > 1 ? "s" : ""}
-                        </p>
-                      )}
+                {/* Multiple choice toggle + config */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <List className="h-4 w-4 text-muted-foreground" />
+                      <Label htmlFor="hasMultipleChoice">Choix multiple</Label>
                     </div>
+                    <Switch
+                      id="hasMultipleChoice"
+                      checked={hasMultipleChoice}
+                      onCheckedChange={setHasMultipleChoice}
+                    />
                   </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setMultipleChoiceSheetOpen(true)}
-                  >
-                    <List className="h-4 w-4 mr-1" />
-                    {multipleChoiceItems.length > 0 ? "Modifier" : "Configurer"}
-                  </Button>
+                  {hasMultipleChoice && (
+                    <div className="flex items-center justify-between pl-6">
+                      <p className="text-xs text-muted-foreground">
+                        {multipleChoiceItems.length} choix configuré{multipleChoiceItems.length > 1 ? "s" : ""}
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setMultipleChoiceSheetOpen(true)}
+                      >
+                        <List className="h-4 w-4 mr-1" />
+                        {multipleChoiceItems.length > 0 ? "Modifier" : "Configurer"}
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
