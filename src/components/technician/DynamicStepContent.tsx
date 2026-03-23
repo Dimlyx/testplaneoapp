@@ -48,8 +48,17 @@ const DynamicStepContent = ({
   const [photoUrls, setPhotoUrls] = useState<string[]>(parsePhotoUrls(completion?.photo_url || null));
   const [isUploading, setIsUploading] = useState(false);
   const [localSignerName, setLocalSignerName] = useState(signerName);
-
-  const isCompleted = !!completion?.completed_at;
+  
+  // Initialize checklist state from completion or step template
+  const [checklistState, setChecklistState] = useState<{ id: string; label: string; checked: boolean }[]>(() => {
+    if (completion?.checklist_data && Array.isArray(completion.checklist_data)) {
+      return completion.checklist_data;
+    }
+    if (step.checklist_items && step.checklist_items.length > 0) {
+      return step.checklist_items.map(item => ({ ...item, checked: false }));
+    }
+    return [];
+  });
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
