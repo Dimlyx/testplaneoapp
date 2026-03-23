@@ -44,6 +44,7 @@ export function useCompleteStep() {
       photoUrl,
       loopIndex = 0,
       checklistData,
+      multipleChoiceData,
     }: {
       interventionId: string;
       stepId: string;
@@ -51,6 +52,7 @@ export function useCompleteStep() {
       photoUrl?: string;
       loopIndex?: number;
       checklistData?: { id: string; label: string; checked: boolean }[];
+      multipleChoiceData?: { id: string; label: string; selected: boolean }[];
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
 
