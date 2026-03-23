@@ -190,13 +190,14 @@ const InterventionWorkflow = ({
     setActiveStep(activeStep === step ? null : step);
   };
 
-  const handleCompleteStep = async (stepId: string, comment?: string, photoUrl?: string, loopIndex: number = 0) => {
+  const handleCompleteStep = async (stepId: string, comment?: string, photoUrl?: string, checklistData?: { id: string; label: string; checked: boolean }[], loopIndex: number = 0) => {
     await completeStep.mutateAsync({
       interventionId: intervention.id,
       stepId,
       comment,
       photoUrl,
       loopIndex,
+      checklistData,
     });
   };
 
