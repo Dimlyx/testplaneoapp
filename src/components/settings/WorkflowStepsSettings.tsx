@@ -92,8 +92,10 @@ export default function WorkflowStepsSettings() {
     setRequiresPhoto(false);
     setRequiresComment(false);
     setRequiresSignature(false);
+    setHasChecklist(false);
     setChecklistItems([]);
     setNewChecklistItem("");
+    setHasMultipleChoice(false);
     setMultipleChoiceItems([]);
     setNewMultipleChoiceItem("");
     setEditingStep(null);
