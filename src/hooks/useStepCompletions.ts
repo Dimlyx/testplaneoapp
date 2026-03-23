@@ -10,6 +10,7 @@ export interface StepCompletion {
   completed_by: string | null;
   photo_url: string | null;
   comment: string | null;
+  checklist_data: { id: string; label: string; checked: boolean }[] | null;
   created_at: string;
   loop_index: number;
 }
