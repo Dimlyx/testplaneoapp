@@ -106,8 +106,30 @@ const InterventionWorkflow = ({
   const stepsLocked = !isStarted || isPaused;
 
   // Separate signature steps from loopable steps
+  // If there's a loop trigger step, only steps from the trigger onward (excluding signature) are looped
   const signatureSteps = useMemo(() => workflowSteps.filter(s => s.requires_signature), [workflowSteps]);
-  const loopableSteps = useMemo(() => workflowSteps.filter(s => !s.requires_signature), [workflowSteps]);
+  
+  const { preLoopSteps, loopableSteps } = useMemo(() => {
+    const nonSignatureSteps = workflowSteps.filter(s => !s.requires_signature);
+    
+    if (!matchingType?.allow_loop) {
+      return { preLoopSteps: nonSignatureSteps, loopableSteps: [] as typeof nonSignatureSteps };
+    }
+    
+    // Find the loop trigger step
+    const triggerIndex = nonSignatureSteps.findIndex(s => (s as any).is_loop_trigger);
+    
+    if (triggerIndex === -1) {
+      // No trigger found, all steps are loopable (legacy behavior)
+      return { preLoopSteps: [] as typeof nonSignatureSteps, loopableSteps: nonSignatureSteps };
+    }
+    
+    // Steps before trigger run once, trigger step + after are looped
+    return {
+      preLoopSteps: nonSignatureSteps.slice(0, triggerIndex),
+      loopableSteps: nonSignatureSteps.slice(triggerIndex),
+    };
+  }, [workflowSteps, matchingType]);
 
   // Calculate loop iterations from completions
   const maxLoopIndex = useMemo(() => {
