@@ -92,6 +92,8 @@ export default function WorkflowStepsSettings() {
     setRequiresSignature(false);
     setChecklistItems([]);
     setNewChecklistItem("");
+    setMultipleChoiceItems([]);
+    setNewMultipleChoiceItem("");
     setEditingStep(null);
   };
 
