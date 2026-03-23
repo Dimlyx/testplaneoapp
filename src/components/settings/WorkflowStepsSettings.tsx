@@ -452,54 +452,28 @@ export default function WorkflowStepsSettings() {
                   />
                 </div>
 
-                {/* Checklist items section */}
-                <div className="space-y-3 pt-2 border-t">
+                {/* Checklist button to open sheet */}
+                <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <ClipboardList className="h-4 w-4 text-muted-foreground" />
-                    <Label>Checklist ({checklistItems.length} items)</Label>
-                  </div>
-                  
-                  {checklistItems.map((item, idx) => (
-                    <div key={item.id} className="flex items-center gap-2">
-                      <span className="text-sm flex-1 truncate">{item.label}</span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 shrink-0"
-                        onClick={() => setChecklistItems(prev => prev.filter(i => i.id !== item.id))}
-                      >
-                        <Trash2 className="h-3 w-3 text-destructive" />
-                      </Button>
+                    <div>
+                      <Label>Checklist</Label>
+                      {checklistItems.length > 0 && (
+                        <p className="text-xs text-muted-foreground">
+                          {checklistItems.length} item{checklistItems.length > 1 ? "s" : ""} configuré{checklistItems.length > 1 ? "s" : ""}
+                        </p>
+                      )}
                     </div>
-                  ))}
-
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Nouvel item..."
-                      value={newChecklistItem}
-                      onChange={(e) => setNewChecklistItem(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && newChecklistItem.trim()) {
-                          e.preventDefault();
-                          setChecklistItems(prev => [...prev, { id: crypto.randomUUID(), label: newChecklistItem.trim() }]);
-                          setNewChecklistItem("");
-                        }
-                      }}
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      disabled={!newChecklistItem.trim()}
-                      onClick={() => {
-                        setChecklistItems(prev => [...prev, { id: crypto.randomUUID(), label: newChecklistItem.trim() }]);
-                        setNewChecklistItem("");
-                      }}
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
                   </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setChecklistSheetOpen(true)}
+                  >
+                    <ClipboardList className="h-4 w-4 mr-1" />
+                    {checklistItems.length > 0 ? "Modifier" : "Configurer"}
+                  </Button>
                 </div>
               </div>
             </div>
