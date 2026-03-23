@@ -236,7 +236,29 @@ const DynamicStepContent = ({
           </div>
         )}
 
-        {!step.requires_photo && !step.requires_comment && !isCompleted && !isLocked && (
+        {/* Checklist section */}
+        {hasChecklist && (
+          <div className="space-y-2">
+            <label className="text-sm font-medium mb-2 flex items-center gap-2">
+              <CheckCircle className="h-4 w-4" />
+              Checklist
+            </label>
+            {checklistState.map((item) => (
+              <label key={item.id} className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50 cursor-pointer">
+                <Checkbox
+                  checked={item.checked}
+                  onCheckedChange={() => toggleChecklistItem(item.id)}
+                  disabled={isLocked}
+                />
+                <span className={`text-sm ${item.checked ? "line-through text-muted-foreground" : ""}`}>
+                  {item.label}
+                </span>
+              </label>
+            ))}
+          </div>
+        )}
+
+        {!step.requires_photo && !step.requires_comment && !hasChecklist && !isCompleted && !isLocked && (
           <p className="text-sm text-muted-foreground">
             Validez cette étape une fois terminée.
           </p>
