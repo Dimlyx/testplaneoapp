@@ -646,6 +646,7 @@ export type Database = {
       }
       intervention_step_completions: {
         Row: {
+          checklist_data: Json | null
           comment: string | null
           completed_at: string | null
           completed_by: string | null
@@ -657,6 +658,7 @@ export type Database = {
           step_id: string
         }
         Insert: {
+          checklist_data?: Json | null
           comment?: string | null
           completed_at?: string | null
           completed_by?: string | null
@@ -668,6 +670,7 @@ export type Database = {
           step_id: string
         }
         Update: {
+          checklist_data?: Json | null
           comment?: string | null
           completed_at?: string | null
           completed_by?: string | null
@@ -738,6 +741,7 @@ export type Database = {
       }
       intervention_workflow_steps: {
         Row: {
+          checklist_items: Json | null
           created_at: string
           description: string | null
           id: string
@@ -753,6 +757,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          checklist_items?: Json | null
           created_at?: string
           description?: string | null
           id?: string
@@ -768,6 +773,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          checklist_items?: Json | null
           created_at?: string
           description?: string | null
           id?: string
