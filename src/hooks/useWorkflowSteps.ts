@@ -32,6 +32,7 @@ export interface CreateWorkflowStepInput {
   requires_photo?: boolean;
   requires_comment?: boolean;
   requires_signature?: boolean;
+  is_loop_trigger?: boolean;
   checklist_items?: { id: string; label: string }[];
   multiple_choice_items?: { id: string; label: string }[];
 }
