@@ -27,7 +27,7 @@ export function useStepCompletions(interventionId: string) {
         .order("loop_index", { ascending: true });
 
       if (error) throw error;
-      return data as StepCompletion[];
+      return data as unknown as StepCompletion[];
     },
     enabled: !!interventionId,
   });
