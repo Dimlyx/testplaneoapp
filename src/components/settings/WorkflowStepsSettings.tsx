@@ -303,6 +303,12 @@ export default function WorkflowStepsSettings() {
                                         Signature
                                       </div>
                                     )}
+                                    {step.checklist_items && step.checklist_items.length > 0 && (
+                                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                        <ClipboardList className="h-3 w-3" />
+                                        Checklist ({step.checklist_items.length})
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                                 <div className="flex items-center gap-1">
