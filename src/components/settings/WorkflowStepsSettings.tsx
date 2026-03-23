@@ -85,6 +85,8 @@ export default function WorkflowStepsSettings() {
     setRequiresPhoto(false);
     setRequiresComment(false);
     setRequiresSignature(false);
+    setChecklistItems([]);
+    setNewChecklistItem("");
     setEditingStep(null);
   };
 
