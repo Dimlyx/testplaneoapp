@@ -11,6 +11,7 @@ export interface StepCompletion {
   photo_url: string | null;
   comment: string | null;
   checklist_data: { id: string; label: string; checked: boolean }[] | null;
+  multiple_choice_data: { id: string; label: string; selected: boolean }[] | null;
   created_at: string;
   loop_index: number;
 }
