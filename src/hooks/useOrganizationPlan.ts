@@ -88,7 +88,7 @@ export const FEATURE_LABELS: Record<string, string> = {
   statistics: 'Statistiques avancées',
   maintenance_alerts: 'Alertes de maintenance',
   csv_import: 'Import CSV',
-  equipment_loop: 'Boucle équipements',
+  equipment_loop: 'Activer la boucle ',
   journey_tracking: 'Suivi de trajet',
   chatbot: 'Assistant IA',
   export_data: 'Export des données',

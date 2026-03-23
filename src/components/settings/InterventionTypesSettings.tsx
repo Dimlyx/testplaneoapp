@@ -356,7 +356,7 @@ export default function InterventionTypesSettings() {
             </div>
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>Boucle équipements</Label>
+                <Label>Activer la boucle </Label>
                 <p className="text-xs text-muted-foreground">
                   Permettre au technicien de répéter les étapes pour plusieurs équipements
                 </p>
