@@ -520,6 +520,26 @@ export default function WorkflowStepsSettings() {
                   />
                 </div>
 
+                {/* Loop trigger toggle - only for types with allow_loop */}
+                {selectedTypeId && types.find(t => t.id === selectedTypeId)?.allow_loop && (
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <RefreshCw className="h-4 w-4 text-muted-foreground" />
+                        <Label htmlFor="isLoopTrigger">Début de boucle</Label>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Les étapes à partir d'ici seront répétées lors de la boucle
+                      </p>
+                    </div>
+                    <Switch
+                      id="isLoopTrigger"
+                      checked={isLoopTrigger}
+                      onCheckedChange={setIsLoopTrigger}
+                    />
+                  </div>
+                )}
+
                 {/* Checklist toggle + config */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
