@@ -190,13 +190,14 @@ const InterventionWorkflow = ({
     setActiveStep(activeStep === step ? null : step);
   };
 
-  const handleCompleteStep = async (stepId: string, comment?: string, photoUrl?: string, loopIndex: number = 0) => {
+  const handleCompleteStep = async (stepId: string, comment?: string, photoUrl?: string, checklistData?: { id: string; label: string; checked: boolean }[], loopIndex: number = 0) => {
     await completeStep.mutateAsync({
       interventionId: intervention.id,
       stepId,
       comment,
       photoUrl,
       loopIndex,
+      checklistData,
     });
   };
 
@@ -550,7 +551,7 @@ const InterventionWorkflow = ({
                     step={step}
                     interventionId={intervention.id}
                     completion={completion}
-                    onComplete={(stepId, comment, photoUrl) => handleCompleteStep(stepId, comment, photoUrl, loopIdx)}
+                    onComplete={(stepId, comment, photoUrl, checklistData) => handleCompleteStep(stepId, comment, photoUrl, checklistData, loopIdx)}
                     isLocked={isLocked}
                     isCompleting={completeStep.isPending}
                     loopIndex={loopIdx}
@@ -607,7 +608,7 @@ const InterventionWorkflow = ({
                 step={step}
                 interventionId={intervention.id}
                 completion={completion}
-                onComplete={(stepId, comment, photoUrl) => handleCompleteStep(stepId, comment, photoUrl, 0)}
+                onComplete={(stepId, comment, photoUrl, checklistData) => handleCompleteStep(stepId, comment, photoUrl, checklistData, 0)}
                 isLocked={isLocked}
                 isCompleting={completeStep.isPending}
               />

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Trash2, ArrowUp, ArrowDown, Camera, MessageSquare, PenTool, ChevronDown, ChevronRight, ListChecks, Settings2 } from "lucide-react";
+import { Plus, Trash2, ArrowUp, ArrowDown, Camera, MessageSquare, PenTool, ChevronDown, ChevronRight, ListChecks, Settings2, ClipboardList } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -74,6 +74,8 @@ export default function WorkflowStepsSettings() {
   const [requiresPhoto, setRequiresPhoto] = useState(false);
   const [requiresComment, setRequiresComment] = useState(false);
   const [requiresSignature, setRequiresSignature] = useState(false);
+  const [checklistItems, setChecklistItems] = useState<{ id: string; label: string }[]>([]);
+  const [newChecklistItem, setNewChecklistItem] = useState("");
 
   const resetForm = () => {
     setName("");
@@ -83,6 +85,8 @@ export default function WorkflowStepsSettings() {
     setRequiresPhoto(false);
     setRequiresComment(false);
     setRequiresSignature(false);
+    setChecklistItems([]);
+    setNewChecklistItem("");
     setEditingStep(null);
   };
 
@@ -102,6 +106,8 @@ export default function WorkflowStepsSettings() {
     setRequiresPhoto(step.requires_photo);
     setRequiresComment(step.requires_comment);
     setRequiresSignature(step.requires_signature);
+    setChecklistItems(step.checklist_items || []);
+    setNewChecklistItem("");
     setDialogOpen(true);
   };
 
@@ -122,7 +128,8 @@ export default function WorkflowStepsSettings() {
         requires_photo: requiresPhoto,
         requires_comment: requiresComment,
         requires_signature: requiresSignature,
-      });
+        checklist_items: checklistItems,
+      } as any);
     } else {
       await createStep.mutateAsync({
         intervention_type_id: selectedTypeId,
@@ -134,7 +141,8 @@ export default function WorkflowStepsSettings() {
         requires_photo: requiresPhoto,
         requires_comment: requiresComment,
         requires_signature: requiresSignature,
-      });
+        checklist_items: checklistItems,
+      } as any);
     }
 
     setDialogOpen(false);
@@ -295,6 +303,12 @@ export default function WorkflowStepsSettings() {
                                         Signature
                                       </div>
                                     )}
+                                    {step.checklist_items && step.checklist_items.length > 0 && (
+                                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                        <ClipboardList className="h-3 w-3" />
+                                        Checklist ({step.checklist_items.length})
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                                 <div className="flex items-center gap-1">
@@ -435,6 +449,56 @@ export default function WorkflowStepsSettings() {
                     checked={requiresSignature}
                     onCheckedChange={setRequiresSignature}
                   />
+                </div>
+
+                {/* Checklist items section */}
+                <div className="space-y-3 pt-2 border-t">
+                  <div className="flex items-center gap-2">
+                    <ClipboardList className="h-4 w-4 text-muted-foreground" />
+                    <Label>Checklist ({checklistItems.length} items)</Label>
+                  </div>
+                  
+                  {checklistItems.map((item, idx) => (
+                    <div key={item.id} className="flex items-center gap-2">
+                      <span className="text-sm flex-1 truncate">{item.label}</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 shrink-0"
+                        onClick={() => setChecklistItems(prev => prev.filter(i => i.id !== item.id))}
+                      >
+                        <Trash2 className="h-3 w-3 text-destructive" />
+                      </Button>
+                    </div>
+                  ))}
+
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Nouvel item..."
+                      value={newChecklistItem}
+                      onChange={(e) => setNewChecklistItem(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && newChecklistItem.trim()) {
+                          e.preventDefault();
+                          setChecklistItems(prev => [...prev, { id: crypto.randomUUID(), label: newChecklistItem.trim() }]);
+                          setNewChecklistItem("");
+                        }
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      disabled={!newChecklistItem.trim()}
+                      onClick={() => {
+                        setChecklistItems(prev => [...prev, { id: crypto.randomUUID(), label: newChecklistItem.trim() }]);
+                        setNewChecklistItem("");
+                      }}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>

@@ -10,6 +10,7 @@ export interface StepCompletion {
   completed_by: string | null;
   photo_url: string | null;
   comment: string | null;
+  checklist_data: { id: string; label: string; checked: boolean }[] | null;
   created_at: string;
   loop_index: number;
 }
@@ -41,12 +42,14 @@ export function useCompleteStep() {
       comment,
       photoUrl,
       loopIndex = 0,
+      checklistData,
     }: {
       interventionId: string;
       stepId: string;
       comment?: string;
       photoUrl?: string;
       loopIndex?: number;
+      checklistData?: { id: string; label: string; checked: boolean }[];
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
 
@@ -67,7 +70,8 @@ export function useCompleteStep() {
             completed_by: user?.id || null,
             comment: comment || null,
             photo_url: photoUrl || null,
-          })
+            checklist_data: checklistData || null,
+          } as any)
           .eq("id", existing.id);
         if (updateError) throw updateError;
       } else {
@@ -81,7 +85,8 @@ export function useCompleteStep() {
             comment: comment || null,
             photo_url: photoUrl || null,
             loop_index: loopIndex,
-          });
+            checklist_data: checklistData || null,
+          } as any);
         if (insertError) throw insertError;
       }
     },

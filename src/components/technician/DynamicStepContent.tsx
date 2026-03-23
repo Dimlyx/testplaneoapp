@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Camera, MessageSquare, CheckCircle, Upload, X, Plus } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { WorkflowStep as WorkflowStepType } from "@/hooks/useWorkflowSteps";
 import { StepCompletion } from "@/hooks/useStepCompletions";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,7 +13,7 @@ interface DynamicStepContentProps {
   step: WorkflowStepType;
   interventionId: string;
   completion: StepCompletion | undefined;
-  onComplete: (stepId: string, comment?: string, photoUrl?: string) => Promise<void>;
+  onComplete: (stepId: string, comment?: string, photoUrl?: string, checklistData?: { id: string; label: string; checked: boolean }[]) => Promise<void>;
   isLocked: boolean;
   isCompleting: boolean;
   signerName?: string;
@@ -47,8 +48,26 @@ const DynamicStepContent = ({
   const [photoUrls, setPhotoUrls] = useState<string[]>(parsePhotoUrls(completion?.photo_url || null));
   const [isUploading, setIsUploading] = useState(false);
   const [localSignerName, setLocalSignerName] = useState(signerName);
+  
+  // Initialize checklist state from completion or step template
+  const [checklistState, setChecklistState] = useState<{ id: string; label: string; checked: boolean }[]>(() => {
+    if (completion?.checklist_data && Array.isArray(completion.checklist_data)) {
+      return completion.checklist_data;
+    }
+    if (step.checklist_items && step.checklist_items.length > 0) {
+      return step.checklist_items.map(item => ({ ...item, checked: false }));
+    }
+    return [];
+  });
 
   const isCompleted = !!completion?.completed_at;
+  const hasChecklist = checklistState.length > 0;
+
+  const toggleChecklistItem = (itemId: string) => {
+    setChecklistState(prev => prev.map(item => 
+      item.id === itemId ? { ...item, checked: !item.checked } : item
+    ));
+  };
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -86,7 +105,7 @@ const DynamicStepContent = ({
 
   const handleValidate = async () => {
     const serializedPhotos = photoUrls.length > 0 ? JSON.stringify(photoUrls) : undefined;
-    await onComplete(step.id, comment || undefined, serializedPhotos);
+    await onComplete(step.id, comment || undefined, serializedPhotos, checklistState.length > 0 ? checklistState : undefined);
   };
 
   // Handle signature step
@@ -217,7 +236,29 @@ const DynamicStepContent = ({
           </div>
         )}
 
-        {!step.requires_photo && !step.requires_comment && !isCompleted && !isLocked && (
+        {/* Checklist section */}
+        {hasChecklist && (
+          <div className="space-y-2">
+            <label className="text-sm font-medium mb-2 flex items-center gap-2">
+              <CheckCircle className="h-4 w-4" />
+              Checklist
+            </label>
+            {checklistState.map((item) => (
+              <label key={item.id} className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50 cursor-pointer">
+                <Checkbox
+                  checked={item.checked}
+                  onCheckedChange={() => toggleChecklistItem(item.id)}
+                  disabled={isLocked}
+                />
+                <span className={`text-sm ${item.checked ? "line-through text-muted-foreground" : ""}`}>
+                  {item.label}
+                </span>
+              </label>
+            ))}
+          </div>
+        )}
+
+        {!step.requires_photo && !step.requires_comment && !hasChecklist && !isCompleted && !isLocked && (
           <p className="text-sm text-muted-foreground">
             Validez cette étape une fois terminée.
           </p>
