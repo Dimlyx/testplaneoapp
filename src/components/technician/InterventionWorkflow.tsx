@@ -609,7 +609,7 @@ const InterventionWorkflow = ({
                 step={step}
                 interventionId={intervention.id}
                 completion={completion}
-                onComplete={(stepId, comment, photoUrl, checklistData) => handleCompleteStep(stepId, comment, photoUrl, checklistData, 0)}
+                onComplete={(stepId, comment, photoUrl, checklistData, multipleChoiceData) => handleCompleteStep(stepId, comment, photoUrl, checklistData, multipleChoiceData, 0)}
                 isLocked={isLocked}
                 isCompleting={completeStep.isPending}
               />

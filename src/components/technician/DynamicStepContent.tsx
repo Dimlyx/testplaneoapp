@@ -2,8 +2,9 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
-import { Camera, MessageSquare, CheckCircle, Upload, X, Plus } from "lucide-react";
+import { Camera, MessageSquare, CheckCircle, Upload, X, Plus, ChevronDown, List } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { WorkflowStep as WorkflowStepType } from "@/hooks/useWorkflowSteps";
 import { StepCompletion } from "@/hooks/useStepCompletions";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,7 +14,7 @@ interface DynamicStepContentProps {
   step: WorkflowStepType;
   interventionId: string;
   completion: StepCompletion | undefined;
-  onComplete: (stepId: string, comment?: string, photoUrl?: string, checklistData?: { id: string; label: string; checked: boolean }[]) => Promise<void>;
+  onComplete: (stepId: string, comment?: string, photoUrl?: string, checklistData?: { id: string; label: string; checked: boolean }[], multipleChoiceData?: { id: string; label: string; selected: boolean }[]) => Promise<void>;
   isLocked: boolean;
   isCompleting: boolean;
   signerName?: string;
@@ -60,12 +61,33 @@ const DynamicStepContent = ({
     return [];
   });
 
+  // Initialize multiple choice state
+  const [multipleChoiceState, setMultipleChoiceState] = useState<{ id: string; label: string; selected: boolean }[]>(() => {
+    if (completion?.multiple_choice_data && Array.isArray(completion.multiple_choice_data)) {
+      return completion.multiple_choice_data;
+    }
+    if (step.multiple_choice_items && step.multiple_choice_items.length > 0) {
+      return step.multiple_choice_items.map(item => ({ ...item, selected: false }));
+    }
+    return [];
+  });
+
+  const [multipleChoiceOpen, setMultipleChoiceOpen] = useState(false);
+
   const isCompleted = !!completion?.completed_at;
   const hasChecklist = checklistState.length > 0;
+  const hasMultipleChoice = multipleChoiceState.length > 0;
+  const selectedCount = multipleChoiceState.filter(i => i.selected).length;
 
   const toggleChecklistItem = (itemId: string) => {
     setChecklistState(prev => prev.map(item => 
       item.id === itemId ? { ...item, checked: !item.checked } : item
+    ));
+  };
+
+  const toggleMultipleChoiceItem = (itemId: string) => {
+    setMultipleChoiceState(prev => prev.map(item =>
+      item.id === itemId ? { ...item, selected: !item.selected } : item
     ));
   };
 
@@ -105,7 +127,13 @@ const DynamicStepContent = ({
 
   const handleValidate = async () => {
     const serializedPhotos = photoUrls.length > 0 ? JSON.stringify(photoUrls) : undefined;
-    await onComplete(step.id, comment || undefined, serializedPhotos, checklistState.length > 0 ? checklistState : undefined);
+    await onComplete(
+      step.id,
+      comment || undefined,
+      serializedPhotos,
+      checklistState.length > 0 ? checklistState : undefined,
+      multipleChoiceState.length > 0 ? multipleChoiceState : undefined
+    );
   };
 
   // Handle signature step
@@ -258,7 +286,45 @@ const DynamicStepContent = ({
           </div>
         )}
 
-        {!step.requires_photo && !step.requires_comment && !hasChecklist && !isCompleted && !isLocked && (
+        {/* Multiple choice section - collapsible bar */}
+        {hasMultipleChoice && (
+          <Collapsible open={multipleChoiceOpen} onOpenChange={setMultipleChoiceOpen}>
+            <CollapsibleTrigger asChild>
+              <button
+                type="button"
+                className="w-full flex items-center justify-between p-3 rounded-lg border bg-muted/30 hover:bg-muted/50 transition-colors"
+                disabled={isLocked && !isCompleted}
+              >
+                <div className="flex items-center gap-2">
+                  <List className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium">Choix multiple</span>
+                  {selectedCount > 0 && (
+                    <span className="text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded-full">
+                      {selectedCount} sélectionné{selectedCount > 1 ? "s" : ""}
+                    </span>
+                  )}
+                </div>
+                <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${multipleChoiceOpen ? "rotate-180" : ""}`} />
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="pt-2 space-y-1">
+              {multipleChoiceState.map((item) => (
+                <label key={item.id} className="flex items-center gap-3 p-2.5 rounded-md hover:bg-muted/50 cursor-pointer border">
+                  <Checkbox
+                    checked={item.selected}
+                    onCheckedChange={() => toggleMultipleChoiceItem(item.id)}
+                    disabled={isLocked}
+                  />
+                  <span className={`text-sm ${item.selected ? "font-medium text-primary" : ""}`}>
+                    {item.label}
+                  </span>
+                </label>
+              ))}
+            </CollapsibleContent>
+          </Collapsible>
+        )}
+
+        {!step.requires_photo && !step.requires_comment && !hasChecklist && !hasMultipleChoice && !isCompleted && !isLocked && (
           <p className="text-sm text-muted-foreground">
             Validez cette étape une fois terminée.
           </p>
