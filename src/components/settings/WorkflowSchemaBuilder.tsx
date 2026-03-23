@@ -228,6 +228,8 @@ export default function WorkflowSchemaBuilder({ typeId, steps, allowLoop }: Work
       requires_comment: editComment,
       requires_signature: editSignature,
       is_loop_trigger: editLoopTrigger,
+      loop_yes_step_id: editLoopTrigger ? editLoopYesStepId : null,
+      loop_no_step_id: editLoopTrigger ? editLoopNoStepId : null,
       checklist_items: editHasChecklist ? editChecklistItems : [],
       multiple_choice_items: editHasMultipleChoice ? editMultipleChoiceItems : [],
     } as any);
