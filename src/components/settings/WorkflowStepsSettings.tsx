@@ -106,6 +106,8 @@ export default function WorkflowStepsSettings() {
     setRequiresPhoto(step.requires_photo);
     setRequiresComment(step.requires_comment);
     setRequiresSignature(step.requires_signature);
+    setChecklistItems(step.checklist_items || []);
+    setNewChecklistItem("");
     setDialogOpen(true);
   };
 
