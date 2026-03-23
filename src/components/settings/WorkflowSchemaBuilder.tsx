@@ -257,7 +257,7 @@ export default function WorkflowSchemaBuilder({ typeId, steps, allowLoop }: Work
   };
 
   return (
-    <div className="flex gap-4 min-h-[400px]">
+    <div className="flex gap-4 min-h-[400px] max-h-[calc(90vh-120px)]">
       {/* Left palette */}
       <div className="w-40 shrink-0 space-y-2">
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
@@ -325,9 +325,9 @@ export default function WorkflowSchemaBuilder({ typeId, steps, allowLoop }: Work
       </div>
 
       {/* Right config panel */}
-      <div className="w-72 shrink-0 border-l pl-4">
+      <div className="w-72 shrink-0 border-l pl-4 overflow-hidden flex flex-col">
         {selectedStep ? (
-          <ScrollArea className="h-[500px] pr-2">
+          <ScrollArea className="flex-1 pr-2">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold text-sm">Configuration</h3>
