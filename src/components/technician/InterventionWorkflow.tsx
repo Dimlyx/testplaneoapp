@@ -106,8 +106,30 @@ const InterventionWorkflow = ({
   const stepsLocked = !isStarted || isPaused;
 
   // Separate signature steps from loopable steps
+  // If there's a loop trigger step, only steps from the trigger onward (excluding signature) are looped
   const signatureSteps = useMemo(() => workflowSteps.filter(s => s.requires_signature), [workflowSteps]);
-  const loopableSteps = useMemo(() => workflowSteps.filter(s => !s.requires_signature), [workflowSteps]);
+  
+  const { preLoopSteps, loopableSteps } = useMemo(() => {
+    const nonSignatureSteps = workflowSteps.filter(s => !s.requires_signature);
+    
+    if (!matchingType?.allow_loop) {
+      return { preLoopSteps: nonSignatureSteps, loopableSteps: [] as typeof nonSignatureSteps };
+    }
+    
+    // Find the loop trigger step
+    const triggerIndex = nonSignatureSteps.findIndex(s => (s as any).is_loop_trigger);
+    
+    if (triggerIndex === -1) {
+      // No trigger found, all steps are loopable (legacy behavior)
+      return { preLoopSteps: [] as typeof nonSignatureSteps, loopableSteps: nonSignatureSteps };
+    }
+    
+    // Steps before trigger run once, trigger step + after are looped
+    return {
+      preLoopSteps: nonSignatureSteps.slice(0, triggerIndex),
+      loopableSteps: nonSignatureSteps.slice(triggerIndex),
+    };
+  }, [workflowSteps, matchingType]);
 
   // Calculate loop iterations from completions
   const maxLoopIndex = useMemo(() => {
@@ -162,7 +184,16 @@ const InterventionWorkflow = ({
       return;
     }
     
-    // Find first incomplete step across all loops
+    // Check pre-loop steps first
+    const firstIncompletePreLoop = preLoopSteps.find(
+      step => !stepCompletions.some(c => c.step_id === step.id && c.loop_index === 0 && c.completed_at)
+    );
+    if (firstIncompletePreLoop) {
+      setActiveStep(`step-${firstIncompletePreLoop.id}-loop-0`);
+      return;
+    }
+    
+    // Find first incomplete loopable step across all loops
     for (let loopIdx = 0; loopIdx <= maxLoopIndex; loopIdx++) {
       const firstIncomplete = loopableSteps.find(
         step => !stepCompletions.some(c => c.step_id === step.id && c.loop_index === loopIdx && c.completed_at)
@@ -514,6 +545,40 @@ const InterventionWorkflow = ({
           </CardContent>
         </Card>
       </WorkflowStep>
+
+      {/* Pre-loop steps (run once, not repeated in loops) */}
+      {preLoopSteps.map((step) => {
+        const completion = stepCompletions.find(
+          c => c.step_id === step.id && (c.loop_index ?? 0) === 0
+        );
+        const isStepCompleted = !!completion?.completed_at;
+        const stepKey = `step-${step.id}-loop-0`;
+
+        return (
+          <WorkflowStep
+            key={stepKey}
+            icon={ClipboardList}
+            label={step.label}
+            isActive={activeStep === stepKey}
+            isCompleted={isStepCompleted}
+            onClick={() => handleStepClick(stepKey)}
+            isDisabled={stepsLocked}
+          >
+            <div className="relative">
+              {stepsLocked && <LockedOverlay />}
+              <DynamicStepContent
+                step={step}
+                interventionId={intervention.id}
+                completion={completion}
+                onComplete={(stepId, comment, photoUrl, checklistData, multipleChoiceData) => handleCompleteStep(stepId, comment, photoUrl, checklistData, multipleChoiceData, 0)}
+                isLocked={isLocked}
+                isCompleting={completeStep.isPending}
+                loopIndex={0}
+              />
+            </div>
+          </WorkflowStep>
+        );
+      })}
 
       {/* Dynamic workflow steps - rendered per loop iteration */}
       {loopableSteps.length > 0 && Array.from({ length: totalLoops }, (_, loopIdx) => (

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Trash2, Camera, MessageSquare, PenTool, ChevronDown, ChevronRight, ListChecks, Settings2, ClipboardList, List, GripVertical } from "lucide-react";
+import { Plus, Trash2, Camera, MessageSquare, PenTool, ChevronDown, ChevronRight, ListChecks, Settings2, ClipboardList, List, GripVertical, RefreshCw } from "lucide-react";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -93,6 +93,12 @@ function SortableStepItem({ step, index, onEdit, onDelete }: SortableStepItemPro
           {step.is_mandatory && (
             <Badge variant="destructive" className="text-xs">
               Obligatoire
+            </Badge>
+          )}
+          {(step as any).is_loop_trigger && (
+            <Badge variant="outline" className="text-xs border-primary text-primary">
+              <RefreshCw className="h-3 w-3 mr-1" />
+              Début boucle
             </Badge>
           )}
         </div>
@@ -191,6 +197,7 @@ export default function WorkflowStepsSettings() {
   const [hasMultipleChoice, setHasMultipleChoice] = useState(false);
   const [multipleChoiceItems, setMultipleChoiceItems] = useState<{ id: string; label: string }[]>([]);
   const [newMultipleChoiceItem, setNewMultipleChoiceItem] = useState("");
+  const [isLoopTrigger, setIsLoopTrigger] = useState(false);
 
   const resetForm = () => {
     setName("");
@@ -206,6 +213,7 @@ export default function WorkflowStepsSettings() {
     setHasMultipleChoice(false);
     setMultipleChoiceItems([]);
     setNewMultipleChoiceItem("");
+    setIsLoopTrigger(false);
     setEditingStep(null);
   };
 
@@ -231,6 +239,8 @@ export default function WorkflowStepsSettings() {
     setHasMultipleChoice((step.multiple_choice_items || []).length > 0);
     setMultipleChoiceItems(step.multiple_choice_items || []);
     setNewMultipleChoiceItem("");
+    setIsLoopTrigger((step as any).is_loop_trigger || false);
+    setDialogOpen(true);
     setDialogOpen(true);
   };
 
@@ -251,6 +261,7 @@ export default function WorkflowStepsSettings() {
         requires_photo: requiresPhoto,
         requires_comment: requiresComment,
         requires_signature: requiresSignature,
+        is_loop_trigger: isLoopTrigger,
         checklist_items: hasChecklist ? checklistItems : [],
         multiple_choice_items: hasMultipleChoice ? multipleChoiceItems : [],
       } as any);
@@ -265,6 +276,7 @@ export default function WorkflowStepsSettings() {
         requires_photo: requiresPhoto,
         requires_comment: requiresComment,
         requires_signature: requiresSignature,
+        is_loop_trigger: isLoopTrigger,
         checklist_items: hasChecklist ? checklistItems : [],
         multiple_choice_items: hasMultipleChoice ? multipleChoiceItems : [],
       } as any);
@@ -507,6 +519,26 @@ export default function WorkflowStepsSettings() {
                     onCheckedChange={setRequiresSignature}
                   />
                 </div>
+
+                {/* Loop trigger toggle - only for types with allow_loop */}
+                {selectedTypeId && types.find(t => t.id === selectedTypeId)?.allow_loop && (
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <RefreshCw className="h-4 w-4 text-muted-foreground" />
+                        <Label htmlFor="isLoopTrigger">Début de boucle</Label>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Les étapes à partir d'ici seront répétées lors de la boucle
+                      </p>
+                    </div>
+                    <Switch
+                      id="isLoopTrigger"
+                      checked={isLoopTrigger}
+                      onCheckedChange={setIsLoopTrigger}
+                    />
+                  </div>
+                )}
 
                 {/* Checklist toggle + config */}
                 <div className="space-y-2">

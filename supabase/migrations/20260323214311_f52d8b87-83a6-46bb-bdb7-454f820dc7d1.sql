@@ -1,0 +1,1 @@
+ALTER TABLE public.intervention_workflow_steps ADD COLUMN is_loop_trigger boolean NOT NULL DEFAULT false;
