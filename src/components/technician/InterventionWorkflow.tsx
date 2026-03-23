@@ -190,7 +190,7 @@ const InterventionWorkflow = ({
     setActiveStep(activeStep === step ? null : step);
   };
 
-  const handleCompleteStep = async (stepId: string, comment?: string, photoUrl?: string, checklistData?: { id: string; label: string; checked: boolean }[], loopIndex: number = 0) => {
+  const handleCompleteStep = async (stepId: string, comment?: string, photoUrl?: string, checklistData?: { id: string; label: string; checked: boolean }[], multipleChoiceData?: { id: string; label: string; selected: boolean }[], loopIndex: number = 0) => {
     await completeStep.mutateAsync({
       interventionId: intervention.id,
       stepId,
@@ -198,6 +198,7 @@ const InterventionWorkflow = ({
       photoUrl,
       loopIndex,
       checklistData,
+      multipleChoiceData,
     });
   };
 
@@ -551,7 +552,7 @@ const InterventionWorkflow = ({
                     step={step}
                     interventionId={intervention.id}
                     completion={completion}
-                    onComplete={(stepId, comment, photoUrl, checklistData) => handleCompleteStep(stepId, comment, photoUrl, checklistData, loopIdx)}
+                    onComplete={(stepId, comment, photoUrl, checklistData, multipleChoiceData) => handleCompleteStep(stepId, comment, photoUrl, checklistData, multipleChoiceData, loopIdx)}
                     isLocked={isLocked}
                     isCompleting={completeStep.isPending}
                     loopIndex={loopIdx}
@@ -608,7 +609,7 @@ const InterventionWorkflow = ({
                 step={step}
                 interventionId={intervention.id}
                 completion={completion}
-                onComplete={(stepId, comment, photoUrl, checklistData) => handleCompleteStep(stepId, comment, photoUrl, checklistData, 0)}
+                onComplete={(stepId, comment, photoUrl, checklistData, multipleChoiceData) => handleCompleteStep(stepId, comment, photoUrl, checklistData, multipleChoiceData, 0)}
                 isLocked={isLocked}
                 isCompleting={completeStep.isPending}
               />

@@ -11,6 +11,7 @@ export interface StepCompletion {
   photo_url: string | null;
   comment: string | null;
   checklist_data: { id: string; label: string; checked: boolean }[] | null;
+  multiple_choice_data: { id: string; label: string; selected: boolean }[] | null;
   created_at: string;
   loop_index: number;
 }
@@ -26,7 +27,7 @@ export function useStepCompletions(interventionId: string) {
         .order("loop_index", { ascending: true });
 
       if (error) throw error;
-      return data as StepCompletion[];
+      return data as unknown as StepCompletion[];
     },
     enabled: !!interventionId,
   });
@@ -43,6 +44,7 @@ export function useCompleteStep() {
       photoUrl,
       loopIndex = 0,
       checklistData,
+      multipleChoiceData,
     }: {
       interventionId: string;
       stepId: string;
@@ -50,6 +52,7 @@ export function useCompleteStep() {
       photoUrl?: string;
       loopIndex?: number;
       checklistData?: { id: string; label: string; checked: boolean }[];
+      multipleChoiceData?: { id: string; label: string; selected: boolean }[];
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
 
@@ -71,6 +74,7 @@ export function useCompleteStep() {
             comment: comment || null,
             photo_url: photoUrl || null,
             checklist_data: checklistData || null,
+            multiple_choice_data: multipleChoiceData || null,
           } as any)
           .eq("id", existing.id);
         if (updateError) throw updateError;
@@ -86,6 +90,7 @@ export function useCompleteStep() {
             photo_url: photoUrl || null,
             loop_index: loopIndex,
             checklist_data: checklistData || null,
+            multiple_choice_data: multipleChoiceData || null,
           } as any);
         if (insertError) throw insertError;
       }

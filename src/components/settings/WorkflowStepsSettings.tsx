@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Trash2, ArrowUp, ArrowDown, Camera, MessageSquare, PenTool, ChevronDown, ChevronRight, ListChecks, Settings2, ClipboardList } from "lucide-react";
+import { Plus, Trash2, ArrowUp, ArrowDown, Camera, MessageSquare, PenTool, ChevronDown, ChevronRight, ListChecks, Settings2, ClipboardList, List } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -65,6 +65,7 @@ export default function WorkflowStepsSettings() {
   const [openTypes, setOpenTypes] = useState<Record<string, boolean>>({});
   const [dialogOpen, setDialogOpen] = useState(false);
   const [checklistSheetOpen, setChecklistSheetOpen] = useState(false);
+  const [multipleChoiceSheetOpen, setMultipleChoiceSheetOpen] = useState(false);
   const [selectedTypeId, setSelectedTypeId] = useState<string | null>(null);
   const [editingStep, setEditingStep] = useState<WorkflowStep | null>(null);
 
@@ -78,6 +79,8 @@ export default function WorkflowStepsSettings() {
   const [requiresSignature, setRequiresSignature] = useState(false);
   const [checklistItems, setChecklistItems] = useState<{ id: string; label: string }[]>([]);
   const [newChecklistItem, setNewChecklistItem] = useState("");
+  const [multipleChoiceItems, setMultipleChoiceItems] = useState<{ id: string; label: string }[]>([]);
+  const [newMultipleChoiceItem, setNewMultipleChoiceItem] = useState("");
 
   const resetForm = () => {
     setName("");
@@ -89,6 +92,8 @@ export default function WorkflowStepsSettings() {
     setRequiresSignature(false);
     setChecklistItems([]);
     setNewChecklistItem("");
+    setMultipleChoiceItems([]);
+    setNewMultipleChoiceItem("");
     setEditingStep(null);
   };
 
@@ -110,6 +115,8 @@ export default function WorkflowStepsSettings() {
     setRequiresSignature(step.requires_signature);
     setChecklistItems(step.checklist_items || []);
     setNewChecklistItem("");
+    setMultipleChoiceItems(step.multiple_choice_items || []);
+    setNewMultipleChoiceItem("");
     setDialogOpen(true);
   };
 
@@ -131,6 +138,7 @@ export default function WorkflowStepsSettings() {
         requires_comment: requiresComment,
         requires_signature: requiresSignature,
         checklist_items: checklistItems,
+        multiple_choice_items: multipleChoiceItems,
       } as any);
     } else {
       await createStep.mutateAsync({
@@ -144,6 +152,7 @@ export default function WorkflowStepsSettings() {
         requires_comment: requiresComment,
         requires_signature: requiresSignature,
         checklist_items: checklistItems,
+        multiple_choice_items: multipleChoiceItems,
       } as any);
     }
 
@@ -311,6 +320,12 @@ export default function WorkflowStepsSettings() {
                                         Checklist ({step.checklist_items.length})
                                       </div>
                                     )}
+                                    {step.multiple_choice_items && step.multiple_choice_items.length > 0 && (
+                                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                        <List className="h-3 w-3" />
+                                        Choix multiple ({step.multiple_choice_items.length})
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                                 <div className="flex items-center gap-1">
@@ -476,6 +491,30 @@ export default function WorkflowStepsSettings() {
                     {checklistItems.length > 0 ? "Modifier" : "Configurer"}
                   </Button>
                 </div>
+
+                {/* Multiple choice button to open sheet */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <List className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <Label>Choix multiple</Label>
+                      {multipleChoiceItems.length > 0 && (
+                        <p className="text-xs text-muted-foreground">
+                          {multipleChoiceItems.length} choix configuré{multipleChoiceItems.length > 1 ? "s" : ""}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setMultipleChoiceSheetOpen(true)}
+                  >
+                    <List className="h-4 w-4 mr-1" />
+                    {multipleChoiceItems.length > 0 ? "Modifier" : "Configurer"}
+                  </Button>
+                </div>
               </div>
             </div>
             <DialogFooter>
@@ -565,6 +604,80 @@ export default function WorkflowStepsSettings() {
             <SheetFooter>
               <Button onClick={() => setChecklistSheetOpen(false)} className="w-full">
                 Terminé ({checklistItems.length} item{checklistItems.length !== 1 ? "s" : ""})
+              </Button>
+            </SheetFooter>
+          </SheetContent>
+        </Sheet>
+
+        {/* Multiple Choice Sheet (side panel) */}
+        <Sheet open={multipleChoiceSheetOpen} onOpenChange={setMultipleChoiceSheetOpen}>
+          <SheetContent side="right" className="sm:max-w-md">
+            <SheetHeader>
+              <SheetTitle className="flex items-center gap-2">
+                <List className="h-5 w-5" />
+                Choix multiple de l'étape
+              </SheetTitle>
+            </SheetHeader>
+            <div className="space-y-4 py-6">
+              <p className="text-sm text-muted-foreground">
+                Ajoutez les options parmi lesquelles le technicien pourra choisir. Il pourra sélectionner une ou plusieurs options.
+              </p>
+
+              {multipleChoiceItems.length > 0 && (
+                <div className="space-y-2">
+                  {multipleChoiceItems.map((item) => (
+                    <div key={item.id} className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
+                      <span className="text-sm flex-1">{item.label}</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 shrink-0"
+                        onClick={() => setMultipleChoiceItems(prev => prev.filter(i => i.id !== item.id))}
+                      >
+                        <Trash2 className="h-3 w-3 text-destructive" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {multipleChoiceItems.length === 0 && (
+                <div className="text-center py-6 text-muted-foreground text-sm border-2 border-dashed rounded-lg">
+                  Aucune option configurée
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Nouvelle option..."
+                  value={newMultipleChoiceItem}
+                  onChange={(e) => setNewMultipleChoiceItem(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && newMultipleChoiceItem.trim()) {
+                      e.preventDefault();
+                      setMultipleChoiceItems(prev => [...prev, { id: crypto.randomUUID(), label: newMultipleChoiceItem.trim() }]);
+                      setNewMultipleChoiceItem("");
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  disabled={!newMultipleChoiceItem.trim()}
+                  onClick={() => {
+                    setMultipleChoiceItems(prev => [...prev, { id: crypto.randomUUID(), label: newMultipleChoiceItem.trim() }]);
+                    setNewMultipleChoiceItem("");
+                  }}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+            <SheetFooter>
+              <Button onClick={() => setMultipleChoiceSheetOpen(false)} className="w-full">
+                Terminé ({multipleChoiceItems.length} option{multipleChoiceItems.length !== 1 ? "s" : ""})
               </Button>
             </SheetFooter>
           </SheetContent>

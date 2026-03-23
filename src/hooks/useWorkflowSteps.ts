@@ -16,6 +16,7 @@ export interface WorkflowStep {
   requires_comment: boolean;
   requires_signature: boolean;
   checklist_items: { id: string; label: string }[];
+  multiple_choice_items: { id: string; label: string }[];
   created_at: string;
   updated_at: string;
 }
@@ -31,6 +32,7 @@ export interface CreateWorkflowStepInput {
   requires_comment?: boolean;
   requires_signature?: boolean;
   checklist_items?: { id: string; label: string }[];
+  multiple_choice_items?: { id: string; label: string }[];
 }
 
 export interface UpdateWorkflowStepInput {
@@ -44,6 +46,7 @@ export interface UpdateWorkflowStepInput {
   requires_comment?: boolean;
   requires_signature?: boolean;
   checklist_items?: { id: string; label: string }[];
+  multiple_choice_items?: { id: string; label: string }[];
 }
 
 export function useWorkflowSteps(interventionTypeId?: string) {
@@ -64,7 +67,7 @@ export function useWorkflowSteps(interventionTypeId?: string) {
       const { data, error } = await query;
 
       if (error) throw error;
-      return data as WorkflowStep[];
+      return data as unknown as WorkflowStep[];
     },
     enabled: !!organizationId,
   });
@@ -85,7 +88,7 @@ export function useWorkflowStepsByType() {
 
       // Group by intervention type
       const grouped: Record<string, WorkflowStep[]> = {};
-      (data as WorkflowStep[]).forEach((step) => {
+      (data as unknown as WorkflowStep[]).forEach((step) => {
         if (!grouped[step.intervention_type_id]) {
           grouped[step.intervention_type_id] = [];
         }

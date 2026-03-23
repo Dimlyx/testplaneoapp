@@ -240,6 +240,20 @@ const StepItem = ({ step, completion, interventionId, index, loopIndex }: StepIt
               </div>
             </div>
           )}
+          {/* Multiple choice read-only */}
+          {completion?.multiple_choice_data && Array.isArray(completion.multiple_choice_data) && completion.multiple_choice_data.length > 0 && (
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-2">Choix multiple</p>
+              <div className="space-y-1">
+                {completion.multiple_choice_data.map((item: any) => (
+                  <div key={item.id} className="flex items-center gap-2 text-sm">
+                    <Checkbox checked={item.selected} disabled />
+                    <span className={item.selected ? "font-medium" : "text-muted-foreground"}>{item.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
