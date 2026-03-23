@@ -115,6 +115,8 @@ export default function WorkflowStepsSettings() {
     setRequiresSignature(step.requires_signature);
     setChecklistItems(step.checklist_items || []);
     setNewChecklistItem("");
+    setMultipleChoiceItems(step.multiple_choice_items || []);
+    setNewMultipleChoiceItem("");
     setDialogOpen(true);
   };
 
