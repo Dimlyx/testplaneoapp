@@ -67,7 +67,7 @@ export function useWorkflowSteps(interventionTypeId?: string) {
       const { data, error } = await query;
 
       if (error) throw error;
-      return data as WorkflowStep[];
+      return data as unknown as WorkflowStep[];
     },
     enabled: !!organizationId,
   });
