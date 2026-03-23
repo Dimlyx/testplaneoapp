@@ -608,6 +608,80 @@ export default function WorkflowStepsSettings() {
             </SheetFooter>
           </SheetContent>
         </Sheet>
+
+        {/* Multiple Choice Sheet (side panel) */}
+        <Sheet open={multipleChoiceSheetOpen} onOpenChange={setMultipleChoiceSheetOpen}>
+          <SheetContent side="right" className="sm:max-w-md">
+            <SheetHeader>
+              <SheetTitle className="flex items-center gap-2">
+                <List className="h-5 w-5" />
+                Choix multiple de l'étape
+              </SheetTitle>
+            </SheetHeader>
+            <div className="space-y-4 py-6">
+              <p className="text-sm text-muted-foreground">
+                Ajoutez les options parmi lesquelles le technicien pourra choisir. Il pourra sélectionner une ou plusieurs options.
+              </p>
+
+              {multipleChoiceItems.length > 0 && (
+                <div className="space-y-2">
+                  {multipleChoiceItems.map((item) => (
+                    <div key={item.id} className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
+                      <span className="text-sm flex-1">{item.label}</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 shrink-0"
+                        onClick={() => setMultipleChoiceItems(prev => prev.filter(i => i.id !== item.id))}
+                      >
+                        <Trash2 className="h-3 w-3 text-destructive" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {multipleChoiceItems.length === 0 && (
+                <div className="text-center py-6 text-muted-foreground text-sm border-2 border-dashed rounded-lg">
+                  Aucune option configurée
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Nouvelle option..."
+                  value={newMultipleChoiceItem}
+                  onChange={(e) => setNewMultipleChoiceItem(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && newMultipleChoiceItem.trim()) {
+                      e.preventDefault();
+                      setMultipleChoiceItems(prev => [...prev, { id: crypto.randomUUID(), label: newMultipleChoiceItem.trim() }]);
+                      setNewMultipleChoiceItem("");
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  disabled={!newMultipleChoiceItem.trim()}
+                  onClick={() => {
+                    setMultipleChoiceItems(prev => [...prev, { id: crypto.randomUUID(), label: newMultipleChoiceItem.trim() }]);
+                    setNewMultipleChoiceItem("");
+                  }}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+            <SheetFooter>
+              <Button onClick={() => setMultipleChoiceSheetOpen(false)} className="w-full">
+                Terminé ({multipleChoiceItems.length} option{multipleChoiceItems.length !== 1 ? "s" : ""})
+              </Button>
+            </SheetFooter>
+          </SheetContent>
+        </Sheet>
       </CardContent>
     </Card>
   );
