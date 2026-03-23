@@ -83,7 +83,8 @@ export function useCompleteStep() {
             comment: comment || null,
             photo_url: photoUrl || null,
             loop_index: loopIndex,
-          });
+            checklist_data: checklistData || null,
+          } as any);
         if (insertError) throw insertError;
       }
     },

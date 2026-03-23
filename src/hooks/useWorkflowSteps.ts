@@ -43,6 +43,7 @@ export interface UpdateWorkflowStepInput {
   requires_photo?: boolean;
   requires_comment?: boolean;
   requires_signature?: boolean;
+  checklist_items?: { id: string; label: string }[];
 }
 
 export function useWorkflowSteps(interventionTypeId?: string) {
