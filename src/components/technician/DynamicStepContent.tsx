@@ -60,6 +60,15 @@ const DynamicStepContent = ({
     return [];
   });
 
+  const isCompleted = !!completion?.completed_at;
+  const hasChecklist = checklistState.length > 0;
+
+  const toggleChecklistItem = (itemId: string) => {
+    setChecklistState(prev => prev.map(item => 
+      item.id === itemId ? { ...item, checked: !item.checked } : item
+    ));
+  };
+
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
