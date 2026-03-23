@@ -654,6 +654,7 @@ export type Database = {
           id: string
           intervention_id: string
           loop_index: number
+          multiple_choice_data: Json | null
           photo_url: string | null
           step_id: string
         }
@@ -666,6 +667,7 @@ export type Database = {
           id?: string
           intervention_id: string
           loop_index?: number
+          multiple_choice_data?: Json | null
           photo_url?: string | null
           step_id: string
         }
@@ -678,6 +680,7 @@ export type Database = {
           id?: string
           intervention_id?: string
           loop_index?: number
+          multiple_choice_data?: Json | null
           photo_url?: string | null
           step_id?: string
         }
@@ -748,6 +751,7 @@ export type Database = {
           intervention_type_id: string
           is_mandatory: boolean | null
           label: string
+          multiple_choice_items: Json | null
           name: string
           organization_id: string | null
           requires_comment: boolean | null
@@ -764,6 +768,7 @@ export type Database = {
           intervention_type_id: string
           is_mandatory?: boolean | null
           label: string
+          multiple_choice_items?: Json | null
           name: string
           organization_id?: string | null
           requires_comment?: boolean | null
@@ -780,6 +785,7 @@ export type Database = {
           intervention_type_id?: string
           is_mandatory?: boolean | null
           label?: string
+          multiple_choice_items?: Json | null
           name?: string
           organization_id?: string | null
           requires_comment?: boolean | null
