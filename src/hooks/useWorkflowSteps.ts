@@ -32,6 +32,7 @@ export interface CreateWorkflowStepInput {
   requires_comment?: boolean;
   requires_signature?: boolean;
   checklist_items?: { id: string; label: string }[];
+  multiple_choice_items?: { id: string; label: string }[];
 }
 
 export interface UpdateWorkflowStepInput {
@@ -45,6 +46,7 @@ export interface UpdateWorkflowStepInput {
   requires_comment?: boolean;
   requires_signature?: boolean;
   checklist_items?: { id: string; label: string }[];
+  multiple_choice_items?: { id: string; label: string }[];
 }
 
 export function useWorkflowSteps(interventionTypeId?: string) {
