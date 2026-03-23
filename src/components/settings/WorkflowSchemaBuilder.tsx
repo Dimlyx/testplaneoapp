@@ -25,14 +25,23 @@ import {
 } from "@/hooks/useWorkflowSteps";
 
 // Step type palette items
-const STEP_PALETTE = [
+interface StepPreset {
+  requires_photo?: boolean;
+  requires_comment?: boolean;
+  requires_signature?: boolean;
+  is_loop_trigger?: boolean;
+  hasChecklist?: boolean;
+  hasMultipleChoice?: boolean;
+}
+
+const STEP_PALETTE: { icon: typeof Camera; label: string; preset: StepPreset }[] = [
   { icon: Camera, label: "Photo", preset: { requires_photo: true } },
   { icon: PenTool, label: "Signature", preset: { requires_signature: true } },
   { icon: MessageSquare, label: "Commentaire", preset: { requires_comment: true } },
   { icon: ClipboardList, label: "Checklist", preset: { hasChecklist: true } },
   { icon: List, label: "Choix multiple", preset: { hasMultipleChoice: true } },
   { icon: RefreshCw, label: "Début boucle", preset: { is_loop_trigger: true } },
-] as const;
+];
 
 function getStepIcon(step: WorkflowStep) {
   if ((step as any).is_loop_trigger) return RefreshCw;
