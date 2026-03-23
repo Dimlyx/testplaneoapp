@@ -491,6 +491,30 @@ export default function WorkflowStepsSettings() {
                     {checklistItems.length > 0 ? "Modifier" : "Configurer"}
                   </Button>
                 </div>
+
+                {/* Multiple choice button to open sheet */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <List className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <Label>Choix multiple</Label>
+                      {multipleChoiceItems.length > 0 && (
+                        <p className="text-xs text-muted-foreground">
+                          {multipleChoiceItems.length} choix configuré{multipleChoiceItems.length > 1 ? "s" : ""}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setMultipleChoiceSheetOpen(true)}
+                  >
+                    <List className="h-4 w-4 mr-1" />
+                    {multipleChoiceItems.length > 0 ? "Modifier" : "Configurer"}
+                  </Button>
+                </div>
               </div>
             </div>
             <DialogFooter>
