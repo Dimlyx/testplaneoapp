@@ -16,7 +16,7 @@ Voici les fonctionnalités principales de PLANEO :
 - **Alertes de maintenance** : Configurer des alertes récurrentes pour la maintenance préventive.
 - **Statistiques** : Tableau de bord avec les performances et indicateurs clés.
 - **Workflow** : Étapes personnalisables par type d'intervention que les techniciens doivent suivre.
-- **Types d'intervention** : Configurer différents types avec des options comme le suivi de trajet et la boucle équipements.
+- **Types d'intervention** : Configurer différents types avec des options comme le suivi de trajet et l'activation de la boucle.
 
 Pour les techniciens :
 - Voir leurs interventions assignées
