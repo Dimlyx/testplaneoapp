@@ -358,7 +358,7 @@ export default function InterventionTypesSettings() {
               <div className="space-y-0.5">
                 <Label>Activer la boucle </Label>
                 <p className="text-xs text-muted-foreground">
-                  Permettre au technicien de répéter les étapes pour plusieurs équipements
+                  Permettre au technicien de répéter les étapes.
                 </p>
               </div>
               <Switch checked={allowLoop} onCheckedChange={setAllowLoop} />
