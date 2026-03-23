@@ -74,6 +74,8 @@ export default function WorkflowStepsSettings() {
   const [requiresPhoto, setRequiresPhoto] = useState(false);
   const [requiresComment, setRequiresComment] = useState(false);
   const [requiresSignature, setRequiresSignature] = useState(false);
+  const [checklistItems, setChecklistItems] = useState<{ id: string; label: string }[]>([]);
+  const [newChecklistItem, setNewChecklistItem] = useState("");
 
   const resetForm = () => {
     setName("");
