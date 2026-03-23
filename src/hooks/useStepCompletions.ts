@@ -42,12 +42,14 @@ export function useCompleteStep() {
       comment,
       photoUrl,
       loopIndex = 0,
+      checklistData,
     }: {
       interventionId: string;
       stepId: string;
       comment?: string;
       photoUrl?: string;
       loopIndex?: number;
+      checklistData?: { id: string; label: string; checked: boolean }[];
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
 
