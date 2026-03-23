@@ -282,119 +282,26 @@ export default function WorkflowStepsSettings() {
                             Aucune étape configurée pour ce type d'intervention
                           </p>
                         ) : (
-                          <div className="space-y-2">
-                            {steps.map((step, index) => (
-                              <div
-                                key={step.id}
-                                className="flex items-center gap-3 p-3 bg-background rounded-md border"
-                              >
-                                <div className="flex flex-col gap-0.5">
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-6 w-6"
-                                    disabled={index === 0 || reorderSteps.isPending}
-                                    onClick={() => handleMoveStep(type.id, index, "up")}
-                                  >
-                                    <ArrowUp className="h-3 w-3" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-6 w-6"
-                                    disabled={index === steps.length - 1 || reorderSteps.isPending}
-                                    onClick={() => handleMoveStep(type.id, index, "down")}
-                                  >
-                                    <ArrowDown className="h-3 w-3" />
-                                  </Button>
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-medium text-sm">
-                                      {index + 1}. {step.label}
-                                    </span>
-                                    {step.is_mandatory && (
-                                      <Badge variant="destructive" className="text-xs">
-                                        Obligatoire
-                                      </Badge>
-                                    )}
-                                  </div>
-                                  {step.description && (
-                                    <p className="text-xs text-muted-foreground mt-1 truncate">
-                                      {step.description}
-                                    </p>
-                                  )}
-                                  <div className="flex items-center gap-3 mt-2">
-                                    {step.requires_photo && (
-                                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                        <Camera className="h-3 w-3" />
-                                        Photo
-                                      </div>
-                                    )}
-                                    {step.requires_comment && (
-                                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                        <MessageSquare className="h-3 w-3" />
-                                        Commentaire
-                                      </div>
-                                    )}
-                                    {step.requires_signature && (
-                                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                        <PenTool className="h-3 w-3" />
-                                        Signature
-                                      </div>
-                                    )}
-                                    {step.checklist_items && step.checklist_items.length > 0 && (
-                                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                        <ClipboardList className="h-3 w-3" />
-                                        Checklist ({step.checklist_items.length})
-                                      </div>
-                                    )}
-                                    {step.multiple_choice_items && step.multiple_choice_items.length > 0 && (
-                                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                        <List className="h-3 w-3" />
-                                        Choix multiple ({step.multiple_choice_items.length})
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                    onClick={() => openEditDialog(step)}
-                                  >
-                                    <Settings2 className="h-4 w-4" />
-                                  </Button>
-                                  <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                                        <Trash2 className="h-4 w-4 text-destructive" />
-                                      </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                      <AlertDialogHeader>
-                                        <AlertDialogTitle>Supprimer cette étape ?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                          Cette action est irréversible. L'étape sera supprimée
-                                          de la configuration du workflow.
-                                        </AlertDialogDescription>
-                                      </AlertDialogHeader>
-                                      <AlertDialogFooter>
-                                        <AlertDialogCancel>Annuler</AlertDialogCancel>
-                                        <AlertDialogAction
-                                          onClick={() => handleDelete(step.id)}
-                                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                        >
-                                          Supprimer
-                                        </AlertDialogAction>
-                                      </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                  </AlertDialog>
-                                </div>
+                          <DndContext
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            modifiers={[restrictToVerticalAxis]}
+                            onDragEnd={(event) => handleDragEnd(event, type.id)}
+                          >
+                            <SortableContext items={steps.map(s => s.id)} strategy={verticalListSortingStrategy}>
+                              <div className="space-y-2">
+                                {steps.map((step, index) => (
+                                  <SortableStepItem
+                                    key={step.id}
+                                    step={step}
+                                    index={index}
+                                    onEdit={() => openEditDialog(step)}
+                                    onDelete={() => handleDelete(step.id)}
+                                  />
+                                ))}
                               </div>
-                            ))}
-                          </div>
+                            </SortableContext>
+                          </DndContext>
                         )}
                       </div>
                     </CollapsibleContent>
