@@ -749,6 +749,7 @@ export type Database = {
           description: string | null
           id: string
           intervention_type_id: string
+          is_loop_trigger: boolean
           is_mandatory: boolean | null
           label: string
           multiple_choice_items: Json | null
@@ -766,6 +767,7 @@ export type Database = {
           description?: string | null
           id?: string
           intervention_type_id: string
+          is_loop_trigger?: boolean
           is_mandatory?: boolean | null
           label: string
           multiple_choice_items?: Json | null
@@ -783,6 +785,7 @@ export type Database = {
           description?: string | null
           id?: string
           intervention_type_id?: string
+          is_loop_trigger?: boolean
           is_mandatory?: boolean | null
           label?: string
           multiple_choice_items?: Json | null
