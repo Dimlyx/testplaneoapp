@@ -41,6 +41,7 @@ export interface Intervention {
   token_expires_at: string | null;
   custom_status_id: string | null;
   estimated_duration: number | null;
+  team_id: string | null;
   created_at: string;
   updated_at: string;
   clients?: {
