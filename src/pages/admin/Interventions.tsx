@@ -64,6 +64,7 @@ const Interventions = () => {
   const { data: technicians = [] } = useTechnicians();
   const deleteIntervention = useDeleteIntervention();
   const updateIntervention = useUpdateIntervention();
+  const createIntervention = useCreateIntervention();
   const { data: interventionTypes = [] } = useInterventionTypes();
   const { data: customStatuses = [] } = useCustomStatuses();
 
