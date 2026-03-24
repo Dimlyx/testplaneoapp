@@ -444,7 +444,7 @@ const InterventionWorkflow = ({
                       <span>Reprise : {format(new Date(pause.resumed_at), "dd/MM/yyyy HH:mm", { locale: fr })}</span>
                     </div>
                   ) : (
-                    <span className="text-xs font-medium text-orange-600">En cours</span>
+                    <span className="text-xs font-medium text-orange-600 dark:text-orange-400">En cours</span>
                   )}
                 </div>
               ))
