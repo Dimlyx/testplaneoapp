@@ -512,6 +512,8 @@ const InterventionForm = () => {
                     </div>
                   )}
                 </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
                   <FormField
                     control={form.control}
                     name="scheduled_date"
