@@ -22,7 +22,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { StatusBadge, TypeBadge } from "@/components/ui/status-badge";
-import { Plus, Search, Trash2, Eye, Edit, CheckSquare, X, UserCheck, Archive } from "lucide-react";
+import { Plus, Search, Trash2, Eye, Edit, CheckSquare, X, UserCheck, Archive, Copy } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Link, useNavigate } from "react-router-dom";
