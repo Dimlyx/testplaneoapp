@@ -98,7 +98,7 @@ export const TypeBadge = React.forwardRef<HTMLSpanElement, TypeBadgeProps>(
   ({ type, className, ...props }, ref) => {
     const { data: interventionTypes = [] } = useInterventionTypes();
     const found = interventionTypes.find(t => t.name === type);
-    const colorClass = found?.color ? (colorClassMap[found.color] || 'bg-gray-100 text-gray-800') : 'bg-gray-100 text-gray-800';
+    const colorClass = found?.color ? (colorClassMap[found.color] || 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300') : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
     const label = found?.label || type;
     
     return (
