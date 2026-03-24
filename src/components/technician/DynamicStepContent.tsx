@@ -144,7 +144,7 @@ const DynamicStepContent = ({
       const fileName = `steps/${interventionId}/${step.id}-signature-${Date.now()}.png`;
       const { error: uploadError } = await supabase.storage
         .from('intervention-photos')
-        .upload(fileName, blob, { contentType: 'image/png', upsert: true });
+        .upload(fileName, blob, { contentType: 'image/png', upsert: false });
       if (uploadError) throw uploadError;
       const { data: urlData } = supabase.storage
         .from('intervention-photos')

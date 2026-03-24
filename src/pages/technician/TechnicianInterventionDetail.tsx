@@ -64,7 +64,7 @@ const TechnicianInterventionDetail = () => {
         .from('intervention-photos')
         .upload(fileName, blob, {
           contentType: 'image/png',
-          upsert: true
+          upsert: false
         });
       
       if (uploadError) throw uploadError;
