@@ -128,6 +128,7 @@ export default function TechnicianLayout() {
             <img src={planeoLogo} alt="PLANEO" className="h-7" />
           </div>
           <div className="ml-auto flex items-center gap-2">
+            <ThemeToggle />
             <NotificationBell />
             <OfflineIndicator />
           </div>
