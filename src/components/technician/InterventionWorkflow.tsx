@@ -122,17 +122,28 @@ const InterventionWorkflow = ({
     }
     
     // Find the loop trigger step
+    const triggerStep = nonSignatureSteps.find(s => s.is_loop_trigger);
     const triggerIndex = nonSignatureSteps.findIndex(s => s.is_loop_trigger);
     
-    if (triggerIndex === -1) {
+    if (triggerIndex === -1 || !triggerStep) {
       // No trigger found, all steps are loopable (legacy behavior)
       return { preLoopSteps: [] as typeof nonSignatureSteps, loopableSteps: nonSignatureSteps };
     }
     
-    // Steps before trigger run once, trigger step + after are looped
+    // Find where the loop starts using loop_yes_step_id
+    // loop_yes_step_id points to the first step that should repeat
+    let loopStartIndex = 0;
+    if (triggerStep.loop_yes_step_id) {
+      const yesIdx = nonSignatureSteps.findIndex(s => s.id === triggerStep.loop_yes_step_id);
+      if (yesIdx !== -1) {
+        loopStartIndex = yesIdx;
+      }
+    }
+    
+    // Steps before loopStart run once, steps from loopStart to trigger (inclusive) are looped
     return {
-      preLoopSteps: nonSignatureSteps.slice(0, triggerIndex),
-      loopableSteps: nonSignatureSteps.slice(triggerIndex),
+      preLoopSteps: nonSignatureSteps.slice(0, loopStartIndex),
+      loopableSteps: nonSignatureSteps.slice(loopStartIndex, triggerIndex + 1),
     };
   }, [workflowSteps, matchingType]);
 
