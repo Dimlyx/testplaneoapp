@@ -56,6 +56,7 @@ interface InterventionWorkflowProps {
   onStatusChange: (newStatus: string) => Promise<void>;
   onTimeUpdate: (field: string, value: string) => Promise<void>;
   isUpdating: boolean;
+  readOnly?: boolean;
 }
 
 const InterventionWorkflow = ({
