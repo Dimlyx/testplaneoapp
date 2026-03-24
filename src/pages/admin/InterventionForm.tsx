@@ -10,6 +10,7 @@ import { useUserOrganization } from "@/hooks/useUserOrganization";
 import { useAddInterventionAttachment } from "@/hooks/useInterventionAttachments";
 import { useInterventionTypes } from "@/hooks/useInterventionTypes";
 import { useCustomStatuses } from "@/hooks/useCustomStatuses";
+import { useTeams } from "@/hooks/useTeams";
 import { useOrganizationPlan } from "@/hooks/useOrganizationPlan";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
