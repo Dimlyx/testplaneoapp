@@ -180,17 +180,39 @@ const InterventionWorkflow = ({
   // Handle adding a new loop
   const handleAddLoop = () => {
     setShowAddLoopPrompt(false);
-    // The new loop will be maxLoopIndex + 1, and its steps will automatically appear
-    // We need to create at least one empty state to trigger the loop
-    // Simply setting active step to the first step of the new loop will work
+    setJustAddedLoop(true);
     const newLoopIdx = maxLoopIndex + 1;
     if (loopableSteps.length > 0) {
       setActiveStep(`step-${loopableSteps[0].id}-loop-${newLoopIdx}`);
     }
   };
 
+  // Determine how many loops to render (existing + 1 new if user triggered it)
+  const hasNewEmptyLoop = useMemo(() => {
+    if (loopableSteps.length === 0) return false;
+    if (activeStep) {
+      const match = activeStep.match(/loop-(\d+)/);
+      if (match) {
+        const activeLoopIdx = parseInt(match[1]);
+        return activeLoopIdx > maxLoopIndex;
+      }
+    }
+    return false;
+  }, [activeStep, maxLoopIndex, loopableSteps]);
+
+  const totalLoops = hasNewEmptyLoop ? maxLoopIndex + 2 : loopCount;
+
+  // Track whether we just added a new loop (to prevent useEffect from overriding)
+  const [justAddedLoop, setJustAddedLoop] = useState(false);
+
   // Auto-open first incomplete step
   useEffect(() => {
+    // Don't override if we just triggered a new loop manually
+    if (justAddedLoop) {
+      setJustAddedLoop(false);
+      return;
+    }
+    
     if (isLocked) {
       setActiveStep('finish');
       return;
@@ -209,13 +231,27 @@ const InterventionWorkflow = ({
       return;
     }
     
-    // Find first incomplete loopable step across all loops
-    for (let loopIdx = 0; loopIdx <= maxLoopIndex; loopIdx++) {
+    // Find first incomplete loopable step across all loops (including new empty ones)
+    const loopsToCheck = Math.max(maxLoopIndex + 1, totalLoops);
+    for (let loopIdx = 0; loopIdx < loopsToCheck; loopIdx++) {
       const firstIncomplete = loopableSteps.find(
         step => !stepCompletions.some(c => c.step_id === step.id && c.loop_index === loopIdx && c.completed_at)
       );
       if (firstIncomplete) {
         setActiveStep(`step-${firstIncomplete.id}-loop-${loopIdx}`);
+        return;
+      }
+    }
+    
+    // Check if the last loop trigger was answered "Oui" but next loop not started yet
+    // This means we need to show the new loop's first step
+    if (loopableSteps.length > 0) {
+      const lastTriggerCompletion = stepCompletions.find(
+        c => c.step_id === loopTriggerStep?.id && c.loop_index === maxLoopIndex && c.completed_at
+      );
+      if (lastTriggerCompletion?.comment?.includes("Oui")) {
+        const newLoopIdx = maxLoopIndex + 1;
+        setActiveStep(`step-${loopableSteps[0].id}-loop-${newLoopIdx}`);
         return;
       }
     }
@@ -230,7 +266,7 @@ const InterventionWorkflow = ({
     }
     
     setActiveStep('finish');
-  }, [isStarted, isLocked, workflowSteps.length, stepCompletions.length, maxLoopIndex]);
+  }, [isStarted, isLocked, workflowSteps.length, stepCompletions.length, maxLoopIndex, totalLoops]);
 
   const handleStepClick = (step: string) => {
     if (stepsLocked && step !== 'general-info') return;
@@ -295,23 +331,6 @@ const InterventionWorkflow = ({
     </div>
   );
 
-  // Determine how many loops to render (existing + 1 new if user triggered it)
-  const hasNewEmptyLoop = useMemo(() => {
-    // Check if the latest loop has any completions
-    if (loopableSteps.length === 0) return false;
-    const latestHasCompletions = stepCompletions.some(c => c.loop_index === maxLoopIndex);
-    // If the active step references a loop higher than maxLoopIndex, we have a new empty loop
-    if (activeStep) {
-      const match = activeStep.match(/loop-(\d+)/);
-      if (match) {
-        const activeLoopIdx = parseInt(match[1]);
-        return activeLoopIdx > maxLoopIndex;
-      }
-    }
-    return false;
-  }, [activeStep, maxLoopIndex, stepCompletions, loopableSteps]);
-
-  const totalLoops = hasNewEmptyLoop ? maxLoopIndex + 2 : loopCount;
 
   return (
     <div className="space-y-0">
