@@ -104,6 +104,30 @@ const Interventions = () => {
     return matchesSearch && matchesStatus && matchesType && matchesTechnician && matchesClient;
   });
 
+  const handleDuplicate = async (intervention: typeof interventions[0]) => {
+    try {
+      await createIntervention.mutateAsync({
+        title: `${intervention.title} (copie)`,
+        client_id: intervention.client_id,
+        intervention_type: intervention.intervention_type,
+        technician_id: intervention.technician_id,
+        equipment_id: intervention.equipment_id,
+        description: intervention.description,
+        intervention_address: intervention.intervention_address,
+        intervention_city: intervention.intervention_city,
+        intervention_postal_code: intervention.intervention_postal_code,
+        intervention_building: intervention.intervention_building,
+        intervention_floor: intervention.intervention_floor,
+        intervention_contact_name: intervention.intervention_contact_name,
+        intervention_phone: intervention.intervention_phone,
+        intervention_email: intervention.intervention_email,
+        estimated_duration: intervention.estimated_duration,
+        organization_id: intervention.organization_id,
+        status: 'to_plan',
+      });
+    } catch {}
+  };
+
   // Selection handlers
   const toggleSelectAll = () => {
     if (selectedIds.size === filteredInterventions.length) {
