@@ -70,7 +70,7 @@ const WorkflowStep = ({
           <span className={cn(
             "font-medium",
             isDisabled && "text-muted-foreground",
-            !isDisabled && isCompleted && "text-primary dark:text-foreground",
+            !isDisabled && isCompleted && "text-primary",
             !isDisabled && isActive && "text-foreground",
             !isDisabled && !isActive && !isCompleted && "text-muted-foreground"
           )}>
@@ -78,7 +78,7 @@ const WorkflowStep = ({
           </span>
           <ChevronRight className={cn(
             "h-5 w-5",
-            isActive && !isDisabled ? "text-primary dark:text-foreground" : "text-muted-foreground"
+            isActive && !isDisabled ? "text-primary" : "text-muted-foreground"
           )} />
         </div>
       </div>
