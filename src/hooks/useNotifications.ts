@@ -91,8 +91,23 @@ export function useRealtimeNotifications() {
           table: "notifications",
           filter: `user_id=eq.${user.id}`,
         },
-        () => {
+        (payload) => {
           queryClient.invalidateQueries({ queryKey: ["notifications"] });
+
+          // Send push notification via edge function
+          const newNotif = payload.new as Notification;
+          if (newNotif) {
+            supabase.functions.invoke("send-push-notification", {
+              body: {
+                userId: newNotif.user_id,
+                title: newNotif.title,
+                message: newNotif.message || "",
+                interventionId: newNotif.intervention_id || "",
+              },
+            }).catch((err) => {
+              console.warn("Push notification send failed:", err);
+            });
+          }
         }
       )
       .subscribe();
