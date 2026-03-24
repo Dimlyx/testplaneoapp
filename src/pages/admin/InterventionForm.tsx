@@ -82,6 +82,7 @@ const InterventionForm = () => {
   const { data: technicians = [], isLoading: loadingTechnicians } = useTechnicians(organizationId);
   const { data: interventionTypes = [] } = useInterventionTypes();
   const { data: customStatuses = [] } = useCustomStatuses();
+  const { data: teams = [] } = useTeams();
   const { hasFeature } = useOrganizationPlan();
   const createIntervention = useCreateIntervention(organizationId);
   const updateIntervention = useUpdateIntervention();
