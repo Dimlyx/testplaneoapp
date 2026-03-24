@@ -49,7 +49,7 @@ export function OfflineIndicator() {
             ) : (
               <>
                 <div className="w-2 h-2 rounded-full bg-amber-500" />
-                <span className="font-medium text-amber-600">Hors ligne</span>
+                <span className="font-medium text-amber-600 dark:text-amber-400">Hors ligne</span>
               </>
             )}
           </div>
