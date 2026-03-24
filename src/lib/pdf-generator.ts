@@ -358,13 +358,23 @@ export const generateInterventionPDF = async (
   let logoWidth = 0;
   const logoMargin = 15;
   
-  // Add logo if available
+  // Add logo if available - match extranet sizing (h-10 = ~12mm)
   if (company.logoUrl) {
     try {
       const logoBase64 = await loadImageAsBase64(company.logoUrl);
       if (logoBase64) {
-        const logoHeight = 25;
-        logoWidth = 30;
+        // Create a temporary image to get natural dimensions
+        const img = new Image();
+        await new Promise<void>((resolve) => {
+          img.onload = () => resolve();
+          img.onerror = () => resolve();
+          img.src = logoBase64;
+        });
+        const logoHeight = 12; // ~40px like extranet h-10
+        const aspectRatio = img.naturalWidth && img.naturalHeight 
+          ? img.naturalWidth / img.naturalHeight 
+          : 1.2;
+        logoWidth = logoHeight * aspectRatio;
         safeAddImage(doc, logoBase64, logoMargin, 10, logoWidth, logoHeight);
         logoWidth += 10; // Add spacing after logo
       }
