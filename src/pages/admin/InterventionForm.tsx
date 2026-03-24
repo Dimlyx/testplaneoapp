@@ -10,6 +10,7 @@ import { useUserOrganization } from "@/hooks/useUserOrganization";
 import { useAddInterventionAttachment } from "@/hooks/useInterventionAttachments";
 import { useInterventionTypes } from "@/hooks/useInterventionTypes";
 import { useCustomStatuses } from "@/hooks/useCustomStatuses";
+import { useTeams } from "@/hooks/useTeams";
 import { useOrganizationPlan } from "@/hooks/useOrganizationPlan";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,7 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Save, Paperclip, Mail, Loader2, Lock, Plus } from "lucide-react";
+import { ArrowLeft, Save, Paperclip, Mail, Loader2, Lock, Plus, Users, Crown } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import AttachmentsList from "@/components/technician/AttachmentsList";
 import PendingAttachmentsList from "@/components/admin/PendingAttachmentsList";
@@ -72,6 +73,8 @@ const InterventionForm = () => {
   const [sendingEmail, setSendingEmail] = useState(false);
   const [shouldSendEmail, setShouldSendEmail] = useState(false);
   const [showCreateClient, setShowCreateClient] = useState(false);
+  const [assignmentMode, setAssignmentMode] = useState<'technician' | 'team'>('technician');
+  const [selectedTeamId, setSelectedTeamId] = useState<string>('');
 
   const { data: organizationId } = useUserOrganization();
   const { data: intervention, isLoading: loadingIntervention } = useIntervention(id || "");
@@ -79,6 +82,7 @@ const InterventionForm = () => {
   const { data: technicians = [], isLoading: loadingTechnicians } = useTechnicians(organizationId);
   const { data: interventionTypes = [] } = useInterventionTypes();
   const { data: customStatuses = [] } = useCustomStatuses();
+  const { data: teams = [] } = useTeams();
   const { hasFeature } = useOrganizationPlan();
   const createIntervention = useCreateIntervention(organizationId);
   const updateIntervention = useUpdateIntervention();
@@ -134,6 +138,11 @@ const InterventionForm = () => {
         intervention_email: intervention.intervention_email || "",
         intervention_contact_name: intervention.intervention_contact_name || "",
       });
+      // Detect team assignment mode
+      if ((intervention as any).team_id) {
+        setAssignmentMode('team');
+        setSelectedTeamId((intervention as any).team_id);
+      }
     }
   }, [intervention, isEditing, form]);
 
@@ -151,13 +160,23 @@ const InterventionForm = () => {
 
   const onSubmit = async (values: InterventionFormValues) => {
     try {
-      const data = {
+      // If team mode, set technician_id to leader and add team_id
+      let finalTechnicianId = values.technician_id || null;
+      let finalTeamId: string | null = null;
+      if (assignmentMode === 'team' && selectedTeamId) {
+        const selectedTeam = teams.find(t => t.id === selectedTeamId);
+        finalTechnicianId = selectedTeam?.leader_id || null;
+        finalTeamId = selectedTeamId;
+      }
+
+      const data: Record<string, any> = {
         title: values.title,
         client_id: values.client_id,
         intervention_type: values.intervention_type,
         status: values.status,
         custom_status_id: values.custom_status_id || null,
-        technician_id: values.technician_id || null,
+        technician_id: finalTechnicianId,
+        team_id: finalTeamId,
         scheduled_date: values.scheduled_date || null,
         scheduled_time: values.scheduled_time || null,
         estimated_duration: values.estimated_duration || null,
@@ -181,7 +200,7 @@ const InterventionForm = () => {
         interventionId = id;
         toast({ title: "Intervention mise à jour avec succès" });
       } else {
-        const result = await createIntervention.mutateAsync(data);
+        const result = await createIntervention.mutateAsync(data as any);
         interventionId = result?.id;
         
         // Upload pending attachments after intervention is created
@@ -403,30 +422,96 @@ const InterventionForm = () => {
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="technician_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Technicien</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Sélectionner un technicien" />
-                          </SelectTrigger>
-                        </FormControl>
+                {/* Assignment mode toggle */}
+                <div className="space-y-3">
+                  <FormLabel>Assignation</FormLabel>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant={assignmentMode === 'technician' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => { setAssignmentMode('technician'); setSelectedTeamId(''); }}
+                    >
+                      Technicien seul
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={assignmentMode === 'team' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => { setAssignmentMode('team'); form.setValue('technician_id', ''); }}
+                    >
+                      <Users className="h-4 w-4 mr-1" /> Équipe
+                    </Button>
+                  </div>
+
+                  {assignmentMode === 'technician' ? (
+                    <FormField
+                      control={form.control}
+                      name="technician_id"
+                      render={({ field }) => (
+                        <FormItem>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Sélectionner un technicien" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {technicians.map((tech) => (
+                                <SelectItem key={tech.id} value={tech.id}>
+                                  {tech.full_name || tech.email}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  ) : (
+                    <div>
+                      <Select value={selectedTeamId} onValueChange={setSelectedTeamId}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionner une équipe" />
+                        </SelectTrigger>
                         <SelectContent>
-                          {technicians.map((tech) => (
-                            <SelectItem key={tech.id} value={tech.id}>
-                              {tech.full_name || tech.email}
+                          {teams.map(team => (
+                            <SelectItem key={team.id} value={team.id}>
+                              <div className="flex items-center gap-2">
+                                <Users className="h-3.5 w-3.5" />
+                                {team.name}
+                                <span className="text-xs text-muted-foreground">
+                                  ({team.members.length} membres)
+                                </span>
+                              </div>
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
-                      <FormMessage />
-                    </FormItem>
+                      {selectedTeamId && (() => {
+                        const team = teams.find(t => t.id === selectedTeamId);
+                        if (!team) return null;
+                        const leaderName = technicians.find(t => t.id === team.leader_id);
+                        return (
+                          <div className="mt-2 p-2 bg-muted/50 rounded text-xs space-y-1">
+                            <div className="flex items-center gap-1">
+                              <Crown className="h-3 w-3 text-yellow-500" />
+                              <span className="font-medium">Chef : {leaderName?.full_name || leaderName?.email}</span>
+                              <span className="text-muted-foreground">(rapport & validation)</span>
+                            </div>
+                            <div className="text-muted-foreground">
+                              Membres : {team.members.filter(m => m.user_id !== team.leader_id).map(m => {
+                                const t = technicians.find(tech => tech.id === m.user_id);
+                                return t?.full_name || t?.email;
+                              }).join(', ') || 'Aucun autre membre'}
+                              <span> (consultation seule)</span>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
                   )}
-                />
+                </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <FormField

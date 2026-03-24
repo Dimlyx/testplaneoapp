@@ -1,14 +1,15 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-  import { useIntervention, useUpdateIntervention } from "@/hooks/useInterventions";
-  import { useClient } from "@/hooks/useClients";
-  import { useCompanySettings, useDocumentSettings } from "@/hooks/useAppSettings";
+import { useIntervention, useUpdateIntervention } from "@/hooks/useInterventions";
+import { useClient } from "@/hooks/useClients";
+import { useCompanySettings, useDocumentSettings } from "@/hooks/useAppSettings";
 import { useInterventionTypes } from "@/hooks/useInterventionTypes";
 import { useWorkflowSteps } from "@/hooks/useWorkflowSteps";
 import { useStepCompletions } from "@/hooks/useStepCompletions";
+import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { StatusBadge, TypeBadge } from "@/components/ui/status-badge";
-import { ArrowLeft, Calendar, Clock } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, Eye } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "@/hooks/use-toast";
@@ -20,12 +21,16 @@ import InterventionWorkflow from "@/components/technician/InterventionWorkflow";
 const TechnicianInterventionDetail = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { user } = useAuth();
   const { data: intervention, isLoading } = useIntervention(id || "");
   const { data: client } = useClient(intervention?.client_id || "");
   const { data: photos = [] } = useInterventionPhotos(id || "");
   const { data: companySettings } = useCompanySettings();
   const { data: documentSettings } = useDocumentSettings();
   const updateIntervention = useUpdateIntervention();
+
+  // Determine if the current user is a team member (not the leader)
+  const isTeamMember = intervention?.team_id && intervention?.technician_id !== user?.id;
   
   // For PDF generation with step data
   const { data: interventionTypes = [] } = useInterventionTypes();
@@ -214,6 +219,14 @@ const TechnicianInterventionDetail = () => {
         </div>
       </div>
 
+      {/* Read-only banner for team members */}
+      {isTeamMember && (
+        <div className="flex items-center gap-2 bg-muted/70 border rounded-lg p-3 text-sm text-muted-foreground">
+          <Eye className="h-4 w-4" />
+          <span>Consultation seule — seul le chef d'équipe peut modifier cette intervention</span>
+        </div>
+      )}
+
       {/* Schedule info */}
       {(intervention.scheduled_date || intervention.scheduled_time) && (
         <div className="flex items-center gap-4 text-sm text-muted-foreground bg-muted/50 rounded-lg p-3">
@@ -250,6 +263,7 @@ const TechnicianInterventionDetail = () => {
         onStatusChange={handleStatusChange}
         onTimeUpdate={handleTimeUpdate}
         isUpdating={updateIntervention.isPending}
+        readOnly={!!isTeamMember}
       />
     </div>
   );

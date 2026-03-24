@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Search, UserCog, Pencil, Phone, Mail, MapPin, FileText, Users, AlertTriangle } from 'lucide-react';
 import { useTechnicianDetails, TechnicianWithDetails } from '@/hooks/useTechnicianDetails';
+import TeamManagement from '@/components/admin/TeamManagement';
 import TechnicianEditDialog from '@/components/admin/TechnicianEditDialog';
 import { toast } from 'sonner';
 import { format, isPast, differenceInDays, parseISO } from 'date-fns';
@@ -181,6 +182,11 @@ export default function Technicians() {
         onDeleteDoc={handleDeleteDoc}
         isSaving={upsertDetails.isPending}
       />
+
+      {/* Team Management Section */}
+      <div className="border-t pt-6">
+        <TeamManagement />
+      </div>
     </div>
   );
 }

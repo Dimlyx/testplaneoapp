@@ -56,6 +56,7 @@ interface InterventionWorkflowProps {
   onStatusChange: (newStatus: string) => Promise<void>;
   onTimeUpdate: (field: string, value: string) => Promise<void>;
   isUpdating: boolean;
+  readOnly?: boolean;
 }
 
 const InterventionWorkflow = ({
@@ -73,6 +74,7 @@ const InterventionWorkflow = ({
   onStatusChange,
   onTimeUpdate,
   isUpdating,
+  readOnly = false,
 }: InterventionWorkflowProps) => {
   const [activeStep, setActiveStep] = useState<string | null>(null);
   
