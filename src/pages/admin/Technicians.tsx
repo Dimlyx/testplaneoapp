@@ -182,6 +182,11 @@ export default function Technicians() {
         onDeleteDoc={handleDeleteDoc}
         isSaving={upsertDetails.isPending}
       />
+
+      {/* Team Management Section */}
+      <div className="border-t pt-6">
+        <TeamManagement />
+      </div>
     </div>
   );
 }
