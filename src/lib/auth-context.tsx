@@ -44,8 +44,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setTimeout(() => {
             fetchUserRole(session.user.id);
           }, 0);
+          // Register with OneSignal via Median JS Bridge
+          registerOneSignal(session.user.id);
         } else {
           setRole(null);
+          // Unregister from OneSignal via Median JS Bridge
+          unregisterOneSignal();
         }
         setLoading(false);
 
