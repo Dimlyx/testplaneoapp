@@ -106,10 +106,10 @@ const JourneyTracker = ({
         
         <div className="flex gap-2">
           {!hasTravelStarted ? (
-            <Button 
+             <Button 
               onClick={handleStartTravel} 
               variant="outline"
-              className="flex-1 border-blue-300 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+              className="flex-1 border-info/50 text-info hover:bg-info/10 hover:text-info"
               disabled={isUpdating || isInterventionStarted}
             >
               <Car className="h-4 w-4 mr-2" />
@@ -119,7 +119,7 @@ const JourneyTracker = ({
             <Button 
               onClick={handleEndTravel} 
               variant="outline"
-              className="flex-1 border-orange-300 text-orange-600 hover:bg-orange-50 hover:text-orange-700"
+              className="flex-1 border-warning/50 text-warning hover:bg-warning/10 hover:text-warning"
               disabled={isUpdating || isInterventionStarted}
             >
               <MapPin className="h-4 w-4 mr-2" />
