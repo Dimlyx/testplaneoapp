@@ -78,7 +78,7 @@ const WorkflowStep = ({
           </span>
           <ChevronRight className={cn(
             "h-5 w-5",
-            isActive && !isDisabled ? "text-primary" : "text-muted-foreground"
+            isActive && !isDisabled ? "text-foreground" : "text-muted-foreground"
           )} />
         </div>
       </div>
