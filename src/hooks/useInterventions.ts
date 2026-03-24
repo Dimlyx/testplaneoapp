@@ -77,6 +77,11 @@ export interface CreateInterventionData {
   intervention_email?: string | null;
   estimated_duration?: number | null;
   organization_id?: string | null;
+  equipment_id?: string | null;
+  intervention_building?: string | null;
+  intervention_floor?: string | null;
+  intervention_contact_name?: string | null;
+  status?: InterventionStatus;
 }
 
 export interface UpdateInterventionData {

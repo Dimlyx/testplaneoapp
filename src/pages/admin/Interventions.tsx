@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useInterventions, useDeleteIntervention, useUpdateIntervention } from "@/hooks/useInterventions";
+import { useInterventions, useDeleteIntervention, useUpdateIntervention, useCreateIntervention } from "@/hooks/useInterventions";
 import { useClients } from "@/hooks/useClients";
 import { useTechnicians } from "@/hooks/useTechnicians";
 import { useInterventionTypes } from "@/hooks/useInterventionTypes";
@@ -22,7 +22,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { StatusBadge, TypeBadge } from "@/components/ui/status-badge";
-import { Plus, Search, Trash2, Eye, Edit, CheckSquare, X, UserCheck, Archive } from "lucide-react";
+import { Plus, Search, Trash2, Eye, Edit, CheckSquare, X, UserCheck, Archive, Copy } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Link, useNavigate } from "react-router-dom";
@@ -64,6 +64,7 @@ const Interventions = () => {
   const { data: technicians = [] } = useTechnicians();
   const deleteIntervention = useDeleteIntervention();
   const updateIntervention = useUpdateIntervention();
+  const createIntervention = useCreateIntervention();
   const { data: interventionTypes = [] } = useInterventionTypes();
   const { data: customStatuses = [] } = useCustomStatuses();
 
@@ -102,6 +103,30 @@ const Interventions = () => {
 
     return matchesSearch && matchesStatus && matchesType && matchesTechnician && matchesClient;
   });
+
+  const handleDuplicate = async (intervention: typeof interventions[0]) => {
+    try {
+      await createIntervention.mutateAsync({
+        title: `${intervention.title} (copie)`,
+        client_id: intervention.client_id,
+        intervention_type: intervention.intervention_type,
+        technician_id: intervention.technician_id,
+        equipment_id: intervention.equipment_id,
+        description: intervention.description,
+        intervention_address: intervention.intervention_address,
+        intervention_city: intervention.intervention_city,
+        intervention_postal_code: intervention.intervention_postal_code,
+        intervention_building: intervention.intervention_building,
+        intervention_floor: intervention.intervention_floor,
+        intervention_contact_name: intervention.intervention_contact_name,
+        intervention_phone: intervention.intervention_phone,
+        intervention_email: intervention.intervention_email,
+        estimated_duration: intervention.estimated_duration,
+        organization_id: intervention.organization_id,
+        status: 'to_plan',
+      });
+    } catch {}
+  };
 
   // Selection handlers
   const toggleSelectAll = () => {
@@ -402,6 +427,14 @@ const Interventions = () => {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => handleDuplicate(intervention)}
+                        title="Dupliquer"
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
                       <Button 
                         variant="ghost" 
                         size="icon"
