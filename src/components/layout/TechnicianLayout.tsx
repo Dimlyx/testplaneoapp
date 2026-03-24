@@ -19,6 +19,7 @@ import planeoLogo from '@/assets/planeo-logo-white.png';
 import { cn } from '@/lib/utils';
 import { OfflineIndicator } from '@/components/technician/OfflineIndicator';
 import { NotificationBell } from '@/components/technician/NotificationBell';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 const navigation = [
   { name: 'Planifiées', href: '/technician/planifie', icon: Calendar },
@@ -127,6 +128,7 @@ export default function TechnicianLayout() {
             <img src={planeoLogo} alt="PLANEO" className="h-7" />
           </div>
           <div className="ml-auto flex items-center gap-2">
+            <ThemeToggle />
             <NotificationBell />
             <OfflineIndicator />
           </div>
