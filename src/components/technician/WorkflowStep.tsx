@@ -30,7 +30,7 @@ const WorkflowStep = ({
         <div 
           className={cn(
             "absolute left-6 top-12 w-0.5 h-full -translate-x-1/2",
-            isCompleted ? "bg-primary" : "bg-border"
+            isCompleted ? "bg-green-600 dark:bg-green-700" : "bg-border"
           )}
         />
       )}
@@ -51,8 +51,8 @@ const WorkflowStep = ({
           className={cn(
             "relative z-10 flex items-center justify-center w-12 h-12 rounded-lg shrink-0 transition-colors",
             isDisabled && "bg-muted text-muted-foreground",
-            !isDisabled && isCompleted && "bg-primary text-primary-foreground",
-            !isDisabled && isActive && !isCompleted && "bg-primary text-primary-foreground ring-4 ring-primary/30",
+            !isDisabled && isCompleted && "bg-green-600 dark:bg-green-700 text-white",
+            !isDisabled && isActive && !isCompleted && "bg-primary dark:bg-blue-600 text-primary-foreground ring-4 ring-primary/30 dark:ring-blue-500/30",
             !isDisabled && !isActive && !isCompleted && "bg-muted text-muted-foreground"
           )}
         >
@@ -70,7 +70,7 @@ const WorkflowStep = ({
           <span className={cn(
             "font-medium",
             isDisabled && "text-muted-foreground",
-            !isDisabled && isCompleted && "text-primary",
+            !isDisabled && isCompleted && "text-green-700 dark:text-green-400",
             !isDisabled && isActive && "text-foreground",
             !isDisabled && !isActive && !isCompleted && "text-muted-foreground"
           )}>
@@ -78,7 +78,7 @@ const WorkflowStep = ({
           </span>
           <ChevronRight className={cn(
             "h-5 w-5",
-            isActive && !isDisabled ? "text-primary" : "text-muted-foreground"
+            isActive && !isDisabled ? "text-foreground" : "text-muted-foreground"
           )} />
         </div>
       </div>
