@@ -694,8 +694,21 @@ export const generateInterventionPDF = async (
         doc.setFontSize(9);
         for (const item of checklistItems) {
           checkNewPage(8);
-          const marker = item.checked ? "☑" : "☐";
-          doc.text(`${marker} ${item.label}`, 22, yPos);
+          // Draw a small checkbox square
+          const boxSize = 3;
+          const boxY = yPos - boxSize + 0.5;
+          doc.setDrawColor(100, 100, 100);
+          doc.setLineWidth(0.3);
+          doc.rect(22, boxY, boxSize, boxSize);
+          if (item.checked) {
+            // Draw checkmark inside the box
+            doc.setDrawColor(34, 139, 34);
+            doc.setLineWidth(0.5);
+            doc.line(22.5, boxY + 1.5, 23, boxY + 2.5);
+            doc.line(23, boxY + 2.5, 24.3, boxY + 0.5);
+            doc.setDrawColor(0, 0, 0);
+          }
+          doc.text(item.label, 27, yPos);
           yPos += 5;
         }
         yPos += 2;
