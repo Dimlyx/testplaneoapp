@@ -161,7 +161,8 @@ export function useTechnicianInterventions(technicianId: string | undefined) {
     queryFn: async () => {
       if (!technicianId) return [];
       
-      const { data, error } = await supabase
+      // Fetch directly assigned interventions
+      const { data: directData, error: directError } = await supabase
         .from('interventions')
         .select(`
           *,
@@ -170,8 +171,36 @@ export function useTechnicianInterventions(technicianId: string | undefined) {
         .eq('technician_id', technicianId)
         .order('scheduled_date', { ascending: true });
 
-      if (error) throw error;
-      return (data || []).map(d => ({ ...d, profiles: null })) as Intervention[];
+      if (directError) throw directError;
+
+      // Fetch team interventions (where user is a team member but not the leader/technician_id)
+      // RLS policy "Team members can view team interventions" handles access control
+      const { data: teamMemberships } = await supabase
+        .from('team_members')
+        .select('team_id')
+        .eq('user_id', technicianId);
+
+      let teamInterventions: any[] = [];
+      if (teamMemberships && teamMemberships.length > 0) {
+        const teamIds = teamMemberships.map(m => m.team_id);
+        const { data: teamData } = await supabase
+          .from('interventions')
+          .select(`
+            *,
+            clients (id, name, email, phone, address, city)
+          `)
+          .in('team_id', teamIds)
+          .neq('technician_id', technicianId)
+          .order('scheduled_date', { ascending: true });
+        teamInterventions = teamData || [];
+      }
+
+      const allInterventions = [
+        ...(directData || []).map(d => ({ ...d, profiles: null })),
+        ...teamInterventions.map((d: any) => ({ ...d, profiles: null, _isTeamMember: true })),
+      ] as Intervention[];
+
+      return allInterventions;
     },
     enabled: !!technicianId,
   });
