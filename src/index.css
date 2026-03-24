@@ -153,27 +153,27 @@
   }
 
   .status-to-plan {
-    @apply bg-amber-100 text-amber-800;
+    @apply bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300;
   }
 
   .status-planned {
-    @apply bg-blue-100 text-blue-800;
+    @apply bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300;
   }
 
   .status-in-progress {
-    @apply bg-purple-100 text-purple-800;
+    @apply bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300;
   }
 
   .status-completed {
-    @apply bg-green-100 text-green-800;
+    @apply bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300;
   }
 
   .status-to-invoice {
-    @apply bg-orange-100 text-orange-800;
+    @apply bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300;
   }
 
   .status-archived {
-    @apply bg-gray-100 text-gray-800;
+    @apply bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300;
   }
 
   /* Page header */
