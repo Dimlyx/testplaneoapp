@@ -219,6 +219,14 @@ const TechnicianInterventionDetail = () => {
         </div>
       </div>
 
+      {/* Read-only banner for team members */}
+      {isTeamMember && (
+        <div className="flex items-center gap-2 bg-muted/70 border rounded-lg p-3 text-sm text-muted-foreground">
+          <Eye className="h-4 w-4" />
+          <span>Consultation seule — seul le chef d'équipe peut modifier cette intervention</span>
+        </div>
+      )}
+
       {/* Schedule info */}
       {(intervention.scheduled_date || intervention.scheduled_time) && (
         <div className="flex items-center gap-4 text-sm text-muted-foreground bg-muted/50 rounded-lg p-3">
@@ -255,6 +263,7 @@ const TechnicianInterventionDetail = () => {
         onStatusChange={handleStatusChange}
         onTimeUpdate={handleTimeUpdate}
         isUpdating={updateIntervention.isPending}
+        readOnly={!!isTeamMember}
       />
     </div>
   );
