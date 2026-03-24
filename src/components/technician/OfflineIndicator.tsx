@@ -49,7 +49,7 @@ export function OfflineIndicator() {
             ) : (
               <>
                 <div className="w-2 h-2 rounded-full bg-amber-500" />
-                <span className="font-medium text-amber-600">Hors ligne</span>
+                <span className="font-medium text-amber-600 dark:text-amber-400">Hors ligne</span>
               </>
             )}
           </div>
@@ -62,7 +62,7 @@ export function OfflineIndicator() {
           )}
 
           {pendingCount === 0 && isOnline && (
-            <div className="flex items-center gap-2 text-sm text-green-600">
+            <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
               <Check className="h-4 w-4" />
               <span>Tout est synchronisé</span>
             </div>

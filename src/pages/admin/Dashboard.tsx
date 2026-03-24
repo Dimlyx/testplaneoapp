@@ -469,12 +469,12 @@ const Dashboard = () => {
                     <div className="flex items-center justify-between">
                       <div className={cn(
                         "p-2 rounded-lg",
-                        colorClass === 'amber' && "bg-amber-100 text-amber-600",
-                        colorClass === 'blue' && "bg-blue-100 text-blue-600",
-                        colorClass === 'purple' && "bg-purple-100 text-purple-600",
-                        colorClass === 'green' && "bg-green-100 text-green-600",
-                        colorClass === 'orange' && "bg-orange-100 text-orange-600",
-                        colorClass === 'gray' && "bg-gray-100 text-gray-600",
+                        colorClass === 'amber' && "bg-amber-100 text-amber-600 dark:bg-amber-950 dark:text-amber-400",
+                        colorClass === 'blue' && "bg-blue-100 text-blue-600 dark:bg-blue-950 dark:text-blue-400",
+                        colorClass === 'purple' && "bg-purple-100 text-purple-600 dark:bg-purple-950 dark:text-purple-400",
+                        colorClass === 'green' && "bg-green-100 text-green-600 dark:bg-green-950 dark:text-green-400",
+                        colorClass === 'orange' && "bg-orange-100 text-orange-600 dark:bg-orange-950 dark:text-orange-400",
+                        colorClass === 'gray' && "bg-muted text-muted-foreground",
                       )}>
                         <Icon className="h-4 w-4" />
                       </div>

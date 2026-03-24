@@ -444,7 +444,7 @@ const InterventionWorkflow = ({
                       <span>Reprise : {format(new Date(pause.resumed_at), "dd/MM/yyyy HH:mm", { locale: fr })}</span>
                     </div>
                   ) : (
-                    <span className="text-xs font-medium text-orange-600">En cours</span>
+                    <span className="text-xs font-medium text-orange-600 dark:text-orange-400">En cours</span>
                   )}
                 </div>
               ))
@@ -700,7 +700,7 @@ const InterventionWorkflow = ({
                           </div>
                         )}
                         {isStepCompleted && (
-                          <div className="flex items-center gap-2 text-green-600 bg-green-50 dark:bg-green-950 p-3 rounded-lg">
+                          <div className="flex items-center gap-2 text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950 p-3 rounded-lg">
                             <CheckCircle className="h-5 w-5" />
                             <span className="font-medium text-sm">
                               {completion?.comment || "Étape validée"}
@@ -827,7 +827,7 @@ const InterventionWorkflow = ({
               
               {isCompleted && (
                 <div className="text-center space-y-4">
-                  <div className="flex items-center justify-center gap-2 text-green-600">
+                  <div className="flex items-center justify-center gap-2 text-green-600 dark:text-green-400">
                     <CheckCircle className="h-5 w-5" />
                     <span className="font-medium">Intervention terminée</span>
                   </div>
