@@ -144,7 +144,7 @@ const JourneyTracker = ({
         {!isInterventionStarted ? (
           <Button 
             onClick={handleStartIntervention} 
-            className="w-full bg-green-600 hover:bg-green-700"
+            className="w-full bg-success hover:bg-success/90 text-success-foreground"
             size="lg"
             disabled={isUpdating}
           >

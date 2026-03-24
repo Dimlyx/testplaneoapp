@@ -217,7 +217,7 @@ const SignaturePad = ({
                 Plein écran
               </Button>
             </div>
-            <div className="border-2 border-dashed border-muted-foreground/30 rounded-lg overflow-hidden bg-white">
+            <div className="border-2 border-dashed border-muted-foreground/30 rounded-lg overflow-hidden bg-white dark:bg-gray-100">
               {renderCanvas(canvasRef, "w-full h-40")}
             </div>
             <p className="text-xs text-muted-foreground mt-1">

@@ -155,7 +155,7 @@ export function TechnicianInterventionsByCategory({ category }: { category: Cate
             <Card
               key={intervention.id}
               className={`cursor-pointer hover:shadow-md transition-shadow ${
-                category === "en-cours" ? "border-l-4 border-l-yellow-500" : ""
+                category === "en-cours" ? "border-l-4 border-l-warning" : ""
               }`}
               onClick={() => handleClick(intervention.id)}
             >
