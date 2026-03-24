@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useInterventions, useDeleteIntervention, useUpdateIntervention } from "@/hooks/useInterventions";
+import { useInterventions, useDeleteIntervention, useUpdateIntervention, useCreateIntervention } from "@/hooks/useInterventions";
 import { useClients } from "@/hooks/useClients";
 import { useTechnicians } from "@/hooks/useTechnicians";
 import { useInterventionTypes } from "@/hooks/useInterventionTypes";
