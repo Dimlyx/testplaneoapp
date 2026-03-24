@@ -273,11 +273,12 @@ export default function Auth() {
                 }
               </Button>
 
-              <p className="text-xs text-center text-muted-foreground font-medium">Les comptes sont créés par l'administrateur www.app.planeo.tech contact@planeo.tech 04 65 10 04 58 
-
-
-
-              
+              <p className="text-xs text-center text-muted-foreground font-medium">
+                Les comptes sont créés par l'administrateur.
+                <br />
+                <a href="https://www.app.planeo.tech" target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary/80">www.app.planeo.tech</a>
+                <br />
+                contact@planeo.tech — 04 65 10 04 58
               </p>
             </CardContent>
           </form>
