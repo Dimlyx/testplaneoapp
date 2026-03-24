@@ -212,6 +212,8 @@ interface StepCompletionData {
   comment: string | null;
   photo_url: string | null;
   completed_at: string | null;
+  checklist_data?: { id: string; label: string; checked: boolean }[] | null;
+  multiple_choice_data?: { id: string; label: string; selected: boolean }[] | null;
 }
 
 interface WorkflowStepData {
