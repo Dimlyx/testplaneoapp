@@ -189,6 +189,21 @@ const InterventionWorkflow = ({
     }
   };
 
+  // Determine how many loops to render (existing + 1 new if user triggered it)
+  const hasNewEmptyLoop = useMemo(() => {
+    if (loopableSteps.length === 0) return false;
+    if (activeStep) {
+      const match = activeStep.match(/loop-(\d+)/);
+      if (match) {
+        const activeLoopIdx = parseInt(match[1]);
+        return activeLoopIdx > maxLoopIndex;
+      }
+    }
+    return false;
+  }, [activeStep, maxLoopIndex, loopableSteps]);
+
+  const totalLoops = hasNewEmptyLoop ? maxLoopIndex + 2 : loopCount;
+
   // Track whether we just added a new loop (to prevent useEffect from overriding)
   const [justAddedLoop, setJustAddedLoop] = useState(false);
 
