@@ -22,6 +22,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<AppRole>(null);
   const [loading, setLoading] = useState(true);
 
+  // Median.co OneSignal JS Bridge integration
+  const registerOneSignal = (userId: string) => {
+    try {
+      if (typeof window !== 'undefined' && (window as any).median?.onesignal) {
+        (window as any).median.onesignal.login(userId);
+        console.log('OneSignal: registered user', userId);
+      }
+    } catch (e) {
+      console.warn('OneSignal registration failed:', e);
+    }
+  };
+
+  const unregisterOneSignal = () => {
+    try {
+      if (typeof window !== 'undefined' && (window as any).median?.onesignal) {
+        (window as any).median.onesignal.logout();
+        console.log('OneSignal: user logged out');
+      }
+    } catch (e) {
+      console.warn('OneSignal logout failed:', e);
+    }
+  };
+
   const fetchUserRole = async (userId: string) => {
     const { data } = await supabase
       .from('user_roles')
@@ -44,8 +67,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setTimeout(() => {
             fetchUserRole(session.user.id);
           }, 0);
+          // Register with OneSignal via Median JS Bridge
+          registerOneSignal(session.user.id);
         } else {
           setRole(null);
+          // Unregister from OneSignal via Median JS Bridge
+          unregisterOneSignal();
         }
         setLoading(false);
 
