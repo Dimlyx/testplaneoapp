@@ -35,6 +35,19 @@ const emailSchema = z.string().email('Email invalide');
 export default function Auth() {
   const navigate = useNavigate();
   const { user, role, signIn, loading: authLoading } = useAuth();
+  const { setTheme, theme: currentTheme } = useTheme();
+
+  // Force light mode on auth page
+  useEffect(() => {
+    const previousTheme = currentTheme;
+    setTheme('light');
+    return () => {
+      if (previousTheme && previousTheme !== 'light') {
+        setTheme(previousTheme);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
