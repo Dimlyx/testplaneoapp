@@ -596,21 +596,27 @@ const InterventionWorkflow = ({
         );
       })}
 
-      {/* Dynamic workflow steps - rendered per loop iteration */}
-      {loopableSteps.length > 0 && Array.from({ length: totalLoops }, (_, loopIdx) => (
-        <div key={`loop-${loopIdx}`}>
-          {/* Loop separator for iterations > 0 */}
-          {totalLoops > 1 && (
-            <div className="flex items-center gap-2 my-3 px-3">
-              <div className="flex-1 h-px bg-border" />
-              <span className="text-xs font-medium text-muted-foreground bg-muted px-3 py-1 rounded-full">
-                Équipement {loopIdx + 1}
-              </span>
-              <div className="flex-1 h-px bg-border" />
-            </div>
-          )}
+      {/* Dynamic workflow steps - rendered inline with loops nested below trigger */}
+      {loopableSteps.length > 0 && (() => {
+        // Render loops recursively: each loop's steps appear inline,
+        // and if "Oui" was clicked on trigger, the next loop appears right below it
+        const renderLoop = (loopIdx: number): React.ReactNode[] => {
+          const nodes: React.ReactNode[] = [];
 
-          {loopableSteps.map((step, index) => {
+          // Loop separator for iterations > 0
+          if (loopIdx > 0) {
+            nodes.push(
+              <div key={`loop-sep-${loopIdx}`} className="flex items-center gap-2 my-3 px-3">
+                <div className="flex-1 h-px bg-border" />
+                <span className="text-xs font-medium text-muted-foreground bg-muted px-3 py-1 rounded-full">
+                  Équipement {loopIdx + 1}
+                </span>
+                <div className="flex-1 h-px bg-border" />
+              </div>
+            );
+          }
+
+          for (const step of loopableSteps) {
             const completion = stepCompletions.find(
               c => c.step_id === step.id && (c.loop_index ?? 0) === loopIdx
             );
@@ -618,26 +624,19 @@ const InterventionWorkflow = ({
             const stepKey = `step-${step.id}-loop-${loopIdx}`;
             const isLoopTrigger = step.is_loop_trigger && matchingType?.allow_loop;
 
-            // For loop trigger steps: check if all OTHER loopable steps in this iteration are done
-            const nonTriggerSteps = loopableSteps.filter(s => !s.is_loop_trigger);
-            const allOtherStepsDone = nonTriggerSteps.every(
-              s => stepCompletions.some(c => c.step_id === s.id && c.loop_index === loopIdx && c.completed_at)
-            );
-
-            return (
+            nodes.push(
               <WorkflowStep
                 key={stepKey}
                 icon={isLoopTrigger ? RefreshCw : ClipboardList}
                 label={step.label}
                 isActive={activeStep === stepKey}
-                isCompleted={isLoopTrigger ? isStepCompleted : isStepCompleted}
+                isCompleted={isStepCompleted}
                 onClick={() => handleStepClick(stepKey)}
                 isDisabled={stepsLocked}
               >
                 <div className="relative">
                   {stepsLocked && <LockedOverlay />}
                   {isLoopTrigger ? (
-                    // Loop trigger step: show Oui/Non directly
                     <Card>
                       <CardContent className="p-4 space-y-4">
                         <div className="flex items-center gap-3">
@@ -654,7 +653,6 @@ const InterventionWorkflow = ({
                             <Button
                               className="w-full h-12 text-base"
                               onClick={async () => {
-                                // Complete this trigger step then add a new loop
                                 await handleCompleteStep(step.id, "Oui - continuer", undefined, undefined, undefined, loopIdx);
                                 handleAddLoop();
                               }}
@@ -667,7 +665,6 @@ const InterventionWorkflow = ({
                               variant="outline"
                               className="w-full h-12 text-base"
                               onClick={async () => {
-                                // Complete this trigger step then go to next section
                                 await handleCompleteStep(step.id, "Non - passer à la suite", undefined, undefined, undefined, loopIdx);
                                 if (loopTriggerStep?.loop_no_step_id) {
                                   setActiveStep(`step-${loopTriggerStep.loop_no_step_id}`);
@@ -707,9 +704,23 @@ const InterventionWorkflow = ({
                 </div>
               </WorkflowStep>
             );
-          })}
-        </div>
-      ))}
+
+            // If this is the loop trigger and it was answered "Oui", render next loop inline right below
+            if (isLoopTrigger && isStepCompleted && completion?.comment?.includes("Oui")) {
+              // Check if next loop exists (has completions or is the new empty one)
+              const nextLoopIdx = loopIdx + 1;
+              if (nextLoopIdx < totalLoops) {
+                nodes.push(...renderLoop(nextLoopIdx));
+              }
+            }
+          }
+
+          return nodes;
+        };
+
+        // Only start rendering from loop 0; subsequent loops are rendered inline after their trigger
+        return renderLoop(0);
+      })()}
 
       {/* Signature steps - shown after all loops, not part of the loop */}
       {signatureSteps.map((step) => {
