@@ -333,23 +333,6 @@ const InterventionWorkflow = ({
     </div>
   );
 
-  // Determine how many loops to render (existing + 1 new if user triggered it)
-  const hasNewEmptyLoop = useMemo(() => {
-    // Check if the latest loop has any completions
-    if (loopableSteps.length === 0) return false;
-    const latestHasCompletions = stepCompletions.some(c => c.loop_index === maxLoopIndex);
-    // If the active step references a loop higher than maxLoopIndex, we have a new empty loop
-    if (activeStep) {
-      const match = activeStep.match(/loop-(\d+)/);
-      if (match) {
-        const activeLoopIdx = parseInt(match[1]);
-        return activeLoopIdx > maxLoopIndex;
-      }
-    }
-    return false;
-  }, [activeStep, maxLoopIndex, stepCompletions, loopableSteps]);
-
-  const totalLoops = hasNewEmptyLoop ? maxLoopIndex + 2 : loopCount;
 
   return (
     <div className="space-y-0">
