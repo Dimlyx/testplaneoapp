@@ -200,7 +200,7 @@ const InterventionForm = () => {
         interventionId = id;
         toast({ title: "Intervention mise à jour avec succès" });
       } else {
-        const result = await createIntervention.mutateAsync(data);
+        const result = await createIntervention.mutateAsync(data as any);
         interventionId = result?.id;
         
         // Upload pending attachments after intervention is created
