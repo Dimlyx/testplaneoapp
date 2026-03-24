@@ -21,12 +21,16 @@ import InterventionWorkflow from "@/components/technician/InterventionWorkflow";
 const TechnicianInterventionDetail = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { user } = useAuth();
   const { data: intervention, isLoading } = useIntervention(id || "");
   const { data: client } = useClient(intervention?.client_id || "");
   const { data: photos = [] } = useInterventionPhotos(id || "");
   const { data: companySettings } = useCompanySettings();
   const { data: documentSettings } = useDocumentSettings();
   const updateIntervention = useUpdateIntervention();
+
+  // Determine if the current user is a team member (not the leader)
+  const isTeamMember = intervention?.team_id && intervention?.technician_id !== user?.id;
   
   // For PDF generation with step data
   const { data: interventionTypes = [] } = useInterventionTypes();
