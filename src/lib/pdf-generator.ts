@@ -321,11 +321,22 @@ export const generateInterventionPDF = async (
   
   const addField = (label: string, value: string, y: number, x: number = 15) => {
     doc.setFontSize(9);
+
+    const labelText = `${label}:`;
+    const labelWithSpacing = `${label}: `;
+
+    // Measure label width while still in bold to avoid overlap with value text
     doc.setFont("helvetica", "bold");
-    doc.text(label + ":", x, y);
+    const labelWidth = doc.getTextWidth(labelWithSpacing);
+    doc.text(labelText, x, y);
+
     doc.setFont("helvetica", "normal");
-    doc.text(value || "N/C", x + doc.getTextWidth(label + ": "), y);
-    return y + 6;
+    const valueStartX = x + labelWidth + 1.5;
+    const maxValueWidth = Math.max(pageWidth - valueStartX - 15, 20);
+    const valueLines = doc.splitTextToSize(value || "N/C", maxValueWidth);
+    doc.text(valueLines, valueStartX, y);
+
+    return y + Math.max(valueLines.length, 1) * 5 + 1;
   };
 
   const checkNewPage = (neededHeight: number) => {
