@@ -51,8 +51,8 @@ const WorkflowStep = ({
           className={cn(
             "relative z-10 flex items-center justify-center w-12 h-12 rounded-lg shrink-0 transition-colors",
             isDisabled && "bg-muted text-muted-foreground",
-            !isDisabled && isCompleted && "bg-primary text-primary-foreground",
-            !isDisabled && isActive && !isCompleted && "bg-primary text-primary-foreground ring-4 ring-primary/30",
+            !isDisabled && isCompleted && "bg-green-600 dark:bg-green-700 text-white",
+            !isDisabled && isActive && !isCompleted && "bg-primary dark:bg-blue-600 text-primary-foreground ring-4 ring-primary/30 dark:ring-blue-500/30",
             !isDisabled && !isActive && !isCompleted && "bg-muted text-muted-foreground"
           )}
         >
