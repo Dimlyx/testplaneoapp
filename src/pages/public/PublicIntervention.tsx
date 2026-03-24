@@ -356,6 +356,35 @@ const PublicIntervention = () => {
                           {completion.comment && (
                             <p className="text-sm text-muted-foreground ml-6 whitespace-pre-wrap">{completion.comment}</p>
                           )}
+                          {(() => {
+                            const checklistItems = (completion as any).checklist_data as { id: string; label: string; checked: boolean }[] | null;
+                            if (!checklistItems || checklistItems.length === 0) return null;
+                            return (
+                              <div className="ml-6 space-y-1">
+                                {checklistItems.map((item) => (
+                                  <div key={item.id} className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    {item.checked ? <CheckCircle className="h-3 w-3 text-green-600" /> : <AlertTriangle className="h-3 w-3 text-muted-foreground" />}
+                                    <span>{item.label}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            );
+                          })()}
+                          {(() => {
+                            const mcItems = (completion as any).multiple_choice_data as { id: string; label: string; selected: boolean }[] | null;
+                            if (!mcItems || mcItems.length === 0) return null;
+                            const selected = mcItems.filter(i => i.selected);
+                            if (selected.length === 0) return null;
+                            return (
+                              <div className="ml-6 flex flex-wrap gap-1">
+                                {selected.map((item) => (
+                                  <span key={item.id} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                                    {item.label}
+                                  </span>
+                                ))}
+                              </div>
+                            );
+                          })()}
                           {stepPhotos.length > 0 && (
                             <div className="grid grid-cols-2 gap-2 ml-6">
                               {stepPhotos.map((url, photoIdx) => (
@@ -386,6 +415,35 @@ const PublicIntervention = () => {
                       {completion.comment && (
                         <p className="text-sm text-muted-foreground ml-6 whitespace-pre-wrap">{completion.comment}</p>
                       )}
+                      {(() => {
+                        const checklistItems = (completion as any).checklist_data as { id: string; label: string; checked: boolean }[] | null;
+                        if (!checklistItems || checklistItems.length === 0) return null;
+                        return (
+                          <div className="ml-6 space-y-1">
+                            {checklistItems.map((item) => (
+                              <div key={item.id} className="flex items-center gap-2 text-sm text-muted-foreground">
+                                {item.checked ? <CheckCircle className="h-3 w-3 text-green-600" /> : <AlertTriangle className="h-3 w-3 text-muted-foreground" />}
+                                <span>{item.label}</span>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })()}
+                      {(() => {
+                        const mcItems = (completion as any).multiple_choice_data as { id: string; label: string; selected: boolean }[] | null;
+                        if (!mcItems || mcItems.length === 0) return null;
+                        const selected = mcItems.filter(i => i.selected);
+                        if (selected.length === 0) return null;
+                        return (
+                          <div className="ml-6 flex flex-wrap gap-1">
+                            {selected.map((item) => (
+                              <span key={item.id} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                                {item.label}
+                              </span>
+                            ))}
+                          </div>
+                        );
+                      })()}
                       {stepPhotos.length > 0 && (
                         <div className="grid grid-cols-2 gap-2 ml-6">
                           {stepPhotos.map((url, photoIdx) => (

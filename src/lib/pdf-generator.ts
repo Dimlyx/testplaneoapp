@@ -212,6 +212,8 @@ interface StepCompletionData {
   comment: string | null;
   photo_url: string | null;
   completed_at: string | null;
+  checklist_data?: { id: string; label: string; checked: boolean }[] | null;
+  multiple_choice_data?: { id: string; label: string; selected: boolean }[] | null;
 }
 
 interface WorkflowStepData {
@@ -684,6 +686,32 @@ export const generateInterventionPDF = async (
         const commentLines = doc.splitTextToSize(completion.comment, pageWidth - 35);
         doc.text(commentLines, 20, yPos);
         yPos += commentLines.length * 5 + 3;
+      }
+
+      // Render checklist data
+      const checklistItems = completion.checklist_data as { id: string; label: string; checked: boolean }[] | null;
+      if (checklistItems && checklistItems.length > 0) {
+        doc.setFontSize(9);
+        for (const item of checklistItems) {
+          checkNewPage(8);
+          const marker = item.checked ? "☑" : "☐";
+          doc.text(`${marker} ${item.label}`, 22, yPos);
+          yPos += 5;
+        }
+        yPos += 2;
+      }
+
+      // Render multiple choice data
+      const mcItems = completion.multiple_choice_data as { id: string; label: string; selected: boolean }[] | null;
+      if (mcItems && mcItems.length > 0) {
+        const selectedItems = mcItems.filter(i => i.selected);
+        if (selectedItems.length > 0) {
+          doc.setFontSize(9);
+          doc.setFont("helvetica", "italic");
+          doc.text("Choix : " + selectedItems.map(i => i.label).join(", "), 22, yPos);
+          doc.setFont("helvetica", "normal");
+          yPos += 6;
+        }
       }
       
       const stepPhotoUrls = parsePhotoUrls(completion.photo_url);
