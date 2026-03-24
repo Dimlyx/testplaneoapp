@@ -74,6 +74,7 @@ const InterventionWorkflow = ({
   onStatusChange,
   onTimeUpdate,
   isUpdating,
+  readOnly = false,
 }: InterventionWorkflowProps) => {
   const [activeStep, setActiveStep] = useState<string | null>(null);
   
