@@ -160,13 +160,23 @@ const InterventionForm = () => {
 
   const onSubmit = async (values: InterventionFormValues) => {
     try {
-      const data = {
+      // If team mode, set technician_id to leader and add team_id
+      let finalTechnicianId = values.technician_id || null;
+      let finalTeamId: string | null = null;
+      if (assignmentMode === 'team' && selectedTeamId) {
+        const selectedTeam = teams.find(t => t.id === selectedTeamId);
+        finalTechnicianId = selectedTeam?.leader_id || null;
+        finalTeamId = selectedTeamId;
+      }
+
+      const data: Record<string, any> = {
         title: values.title,
         client_id: values.client_id,
         intervention_type: values.intervention_type,
         status: values.status,
         custom_status_id: values.custom_status_id || null,
-        technician_id: values.technician_id || null,
+        technician_id: finalTechnicianId,
+        team_id: finalTeamId,
         scheduled_date: values.scheduled_date || null,
         scheduled_time: values.scheduled_time || null,
         estimated_duration: values.estimated_duration || null,
