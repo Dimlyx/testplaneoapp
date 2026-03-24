@@ -605,76 +605,98 @@ const InterventionWorkflow = ({
             );
             const isStepCompleted = !!completion?.completed_at;
             const stepKey = `step-${step.id}-loop-${loopIdx}`;
+            const isLoopTrigger = step.is_loop_trigger && matchingType?.allow_loop;
+
+            // For loop trigger steps: check if all OTHER loopable steps in this iteration are done
+            const nonTriggerSteps = loopableSteps.filter(s => !s.is_loop_trigger);
+            const allOtherStepsDone = nonTriggerSteps.every(
+              s => stepCompletions.some(c => c.step_id === s.id && c.loop_index === loopIdx && c.completed_at)
+            );
 
             return (
               <WorkflowStep
                 key={stepKey}
-                icon={step.requires_photo ? ClipboardList : ClipboardList}
+                icon={isLoopTrigger ? RefreshCw : ClipboardList}
                 label={step.label}
                 isActive={activeStep === stepKey}
-                isCompleted={isStepCompleted}
+                isCompleted={isLoopTrigger ? isStepCompleted : isStepCompleted}
                 onClick={() => handleStepClick(stepKey)}
                 isDisabled={stepsLocked}
               >
                 <div className="relative">
                   {stepsLocked && <LockedOverlay />}
-                  <DynamicStepContent
-                    step={step}
-                    interventionId={intervention.id}
-                    completion={completion}
-                    onComplete={(stepId, comment, photoUrl, checklistData, multipleChoiceData) => handleCompleteStep(stepId, comment, photoUrl, checklistData, multipleChoiceData, loopIdx)}
-                    isLocked={isLocked}
-                    isCompleting={completeStep.isPending}
-                    loopIndex={loopIdx}
-                  />
+                  {isLoopTrigger ? (
+                    // Loop trigger step: show Oui/Non directly
+                    <Card>
+                      <CardContent className="p-4 space-y-4">
+                        <div className="flex items-center gap-3">
+                          <RefreshCw className="h-5 w-5 text-primary shrink-0" />
+                          <div>
+                            <p className="font-medium">Souhaitez-vous continuer ?</p>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              Choisissez pour reprendre les étapes ou passer à la suite.
+                            </p>
+                          </div>
+                        </div>
+                        {!isLocked && !isStepCompleted && (
+                          <div className="flex flex-col gap-3">
+                            <Button
+                              className="w-full h-12 text-base"
+                              onClick={async () => {
+                                // Complete this trigger step then add a new loop
+                                await handleCompleteStep(step.id, "Oui - continuer", undefined, undefined, undefined, loopIdx);
+                                handleAddLoop();
+                              }}
+                              disabled={completeStep.isPending}
+                            >
+                              <RefreshCw className="h-5 w-5 mr-2" />
+                              Oui, continuer
+                            </Button>
+                            <Button
+                              variant="outline"
+                              className="w-full h-12 text-base"
+                              onClick={async () => {
+                                // Complete this trigger step then go to next section
+                                await handleCompleteStep(step.id, "Non - passer à la suite", undefined, undefined, undefined, loopIdx);
+                                if (loopTriggerStep?.loop_no_step_id) {
+                                  setActiveStep(`step-${loopTriggerStep.loop_no_step_id}`);
+                                } else if (signatureSteps.length > 0) {
+                                  setActiveStep(`step-${signatureSteps[0].id}`);
+                                } else {
+                                  setActiveStep('finish');
+                                }
+                              }}
+                              disabled={completeStep.isPending}
+                            >
+                              Non, passer à la suite
+                            </Button>
+                          </div>
+                        )}
+                        {isStepCompleted && (
+                          <div className="flex items-center gap-2 text-green-600 bg-green-50 dark:bg-green-950 p-3 rounded-lg">
+                            <CheckCircle className="h-5 w-5" />
+                            <span className="font-medium text-sm">
+                              {completion?.comment || "Étape validée"}
+                            </span>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <DynamicStepContent
+                      step={step}
+                      interventionId={intervention.id}
+                      completion={completion}
+                      onComplete={(stepId, comment, photoUrl, checklistData, multipleChoiceData) => handleCompleteStep(stepId, comment, photoUrl, checklistData, multipleChoiceData, loopIdx)}
+                      isLocked={isLocked}
+                      isCompleting={completeStep.isPending}
+                      loopIndex={loopIdx}
+                    />
+                  )}
                 </div>
               </WorkflowStep>
             );
           })}
-
-          {/* "Add another loop?" prompt - only if allow_loop is enabled */}
-          {matchingType?.allow_loop && loopIdx === totalLoops - 1 && isLoopComplete(loopIdx) && !isLocked && !stepsLocked && (
-            <Card className="my-3 border-primary/30 bg-primary/5">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <RefreshCw className="h-5 w-5 text-primary" />
-                    <div>
-                      <p className="font-medium text-sm">Souhaitez-vous continuer ?</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Choisissez pour reprendre les étapes ou passer à la suite.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        // "Non" → navigate to the configured step or signature/finish
-                        if (loopTriggerStep?.loop_no_step_id) {
-                          setActiveStep(`step-${loopTriggerStep.loop_no_step_id}`);
-                        } else {
-                          // Default: go to first signature step or finish
-                          if (signatureSteps.length > 0) {
-                            setActiveStep(`step-${signatureSteps[0].id}`);
-                          } else {
-                            setActiveStep('finish');
-                          }
-                        }
-                      }}
-                    >
-                      Non
-                    </Button>
-                    <Button size="sm" onClick={handleAddLoop}>
-                      <RefreshCw className="h-4 w-4 mr-1" />
-                      Oui
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </div>
       ))}
 
