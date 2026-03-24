@@ -138,6 +138,11 @@ const InterventionForm = () => {
         intervention_email: intervention.intervention_email || "",
         intervention_contact_name: intervention.intervention_contact_name || "",
       });
+      // Detect team assignment mode
+      if ((intervention as any).team_id) {
+        setAssignmentMode('team');
+        setSelectedTeamId((intervention as any).team_id);
+      }
     }
   }, [intervention, isEditing, form]);
 
