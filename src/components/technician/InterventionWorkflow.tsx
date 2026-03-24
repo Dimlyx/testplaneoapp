@@ -180,9 +180,7 @@ const InterventionWorkflow = ({
   // Handle adding a new loop
   const handleAddLoop = () => {
     setShowAddLoopPrompt(false);
-    // The new loop will be maxLoopIndex + 1, and its steps will automatically appear
-    // We need to create at least one empty state to trigger the loop
-    // Simply setting active step to the first step of the new loop will work
+    setJustAddedLoop(true);
     const newLoopIdx = maxLoopIndex + 1;
     if (loopableSteps.length > 0) {
       setActiveStep(`step-${loopableSteps[0].id}-loop-${newLoopIdx}`);
