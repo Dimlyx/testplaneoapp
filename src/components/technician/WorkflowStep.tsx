@@ -30,7 +30,7 @@ const WorkflowStep = ({
         <div 
           className={cn(
             "absolute left-6 top-12 w-0.5 h-full -translate-x-1/2",
-            isCompleted ? "bg-primary" : "bg-border"
+            isCompleted ? "bg-green-600 dark:bg-green-700" : "bg-border"
           )}
         />
       )}
