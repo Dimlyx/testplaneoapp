@@ -700,7 +700,7 @@ const InterventionWorkflow = ({
                           </div>
                         )}
                         {isStepCompleted && (
-                          <div className="flex items-center gap-2 text-green-600 bg-green-50 dark:bg-green-950 p-3 rounded-lg">
+                          <div className="flex items-center gap-2 text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950 p-3 rounded-lg">
                             <CheckCircle className="h-5 w-5" />
                             <span className="font-medium text-sm">
                               {completion?.comment || "Étape validée"}

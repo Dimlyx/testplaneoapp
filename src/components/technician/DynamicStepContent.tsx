@@ -161,7 +161,7 @@ const DynamicStepContent = ({
         {isCompleted ? (
           <Card>
             <CardContent className="p-4">
-              <div className="flex items-center gap-2 text-green-600 bg-green-50 dark:bg-green-950 p-3 rounded-lg">
+              <div className="flex items-center gap-2 text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950 p-3 rounded-lg">
                 <CheckCircle className="h-5 w-5" />
                 <span className="font-medium text-sm">Étape validée</span>
               </div>
@@ -333,7 +333,7 @@ const DynamicStepContent = ({
         {!isLocked && (
           <div>
             {isCompleted ? (
-              <div className="flex items-center gap-2 text-green-600 bg-green-50 dark:bg-green-950 p-3 rounded-lg">
+              <div className="flex items-center gap-2 text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950 p-3 rounded-lg">
                 <CheckCircle className="h-5 w-5" />
                 <span className="font-medium text-sm">Étape validée</span>
               </div>
@@ -351,7 +351,7 @@ const DynamicStepContent = ({
         )}
 
         {isLocked && isCompleted && (
-          <div className="flex items-center gap-2 text-green-600 bg-green-50 dark:bg-green-950 p-3 rounded-lg">
+          <div className="flex items-center gap-2 text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950 p-3 rounded-lg">
             <CheckCircle className="h-5 w-5" />
             <span className="font-medium text-sm">Étape validée</span>
           </div>
