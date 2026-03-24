@@ -422,32 +422,96 @@ const InterventionForm = () => {
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="technician_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Technicien</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Sélectionner un technicien" />
-                          </SelectTrigger>
-                        </FormControl>
+                {/* Assignment mode toggle */}
+                <div className="space-y-3">
+                  <FormLabel>Assignation</FormLabel>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant={assignmentMode === 'technician' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => { setAssignmentMode('technician'); setSelectedTeamId(''); }}
+                    >
+                      Technicien seul
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={assignmentMode === 'team' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => { setAssignmentMode('team'); form.setValue('technician_id', ''); }}
+                    >
+                      <Users className="h-4 w-4 mr-1" /> Équipe
+                    </Button>
+                  </div>
+
+                  {assignmentMode === 'technician' ? (
+                    <FormField
+                      control={form.control}
+                      name="technician_id"
+                      render={({ field }) => (
+                        <FormItem>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Sélectionner un technicien" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {technicians.map((tech) => (
+                                <SelectItem key={tech.id} value={tech.id}>
+                                  {tech.full_name || tech.email}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  ) : (
+                    <div>
+                      <Select value={selectedTeamId} onValueChange={setSelectedTeamId}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionner une équipe" />
+                        </SelectTrigger>
                         <SelectContent>
-                          {technicians.map((tech) => (
-                            <SelectItem key={tech.id} value={tech.id}>
-                              {tech.full_name || tech.email}
+                          {teams.map(team => (
+                            <SelectItem key={team.id} value={team.id}>
+                              <div className="flex items-center gap-2">
+                                <Users className="h-3.5 w-3.5" />
+                                {team.name}
+                                <span className="text-xs text-muted-foreground">
+                                  ({team.members.length} membres)
+                                </span>
+                              </div>
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
-                      <FormMessage />
-                    </FormItem>
+                      {selectedTeamId && (() => {
+                        const team = teams.find(t => t.id === selectedTeamId);
+                        if (!team) return null;
+                        const leaderName = technicians.find(t => t.id === team.leader_id);
+                        return (
+                          <div className="mt-2 p-2 bg-muted/50 rounded text-xs space-y-1">
+                            <div className="flex items-center gap-1">
+                              <Crown className="h-3 w-3 text-yellow-500" />
+                              <span className="font-medium">Chef : {leaderName?.full_name || leaderName?.email}</span>
+                              <span className="text-muted-foreground">(rapport & validation)</span>
+                            </div>
+                            <div className="text-muted-foreground">
+                              Membres : {team.members.filter(m => m.user_id !== team.leader_id).map(m => {
+                                const t = technicians.find(tech => tech.id === m.user_id);
+                                return t?.full_name || t?.email;
+                              }).join(', ') || 'Aucun autre membre'}
+                              <span> (consultation seule)</span>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
                   )}
-                />
-
-                <div className="grid gap-4 sm:grid-cols-2">
+                </div>
                   <FormField
                     control={form.control}
                     name="scheduled_date"
