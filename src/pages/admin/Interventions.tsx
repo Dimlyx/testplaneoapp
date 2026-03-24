@@ -430,6 +430,14 @@ const Interventions = () => {
                       <Button 
                         variant="ghost" 
                         size="icon"
+                        onClick={() => handleDuplicate(intervention)}
+                        title="Dupliquer"
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
                         onClick={() => navigate(`/admin/interventions/${intervention.id}`)}
                       >
                         <Eye className="h-4 w-4" />
