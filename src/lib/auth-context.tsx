@@ -118,6 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       if (session?.user) {
         fetchUserRole(session.user.id);
+        registerOneSignal(session.user.id);
       }
       setLoading(false);
     });
