@@ -276,7 +276,7 @@ export default function Auth() {
               <p className="text-xs text-center text-muted-foreground font-medium">
                 Les comptes sont créés par l'administrateur.
                 <br />
-                <a href="https://www.app.planeo.tech" target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary/80">www.app.planeo.tech</a>
+                <a href="https://planeo.tech/" target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary/80">www.planeo.tech</a>
                 <br />
                 contact@planeo.tech — 04 65 10 04 58
               </p>
