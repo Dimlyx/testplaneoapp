@@ -114,6 +114,23 @@ export interface UpdateInterventionData {
   is_paused?: boolean;
 }
 
+interface AssignmentPushPayload {
+  userId: string;
+  title: string;
+  message: string;
+  interventionId: string;
+}
+
+async function sendAssignmentPush(payload: AssignmentPushPayload) {
+  const { error } = await supabase.functions.invoke('send-push-notification', {
+    body: payload,
+  });
+
+  if (error) {
+    console.warn('Push notification send failed:', error);
+  }
+}
+
 export function useInterventions() {
   const { data: organizationId } = useUserOrganization();
 
@@ -275,6 +292,16 @@ export function useCreateIntervention(organizationId?: string | null) {
         .single();
 
       if (error) throw error;
+
+      if (result?.technician_id) {
+        await sendAssignmentPush({
+          userId: result.technician_id,
+          title: 'Nouvelle intervention assignée',
+          message: `L'intervention "${result.title}" vous a été assignée.`,
+          interventionId: result.id,
+        });
+      }
+
       return result;
     },
     onSuccess: () => {
@@ -300,6 +327,12 @@ export function useUpdateIntervention() {
 
   return useMutation({
     mutationFn: async ({ id, ...data }: UpdateInterventionData) => {
+      const { data: previousIntervention } = await supabase
+        .from('interventions')
+        .select('technician_id, title')
+        .eq('id', id)
+        .maybeSingle();
+
       const { data: result, error } = await supabase
         .from('interventions')
         .update(data)
@@ -308,6 +341,20 @@ export function useUpdateIntervention() {
         .single();
 
       if (error) throw error;
+
+      const technicianChanged =
+        !!result?.technician_id &&
+        result.technician_id !== previousIntervention?.technician_id;
+
+      if (technicianChanged) {
+        await sendAssignmentPush({
+          userId: result.technician_id,
+          title: 'Nouvelle intervention assignée',
+          message: `L'intervention "${result.title}" vous a été assignée.`,
+          interventionId: result.id,
+        });
+      }
+
       return result;
     },
     onSuccess: (result) => {
