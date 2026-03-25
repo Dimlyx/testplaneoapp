@@ -23,25 +23,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   // Median.co OneSignal JS Bridge integration
-  const registerOneSignal = (userId: string) => {
+  const callMedianOneSignal = (action: 'login' | 'logout', userId?: string) => {
     try {
-      if (typeof window !== 'undefined' && (window as any).median?.onesignal) {
+      if (typeof window === 'undefined' || !(window as any).median?.onesignal) {
+        return false;
+      }
+
+      if (action === 'login' && userId) {
         (window as any).median.onesignal.login(userId);
         console.log('OneSignal: registered user', userId);
-      }
-    } catch (e) {
-      console.warn('OneSignal registration failed:', e);
-    }
-  };
-
-  const unregisterOneSignal = () => {
-    try {
-      if (typeof window !== 'undefined' && (window as any).median?.onesignal) {
+      } else {
         (window as any).median.onesignal.logout();
         console.log('OneSignal: user logged out');
       }
+
+      return true;
     } catch (e) {
-      console.warn('OneSignal logout failed:', e);
+      console.warn(`OneSignal ${action} failed:`, e);
+      return false;
+    }
+  };
+
+  const registerOneSignal = (userId: string, attempt = 0) => {
+    const success = callMedianOneSignal('login', userId);
+    if (!success && attempt < 10) {
+      setTimeout(() => registerOneSignal(userId, attempt + 1), 1000);
+    }
+  };
+
+  const unregisterOneSignal = (attempt = 0) => {
+    const success = callMedianOneSignal('logout');
+    if (!success && attempt < 5) {
+      setTimeout(() => unregisterOneSignal(attempt + 1), 500);
     }
   };
 
@@ -105,6 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       if (session?.user) {
         fetchUserRole(session.user.id);
+        registerOneSignal(session.user.id);
       }
       setLoading(false);
     });

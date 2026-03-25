@@ -65,6 +65,34 @@ serve(async (req) => {
       throw new Error(`OneSignal API error [${response.status}]: ${JSON.stringify(data)}`);
     }
 
+    const errors = Array.isArray(data?.errors)
+      ? data.errors.map((entry: unknown) => String(entry))
+      : [];
+
+    const recipients = typeof data?.recipients === 'number' ? data.recipients : null;
+    const hasNoSubscribedDevice = errors.some((entry) =>
+      entry.toLowerCase().includes('not subscribed')
+    );
+
+    if (hasNoSubscribedDevice || recipients === 0) {
+      console.warn('Push rejected: no subscribed device for external_id', JSON.stringify(data));
+      return new Response(
+        JSON.stringify({
+          error: 'No subscribed OneSignal device for this user',
+          details: data,
+        }),
+        { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (errors.length > 0) {
+      console.error('OneSignal delivery errors:', JSON.stringify(data));
+      return new Response(
+        JSON.stringify({ error: 'OneSignal delivery error', details: data }),
+        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     console.log('Push notification sent successfully:', JSON.stringify(data));
 
     return new Response(
