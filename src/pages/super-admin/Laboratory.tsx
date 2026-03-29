@@ -201,7 +201,7 @@ export default function Laboratory() {
             <CardHeader>
               <CardTitle>Accès rapide aux fonctionnalités</CardTitle>
               <CardDescription>
-                {viewAsOrgId 
+                {selectedOrgId 
                   ? 'Cliquez pour accéder directement à une section de l\'espace admin'
                   : 'Sélectionnez d\'abord une entreprise pour activer les liens'
                 }
@@ -213,9 +213,12 @@ export default function Laboratory() {
                   <button
                     key={feature.path}
                     onClick={() => {
-                      if (viewAsOrgId) navigate(feature.path);
+                      if (selectedOrgId) {
+                        setViewAsOrgId(selectedOrgId);
+                        navigate(feature.path);
+                      }
                     }}
-                    disabled={!viewAsOrgId}
+                    disabled={!selectedOrgId}
                     className="flex flex-col items-center gap-2 p-4 rounded-xl border bg-card hover:bg-accent/50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-center"
                   >
                     <feature.icon className="h-6 w-6 text-primary" />
