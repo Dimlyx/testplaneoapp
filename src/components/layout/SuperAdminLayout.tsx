@@ -16,7 +16,8 @@ import {
   Megaphone,
   Mail,
   PlayCircle,
-  BarChart3
+  BarChart3,
+  FlaskConical
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -28,6 +29,7 @@ const navigation = [
   { name: 'Communication', href: '/super-admin/announcements', icon: Megaphone },
   { name: 'Templates emails', href: '/super-admin/email-templates', icon: Mail },
   { name: 'Compte démo', href: '/super-admin/demo', icon: PlayCircle },
+  { name: 'Laboratoire', href: '/super-admin/lab', icon: FlaskConical },
 ];
 
 export default function SuperAdminLayout() {
