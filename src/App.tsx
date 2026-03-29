@@ -49,6 +49,7 @@ import SuperAdminAnnouncements from "@/pages/super-admin/Announcements";
 import SuperAdminEmailTemplates from "@/pages/super-admin/EmailTemplates";
 import DemoSetup from "@/pages/super-admin/DemoSetup";
 import SuperAdminStatistics from "@/pages/super-admin/Statistics";
+import Laboratory from "@/pages/super-admin/Laboratory";
 
 const queryClient = new QueryClient();
 
@@ -125,6 +126,7 @@ const AppRoutes = () => {
         <Route path="announcements" element={<SuperAdminAnnouncements />} />
         <Route path="email-templates" element={<SuperAdminEmailTemplates />} />
         <Route path="demo" element={<DemoSetup />} />
+        <Route path="lab" element={<Laboratory />} />
       </Route>
 
       {/* Admin routes */}
