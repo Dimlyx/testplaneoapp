@@ -159,7 +159,6 @@ export function useUpdateWorkflowStep() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["workflow-steps"] });
       queryClient.invalidateQueries({ queryKey: ["workflow-steps-by-type"] });
-      toast.success("Étape mise à jour");
     },
     onError: (error: Error) => {
       toast.error("Erreur lors de la mise à jour: " + error.message);

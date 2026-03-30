@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Check, Loader2 } from "lucide-react";
 import {
   Camera, MessageSquare, PenTool, ClipboardList, List, RefreshCw,
   Trash2, Plus, GripVertical, ChevronRight, X
@@ -172,6 +173,11 @@ export default function WorkflowSchemaBuilder({ typeId, steps, allowLoop }: Work
   const [editLoopYesStepId, setEditLoopYesStepId] = useState<string | null>(null);
   const [editLoopNoStepId, setEditLoopNoStepId] = useState<string | null>(null);
 
+  // Auto-save state
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isInitialLoadRef = useRef(true);
+
   // Sub-sheets
   const [checklistSheetOpen, setChecklistSheetOpen] = useState(false);
   const [multipleChoiceSheetOpen, setMultipleChoiceSheetOpen] = useState(false);
@@ -179,6 +185,12 @@ export default function WorkflowSchemaBuilder({ typeId, steps, allowLoop }: Work
   const [newMultipleChoiceItem, setNewMultipleChoiceItem] = useState("");
 
   const selectStep = (step: WorkflowStep) => {
+    // Save pending changes before switching
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+    }
+    isInitialLoadRef.current = true;
     setSelectedStep(step);
     setEditLabel(step.label);
     setEditName(step.name);
@@ -194,7 +206,52 @@ export default function WorkflowSchemaBuilder({ typeId, steps, allowLoop }: Work
     setEditMultipleChoiceItems(step.multiple_choice_items || []);
     setEditLoopYesStepId(step.loop_yes_step_id || null);
     setEditLoopNoStepId(step.loop_no_step_id || null);
+    setSaveStatus("idle");
   };
+
+  // Auto-save effect
+  const doAutoSave = useCallback(async () => {
+    if (!selectedStep || !editLabel.trim()) return;
+    setSaveStatus("saving");
+    try {
+      await updateStep.mutateAsync({
+        id: selectedStep.id,
+        name: editName.trim() || editLabel.toLowerCase().replace(/\s+/g, "_"),
+        label: editLabel.trim(),
+        description: editDescription.trim() || undefined,
+        is_mandatory: editMandatory,
+        requires_photo: editPhoto,
+        requires_comment: editComment,
+        requires_signature: editSignature,
+        is_loop_trigger: editLoopTrigger,
+        loop_yes_step_id: editLoopTrigger ? editLoopYesStepId : null,
+        loop_no_step_id: editLoopTrigger ? editLoopNoStepId : null,
+        checklist_items: editHasChecklist ? editChecklistItems : [],
+        multiple_choice_items: editHasMultipleChoice ? editMultipleChoiceItems : [],
+      } as any);
+      setSaveStatus("saved");
+      setTimeout(() => setSaveStatus((s) => s === "saved" ? "idle" : s), 2000);
+    } catch {
+      setSaveStatus("idle");
+    }
+  }, [selectedStep, editLabel, editName, editDescription, editMandatory, editPhoto, editComment, editSignature, editLoopTrigger, editLoopYesStepId, editLoopNoStepId, editHasChecklist, editChecklistItems, editHasMultipleChoice, editMultipleChoiceItems, updateStep]);
+
+  useEffect(() => {
+    if (isInitialLoadRef.current) {
+      isInitialLoadRef.current = false;
+      return;
+    }
+    if (!selectedStep) return;
+
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      doAutoSave();
+    }, 800);
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [editLabel, editName, editDescription, editMandatory, editPhoto, editComment, editSignature, editLoopTrigger, editLoopYesStepId, editLoopNoStepId, editHasChecklist, editChecklistItems, editHasMultipleChoice, editMultipleChoiceItems]);
 
   const handleAddFromPalette = async (paletteItem: typeof STEP_PALETTE[number]) => {
     const stepLabel = paletteItem.label;
@@ -214,26 +271,6 @@ export default function WorkflowSchemaBuilder({ typeId, steps, allowLoop }: Work
       checklist_items: [],
       multiple_choice_items: [],
     } as any);
-  };
-
-  const handleSaveStep = async () => {
-    if (!selectedStep || !editLabel.trim()) return;
-    await updateStep.mutateAsync({
-      id: selectedStep.id,
-      name: editName.trim() || editLabel.toLowerCase().replace(/\s+/g, "_"),
-      label: editLabel.trim(),
-      description: editDescription.trim() || undefined,
-      is_mandatory: editMandatory,
-      requires_photo: editPhoto,
-      requires_comment: editComment,
-      requires_signature: editSignature,
-      is_loop_trigger: editLoopTrigger,
-      loop_yes_step_id: editLoopTrigger ? editLoopYesStepId : null,
-      loop_no_step_id: editLoopTrigger ? editLoopNoStepId : null,
-      checklist_items: editHasChecklist ? editChecklistItems : [],
-      multiple_choice_items: editHasMultipleChoice ? editMultipleChoiceItems : [],
-    } as any);
-    setSelectedStep(null);
   };
 
   const handleDeleteStep = async (id: string) => {
@@ -457,9 +494,21 @@ export default function WorkflowSchemaBuilder({ typeId, steps, allowLoop }: Work
                 </div>
               </div>
 
-              <Button onClick={handleSaveStep} className="w-full" size="sm" disabled={!editLabel.trim() || updateStep.isPending}>
-                {updateStep.isPending ? "Enregistrement..." : "Enregistrer"}
-              </Button>
+              {/* Auto-save status indicator */}
+              <div className="flex items-center justify-center h-8 text-xs text-muted-foreground">
+                {saveStatus === "saving" && (
+                  <span className="flex items-center gap-1.5">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Enregistrement...
+                  </span>
+                )}
+                {saveStatus === "saved" && (
+                  <span className="flex items-center gap-1.5 text-green-600">
+                    <Check className="h-3 w-3" />
+                    Enregistré
+                  </span>
+                )}
+              </div>
             </div>
           </ScrollArea>
         ) : (
