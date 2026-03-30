@@ -217,13 +217,14 @@ const InterventionForm = () => {
       if (shouldSendEmail && interventionId) {
         try {
           setSendingEmail(true);
-          const { error } = await supabase.functions.invoke('send-client-notification', {
+          const { data: notifData, error } = await supabase.functions.invoke('send-client-notification', {
             body: { interventionId },
           });
           if (error) throw error;
+          if (notifData?.error) throw new Error(notifData.error);
           toast({ title: "Notification envoyée au client" });
-        } catch {
-          toast({ title: "Erreur lors de l'envoi de la notification", variant: "destructive" });
+        } catch (e: any) {
+          toast({ title: e?.message || "Erreur lors de l'envoi de la notification", variant: "destructive" });
         } finally {
           setSendingEmail(false);
           setShouldSendEmail(false);
