@@ -253,6 +253,26 @@ export default function WorkflowSchemaBuilder({ typeId, steps, allowLoop }: Work
     };
   }, [editLabel, editName, editDescription, editMandatory, editPhoto, editComment, editSignature, editLoopTrigger, editLoopYesStepId, editLoopNoStepId, editHasChecklist, editChecklistItems, editHasMultipleChoice, editMultipleChoiceItems]);
 
+  const handleAddFromPalette = async (paletteItem: typeof STEP_PALETTE[number]) => {
+    const stepLabel = paletteItem.label;
+    const stepName = stepLabel.toLowerCase().replace(/\s+/g, "_");
+    const nextOrder = steps.length;
+
+    await createStep.mutateAsync({
+      intervention_type_id: typeId,
+      name: stepName,
+      label: stepLabel,
+      step_order: nextOrder,
+      is_mandatory: false,
+      requires_photo: paletteItem.preset.requires_photo || false,
+      requires_comment: paletteItem.preset.requires_comment || false,
+      requires_signature: paletteItem.preset.requires_signature || false,
+      is_loop_trigger: paletteItem.preset.is_loop_trigger || false,
+      checklist_items: [],
+      multiple_choice_items: [],
+    } as any);
+  };
+
   const handleDeleteStep = async (id: string) => {
     if (selectedStep?.id === id) setSelectedStep(null);
     await deleteStep.mutateAsync(id);
