@@ -173,6 +173,11 @@ export default function WorkflowSchemaBuilder({ typeId, steps, allowLoop }: Work
   const [editLoopYesStepId, setEditLoopYesStepId] = useState<string | null>(null);
   const [editLoopNoStepId, setEditLoopNoStepId] = useState<string | null>(null);
 
+  // Auto-save state
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isInitialLoadRef = useRef(true);
+
   // Sub-sheets
   const [checklistSheetOpen, setChecklistSheetOpen] = useState(false);
   const [multipleChoiceSheetOpen, setMultipleChoiceSheetOpen] = useState(false);
@@ -180,6 +185,12 @@ export default function WorkflowSchemaBuilder({ typeId, steps, allowLoop }: Work
   const [newMultipleChoiceItem, setNewMultipleChoiceItem] = useState("");
 
   const selectStep = (step: WorkflowStep) => {
+    // Save pending changes before switching
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+    }
+    isInitialLoadRef.current = true;
     setSelectedStep(step);
     setEditLabel(step.label);
     setEditName(step.name);
@@ -195,47 +206,52 @@ export default function WorkflowSchemaBuilder({ typeId, steps, allowLoop }: Work
     setEditMultipleChoiceItems(step.multiple_choice_items || []);
     setEditLoopYesStepId(step.loop_yes_step_id || null);
     setEditLoopNoStepId(step.loop_no_step_id || null);
+    setSaveStatus("idle");
   };
 
-  const handleAddFromPalette = async (paletteItem: typeof STEP_PALETTE[number]) => {
-    const stepLabel = paletteItem.label;
-    const stepName = stepLabel.toLowerCase().replace(/\s+/g, "_");
-    const nextOrder = steps.length;
-
-    await createStep.mutateAsync({
-      intervention_type_id: typeId,
-      name: stepName,
-      label: stepLabel,
-      step_order: nextOrder,
-      is_mandatory: false,
-      requires_photo: paletteItem.preset.requires_photo || false,
-      requires_comment: paletteItem.preset.requires_comment || false,
-      requires_signature: paletteItem.preset.requires_signature || false,
-      is_loop_trigger: paletteItem.preset.is_loop_trigger || false,
-      checklist_items: [],
-      multiple_choice_items: [],
-    } as any);
-  };
-
-  const handleSaveStep = async () => {
+  // Auto-save effect
+  const doAutoSave = useCallback(async () => {
     if (!selectedStep || !editLabel.trim()) return;
-    await updateStep.mutateAsync({
-      id: selectedStep.id,
-      name: editName.trim() || editLabel.toLowerCase().replace(/\s+/g, "_"),
-      label: editLabel.trim(),
-      description: editDescription.trim() || undefined,
-      is_mandatory: editMandatory,
-      requires_photo: editPhoto,
-      requires_comment: editComment,
-      requires_signature: editSignature,
-      is_loop_trigger: editLoopTrigger,
-      loop_yes_step_id: editLoopTrigger ? editLoopYesStepId : null,
-      loop_no_step_id: editLoopTrigger ? editLoopNoStepId : null,
-      checklist_items: editHasChecklist ? editChecklistItems : [],
-      multiple_choice_items: editHasMultipleChoice ? editMultipleChoiceItems : [],
-    } as any);
-    setSelectedStep(null);
-  };
+    setSaveStatus("saving");
+    try {
+      await updateStep.mutateAsync({
+        id: selectedStep.id,
+        name: editName.trim() || editLabel.toLowerCase().replace(/\s+/g, "_"),
+        label: editLabel.trim(),
+        description: editDescription.trim() || undefined,
+        is_mandatory: editMandatory,
+        requires_photo: editPhoto,
+        requires_comment: editComment,
+        requires_signature: editSignature,
+        is_loop_trigger: editLoopTrigger,
+        loop_yes_step_id: editLoopTrigger ? editLoopYesStepId : null,
+        loop_no_step_id: editLoopTrigger ? editLoopNoStepId : null,
+        checklist_items: editHasChecklist ? editChecklistItems : [],
+        multiple_choice_items: editHasMultipleChoice ? editMultipleChoiceItems : [],
+      } as any);
+      setSaveStatus("saved");
+      setTimeout(() => setSaveStatus((s) => s === "saved" ? "idle" : s), 2000);
+    } catch {
+      setSaveStatus("idle");
+    }
+  }, [selectedStep, editLabel, editName, editDescription, editMandatory, editPhoto, editComment, editSignature, editLoopTrigger, editLoopYesStepId, editLoopNoStepId, editHasChecklist, editChecklistItems, editHasMultipleChoice, editMultipleChoiceItems, updateStep]);
+
+  useEffect(() => {
+    if (isInitialLoadRef.current) {
+      isInitialLoadRef.current = false;
+      return;
+    }
+    if (!selectedStep) return;
+
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      doAutoSave();
+    }, 800);
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [editLabel, editName, editDescription, editMandatory, editPhoto, editComment, editSignature, editLoopTrigger, editLoopYesStepId, editLoopNoStepId, editHasChecklist, editChecklistItems, editHasMultipleChoice, editMultipleChoiceItems]);
 
   const handleDeleteStep = async (id: string) => {
     if (selectedStep?.id === id) setSelectedStep(null);
