@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Check, Loader2 } from "lucide-react";
 import {
   Camera, MessageSquare, PenTool, ClipboardList, List, RefreshCw,
   Trash2, Plus, GripVertical, ChevronRight, X
