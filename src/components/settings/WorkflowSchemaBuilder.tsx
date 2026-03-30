@@ -494,9 +494,21 @@ export default function WorkflowSchemaBuilder({ typeId, steps, allowLoop }: Work
                 </div>
               </div>
 
-              <Button onClick={handleSaveStep} className="w-full" size="sm" disabled={!editLabel.trim() || updateStep.isPending}>
-                {updateStep.isPending ? "Enregistrement..." : "Enregistrer"}
-              </Button>
+              {/* Auto-save status indicator */}
+              <div className="flex items-center justify-center h-8 text-xs text-muted-foreground">
+                {saveStatus === "saving" && (
+                  <span className="flex items-center gap-1.5">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Enregistrement...
+                  </span>
+                )}
+                {saveStatus === "saved" && (
+                  <span className="flex items-center gap-1.5 text-green-600">
+                    <Check className="h-3 w-3" />
+                    Enregistré
+                  </span>
+                )}
+              </div>
             </div>
           </ScrollArea>
         ) : (
