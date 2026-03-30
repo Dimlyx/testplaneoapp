@@ -103,6 +103,49 @@ Deno.serve(async (req) => {
         })
       }
 
+      case 'create': {
+        const { email, password, full_name, role: newRole, organization_id } = body
+        if (!email || !password) {
+          return new Response(JSON.stringify({ error: 'Email et mot de passe requis' }), {
+            status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          })
+        }
+        // Create user via admin API (does NOT affect caller session)
+        const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+          email,
+          password,
+          email_confirm: true,
+          user_metadata: { full_name: full_name || '' },
+        })
+        if (createError) throw createError
+        if (!newUser?.user) throw new Error('Échec de la création')
+
+        const newUserId = newUser.user.id
+
+        // Wait for trigger to create profile/role
+        await new Promise(resolve => setTimeout(resolve, 500))
+
+        // Update role with correct role and organization
+        if (newRole || organization_id) {
+          const updates: Record<string, unknown> = {}
+          if (newRole) updates.role = newRole
+          if (organization_id) updates.organization_id = organization_id
+          await supabaseAdmin.from('user_roles').update(updates).eq('user_id', newUserId)
+        }
+
+        // Update profile with organization
+        if (organization_id) {
+          await supabaseAdmin.from('profiles').update({ 
+            organization_id,
+            full_name: full_name || null,
+          }).eq('id', newUserId)
+        }
+
+        return new Response(JSON.stringify({ success: true, userId: newUserId }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
       case 'delete': {
         // Get user's org to clean up related data
         const { data: userRole } = await supabaseAdmin

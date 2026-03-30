@@ -105,68 +105,24 @@ export default function OrganizationDetail() {
 
   const createUserMutation = useMutation({
     mutationFn: async (data: UserFormData) => {
-      // Create user via Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-          data: {
-            full_name: data.full_name,
-          },
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Non authentifié');
+
+      const { data: result, error } = await supabase.functions.invoke('manage-user', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        body: {
+          action: 'create',
+          userId: 'new',
+          email: data.email,
+          password: data.password,
+          full_name: data.full_name,
+          role: data.role,
+          organization_id: id,
         },
       });
 
-      if (authError) throw authError;
-      if (!authData.user) throw new Error('Échec de la création de l\'utilisateur');
-
-      const userId = authData.user.id;
-
-      // Wait a bit for the trigger to create the initial records
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Update the user role with organization and correct role
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .update({ 
-          role: data.role,
-          organization_id: id,
-        })
-        .eq('user_id', userId);
-
-      if (roleError) {
-        // If update fails, try inserting instead (in case trigger didn't run)
-        const { error: insertRoleError } = await supabase
-          .from('user_roles')
-          .insert({ 
-            user_id: userId,
-            role: data.role,
-            organization_id: id,
-          });
-        if (insertRoleError) throw insertRoleError;
-      }
-
-      // Update profile with organization
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ 
-          organization_id: id,
-          full_name: data.full_name,
-        })
-        .eq('id', userId);
-
-      if (profileError) {
-        // If update fails, try inserting instead
-        const { error: insertProfileError } = await supabase
-          .from('profiles')
-          .insert({ 
-            id: userId,
-            email: data.email,
-            organization_id: id,
-            full_name: data.full_name,
-          });
-        if (insertProfileError) throw insertProfileError;
-      }
+      if (error) throw new Error(error.message);
+      if (result?.error) throw new Error(result.error);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['organization-users', id] });
