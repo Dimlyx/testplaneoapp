@@ -12,7 +12,7 @@ interface InterventionDayGroupProps {
   date: string;
   interventions: Intervention[];
   getClientName: (clientId: string) => string;
-  getClientAddress: (clientId: string) => string | null;
+  getInterventionAddress: (intervention: Intervention) => string | null;
   defaultOpen?: boolean;
 }
 
