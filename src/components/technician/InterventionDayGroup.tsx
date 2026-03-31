@@ -20,7 +20,7 @@ export const InterventionDayGroup = ({
   date,
   interventions,
   getClientName,
-  getClientAddress,
+  getInterventionAddress,
   defaultOpen = false,
 }: InterventionDayGroupProps) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
