@@ -12,7 +12,7 @@ interface InterventionDayGroupProps {
   date: string;
   interventions: Intervention[];
   getClientName: (clientId: string) => string;
-  getClientAddress: (clientId: string) => string | null;
+  getInterventionAddress: (intervention: Intervention) => string | null;
   defaultOpen?: boolean;
 }
 
@@ -20,7 +20,7 @@ export const InterventionDayGroup = ({
   date,
   interventions,
   getClientName,
-  getClientAddress,
+  getInterventionAddress,
   defaultOpen = false,
 }: InterventionDayGroupProps) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
@@ -90,10 +90,10 @@ export const InterventionDayGroup = ({
                       <div className="flex items-center gap-2">
                         <TypeBadge type={intervention.intervention_type} />
                       </div>
-                      {getClientAddress(intervention.client_id) && (
+                      {getInterventionAddress(intervention) && (
                         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                           <MapPin className="h-3 w-3" />
-                          <span className="truncate">{getClientAddress(intervention.client_id)}</span>
+                          <span className="truncate">{getInterventionAddress(intervention)}</span>
                         </div>
                       )}
                     </div>

@@ -48,8 +48,17 @@ export function TechnicianInterventionsByCategory({ category }: { category: Cate
   const getClientName = (clientId: string) =>
     clients.find((c) => c.id === clientId)?.name || "Client";
 
-  const getClientAddress = (clientId: string) => {
-    const client = clients.find((c) => c.id === clientId);
+  const getInterventionAddress = (intervention: Intervention) => {
+    // Prioritize intervention-specific address over client address
+    if (intervention.intervention_address || intervention.intervention_city) {
+      const parts = [
+        intervention.intervention_address,
+        intervention.intervention_postal_code,
+        intervention.intervention_city,
+      ].filter(Boolean);
+      return parts.join(', ') || null;
+    }
+    const client = clients.find((c) => c.id === intervention.client_id);
     if (!client) return null;
     return client.address
       ? `${client.address}, ${client.postal_code || ""} ${client.city || ""}`
@@ -144,7 +153,7 @@ export function TechnicianInterventionsByCategory({ category }: { category: Cate
               date={dateKey === "no-date" ? today : dateKey}
               interventions={groups[dateKey]}
               getClientName={getClientName}
-              getClientAddress={getClientAddress}
+              getInterventionAddress={getInterventionAddress}
               defaultOpen={category === "planning" && (dateKey === today || sortedKeys[0] === dateKey)}
             />
           ))}
@@ -187,10 +196,10 @@ export function TechnicianInterventionsByCategory({ category }: { category: Cate
                         </div>
                       )}
                       <TypeBadge type={intervention.intervention_type} />
-                      {getClientAddress(intervention.client_id) && (
+                      {getInterventionAddress(intervention) && (
                         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                           <MapPin className="h-3 w-3" />
-                          <span className="truncate">{getClientAddress(intervention.client_id)}</span>
+                          <span className="truncate">{getInterventionAddress(intervention)}</span>
                         </div>
                       )}
                     </div>
