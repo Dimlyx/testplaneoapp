@@ -48,8 +48,17 @@ export function TechnicianInterventionsByCategory({ category }: { category: Cate
   const getClientName = (clientId: string) =>
     clients.find((c) => c.id === clientId)?.name || "Client";
 
-  const getClientAddress = (clientId: string) => {
-    const client = clients.find((c) => c.id === clientId);
+  const getInterventionAddress = (intervention: Intervention) => {
+    // Prioritize intervention-specific address over client address
+    if (intervention.intervention_address || intervention.intervention_city) {
+      const parts = [
+        intervention.intervention_address,
+        intervention.intervention_postal_code,
+        intervention.intervention_city,
+      ].filter(Boolean);
+      return parts.join(', ') || null;
+    }
+    const client = clients.find((c) => c.id === intervention.client_id);
     if (!client) return null;
     return client.address
       ? `${client.address}, ${client.postal_code || ""} ${client.city || ""}`
