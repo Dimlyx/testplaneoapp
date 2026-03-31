@@ -217,6 +217,16 @@ export function useTechnicianInterventions(technicianId: string | undefined) {
         ...teamInterventions.map((d: any) => ({ ...d, profiles: null, _isTeamMember: true })),
       ] as Intervention[];
 
+      // Sort chronologically by date then time
+      allInterventions.sort((a, b) => {
+        const dateA = a.scheduled_date || '9999-12-31';
+        const dateB = b.scheduled_date || '9999-12-31';
+        if (dateA !== dateB) return dateA.localeCompare(dateB);
+        const timeA = a.scheduled_time || '99:99';
+        const timeB = b.scheduled_time || '99:99';
+        return timeA.localeCompare(timeB);
+      });
+
       return allInterventions;
     },
     enabled: !!technicianId,
