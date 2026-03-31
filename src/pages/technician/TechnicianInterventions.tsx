@@ -153,7 +153,7 @@ export function TechnicianInterventionsByCategory({ category }: { category: Cate
               date={dateKey === "no-date" ? today : dateKey}
               interventions={groups[dateKey]}
               getClientName={getClientName}
-              getClientAddress={getClientAddress}
+              getInterventionAddress={getInterventionAddress}
               defaultOpen={category === "planning" && (dateKey === today || sortedKeys[0] === dateKey)}
             />
           ))}
