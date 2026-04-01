@@ -110,46 +110,56 @@ const InterventionWorkflow = ({
   const stepsLocked = !isStarted || isPaused;
 
   // Separate signature steps from loopable steps
-  // If there's a loop trigger step, only steps from the trigger onward (excluding signature) are looped
   const signatureSteps = useMemo(() => workflowSteps.filter(s => s.requires_signature), [workflowSteps]);
   
-  // Find the loop trigger step (the step that asks Oui/Non for branching)
-  const loopTriggerStep = useMemo(() => 
-    workflowSteps.find(s => s.is_loop_trigger), [workflowSteps]
-  );
+  // Find the MAIN loop trigger step — the last one with is_loop_trigger whose loop_yes_step_id
+  // points backwards (to a step before it), creating the actual repeat loop.
+  // Other loop triggers (e.g. conditional branches) are rendered inline with Oui/Non.
+  const loopTriggerStep = useMemo(() => {
+    if (!matchingType?.allow_loop) return undefined;
+    const nonSig = workflowSteps.filter(s => !s.requires_signature);
+    const triggers = nonSig.filter(s => s.is_loop_trigger);
+    // Prefer the trigger whose loop_yes_step_id points to a step BEFORE it (real loop-back)
+    for (let i = triggers.length - 1; i >= 0; i--) {
+      const t = triggers[i];
+      if (t.loop_yes_step_id) {
+        const tIdx = nonSig.findIndex(s => s.id === t.id);
+        const yesIdx = nonSig.findIndex(s => s.id === t.loop_yes_step_id);
+        if (yesIdx !== -1 && yesIdx <= tIdx) return t;
+      }
+    }
+    // Fallback: last trigger
+    return triggers.length > 0 ? triggers[triggers.length - 1] : undefined;
+  }, [workflowSteps, matchingType]);
   
-  const { preLoopSteps, loopableSteps } = useMemo(() => {
+  const { preLoopSteps, loopableSteps, postLoopSteps } = useMemo(() => {
     const nonSignatureSteps = workflowSteps.filter(s => !s.requires_signature);
     
-    if (!matchingType?.allow_loop) {
-      return { preLoopSteps: nonSignatureSteps, loopableSteps: [] as typeof nonSignatureSteps };
+    if (!matchingType?.allow_loop || !loopTriggerStep) {
+      return { preLoopSteps: nonSignatureSteps, loopableSteps: [] as typeof nonSignatureSteps, postLoopSteps: [] as typeof nonSignatureSteps };
     }
     
-    // Find the loop trigger step
-    const triggerStep = nonSignatureSteps.find(s => s.is_loop_trigger);
-    const triggerIndex = nonSignatureSteps.findIndex(s => s.is_loop_trigger);
+    const triggerIndex = nonSignatureSteps.findIndex(s => s.id === loopTriggerStep.id);
     
-    if (triggerIndex === -1 || !triggerStep) {
-      // No trigger found, all steps are loopable (legacy behavior)
-      return { preLoopSteps: [] as typeof nonSignatureSteps, loopableSteps: nonSignatureSteps };
+    if (triggerIndex === -1) {
+      return { preLoopSteps: nonSignatureSteps, loopableSteps: [] as typeof nonSignatureSteps, postLoopSteps: [] as typeof nonSignatureSteps };
     }
     
     // Find where the loop starts using loop_yes_step_id
-    // loop_yes_step_id points to the first step that should repeat
     let loopStartIndex = 0;
-    if (triggerStep.loop_yes_step_id) {
-      const yesIdx = nonSignatureSteps.findIndex(s => s.id === triggerStep.loop_yes_step_id);
-      if (yesIdx !== -1) {
+    if (loopTriggerStep.loop_yes_step_id) {
+      const yesIdx = nonSignatureSteps.findIndex(s => s.id === loopTriggerStep.loop_yes_step_id);
+      if (yesIdx !== -1 && yesIdx <= triggerIndex) {
         loopStartIndex = yesIdx;
       }
     }
     
-    // Steps before loopStart run once, steps from loopStart to trigger (inclusive) are looped
     return {
       preLoopSteps: nonSignatureSteps.slice(0, loopStartIndex),
       loopableSteps: nonSignatureSteps.slice(loopStartIndex, triggerIndex + 1),
+      postLoopSteps: nonSignatureSteps.slice(triggerIndex + 1),
     };
-  }, [workflowSteps, matchingType]);
+  }, [workflowSteps, matchingType, loopTriggerStep]);
 
   // Calculate loop iterations from completions
   const maxLoopIndex = useMemo(() => {
@@ -258,6 +268,15 @@ const InterventionWorkflow = ({
         setActiveStep(`step-${loopableSteps[0].id}-loop-${newLoopIdx}`);
         return;
       }
+    }
+    
+    // Check post-loop steps
+    const firstIncompletePostLoop = postLoopSteps.find(
+      step => !stepCompletions.some(c => c.step_id === step.id && c.loop_index === 0 && c.completed_at)
+    );
+    if (firstIncompletePostLoop) {
+      setActiveStep(`step-${firstIncompletePostLoop.id}-loop-0`);
+      return;
     }
     
     // All loopable steps done, check signature steps
@@ -597,11 +616,12 @@ const InterventionWorkflow = ({
         );
         const isStepCompleted = !!completion?.completed_at;
         const stepKey = `step-${step.id}-loop-0`;
+        const isInlineLoopTrigger = step.is_loop_trigger && matchingType?.allow_loop;
 
         return (
           <WorkflowStep
             key={stepKey}
-            icon={ClipboardList}
+            icon={isInlineLoopTrigger ? RefreshCw : ClipboardList}
             label={step.label}
             isActive={activeStep === stepKey}
             isCompleted={isStepCompleted}
@@ -610,15 +630,71 @@ const InterventionWorkflow = ({
           >
             <div className="relative">
               {stepsLocked && <LockedOverlay />}
-              <DynamicStepContent
-                step={step}
-                interventionId={intervention.id}
-                completion={completion}
-                onComplete={(stepId, comment, photoUrl, checklistData, multipleChoiceData) => handleCompleteStep(stepId, comment, photoUrl, checklistData, multipleChoiceData, 0)}
-                isLocked={isLocked}
-                isCompleting={completeStep.isPending}
-                loopIndex={0}
-              />
+              {isInlineLoopTrigger ? (
+                <Card>
+                  <CardContent className="p-4 space-y-4">
+                    <div className="flex items-center gap-3">
+                      <RefreshCw className="h-5 w-5 text-primary shrink-0" />
+                      <div>
+                        <p className="font-medium">{step.label}</p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Choisissez pour continuer ou passer à la suite.
+                        </p>
+                      </div>
+                    </div>
+                    {!isLocked && !isStepCompleted && (
+                      <div className="flex flex-col gap-3">
+                        <Button
+                          className="w-full h-12 text-base"
+                          onClick={async () => {
+                            await handleCompleteStep(step.id, "Oui", undefined, undefined, undefined, 0);
+                            // Navigate to the yes step
+                            if (step.loop_yes_step_id) {
+                              setActiveStep(`step-${step.loop_yes_step_id}-loop-0`);
+                            }
+                          }}
+                          disabled={completeStep.isPending}
+                        >
+                          <CheckCircle className="h-5 w-5 mr-2" />
+                          Oui
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="w-full h-12 text-base"
+                          onClick={async () => {
+                            await handleCompleteStep(step.id, "Non", undefined, undefined, undefined, 0);
+                            // Navigate to the no step or next step
+                            if (step.loop_no_step_id) {
+                              setActiveStep(`step-${step.loop_no_step_id}-loop-0`);
+                            }
+                          }}
+                          disabled={completeStep.isPending}
+                        >
+                          Non
+                        </Button>
+                      </div>
+                    )}
+                    {isStepCompleted && (
+                      <div className="flex items-center gap-2 text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950 p-3 rounded-lg">
+                        <CheckCircle className="h-5 w-5" />
+                        <span className="font-medium text-sm">
+                          {completion?.comment || "Étape validée"}
+                        </span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ) : (
+                <DynamicStepContent
+                  step={step}
+                  interventionId={intervention.id}
+                  completion={completion}
+                  onComplete={(stepId, comment, photoUrl, checklistData, multipleChoiceData) => handleCompleteStep(stepId, comment, photoUrl, checklistData, multipleChoiceData, 0)}
+                  isLocked={isLocked}
+                  isCompleting={completeStep.isPending}
+                  loopIndex={0}
+                />
+              )}
             </div>
           </WorkflowStep>
         );
@@ -749,6 +825,40 @@ const InterventionWorkflow = ({
         // Only start rendering from loop 0; subsequent loops are rendered inline after their trigger
         return renderLoop(0);
       })()}
+
+      {/* Post-loop steps (run once after all loops are done) */}
+      {postLoopSteps.map((step) => {
+        const completion = stepCompletions.find(
+          c => c.step_id === step.id && (c.loop_index ?? 0) === 0
+        );
+        const isStepCompleted = !!completion?.completed_at;
+        const stepKey = `step-${step.id}-loop-0`;
+
+        return (
+          <WorkflowStep
+            key={stepKey}
+            icon={ClipboardList}
+            label={step.label}
+            isActive={activeStep === stepKey}
+            isCompleted={isStepCompleted}
+            onClick={() => handleStepClick(stepKey)}
+            isDisabled={stepsLocked}
+          >
+            <div className="relative">
+              {stepsLocked && <LockedOverlay />}
+              <DynamicStepContent
+                step={step}
+                interventionId={intervention.id}
+                completion={completion}
+                onComplete={(stepId, comment, photoUrl, checklistData, multipleChoiceData) => handleCompleteStep(stepId, comment, photoUrl, checklistData, multipleChoiceData, 0)}
+                isLocked={isLocked}
+                isCompleting={completeStep.isPending}
+                loopIndex={0}
+              />
+            </div>
+          </WorkflowStep>
+        );
+      })}
 
       {/* Signature steps - shown after all loops, not part of the loop */}
       {signatureSteps.map((step) => {
