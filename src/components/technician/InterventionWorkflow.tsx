@@ -493,7 +493,7 @@ const InterventionWorkflow = ({
                     <button
                       type="button"
                       className="flex items-start gap-2 text-sm text-primary hover:underline mt-2"
-                      onClick={() => openAddressInMaps(addr)}
+                      onClick={() => mapsChooser.openMaps(addr)}
                     >
                       <MapPin className="h-4 w-4 mt-0.5 shrink-0" />
                       <span>{addr}</span>
