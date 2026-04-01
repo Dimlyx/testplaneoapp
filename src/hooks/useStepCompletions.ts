@@ -174,6 +174,7 @@ export function useSaveDraft() {
   });
 }
 
+export function useUncompleteStep() {
   const queryClient = useQueryClient();
 
   return useMutation({
