@@ -465,6 +465,7 @@ export function WeeklyPlanningCalendar({
                                       getTypeColor(intervention.intervention_type),
                                       draggedIntervention?.id === intervention.id && "opacity-50"
                                     )}
+                                    style={getCustomStatusBorderStyle(intervention)}
                                     draggable
                                     onDragStart={(e) => handleDragStart(e, intervention)}
                                     onDragEnd={handleDragEnd}
