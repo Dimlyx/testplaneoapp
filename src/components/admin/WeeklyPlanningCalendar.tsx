@@ -57,6 +57,14 @@ export function WeeklyPlanningCalendar({
     return found ? (defaultTypeColors[found.color] || 'bg-gray-600') : 'bg-gray-600';
   };
 
+  const getCustomStatusBorderStyle = (intervention: Intervention): React.CSSProperties => {
+    if (intervention.custom_status_id) {
+      const custom = customStatuses.find(s => s.id === intervention.custom_status_id);
+      if (custom) return { border: `2.5px solid ${custom.color}`, boxShadow: `0 0 6px ${custom.color}40` };
+    }
+    return {};
+  };
+
   const getTypeLabel = (typeName: string) => {
     const found = interventionTypesData.find(t => t.name === typeName);
     return found ? found.label : typeName;
