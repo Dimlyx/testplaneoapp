@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
@@ -6,7 +6,7 @@ import { Camera, MessageSquare, CheckCircle, Upload, X, Plus, ChevronDown, List,
 import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { WorkflowStep as WorkflowStepType } from "@/hooks/useWorkflowSteps";
-import { StepCompletion } from "@/hooks/useStepCompletions";
+import { StepCompletion, useSaveDraft } from "@/hooks/useStepCompletions";
 import { supabase } from "@/integrations/supabase/client";
 import SignaturePad from "@/components/SignaturePad";
 import { compressImage } from "@/lib/image-compression";
@@ -76,6 +76,42 @@ const DynamicStepContent = ({
   const [multipleChoiceOpen, setMultipleChoiceOpen] = useState(false);
 
   const isCompleted = !!completion?.completed_at;
+  const saveDraft = useSaveDraft();
+  const draftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasMountedRef = useRef(false);
+
+  // Auto-save draft with debounce (2s after last change)
+  const saveDraftNow = useCallback(() => {
+    if (isLocked) return;
+    const serializedPhotos = photoUrls.length > 0 ? JSON.stringify(photoUrls) : undefined;
+    saveDraft.mutate({
+      interventionId,
+      stepId: step.id,
+      comment: comment || undefined,
+      photoUrl: serializedPhotos,
+      loopIndex,
+      checklistData: checklistState.length > 0 ? checklistState : undefined,
+      multipleChoiceData: multipleChoiceState.length > 0 ? multipleChoiceState : undefined,
+    });
+  }, [interventionId, step.id, comment, photoUrls, checklistState, multipleChoiceState, loopIndex, isLocked]);
+
+  useEffect(() => {
+    // Skip the initial mount to avoid saving unchanged data
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true;
+      return;
+    }
+    if (isLocked) return;
+
+    if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
+    draftTimerRef.current = setTimeout(() => {
+      saveDraftNow();
+    }, 2000);
+
+    return () => {
+      if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
+    };
+  }, [comment, photoUrls, checklistState, multipleChoiceState, saveDraftNow, isLocked]);
   const hasChecklist = checklistState.length > 0;
   const hasMultipleChoice = multipleChoiceState.length > 0;
   const selectedCount = multipleChoiceState.filter(i => i.selected).length;

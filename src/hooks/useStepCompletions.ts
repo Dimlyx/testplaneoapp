@@ -105,6 +105,75 @@ export function useCompleteStep() {
   });
 }
 
+export function useSaveDraft() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      interventionId,
+      stepId,
+      comment,
+      photoUrl,
+      loopIndex = 0,
+      checklistData,
+      multipleChoiceData,
+    }: {
+      interventionId: string;
+      stepId: string;
+      comment?: string;
+      photoUrl?: string;
+      loopIndex?: number;
+      checklistData?: { id: string; label: string; checked: boolean }[];
+      multipleChoiceData?: { id: string; label: string; selected: boolean }[];
+    }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      // Check if a completion already exists
+      const { data: existing } = await supabase
+        .from("intervention_step_completions")
+        .select("id, completed_at")
+        .eq("intervention_id", interventionId)
+        .eq("step_id", stepId)
+        .eq("loop_index", loopIndex)
+        .maybeSingle();
+
+      if (existing) {
+        // Update existing record, preserve completed_at if already validated
+        const { error } = await supabase
+          .from("intervention_step_completions")
+          .update({
+            comment: comment || null,
+            photo_url: photoUrl || null,
+            checklist_data: checklistData || null,
+            multiple_choice_data: multipleChoiceData || null,
+          } as any)
+          .eq("id", existing.id);
+        if (error) throw error;
+      } else {
+        // Insert as draft (completed_at = null)
+        const { error } = await supabase
+          .from("intervention_step_completions")
+          .insert({
+            intervention_id: interventionId,
+            step_id: stepId,
+            completed_at: null,
+            completed_by: user?.id || null,
+            comment: comment || null,
+            photo_url: photoUrl || null,
+            loop_index: loopIndex,
+            checklist_data: checklistData || null,
+            multiple_choice_data: multipleChoiceData || null,
+          } as any);
+        if (error) throw error;
+      }
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["step-completions", variables.interventionId] });
+    },
+    // Silent - no toast for drafts
+  });
+}
+
 export function useUncompleteStep() {
   const queryClient = useQueryClient();
 
