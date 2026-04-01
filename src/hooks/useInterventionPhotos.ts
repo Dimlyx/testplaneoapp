@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { compressImage } from '@/lib/image-compression';
 
 export type PhotoType = 'serial_number' | 'during' | 'after';
 
@@ -46,11 +47,14 @@ export function useUploadInterventionPhoto() {
       file: File;
       equipmentId?: string;
     }) => {
+      // Compress image before upload
+      const compressed = await compressImage(file);
+      
       // Upload to storage
       const fileName = `${interventionId}/${equipmentId || 'general'}/${photoType}_${Date.now()}.jpg`;
       const { error: uploadError } = await supabase.storage
         .from('intervention-photos')
-        .upload(fileName, file, {
+        .upload(fileName, compressed, {
           contentType: 'image/jpeg',
           upsert: false,
         });
