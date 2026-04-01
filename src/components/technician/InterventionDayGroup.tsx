@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { openAddressInMaps } from "@/lib/maps-utils";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { ChevronDown, ChevronUp, Calendar, Clock, MapPin } from "lucide-react";
