@@ -817,6 +817,40 @@ const InterventionWorkflow = ({
         return renderLoop(0);
       })()}
 
+      {/* Post-loop steps (run once after all loops are done) */}
+      {postLoopSteps.map((step) => {
+        const completion = stepCompletions.find(
+          c => c.step_id === step.id && (c.loop_index ?? 0) === 0
+        );
+        const isStepCompleted = !!completion?.completed_at;
+        const stepKey = `step-${step.id}-loop-0`;
+
+        return (
+          <WorkflowStep
+            key={stepKey}
+            icon={ClipboardList}
+            label={step.label}
+            isActive={activeStep === stepKey}
+            isCompleted={isStepCompleted}
+            onClick={() => handleStepClick(stepKey)}
+            isDisabled={stepsLocked}
+          >
+            <div className="relative">
+              {stepsLocked && <LockedOverlay />}
+              <DynamicStepContent
+                step={step}
+                interventionId={intervention.id}
+                completion={completion}
+                onComplete={(stepId, comment, photoUrl, checklistData, multipleChoiceData) => handleCompleteStep(stepId, comment, photoUrl, checklistData, multipleChoiceData, 0)}
+                isLocked={isLocked}
+                isCompleting={completeStep.isPending}
+                loopIndex={0}
+              />
+            </div>
+          </WorkflowStep>
+        );
+      })}
+
       {/* Signature steps - shown after all loops, not part of the loop */}
       {signatureSteps.map((step) => {
         const completion = stepCompletions.find(c => c.step_id === step.id);
