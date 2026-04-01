@@ -87,7 +87,7 @@ export const InterventionDayGroup = ({
                       {intervention.scheduled_time && (
                         <div className="flex items-center gap-2 text-xs text-primary font-medium">
                           <Clock className="h-3.5 w-3.5" />
-                          {intervention.scheduled_time}
+                          {formatTimeRange(intervention.scheduled_time, intervention.estimated_duration)}
                         </div>
                       )}
                       <div className="flex items-center gap-2">
