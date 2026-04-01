@@ -12,6 +12,16 @@ import { InterventionDayGroup } from "@/components/technician/InterventionDayGro
 import type { Intervention } from "@/hooks/useInterventions";
 import { markInterventionAsViewed, isInterventionViewed } from "@/lib/intervention-viewed";
 
+function formatTimeRange(time: string, duration?: number | null): string {
+  const hhmm = time.substring(0, 5);
+  if (!duration) return hhmm;
+  const [h, m] = hhmm.split(":").map(Number);
+  const endMin = h * 60 + m + duration;
+  const endH = String(Math.floor(endMin / 60) % 24).padStart(2, "0");
+  const endM = String(endMin % 60).padStart(2, "0");
+  return `${hhmm} - ${endH}:${endM}`;
+}
+
 type Category = "planning" | "en-cours" | "non-planifie" | "terminees";
 
 function groupByDate(interventions: Intervention[]): Record<string, Intervention[]> {
