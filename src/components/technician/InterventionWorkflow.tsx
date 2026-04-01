@@ -607,11 +607,12 @@ const InterventionWorkflow = ({
         );
         const isStepCompleted = !!completion?.completed_at;
         const stepKey = `step-${step.id}-loop-0`;
+        const isInlineLoopTrigger = step.is_loop_trigger && matchingType?.allow_loop;
 
         return (
           <WorkflowStep
             key={stepKey}
-            icon={ClipboardList}
+            icon={isInlineLoopTrigger ? RefreshCw : ClipboardList}
             label={step.label}
             isActive={activeStep === stepKey}
             isCompleted={isStepCompleted}
@@ -620,15 +621,71 @@ const InterventionWorkflow = ({
           >
             <div className="relative">
               {stepsLocked && <LockedOverlay />}
-              <DynamicStepContent
-                step={step}
-                interventionId={intervention.id}
-                completion={completion}
-                onComplete={(stepId, comment, photoUrl, checklistData, multipleChoiceData) => handleCompleteStep(stepId, comment, photoUrl, checklistData, multipleChoiceData, 0)}
-                isLocked={isLocked}
-                isCompleting={completeStep.isPending}
-                loopIndex={0}
-              />
+              {isInlineLoopTrigger ? (
+                <Card>
+                  <CardContent className="p-4 space-y-4">
+                    <div className="flex items-center gap-3">
+                      <RefreshCw className="h-5 w-5 text-primary shrink-0" />
+                      <div>
+                        <p className="font-medium">{step.label}</p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Choisissez pour continuer ou passer à la suite.
+                        </p>
+                      </div>
+                    </div>
+                    {!isLocked && !isStepCompleted && (
+                      <div className="flex flex-col gap-3">
+                        <Button
+                          className="w-full h-12 text-base"
+                          onClick={async () => {
+                            await handleCompleteStep(step.id, "Oui", undefined, undefined, undefined, 0);
+                            // Navigate to the yes step
+                            if (step.loop_yes_step_id) {
+                              setActiveStep(`step-${step.loop_yes_step_id}-loop-0`);
+                            }
+                          }}
+                          disabled={completeStep.isPending}
+                        >
+                          <CheckCircle className="h-5 w-5 mr-2" />
+                          Oui
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="w-full h-12 text-base"
+                          onClick={async () => {
+                            await handleCompleteStep(step.id, "Non", undefined, undefined, undefined, 0);
+                            // Navigate to the no step or next step
+                            if (step.loop_no_step_id) {
+                              setActiveStep(`step-${step.loop_no_step_id}-loop-0`);
+                            }
+                          }}
+                          disabled={completeStep.isPending}
+                        >
+                          Non
+                        </Button>
+                      </div>
+                    )}
+                    {isStepCompleted && (
+                      <div className="flex items-center gap-2 text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950 p-3 rounded-lg">
+                        <CheckCircle className="h-5 w-5" />
+                        <span className="font-medium text-sm">
+                          {completion?.comment || "Étape validée"}
+                        </span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ) : (
+                <DynamicStepContent
+                  step={step}
+                  interventionId={intervention.id}
+                  completion={completion}
+                  onComplete={(stepId, comment, photoUrl, checklistData, multipleChoiceData) => handleCompleteStep(stepId, comment, photoUrl, checklistData, multipleChoiceData, 0)}
+                  isLocked={isLocked}
+                  isCompleting={completeStep.isPending}
+                  loopIndex={0}
+                />
+              )}
             </div>
           </WorkflowStep>
         );
