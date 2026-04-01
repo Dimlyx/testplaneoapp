@@ -218,5 +218,7 @@ export function TechnicianInterventionsByCategory({ category }: { category: Cate
         </div>
       )}
     </div>
+    <MapsChooser address={mapsChooser.address} open={mapsChooser.open} onOpenChange={mapsChooser.setOpen} />
+    </>
   );
 }
