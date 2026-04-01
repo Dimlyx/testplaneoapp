@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
-import { Camera, MessageSquare, CheckCircle, Upload, X, Plus, ChevronDown, List } from "lucide-react";
+import { Camera, MessageSquare, CheckCircle, Upload, X, Plus, ChevronDown, List, Save } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { WorkflowStep as WorkflowStepType } from "@/hooks/useWorkflowSteps";
@@ -79,6 +79,26 @@ const DynamicStepContent = ({
   const hasMultipleChoice = multipleChoiceState.length > 0;
   const selectedCount = multipleChoiceState.filter(i => i.selected).length;
 
+  // Track if data has been modified since last save/completion
+  const [hasChanges, setHasChanges] = useState(false);
+  const initialDataRef = useRef({
+    comment: completion?.comment || "",
+    photoUrls: parsePhotoUrls(completion?.photo_url || null),
+    checklist: completion?.checklist_data || [],
+    multipleChoice: completion?.multiple_choice_data || [],
+  });
+
+  // Detect changes when completed
+  useEffect(() => {
+    if (!isCompleted) return;
+    const initial = initialDataRef.current;
+    const commentChanged = comment !== initial.comment;
+    const photosChanged = JSON.stringify(photoUrls) !== JSON.stringify(initial.photoUrls);
+    const checklistChanged = JSON.stringify(checklistState) !== JSON.stringify(initial.checklist);
+    const mcChanged = JSON.stringify(multipleChoiceState) !== JSON.stringify(initial.multipleChoice);
+    setHasChanges(commentChanged || photosChanged || checklistChanged || mcChanged);
+  }, [comment, photoUrls, checklistState, multipleChoiceState, isCompleted]);
+
   const toggleChecklistItem = (itemId: string) => {
     setChecklistState(prev => prev.map(item => 
       item.id === itemId ? { ...item, checked: !item.checked } : item
@@ -134,6 +154,18 @@ const DynamicStepContent = ({
       checklistState.length > 0 ? checklistState : undefined,
       multipleChoiceState.length > 0 ? multipleChoiceState : undefined
     );
+    // Update initial data ref after save
+    initialDataRef.current = {
+      comment,
+      photoUrls: [...photoUrls],
+      checklist: [...checklistState],
+      multipleChoice: [...multipleChoiceState],
+    };
+    setHasChanges(false);
+  };
+
+  const handleUpdate = async () => {
+    await handleValidate();
   };
 
   // Handle signature step
@@ -188,6 +220,9 @@ const DynamicStepContent = ({
     );
   }
 
+  // For non-signature steps: allow editing even after completion (unless readOnly/locked)
+  const canEdit = !isLocked;
+
   return (
     <Card>
       <CardContent className="p-4 space-y-4">
@@ -200,7 +235,7 @@ const DynamicStepContent = ({
           <div>
             <label className="text-sm font-medium mb-2 flex items-center gap-2">
               <Camera className="h-4 w-4" />
-              Photos {step.is_mandatory && <span className="text-destructive">*</span>}
+              Photos {step.is_mandatory && !isCompleted && <span className="text-destructive">*</span>}
               {photoUrls.length > 0 && <span className="text-muted-foreground text-xs">({photoUrls.length})</span>}
             </label>
             
@@ -209,7 +244,7 @@ const DynamicStepContent = ({
                 {photoUrls.map((url, index) => (
                   <div key={index} className="relative">
                     <img src={url} alt={`Photo ${index + 1}`} className="w-full h-32 object-cover rounded-lg" />
-                    {!isLocked && (
+                    {canEdit && (
                       <Button
                         variant="destructive"
                         size="icon"
@@ -224,7 +259,7 @@ const DynamicStepContent = ({
               </div>
             )}
 
-            {!isLocked && (
+            {canEdit && (
               <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-muted-foreground/30 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
                 {photoUrls.length > 0 ? (
                   <Plus className="h-6 w-6 text-muted-foreground mb-1" />
@@ -252,7 +287,7 @@ const DynamicStepContent = ({
           <div>
             <label className="text-sm font-medium mb-2 flex items-center gap-2">
               <MessageSquare className="h-4 w-4" />
-              Commentaire {step.is_mandatory && <span className="text-destructive">*</span>}
+              Commentaire {step.is_mandatory && !isCompleted && <span className="text-destructive">*</span>}
             </label>
             <Textarea
               placeholder="Ajouter un commentaire..."
@@ -293,7 +328,7 @@ const DynamicStepContent = ({
               <button
                 type="button"
                 className="w-full flex items-center justify-between p-3 rounded-lg border bg-muted/30 hover:bg-muted/50 transition-colors"
-                disabled={isLocked && !isCompleted}
+                disabled={isLocked}
               >
                 <div className="flex items-center gap-2">
                   <List className="h-4 w-4 text-primary" />
@@ -331,13 +366,25 @@ const DynamicStepContent = ({
         )}
 
         {!isLocked && (
-          <div>
-            {isCompleted ? (
+          <div className="space-y-2">
+            {isCompleted && (
               <div className="flex items-center gap-2 text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950 p-3 rounded-lg">
                 <CheckCircle className="h-5 w-5" />
                 <span className="font-medium text-sm">Étape validée</span>
               </div>
-            ) : (
+            )}
+            {isCompleted && hasChanges && (
+              <Button
+                onClick={handleUpdate}
+                disabled={isCompleting || isUploading}
+                variant="outline"
+                className="w-full"
+              >
+                <Save className="h-4 w-4 mr-2" />
+                Mettre à jour
+              </Button>
+            )}
+            {!isCompleted && (
               <Button
                 onClick={handleValidate}
                 disabled={isCompleting || isUploading || (step.requires_photo && step.is_mandatory && photoUrls.length === 0) || (step.requires_comment && step.is_mandatory && !comment.trim())}
