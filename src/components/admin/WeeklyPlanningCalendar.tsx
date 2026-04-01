@@ -8,6 +8,7 @@ import { format, startOfWeek, endOfWeek, eachDayOfInterval, addWeeks, subWeeks, 
 import { fr } from 'date-fns/locale';
 import { Intervention, useUpdateIntervention } from '@/hooks/useInterventions';
 import { useInterventionTypes } from '@/hooks/useInterventionTypes';
+import { useCustomStatuses } from '@/hooks/useCustomStatuses';
 import { Technician } from '@/hooks/useTechnicians';
 import { cn } from '@/lib/utils';
 import {
