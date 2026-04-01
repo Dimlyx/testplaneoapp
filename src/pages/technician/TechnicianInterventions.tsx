@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { openAddressInMaps } from "@/lib/maps-utils";
+import { MapsChooser, useMapsChooser } from "@/components/technician/MapsChooser";
 import { useNavigate } from "react-router-dom";
 import { useTechnicianInterventions } from "@/hooks/useInterventions";
 import { useClients } from "@/hooks/useClients";

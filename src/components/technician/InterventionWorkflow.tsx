@@ -15,7 +15,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import WorkflowStep from "./WorkflowStep";
-import { openAddressInMaps } from "@/lib/maps-utils";
+import { MapsChooser, useMapsChooser } from "@/components/technician/MapsChooser";
 import DynamicStepContent from "./DynamicStepContent";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
