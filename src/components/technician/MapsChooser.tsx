@@ -39,8 +39,17 @@ export function MapsChooser({ address, open, onOpenChange }: MapsChooserProps) {
 
   const encoded = encodeURIComponent(address);
 
-  const handleOpen = (getUrl: (q: string) => string) => {
-    window.open(getUrl(encoded), "_blank", "noopener,noreferrer");
+  const handleOpen = (app: typeof appsConfig[number]) => {
+    const url = app.getUrl(encoded);
+    const fallback = app.fallbackUrl(encoded);
+    
+    // Try deep link first, fallback to web URL after timeout
+    const timeout = setTimeout(() => {
+      window.open(fallback, "_blank", "noopener,noreferrer");
+    }, 1500);
+
+    window.addEventListener("blur", () => clearTimeout(timeout), { once: true });
+    window.location.href = url;
     onOpenChange(false);
   };
 
