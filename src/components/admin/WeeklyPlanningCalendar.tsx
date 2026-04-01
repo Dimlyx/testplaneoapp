@@ -404,9 +404,12 @@ export function WeeklyPlanningCalendar({
                               <div
                                 key={intervention.id}
                                 className={cn(
-                                  "w-2 h-2 rounded-full",
+                                  "w-2.5 h-2.5 rounded-full",
                                   getTypeColor(intervention.intervention_type)
                                 )}
+                                style={intervention.custom_status_id ? {
+                                  ...(() => { const c = customStatuses.find(s => s.id === intervention.custom_status_id); return c ? { outline: `2px solid ${c.color}`, outlineOffset: '1px' } : {}; })()
+                                } : {}}
                                 title={intervention.title}
                               />
                             ))}
