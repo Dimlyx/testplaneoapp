@@ -1,0 +1,1 @@
+ALTER TABLE public.interventions ALTER COLUMN estimated_duration SET DEFAULT 60;
