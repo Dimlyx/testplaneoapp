@@ -131,6 +131,7 @@ export function TechnicianInterventionsByCategory({ category }: { category: Cate
   }
 
   return (
+    <>
     <div className="space-y-4">
       <div>
         <h1 className="text-2xl font-bold text-foreground">{titles[category]}</h1>
