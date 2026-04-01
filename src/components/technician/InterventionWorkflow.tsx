@@ -483,17 +483,22 @@ const InterventionWorkflow = ({
                   {intervention.intervention_contact_name || client.name}
                 </p>
                 
-                {(intervention.intervention_address || client.address) && (
-                  <div className="flex items-start gap-2 text-sm text-muted-foreground mt-2">
-                    <MapPin className="h-4 w-4 mt-0.5 shrink-0" />
-                    <span>
-                      {intervention.intervention_address 
-                        ? `${intervention.intervention_address}, ${intervention.intervention_postal_code || ''} ${intervention.intervention_city || ''}`.trim()
-                        : `${client.address}, ${client.postal_code || ''} ${client.city || ''}`.trim()
-                      }
-                    </span>
-                  </div>
-                )}
+                {(intervention.intervention_address || client.address) && (() => {
+                  const addr = intervention.intervention_address 
+                    ? `${intervention.intervention_address}, ${intervention.intervention_postal_code || ''} ${intervention.intervention_city || ''}`.trim()
+                    : `${client.address}, ${client.postal_code || ''} ${client.city || ''}`.trim();
+                  return (
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-start gap-2 text-sm text-primary hover:underline mt-2"
+                    >
+                      <MapPin className="h-4 w-4 mt-0.5 shrink-0" />
+                      <span>{addr}</span>
+                    </a>
+                  );
+                })()}
 
                 {(intervention.intervention_building || intervention.intervention_floor) && (
                   <div className="flex items-start gap-2 text-sm text-muted-foreground mt-1 ml-6">

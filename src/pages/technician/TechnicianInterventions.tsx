@@ -197,10 +197,16 @@ export function TechnicianInterventionsByCategory({ category }: { category: Cate
                       )}
                       <TypeBadge type={intervention.intervention_type} />
                       {getInterventionAddress(intervention) && (
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <a
+                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(getInterventionAddress(intervention)!)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 text-xs text-primary hover:underline"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <MapPin className="h-3 w-3" />
                           <span className="truncate">{getInterventionAddress(intervention)}</span>
-                        </div>
+                        </a>
                       )}
                     </div>
                   </div>
