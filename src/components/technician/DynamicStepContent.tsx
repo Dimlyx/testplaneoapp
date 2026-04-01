@@ -391,7 +391,7 @@ const DynamicStepContent = ({
                 className="w-full"
               >
                 <CheckCircle className="h-4 w-4 mr-2" />
-                Valider cette étape
+                Suivant
               </Button>
             )}
           </div>
