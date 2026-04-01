@@ -9,6 +9,7 @@ import { WorkflowStep as WorkflowStepType } from "@/hooks/useWorkflowSteps";
 import { StepCompletion } from "@/hooks/useStepCompletions";
 import { supabase } from "@/integrations/supabase/client";
 import SignaturePad from "@/components/SignaturePad";
+import { compressImage } from "@/lib/image-compression";
 
 interface DynamicStepContentProps {
   step: WorkflowStepType;
