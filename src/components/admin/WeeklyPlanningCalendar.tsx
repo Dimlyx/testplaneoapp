@@ -8,6 +8,7 @@ import { format, startOfWeek, endOfWeek, eachDayOfInterval, addWeeks, subWeeks, 
 import { fr } from 'date-fns/locale';
 import { Intervention, useUpdateIntervention } from '@/hooks/useInterventions';
 import { useInterventionTypes } from '@/hooks/useInterventionTypes';
+import { useCustomStatuses } from '@/hooks/useCustomStatuses';
 import { Technician } from '@/hooks/useTechnicians';
 import { cn } from '@/lib/utils';
 import {
@@ -49,10 +50,19 @@ export function WeeklyPlanningCalendar({
   
   const updateIntervention = useUpdateIntervention();
   const { data: interventionTypesData = [] } = useInterventionTypes();
+  const { data: customStatuses = [] } = useCustomStatuses();
 
   const getTypeColor = (typeName: string) => {
     const found = interventionTypesData.find(t => t.name === typeName);
     return found ? (defaultTypeColors[found.color] || 'bg-gray-600') : 'bg-gray-600';
+  };
+
+  const getCustomStatusBorderStyle = (intervention: Intervention): React.CSSProperties => {
+    if (intervention.custom_status_id) {
+      const custom = customStatuses.find(s => s.id === intervention.custom_status_id);
+      if (custom) return { border: `2.5px solid ${custom.color}`, boxShadow: `0 0 6px ${custom.color}40` };
+    }
+    return {};
   };
 
   const getTypeLabel = (typeName: string) => {
@@ -345,7 +355,7 @@ export function WeeklyPlanningCalendar({
                                             getTypeColor(intervention.intervention_type),
                                             draggedIntervention?.id === intervention.id && "opacity-50"
                                           )}
-                                          style={{ top: `${topPx}px`, height: `${heightPx}px`, minHeight: '24px' }}
+                                          style={{ top: `${topPx}px`, height: `${heightPx}px`, minHeight: '24px', ...getCustomStatusBorderStyle(intervention) }}
                                           draggable
                                           onDragStart={(e) => handleDragStart(e, intervention)}
                                           onDragEnd={handleDragEnd}
@@ -394,9 +404,12 @@ export function WeeklyPlanningCalendar({
                               <div
                                 key={intervention.id}
                                 className={cn(
-                                  "w-2 h-2 rounded-full",
+                                  "w-2.5 h-2.5 rounded-full",
                                   getTypeColor(intervention.intervention_type)
                                 )}
+                                style={intervention.custom_status_id ? {
+                                  ...(() => { const c = customStatuses.find(s => s.id === intervention.custom_status_id); return c ? { outline: `2px solid ${c.color}`, outlineOffset: '1px' } : {}; })()
+                                } : {}}
                                 title={intervention.title}
                               />
                             ))}
@@ -452,6 +465,7 @@ export function WeeklyPlanningCalendar({
                                       getTypeColor(intervention.intervention_type),
                                       draggedIntervention?.id === intervention.id && "opacity-50"
                                     )}
+                                    style={getCustomStatusBorderStyle(intervention)}
                                     draggable
                                     onDragStart={(e) => handleDragStart(e, intervention)}
                                     onDragEnd={handleDragEnd}
