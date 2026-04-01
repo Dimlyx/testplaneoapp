@@ -47,11 +47,14 @@ export function useUploadInterventionPhoto() {
       file: File;
       equipmentId?: string;
     }) => {
+      // Compress image before upload
+      const compressed = await compressImage(file);
+      
       // Upload to storage
       const fileName = `${interventionId}/${equipmentId || 'general'}/${photoType}_${Date.now()}.jpg`;
       const { error: uploadError } = await supabase.storage
         .from('intervention-photos')
-        .upload(fileName, file, {
+        .upload(fileName, compressed, {
           contentType: 'image/jpeg',
           upsert: false,
         });
