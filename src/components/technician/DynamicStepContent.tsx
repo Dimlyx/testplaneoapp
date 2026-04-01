@@ -120,10 +120,11 @@ const DynamicStepContent = ({
     try {
       const newUrls: string[] = [];
       for (const file of Array.from(files)) {
-        const fileName = `steps/${interventionId}/${step.id}-loop${loopIndex}-${Date.now()}-${Math.random().toString(36).slice(2)}.${file.name.split('.').pop()}`;
+        const compressed = await compressImage(file);
+        const fileName = `steps/${interventionId}/${step.id}-loop${loopIndex}-${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
         const { error: uploadError } = await supabase.storage
           .from("intervention-photos")
-          .upload(fileName, file, { contentType: file.type });
+          .upload(fileName, compressed, { contentType: 'image/jpeg' });
 
         if (uploadError) throw uploadError;
 
