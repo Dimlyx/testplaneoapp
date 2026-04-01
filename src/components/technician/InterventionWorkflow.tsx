@@ -270,6 +270,15 @@ const InterventionWorkflow = ({
       }
     }
     
+    // Check post-loop steps
+    const firstIncompletePostLoop = postLoopSteps.find(
+      step => !stepCompletions.some(c => c.step_id === step.id && c.loop_index === 0 && c.completed_at)
+    );
+    if (firstIncompletePostLoop) {
+      setActiveStep(`step-${firstIncompletePostLoop.id}-loop-0`);
+      return;
+    }
+    
     // All loopable steps done, check signature steps
     const firstIncompleteSignature = signatureSteps.find(
       step => !stepCompletions.some(c => c.step_id === step.id && c.completed_at)
