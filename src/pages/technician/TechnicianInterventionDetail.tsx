@@ -251,7 +251,7 @@ const TechnicianInterventionDetail = () => {
           {intervention.scheduled_time && (
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4" />
-              <span>RDV: {intervention.scheduled_time}</span>
+              <span>RDV: {formatTimeRange(intervention.scheduled_time, intervention.estimated_duration)}</span>
             </div>
           )}
         </div>
