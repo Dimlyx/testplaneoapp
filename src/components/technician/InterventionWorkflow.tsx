@@ -78,6 +78,7 @@ const InterventionWorkflow = ({
   readOnly = false,
 }: InterventionWorkflowProps) => {
   const [activeStep, setActiveStep] = useState<string | null>(null);
+  const mapsChooser = useMapsChooser();
   
   // Fetch intervention type and its workflow steps
   const { data: interventionTypes = [] } = useInterventionTypes();
