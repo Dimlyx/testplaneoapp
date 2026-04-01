@@ -489,7 +489,7 @@ const InterventionWorkflow = ({
                     : `${client.address}, ${client.postal_code || ''} ${client.city || ''}`.trim();
                   return (
                     <a
-                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}`}
+                      href={`geo:0,0?q=${encodeURIComponent(addr)}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-start gap-2 text-sm text-primary hover:underline mt-2"

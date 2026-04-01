@@ -198,7 +198,7 @@ export function TechnicianInterventionsByCategory({ category }: { category: Cate
                       <TypeBadge type={intervention.intervention_type} />
                       {getInterventionAddress(intervention) && (
                         <a
-                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(getInterventionAddress(intervention)!)}`}
+                          href={`geo:0,0?q=${encodeURIComponent(getInterventionAddress(intervention)!)}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center gap-1.5 text-xs text-primary hover:underline"
