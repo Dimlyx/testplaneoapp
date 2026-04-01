@@ -110,46 +110,56 @@ const InterventionWorkflow = ({
   const stepsLocked = !isStarted || isPaused;
 
   // Separate signature steps from loopable steps
-  // If there's a loop trigger step, only steps from the trigger onward (excluding signature) are looped
   const signatureSteps = useMemo(() => workflowSteps.filter(s => s.requires_signature), [workflowSteps]);
   
-  // Find the loop trigger step (the step that asks Oui/Non for branching)
-  const loopTriggerStep = useMemo(() => 
-    workflowSteps.find(s => s.is_loop_trigger), [workflowSteps]
-  );
+  // Find the MAIN loop trigger step — the last one with is_loop_trigger whose loop_yes_step_id
+  // points backwards (to a step before it), creating the actual repeat loop.
+  // Other loop triggers (e.g. conditional branches) are rendered inline with Oui/Non.
+  const loopTriggerStep = useMemo(() => {
+    if (!matchingType?.allow_loop) return undefined;
+    const nonSig = workflowSteps.filter(s => !s.requires_signature);
+    const triggers = nonSig.filter(s => s.is_loop_trigger);
+    // Prefer the trigger whose loop_yes_step_id points to a step BEFORE it (real loop-back)
+    for (let i = triggers.length - 1; i >= 0; i--) {
+      const t = triggers[i];
+      if (t.loop_yes_step_id) {
+        const tIdx = nonSig.findIndex(s => s.id === t.id);
+        const yesIdx = nonSig.findIndex(s => s.id === t.loop_yes_step_id);
+        if (yesIdx !== -1 && yesIdx <= tIdx) return t;
+      }
+    }
+    // Fallback: last trigger
+    return triggers.length > 0 ? triggers[triggers.length - 1] : undefined;
+  }, [workflowSteps, matchingType]);
   
-  const { preLoopSteps, loopableSteps } = useMemo(() => {
+  const { preLoopSteps, loopableSteps, postLoopSteps } = useMemo(() => {
     const nonSignatureSteps = workflowSteps.filter(s => !s.requires_signature);
     
-    if (!matchingType?.allow_loop) {
-      return { preLoopSteps: nonSignatureSteps, loopableSteps: [] as typeof nonSignatureSteps };
+    if (!matchingType?.allow_loop || !loopTriggerStep) {
+      return { preLoopSteps: nonSignatureSteps, loopableSteps: [] as typeof nonSignatureSteps, postLoopSteps: [] as typeof nonSignatureSteps };
     }
     
-    // Find the loop trigger step
-    const triggerStep = nonSignatureSteps.find(s => s.is_loop_trigger);
-    const triggerIndex = nonSignatureSteps.findIndex(s => s.is_loop_trigger);
+    const triggerIndex = nonSignatureSteps.findIndex(s => s.id === loopTriggerStep.id);
     
-    if (triggerIndex === -1 || !triggerStep) {
-      // No trigger found, all steps are loopable (legacy behavior)
-      return { preLoopSteps: [] as typeof nonSignatureSteps, loopableSteps: nonSignatureSteps };
+    if (triggerIndex === -1) {
+      return { preLoopSteps: nonSignatureSteps, loopableSteps: [] as typeof nonSignatureSteps, postLoopSteps: [] as typeof nonSignatureSteps };
     }
     
     // Find where the loop starts using loop_yes_step_id
-    // loop_yes_step_id points to the first step that should repeat
     let loopStartIndex = 0;
-    if (triggerStep.loop_yes_step_id) {
-      const yesIdx = nonSignatureSteps.findIndex(s => s.id === triggerStep.loop_yes_step_id);
-      if (yesIdx !== -1) {
+    if (loopTriggerStep.loop_yes_step_id) {
+      const yesIdx = nonSignatureSteps.findIndex(s => s.id === loopTriggerStep.loop_yes_step_id);
+      if (yesIdx !== -1 && yesIdx <= triggerIndex) {
         loopStartIndex = yesIdx;
       }
     }
     
-    // Steps before loopStart run once, steps from loopStart to trigger (inclusive) are looped
     return {
       preLoopSteps: nonSignatureSteps.slice(0, loopStartIndex),
       loopableSteps: nonSignatureSteps.slice(loopStartIndex, triggerIndex + 1),
+      postLoopSteps: nonSignatureSteps.slice(triggerIndex + 1),
     };
-  }, [workflowSteps, matchingType]);
+  }, [workflowSteps, matchingType, loopTriggerStep]);
 
   // Calculate loop iterations from completions
   const maxLoopIndex = useMemo(() => {
