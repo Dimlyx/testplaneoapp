@@ -100,7 +100,7 @@ const InterventionForm = () => {
       custom_status_id: null,
       scheduled_date: "",
       scheduled_time: "",
-      estimated_duration: null,
+      estimated_duration: 60,
       report: "",
       technical_comments: "",
       intervention_address: "",
