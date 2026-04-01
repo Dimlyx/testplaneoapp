@@ -8,24 +8,29 @@ interface MapsChooserProps {
   onOpenChange: (open: boolean) => void;
 }
 
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
 const appsConfig = [
   {
     name: "Google Maps",
     icon: "🗺️",
-    getUrl: (q: string) => `https://www.google.com/maps/search/?api=1&query=${q}`,
+    getUrl: (q: string) => isIOS ? `comgooglemaps://?q=${q}` : `google.navigation:q=${q}`,
+    fallbackUrl: (q: string) => `https://www.google.com/maps/search/?api=1&query=${q}`,
     available: true,
   },
   {
     name: "Waze",
     icon: "🚗",
-    getUrl: (q: string) => `https://waze.com/ul?q=${q}&navigate=yes`,
+    getUrl: (q: string) => `waze://?q=${q}&navigate=yes`,
+    fallbackUrl: (q: string) => `https://waze.com/ul?q=${q}&navigate=yes`,
     available: true,
   },
   {
     name: "Apple Plans",
     icon: "🍎",
-    getUrl: (q: string) => `https://maps.apple.com/?q=${q}`,
-    available: /iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent),
+    getUrl: (q: string) => `maps://?q=${q}`,
+    fallbackUrl: (q: string) => `https://maps.apple.com/?q=${q}`,
+    available: isIOS,
   },
 ];
 
