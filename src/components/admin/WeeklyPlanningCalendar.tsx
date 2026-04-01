@@ -57,12 +57,22 @@ export function WeeklyPlanningCalendar({
     return found ? (defaultTypeColors[found.color] || 'bg-gray-600') : 'bg-gray-600';
   };
 
-  const getCustomStatusBorderStyle = (intervention: Intervention): React.CSSProperties => {
+  const defaultStatusColors: Record<string, string> = {
+    to_plan: '#f59e0b',
+    planned: '#3b82f6',
+    in_progress: '#8b5cf6',
+    completed: '#10b981',
+    to_invoice: '#f97316',
+    archived: '#6b7280',
+  };
+
+  const getStatusBorderStyle = (intervention: Intervention): React.CSSProperties => {
     if (intervention.custom_status_id) {
       const custom = customStatuses.find(s => s.id === intervention.custom_status_id);
       if (custom) return { border: `2.5px solid ${custom.color}`, boxShadow: `0 0 6px ${custom.color}40` };
     }
-    return {};
+    const color = defaultStatusColors[intervention.status] || '#6b7280';
+    return { border: `2.5px solid ${color}`, boxShadow: `0 0 6px ${color}40` };
   };
 
   const getTypeLabel = (typeName: string) => {
@@ -355,7 +365,7 @@ export function WeeklyPlanningCalendar({
                                             getTypeColor(intervention.intervention_type),
                                             draggedIntervention?.id === intervention.id && "opacity-50"
                                           )}
-                                          style={{ top: `${topPx}px`, height: `${heightPx}px`, minHeight: '24px', ...getCustomStatusBorderStyle(intervention) }}
+                                          style={{ top: `${topPx}px`, height: `${heightPx}px`, minHeight: '24px', ...getStatusBorderStyle(intervention) }}
                                           draggable
                                           onDragStart={(e) => handleDragStart(e, intervention)}
                                           onDragEnd={handleDragEnd}
@@ -407,9 +417,14 @@ export function WeeklyPlanningCalendar({
                                   "w-2.5 h-2.5 rounded-full",
                                   getTypeColor(intervention.intervention_type)
                                 )}
-                                style={intervention.custom_status_id ? {
-                                  ...(() => { const c = customStatuses.find(s => s.id === intervention.custom_status_id); return c ? { outline: `2px solid ${c.color}`, outlineOffset: '1px' } : {}; })()
-                                } : {}}
+                                style={(() => {
+                                  if (intervention.custom_status_id) {
+                                    const c = customStatuses.find(s => s.id === intervention.custom_status_id);
+                                    if (c) return { outline: `2px solid ${c.color}`, outlineOffset: '1px' };
+                                  }
+                                  const sc = defaultStatusColors[intervention.status];
+                                  return sc ? { outline: `2px solid ${sc}`, outlineOffset: '1px' } : {};
+                                })()}
                                 title={intervention.title}
                               />
                             ))}
@@ -465,7 +480,7 @@ export function WeeklyPlanningCalendar({
                                       getTypeColor(intervention.intervention_type),
                                       draggedIntervention?.id === intervention.id && "opacity-50"
                                     )}
-                                    style={getCustomStatusBorderStyle(intervention)}
+                                    style={getStatusBorderStyle(intervention)}
                                     draggable
                                     onDragStart={(e) => handleDragStart(e, intervention)}
                                     onDragEnd={handleDragEnd}
