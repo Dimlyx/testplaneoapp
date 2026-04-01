@@ -15,7 +15,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import WorkflowStep from "./WorkflowStep";
-import { openAddressInMaps } from "@/lib/maps-utils";
+import { MapsChooser, useMapsChooser } from "@/components/technician/MapsChooser";
 import DynamicStepContent from "./DynamicStepContent";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -78,6 +78,7 @@ const InterventionWorkflow = ({
   readOnly = false,
 }: InterventionWorkflowProps) => {
   const [activeStep, setActiveStep] = useState<string | null>(null);
+  const mapsChooser = useMapsChooser();
   
   // Fetch intervention type and its workflow steps
   const { data: interventionTypes = [] } = useInterventionTypes();
@@ -336,6 +337,7 @@ const InterventionWorkflow = ({
 
 
   return (
+    <>
     <div className="space-y-0">
       {/* Locked banner for completed interventions */}
       {isLocked && (
@@ -492,7 +494,7 @@ const InterventionWorkflow = ({
                     <button
                       type="button"
                       className="flex items-start gap-2 text-sm text-primary hover:underline mt-2"
-                      onClick={() => openAddressInMaps(addr)}
+                      onClick={() => mapsChooser.openMaps(addr)}
                     >
                       <MapPin className="h-4 w-4 mt-0.5 shrink-0" />
                       <span>{addr}</span>
@@ -849,6 +851,8 @@ const InterventionWorkflow = ({
         </div>
       </WorkflowStep>
     </div>
+    <MapsChooser address={mapsChooser.address} open={mapsChooser.open} onOpenChange={mapsChooser.setOpen} />
+    </>
   );
 };
 

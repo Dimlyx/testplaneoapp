@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { openAddressInMaps } from "@/lib/maps-utils";
+import { MapsChooser, useMapsChooser } from "@/components/technician/MapsChooser";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { ChevronDown, ChevronUp, Calendar, Clock, MapPin } from "lucide-react";
@@ -25,6 +25,7 @@ export const InterventionDayGroup = ({
   defaultOpen = false,
 }: InterventionDayGroupProps) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
+  const mapsChooser = useMapsChooser();
   const [viewedIds, setViewedIds] = useState<Set<string>>(() => {
     const set = new Set<string>();
     interventions.forEach((i) => { if (isInterventionViewed(i.id)) set.add(i.id); });
@@ -41,6 +42,7 @@ export const InterventionDayGroup = ({
   const dayLabel = format(new Date(date + "T00:00:00"), "EEEE dd MMMM yyyy", { locale: fr }).toUpperCase();
 
   return (
+    <>
     <div>
       <button
         onClick={() => setIsOpen(!isOpen)}
@@ -95,7 +97,7 @@ export const InterventionDayGroup = ({
                         <button
                           type="button"
                           className="flex items-center gap-1.5 text-xs text-primary hover:underline"
-                          onClick={(e) => { e.stopPropagation(); openAddressInMaps(getInterventionAddress(intervention)!); }}
+                          onClick={(e) => { e.stopPropagation(); mapsChooser.openMaps(getInterventionAddress(intervention)!); }}
                         >
                           <MapPin className="h-3 w-3" />
                           <span className="truncate">{getInterventionAddress(intervention)}</span>
@@ -110,5 +112,7 @@ export const InterventionDayGroup = ({
         </div>
       )}
     </div>
+    <MapsChooser address={mapsChooser.address} open={mapsChooser.open} onOpenChange={mapsChooser.setOpen} />
+    </>
   );
 };

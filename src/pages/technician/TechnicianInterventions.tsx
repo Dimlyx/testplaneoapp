@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { openAddressInMaps } from "@/lib/maps-utils";
+import { MapsChooser, useMapsChooser } from "@/components/technician/MapsChooser";
 import { useNavigate } from "react-router-dom";
 import { useTechnicianInterventions } from "@/hooks/useInterventions";
 import { useClients } from "@/hooks/useClients";
@@ -30,6 +30,7 @@ export function TechnicianInterventionsByCategory({ category }: { category: Cate
   const { data: interventions = [], isLoading } = useTechnicianInterventions(user?.id);
   const { data: clients = [] } = useClients();
   const { cacheInterventions } = useOffline();
+  const mapsChooser = useMapsChooser();
   const [viewedIds, setViewedIds] = useState<Set<string>>(() => {
     const set = new Set<string>();
     interventions.forEach((i) => { if (isInterventionViewed(i.id)) set.add(i.id); });
@@ -130,6 +131,7 @@ export function TechnicianInterventionsByCategory({ category }: { category: Cate
   }
 
   return (
+    <>
     <div className="space-y-4">
       <div>
         <h1 className="text-2xl font-bold text-foreground">{titles[category]}</h1>
@@ -201,7 +203,7 @@ export function TechnicianInterventionsByCategory({ category }: { category: Cate
                         <button
                           type="button"
                           className="flex items-center gap-1.5 text-xs text-primary hover:underline"
-                          onClick={(e) => { e.stopPropagation(); openAddressInMaps(getInterventionAddress(intervention)!); }}
+                          onClick={(e) => { e.stopPropagation(); mapsChooser.openMaps(getInterventionAddress(intervention)!); }}
                         >
                           <MapPin className="h-3 w-3" />
                           <span className="truncate">{getInterventionAddress(intervention)}</span>
@@ -216,5 +218,7 @@ export function TechnicianInterventionsByCategory({ category }: { category: Cate
         </div>
       )}
     </div>
+    <MapsChooser address={mapsChooser.address} open={mapsChooser.open} onOpenChange={mapsChooser.setOpen} />
+    </>
   );
 }
