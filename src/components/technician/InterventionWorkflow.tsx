@@ -15,6 +15,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import WorkflowStep from "./WorkflowStep";
+import { openAddressInMaps } from "@/lib/maps-utils";
 import DynamicStepContent from "./DynamicStepContent";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -488,15 +489,14 @@ const InterventionWorkflow = ({
                     ? `${intervention.intervention_address}, ${intervention.intervention_postal_code || ''} ${intervention.intervention_city || ''}`.trim()
                     : `${client.address}, ${client.postal_code || ''} ${client.city || ''}`.trim();
                   return (
-                    <a
-                      href={`geo:0,0?q=${encodeURIComponent(addr)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      type="button"
                       className="flex items-start gap-2 text-sm text-primary hover:underline mt-2"
+                      onClick={() => openAddressInMaps(addr)}
                     >
                       <MapPin className="h-4 w-4 mt-0.5 shrink-0" />
                       <span>{addr}</span>
-                    </a>
+                    </button>
                   );
                 })()}
 
