@@ -9,6 +9,16 @@ import { useNavigate } from "react-router-dom";
 import type { Intervention } from "@/hooks/useInterventions";
 import { markInterventionAsViewed, isInterventionViewed } from "@/lib/intervention-viewed";
 
+function formatTimeRange(time: string, duration?: number | null): string {
+  const hhmm = time.substring(0, 5); // "HH:MM"
+  if (!duration) return hhmm;
+  const [h, m] = hhmm.split(":").map(Number);
+  const endMin = h * 60 + m + duration;
+  const endH = String(Math.floor(endMin / 60) % 24).padStart(2, "0");
+  const endM = String(endMin % 60).padStart(2, "0");
+  return `${hhmm} - ${endH}:${endM}`;
+}
+
 interface InterventionDayGroupProps {
   date: string;
   interventions: Intervention[];
@@ -87,7 +97,7 @@ export const InterventionDayGroup = ({
                       {intervention.scheduled_time && (
                         <div className="flex items-center gap-2 text-xs text-primary font-medium">
                           <Clock className="h-3.5 w-3.5" />
-                          {intervention.scheduled_time}
+                          {formatTimeRange(intervention.scheduled_time, intervention.estimated_duration)}
                         </div>
                       )}
                       <div className="flex items-center gap-2">
