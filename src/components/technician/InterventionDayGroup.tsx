@@ -42,6 +42,7 @@ export const InterventionDayGroup = ({
   const dayLabel = format(new Date(date + "T00:00:00"), "EEEE dd MMMM yyyy", { locale: fr }).toUpperCase();
 
   return (
+    <>
     <div>
       <button
         onClick={() => setIsOpen(!isOpen)}
