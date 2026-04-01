@@ -13,6 +13,16 @@ import { ArrowLeft, Calendar, Clock, Eye } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "@/hooks/use-toast";
+
+function formatTimeRange(time: string, duration?: number | null): string {
+  const hhmm = time.substring(0, 5);
+  if (!duration) return hhmm;
+  const [h, m] = hhmm.split(":").map(Number);
+  const endMin = h * 60 + m + duration;
+  const endH = String(Math.floor(endMin / 60) % 24).padStart(2, "0");
+  const endM = String(endMin % 60).padStart(2, "0");
+  return `${hhmm} - ${endH}:${endM}`;
+}
 import { generateInterventionPDF } from "@/lib/pdf-generator";
 import { supabase } from "@/integrations/supabase/client";
 import { useInterventionPhotos } from "@/hooks/useInterventionPhotos";
@@ -241,7 +251,7 @@ const TechnicianInterventionDetail = () => {
           {intervention.scheduled_time && (
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4" />
-              <span>RDV: {intervention.scheduled_time}</span>
+              <span>RDV: {formatTimeRange(intervention.scheduled_time, intervention.estimated_duration)}</span>
             </div>
           )}
         </div>
