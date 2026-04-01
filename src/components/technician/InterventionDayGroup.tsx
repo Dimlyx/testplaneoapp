@@ -25,6 +25,7 @@ export const InterventionDayGroup = ({
   defaultOpen = false,
 }: InterventionDayGroupProps) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
+  const mapsChooser = useMapsChooser();
   const [viewedIds, setViewedIds] = useState<Set<string>>(() => {
     const set = new Set<string>();
     interventions.forEach((i) => { if (isInterventionViewed(i.id)) set.add(i.id); });
