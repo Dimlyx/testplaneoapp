@@ -6,7 +6,7 @@ import { Camera, MessageSquare, CheckCircle, Upload, X, Plus, ChevronDown, List,
 import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { WorkflowStep as WorkflowStepType } from "@/hooks/useWorkflowSteps";
-import { StepCompletion } from "@/hooks/useStepCompletions";
+import { StepCompletion, useSaveDraft } from "@/hooks/useStepCompletions";
 import { supabase } from "@/integrations/supabase/client";
 import SignaturePad from "@/components/SignaturePad";
 import { compressImage } from "@/lib/image-compression";
