@@ -417,9 +417,14 @@ export function WeeklyPlanningCalendar({
                                   "w-2.5 h-2.5 rounded-full",
                                   getTypeColor(intervention.intervention_type)
                                 )}
-                                style={intervention.custom_status_id ? {
-                                  ...(() => { const c = customStatuses.find(s => s.id === intervention.custom_status_id); return c ? { outline: `2px solid ${c.color}`, outlineOffset: '1px' } : {}; })()
-                                } : {}}
+                                style={(() => {
+                                  if (intervention.custom_status_id) {
+                                    const c = customStatuses.find(s => s.id === intervention.custom_status_id);
+                                    if (c) return { outline: `2px solid ${c.color}`, outlineOffset: '1px' };
+                                  }
+                                  const sc = defaultStatusColors[intervention.status];
+                                  return sc ? { outline: `2px solid ${sc}`, outlineOffset: '1px' } : {};
+                                })()}
                                 title={intervention.title}
                               />
                             ))}
