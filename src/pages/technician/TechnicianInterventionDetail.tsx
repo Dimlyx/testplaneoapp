@@ -13,6 +13,16 @@ import { ArrowLeft, Calendar, Clock, Eye } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "@/hooks/use-toast";
+
+function formatTimeRange(time: string, duration?: number | null): string {
+  const hhmm = time.substring(0, 5);
+  if (!duration) return hhmm;
+  const [h, m] = hhmm.split(":").map(Number);
+  const endMin = h * 60 + m + duration;
+  const endH = String(Math.floor(endMin / 60) % 24).padStart(2, "0");
+  const endM = String(endMin % 60).padStart(2, "0");
+  return `${hhmm} - ${endH}:${endM}`;
+}
 import { generateInterventionPDF } from "@/lib/pdf-generator";
 import { supabase } from "@/integrations/supabase/client";
 import { useInterventionPhotos } from "@/hooks/useInterventionPhotos";
