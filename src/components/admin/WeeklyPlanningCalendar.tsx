@@ -365,7 +365,7 @@ export function WeeklyPlanningCalendar({
                                             getTypeColor(intervention.intervention_type),
                                             draggedIntervention?.id === intervention.id && "opacity-50"
                                           )}
-                                          style={{ top: `${topPx}px`, height: `${heightPx}px`, minHeight: '24px', ...getCustomStatusBorderStyle(intervention) }}
+                                          style={{ top: `${topPx}px`, height: `${heightPx}px`, minHeight: '24px', ...getStatusBorderStyle(intervention) }}
                                           draggable
                                           onDragStart={(e) => handleDragStart(e, intervention)}
                                           onDragEnd={handleDragEnd}
@@ -475,7 +475,7 @@ export function WeeklyPlanningCalendar({
                                       getTypeColor(intervention.intervention_type),
                                       draggedIntervention?.id === intervention.id && "opacity-50"
                                     )}
-                                    style={getCustomStatusBorderStyle(intervention)}
+                                    style={getStatusBorderStyle(intervention)}
                                     draggable
                                     onDragStart={(e) => handleDragStart(e, intervention)}
                                     onDragEnd={handleDragEnd}
