@@ -111,5 +111,7 @@ export const InterventionDayGroup = ({
         </div>
       )}
     </div>
+    <MapsChooser address={mapsChooser.address} open={mapsChooser.open} onOpenChange={mapsChooser.setOpen} />
+    </>
   );
 };

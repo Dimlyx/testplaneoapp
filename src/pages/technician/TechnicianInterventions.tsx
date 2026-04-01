@@ -202,7 +202,7 @@ export function TechnicianInterventionsByCategory({ category }: { category: Cate
                         <button
                           type="button"
                           className="flex items-center gap-1.5 text-xs text-primary hover:underline"
-                          onClick={(e) => { e.stopPropagation(); openAddressInMaps(getInterventionAddress(intervention)!); }}
+                          onClick={(e) => { e.stopPropagation(); mapsChooser.openMaps(getInterventionAddress(intervention)!); }}
                         >
                           <MapPin className="h-3 w-3" />
                           <span className="truncate">{getInterventionAddress(intervention)}</span>

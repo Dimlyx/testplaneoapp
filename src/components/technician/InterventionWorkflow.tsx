@@ -850,6 +850,8 @@ const InterventionWorkflow = ({
         </div>
       </WorkflowStep>
     </div>
+    <MapsChooser address={mapsChooser.address} open={mapsChooser.open} onOpenChange={mapsChooser.setOpen} />
+    </>
   );
 };
 
