@@ -31,6 +31,7 @@ export function TechnicianInterventionsByCategory({ category }: { category: Cate
   const { data: clients = [] } = useClients();
   const { cacheInterventions } = useOffline();
   const [viewedIds, setViewedIds] = useState<Set<string>>(() => {
+  const mapsChooser = useMapsChooser();
     const set = new Set<string>();
     interventions.forEach((i) => { if (isInterventionViewed(i.id)) set.add(i.id); });
     return set;
