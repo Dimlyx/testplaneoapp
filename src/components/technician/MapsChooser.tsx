@@ -69,7 +69,7 @@ export function MapsChooser({ address, open, onOpenChange }: MapsChooserProps) {
               <button
                 key={app.name}
                 type="button"
-                onClick={() => handleOpen(app.getUrl)}
+                onClick={() => handleOpen(app)}
                 className="flex items-center gap-3 rounded-lg border border-border p-3 text-left transition-colors hover:bg-accent"
               >
                 <span className="text-2xl">{app.icon}</span>
