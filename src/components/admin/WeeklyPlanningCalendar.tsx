@@ -50,6 +50,7 @@ export function WeeklyPlanningCalendar({
   
   const updateIntervention = useUpdateIntervention();
   const { data: interventionTypesData = [] } = useInterventionTypes();
+  const { data: customStatuses = [] } = useCustomStatuses();
 
   const getTypeColor = (typeName: string) => {
     const found = interventionTypesData.find(t => t.name === typeName);
