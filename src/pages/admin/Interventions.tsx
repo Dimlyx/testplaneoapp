@@ -292,7 +292,7 @@ const Interventions = () => {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tous les clients</SelectItem>
-            {clients.map((client) => (
+            {[...clients].sort((a, b) => a.name.localeCompare(b.name)).map((client) => (
               <SelectItem key={client.id} value={client.id}>
                 {client.name}
               </SelectItem>
