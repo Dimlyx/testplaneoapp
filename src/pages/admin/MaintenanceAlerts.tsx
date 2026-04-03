@@ -536,7 +536,7 @@ export default function MaintenanceAlerts() {
                               <Calendar className="h-3.5 w-3.5" />
                               {format(parseISO(alert.alert_date), 'dd MMM yyyy', { locale: fr })}
                             </span>
-                            {((alert as any).recurrence_months > 0 || alert.recurrence !== 'once') && (
+                            {(alert.recurrence_months > 0 || alert.recurrence !== 'once') && (
                               <span className="flex items-center gap-1">
                                 <RefreshCw className="h-3.5 w-3.5" />
                                 {getRecurrenceLabel(alert)}
