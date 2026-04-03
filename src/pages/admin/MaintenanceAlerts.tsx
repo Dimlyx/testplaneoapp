@@ -706,5 +706,6 @@ export default function MaintenanceAlerts() {
         setShowCreateClient(false);
       }}
     />
+    </>
   );
 }
