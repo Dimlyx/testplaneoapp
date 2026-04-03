@@ -121,13 +121,21 @@ const hexToRgb = (hex: string): [number, number, number] => {
     : [0, 48, 87]; // Default navy blue
 };
 
-const MAX_IMAGE_WIDTH = 800;
-const MAX_IMAGE_HEIGHT = 600;
-const JPEG_QUALITY = 0.85;
+const MAX_IMAGE_WIDTH = 600;
+const MAX_IMAGE_HEIGHT = 450;
+const JPEG_QUALITY = 0.75;
+
+// In-memory cache to avoid re-downloading the same image during PDF generation
+const imageCache = new Map<string, string | null>();
 
 const loadImageAsBase64 = async (url: string): Promise<string | null> => {
   try {
     if (!url || url.trim() === '') return null;
+
+    // Return cached result if available
+    if (imageCache.has(url)) {
+      return imageCache.get(url)!;
+    }
     
     // Use fetch to avoid CORS canvas tainting issues
     const controller = new AbortController();
@@ -138,6 +146,7 @@ const loadImageAsBase64 = async (url: string): Promise<string | null> => {
     
     if (!response.ok) {
       console.warn('Failed to fetch image:', url, response.status);
+      imageCache.set(url, null);
       return null;
     }
     
@@ -146,6 +155,7 @@ const loadImageAsBase64 = async (url: string): Promise<string | null> => {
     // Verify it's an actual image
     if (!blob.type.startsWith('image/')) {
       console.warn('Response is not an image:', url, blob.type);
+      imageCache.set(url, null);
       return null;
     }
     
@@ -157,10 +167,13 @@ const loadImageAsBase64 = async (url: string): Promise<string | null> => {
       reader.readAsDataURL(blob);
     });
     
-    if (!base64) return null;
+    if (!base64) {
+      imageCache.set(url, null);
+      return null;
+    }
     
     // Resize using canvas (no CORS issue since we loaded via fetch)
-    return new Promise((resolve) => {
+    const result = await new Promise<string | null>((resolve) => {
       const img = new Image();
       img.onload = () => {
         try {
@@ -183,7 +196,7 @@ const loadImageAsBase64 = async (url: string): Promise<string | null> => {
           
           if (ctx) {
             ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = 'high';
+            ctx.imageSmoothingQuality = 'medium';
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
             const result = canvas.toDataURL('image/jpeg', JPEG_QUALITY);
             resolve(result);
@@ -201,8 +214,12 @@ const loadImageAsBase64 = async (url: string): Promise<string | null> => {
       };
       img.src = base64;
     });
+
+    imageCache.set(url, result);
+    return result;
   } catch (err) {
     console.error('Error loading image:', url, err);
+    imageCache.set(url, null);
     return null;
   }
 };
