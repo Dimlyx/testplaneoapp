@@ -651,7 +651,7 @@ export default function MaintenanceAlerts() {
                             {alert.recurrence !== 'once' && (
                               <span className="flex items-center gap-1">
                                 <RefreshCw className="h-3 w-3" />
-                                {recurrenceLabels[alert.recurrence]}
+                                {getRecurrenceLabel(alert)}
                               </span>
                             )}
                           </div>
