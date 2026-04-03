@@ -126,7 +126,7 @@ export default function MaintenanceAlerts() {
         client_id: alert.client_id || '',
         alert_date: alert.alert_date,
         recurrence: alert.recurrence,
-        recurrence_months: (alert as any).recurrence_months ?? 0,
+        recurrence_months: alert.recurrence_months ?? 0,
       });
     } else {
       resetForm();
