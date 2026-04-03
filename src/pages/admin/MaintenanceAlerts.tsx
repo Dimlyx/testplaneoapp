@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useMaintenanceAlerts, useCreateMaintenanceAlert, useUpdateMaintenanceAlert, useDeleteMaintenanceAlert, MaintenanceAlert, AlertRecurrence, AlertStatus } from '@/hooks/useMaintenanceAlerts';
 import { useClients } from '@/hooks/useClients';
+import { QuickCreateClientDialog } from '@/components/admin/QuickCreateClientDialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -75,6 +76,7 @@ export default function MaintenanceAlerts() {
   const [editingAlert, setEditingAlert] = useState<MaintenanceAlert | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterClient, setFilterClient] = useState<string>('all');
+  const [showCreateClient, setShowCreateClient] = useState(false);
   const [filterRecurrence, setFilterRecurrence] = useState<string>('all');
   const [formData, setFormData] = useState<AlertFormData>({
     title: '',
@@ -242,6 +244,7 @@ export default function MaintenanceAlerts() {
   }
 
   return (
+    <>
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -293,21 +296,26 @@ export default function MaintenanceAlerts() {
 
               <div className="space-y-2">
                 <Label htmlFor="client">Client</Label>
-                <Select
-                  value={formData.client_id}
-                  onValueChange={(value) => setFormData({ ...formData, client_id: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un client (optionnel)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clients.map((client) => (
-                      <SelectItem key={client.id} value={client.id}>
-                        {client.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex gap-2">
+                  <Select
+                    value={formData.client_id}
+                    onValueChange={(value) => setFormData({ ...formData, client_id: value })}
+                  >
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="Sélectionner un client (optionnel)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {clients.map((client) => (
+                        <SelectItem key={client.id} value={client.id}>
+                          {client.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button type="button" variant="outline" size="icon" onClick={() => setShowCreateClient(true)}>
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -689,5 +697,15 @@ export default function MaintenanceAlerts() {
         </TabsContent>
       </Tabs>
     </div>
+
+    <QuickCreateClientDialog
+      open={showCreateClient}
+      onOpenChange={setShowCreateClient}
+      onClientCreated={(clientId) => {
+        setFormData(prev => ({ ...prev, client_id: clientId }));
+        setShowCreateClient(false);
+      }}
+    />
+    </>
   );
 }
