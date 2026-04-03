@@ -49,6 +49,7 @@ const DynamicStepContent = ({
   const [comment, setComment] = useState(completion?.comment || "");
   const [photoUrls, setPhotoUrls] = useState<string[]>(parsePhotoUrls(completion?.photo_url || null));
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadingCount, setUploadingCount] = useState(0);
   const [localSignerName, setLocalSignerName] = useState(signerName);
   
   // Initialize checklist state from completion or step template
