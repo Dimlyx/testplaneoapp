@@ -311,22 +311,21 @@ export default function MaintenanceAlerts() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="recurrence">Récurrence</Label>
-                  <Select
-                    value={formData.recurrence}
-                    onValueChange={(value: AlertRecurrence) => setFormData({ ...formData, recurrence: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="once">Une fois</SelectItem>
-                      <SelectItem value="weekly">Hebdomadaire</SelectItem>
-                      <SelectItem value="monthly">Mensuel</SelectItem>
-                      <SelectItem value="quarterly">Trimestriel</SelectItem>
-                      <SelectItem value="yearly">Annuel</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="recurrence_months">Récurrence (mois)</Label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground whitespace-nowrap">Tous les</span>
+                    <Input
+                      id="recurrence_months"
+                      type="number"
+                      min={0}
+                      max={120}
+                      value={formData.recurrence_months}
+                      onChange={(e) => setFormData({ ...formData, recurrence_months: parseInt(e.target.value) || 0 })}
+                      className="w-20"
+                    />
+                    <span className="text-sm text-muted-foreground whitespace-nowrap">mois</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">0 = une seule fois</p>
                 </div>
               </div>
 
