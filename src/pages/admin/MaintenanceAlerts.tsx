@@ -295,21 +295,26 @@ export default function MaintenanceAlerts() {
 
               <div className="space-y-2">
                 <Label htmlFor="client">Client</Label>
-                <Select
-                  value={formData.client_id}
-                  onValueChange={(value) => setFormData({ ...formData, client_id: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un client (optionnel)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clients.map((client) => (
-                      <SelectItem key={client.id} value={client.id}>
-                        {client.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex gap-2">
+                  <Select
+                    value={formData.client_id}
+                    onValueChange={(value) => setFormData({ ...formData, client_id: value })}
+                  >
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="Sélectionner un client (optionnel)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {clients.map((client) => (
+                        <SelectItem key={client.id} value={client.id}>
+                          {client.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button type="button" variant="outline" size="icon" onClick={() => setShowCreateClient(true)}>
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
