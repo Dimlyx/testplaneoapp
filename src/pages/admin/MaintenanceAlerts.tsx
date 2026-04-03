@@ -76,6 +76,7 @@ export default function MaintenanceAlerts() {
   const [editingAlert, setEditingAlert] = useState<MaintenanceAlert | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterClient, setFilterClient] = useState<string>('all');
+  const [showCreateClient, setShowCreateClient] = useState(false);
   const [filterRecurrence, setFilterRecurrence] = useState<string>('all');
   const [formData, setFormData] = useState<AlertFormData>({
     title: '',
