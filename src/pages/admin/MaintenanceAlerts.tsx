@@ -30,7 +30,7 @@ const recurrenceLabels: Record<AlertRecurrence, string> = {
 };
 
 const getRecurrenceLabel = (alert: MaintenanceAlert) => {
-  const months = (alert as any).recurrence_months;
+  const months = alert.recurrence_months;
   if (months !== undefined && months !== null) {
     if (months === 0) return 'Une fois';
     if (months === 1) return 'Tous les mois';
