@@ -649,7 +649,7 @@ export default function MaintenanceAlerts() {
                           <div className="flex items-center gap-3 text-sm text-muted-foreground">
                             {alert.clients?.name && <span>{alert.clients.name}</span>}
                             <span>{format(parseISO(alert.alert_date), 'dd MMM yyyy', { locale: fr })}</span>
-                            {((alert as any).recurrence_months > 0 || alert.recurrence !== 'once') && (
+                            {(alert.recurrence_months > 0 || alert.recurrence !== 'once') && (
                               <span className="flex items-center gap-1">
                                 <RefreshCw className="h-3 w-3" />
                                 {getRecurrenceLabel(alert)}
