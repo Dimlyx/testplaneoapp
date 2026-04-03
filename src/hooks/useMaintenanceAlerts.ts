@@ -41,6 +41,7 @@ export interface UpdateMaintenanceAlertData {
   client_id?: string | null;
   alert_date?: string;
   recurrence?: AlertRecurrence;
+  recurrence_months?: number;
   status?: AlertStatus;
 }
 
