@@ -857,6 +857,9 @@ export const generateInterventionPDF = async (
     }
   }
 
+  // Clear cache after generation
+  imageCache.clear();
+
   // Save
   doc.save(`intervention-${intervention.id.slice(0, 8)}.pdf`);
 };
