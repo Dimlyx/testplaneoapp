@@ -340,7 +340,7 @@ const DynamicStepContent = ({
                   <Upload className="h-6 w-6 text-muted-foreground mb-1" />
                 )}
                 <span className="text-sm text-muted-foreground">
-                  {isUploading ? "Envoi en cours..." : photoUrls.length > 0 ? "Ajouter une photo" : "Prendre une photo"}
+                  {isUploading ? `Envoi en cours (${uploadingCount})...` : photoUrls.length > 0 ? "Ajouter une photo" : "Prendre une photo"}
                 </span>
                 <input
                   type="file"
