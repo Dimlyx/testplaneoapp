@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { Paperclip, X, FileText, Image, File, Download, Loader2 } from "lucide-react";
+import { Paperclip, X, FileText, Image, File, Download, Loader2, Video, Music, Archive } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -15,7 +15,10 @@ interface AttachmentsListProps {
 
 const getFileIcon = (fileType: string) => {
   if (fileType.startsWith('image/')) return Image;
+  if (fileType.startsWith('video/')) return Video;
+  if (fileType.startsWith('audio/')) return Music;
   if (fileType.includes('pdf')) return FileText;
+  if (fileType.includes('zip') || fileType.includes('rar') || fileType.includes('7z') || fileType.includes('archive')) return Archive;
   return File;
 };
 
