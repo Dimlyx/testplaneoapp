@@ -36,15 +36,15 @@ const AttachmentsList = ({ interventionId, isReadOnly = false }: AttachmentsList
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    const file = files[0];
+    const MAX_SIZE = 50 * 1024 * 1024; // 50 Mo
     
-    // Validate file size (max 10 Mo)
-    if (file.size > 10 * 1024 * 1024) {
-      alert('Le fichier est trop volumineux (max 10 Mo)');
-      return;
+    for (const file of Array.from(files)) {
+      if (file.size > MAX_SIZE) {
+        alert(`Le fichier "${file.name}" est trop volumineux (max 50 Mo)`);
+        continue;
+      }
+      await addAttachment.mutateAsync({ interventionId, file });
     }
-
-    await addAttachment.mutateAsync({ interventionId, file });
     
     // Reset input
     if (fileInputRef.current) {
