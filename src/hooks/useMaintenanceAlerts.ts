@@ -31,6 +31,7 @@ export interface CreateMaintenanceAlertData {
   client_id?: string;
   alert_date: string;
   recurrence?: AlertRecurrence;
+  recurrence_months?: number;
 }
 
 export interface UpdateMaintenanceAlertData {
