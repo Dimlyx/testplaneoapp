@@ -126,7 +126,8 @@ const AttachmentsList = ({ interventionId, isReadOnly = false }: AttachmentsList
             type="file"
             onChange={handleFileSelect}
             className="hidden"
-            accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.gif,.txt"
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.gif,.webp,.svg,.bmp,.txt,.csv,.zip,.rar,.7z,.mp4,.mov,.avi,.mkv,.mp3,.wav,.ogg,.dwg,.dxf"
+            multiple
           />
           <Button
             variant="outline"
@@ -139,10 +140,10 @@ const AttachmentsList = ({ interventionId, isReadOnly = false }: AttachmentsList
             ) : (
               <Paperclip className="h-4 w-4 mr-2" />
             )}
-            Ajouter une pièce jointe
+            Ajouter des pièces jointes
           </Button>
           <p className="text-xs text-muted-foreground text-center">
-            PDF, Word, Excel, images. Max 10 Mo
+            PDF, Word, Excel, images, vidéos, archives... Max 50 Mo par fichier
           </p>
         </>
       )}
