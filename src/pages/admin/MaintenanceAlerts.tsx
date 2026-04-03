@@ -101,7 +101,8 @@ export default function MaintenanceAlerts() {
       description: '',
       client_id: '',
       alert_date: format(new Date(), 'yyyy-MM-dd'),
-      recurrence: 'once',
+      recurrence: 'monthly',
+      recurrence_months: 0,
     });
     setEditingAlert(null);
   };
