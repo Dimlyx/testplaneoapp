@@ -13,6 +13,10 @@ import {
   PlayCircle,
   Clock,
   RefreshCw,
+  ChevronDown,
+  Camera,
+  MessageSquare,
+  Eye,
 } from "lucide-react";
 import WorkflowStep from "./WorkflowStep";
 import { MapsChooser, useMapsChooser } from "@/components/technician/MapsChooser";
