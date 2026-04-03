@@ -142,7 +142,8 @@ export default function MaintenanceAlerts() {
       description: formData.description || undefined,
       client_id: formData.client_id || undefined,
       alert_date: formData.alert_date,
-      recurrence: formData.recurrence,
+      recurrence: formData.recurrence_months === 0 ? 'once' as AlertRecurrence : 'monthly' as AlertRecurrence,
+      recurrence_months: formData.recurrence_months,
     };
 
     if (editingAlert) {
