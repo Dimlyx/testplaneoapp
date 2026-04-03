@@ -149,34 +149,68 @@ const DynamicStepContent = ({
     ));
   };
 
+  // Map to track which local blob URLs map to which uploaded URLs
+  const pendingUploadsRef = useRef<Map<string, Promise<string | null>>>(new Map());
+
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
+    const fileArray = Array.from(files);
+    
+    // 1. Immediately show local previews using blob URLs
+    const localUrls = fileArray.map(file => URL.createObjectURL(file));
+    setPhotoUrls(prev => [...prev, ...localUrls]);
+    setUploadingCount(prev => prev + fileArray.length);
     setIsUploading(true);
-    try {
-      const newUrls: string[] = [];
-      for (const file of Array.from(files)) {
-        const compressed = await compressImage(file);
-        const fileName = `steps/${interventionId}/${step.id}-loop${loopIndex}-${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
-        const { error: uploadError } = await supabase.storage
-          .from("intervention-photos")
-          .upload(fileName, compressed, { contentType: 'image/jpeg' });
+    
+    // Reset input right away
+    e.target.value = '';
 
-        if (uploadError) throw uploadError;
+    // 2. Upload each file in the background and swap blob URL for remote URL
+    for (let i = 0; i < fileArray.length; i++) {
+      const file = fileArray[i];
+      const localUrl = localUrls[i];
+      
+      const uploadPromise = (async (): Promise<string | null> => {
+        try {
+          const compressed = await compressImage(file);
+          const fileName = `steps/${interventionId}/${step.id}-loop${loopIndex}-${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
+          const { error: uploadError } = await supabase.storage
+            .from("intervention-photos")
+            .upload(fileName, compressed, { contentType: 'image/jpeg' });
 
-        const { data: urlData } = supabase.storage
-          .from("intervention-photos")
-          .getPublicUrl(fileName);
+          if (uploadError) throw uploadError;
 
-        newUrls.push(urlData.publicUrl);
-      }
-      setPhotoUrls(prev => [...prev, ...newUrls]);
-    } catch (error: any) {
-      console.error("Upload error:", error);
-    } finally {
-      setIsUploading(false);
-      e.target.value = '';
+          const { data: urlData } = supabase.storage
+            .from("intervention-photos")
+            .getPublicUrl(fileName);
+
+          const remoteUrl = urlData.publicUrl;
+
+          // Swap local blob URL with remote URL
+          setPhotoUrls(prev => prev.map(u => u === localUrl ? remoteUrl : u));
+          
+          // Revoke blob URL to free memory
+          URL.revokeObjectURL(localUrl);
+          
+          return remoteUrl;
+        } catch (error: any) {
+          console.error("Upload error:", error);
+          // Remove failed photo from the list
+          setPhotoUrls(prev => prev.filter(u => u !== localUrl));
+          URL.revokeObjectURL(localUrl);
+          return null;
+        } finally {
+          setUploadingCount(prev => {
+            const next = prev - 1;
+            if (next <= 0) setIsUploading(false);
+            return Math.max(0, next);
+          });
+        }
+      })();
+
+      pendingUploadsRef.current.set(localUrl, uploadPromise);
     }
   };
 
