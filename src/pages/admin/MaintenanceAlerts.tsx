@@ -29,6 +29,16 @@ const recurrenceLabels: Record<AlertRecurrence, string> = {
   yearly: 'Annuel',
 };
 
+const getRecurrenceLabel = (alert: MaintenanceAlert) => {
+  const months = (alert as any).recurrence_months;
+  if (months !== undefined && months !== null) {
+    if (months === 0) return 'Une fois';
+    if (months === 1) return 'Tous les mois';
+    return `Tous les ${months} mois`;
+  }
+  return recurrenceLabels[alert.recurrence];
+};
+
 const statusLabels: Record<AlertStatus, string> = {
   pending: 'En attente',
   acknowledged: 'Pris en compte',
