@@ -314,21 +314,29 @@ const DynamicStepContent = ({
             
             {photoUrls.length > 0 && (
               <div className="grid grid-cols-2 gap-2 mb-3">
-                {photoUrls.map((url, index) => (
-                  <div key={index} className="relative">
-                    <img src={url} alt={`Photo ${index + 1}`} className="w-full h-32 object-cover rounded-lg" />
-                    {canEdit && (
-                      <Button
-                        variant="destructive"
-                        size="icon"
-                        className="absolute top-1 right-1 h-6 w-6"
-                        onClick={() => removePhoto(index)}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
+                {photoUrls.map((url, index) => {
+                  const isBlobUrl = url.startsWith('blob:');
+                  return (
+                    <div key={index} className="relative">
+                      <img src={url} alt={`Photo ${index + 1}`} className={`w-full h-32 object-cover rounded-lg ${isBlobUrl ? 'opacity-70' : ''}`} />
+                      {isBlobUrl && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                        </div>
+                      )}
+                      {canEdit && !isBlobUrl && (
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-1 right-1 h-6 w-6"
+                          onClick={() => removePhoto(index)}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
 
