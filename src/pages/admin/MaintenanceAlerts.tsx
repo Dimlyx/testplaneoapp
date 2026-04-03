@@ -29,6 +29,16 @@ const recurrenceLabels: Record<AlertRecurrence, string> = {
   yearly: 'Annuel',
 };
 
+const getRecurrenceLabel = (alert: MaintenanceAlert) => {
+  const months = alert.recurrence_months;
+  if (months !== undefined && months !== null) {
+    if (months === 0) return 'Une fois';
+    if (months === 1) return 'Tous les mois';
+    return `Tous les ${months} mois`;
+  }
+  return recurrenceLabels[alert.recurrence];
+};
+
 const statusLabels: Record<AlertStatus, string> = {
   pending: 'En attente',
   acknowledged: 'Pris en compte',
@@ -49,6 +59,7 @@ interface AlertFormData {
   client_id: string;
   alert_date: string;
   recurrence: AlertRecurrence;
+  recurrence_months: number;
 }
 
 export default function MaintenanceAlerts() {
@@ -70,7 +81,8 @@ export default function MaintenanceAlerts() {
     description: '',
     client_id: '',
     alert_date: format(new Date(), 'yyyy-MM-dd'),
-    recurrence: 'once',
+    recurrence: 'monthly',
+    recurrence_months: 0,
   });
 
   // Realtime subscription
@@ -99,7 +111,8 @@ export default function MaintenanceAlerts() {
       description: '',
       client_id: '',
       alert_date: format(new Date(), 'yyyy-MM-dd'),
-      recurrence: 'once',
+      recurrence: 'monthly',
+      recurrence_months: 0,
     });
     setEditingAlert(null);
   };
@@ -113,6 +126,7 @@ export default function MaintenanceAlerts() {
         client_id: alert.client_id || '',
         alert_date: alert.alert_date,
         recurrence: alert.recurrence,
+        recurrence_months: alert.recurrence_months ?? 0,
       });
     } else {
       resetForm();
@@ -128,7 +142,8 @@ export default function MaintenanceAlerts() {
       description: formData.description || undefined,
       client_id: formData.client_id || undefined,
       alert_date: formData.alert_date,
-      recurrence: formData.recurrence,
+      recurrence: formData.recurrence_months === 0 ? 'once' as AlertRecurrence : 'monthly' as AlertRecurrence,
+      recurrence_months: formData.recurrence_months,
     };
 
     if (editingAlert) {
@@ -192,7 +207,8 @@ export default function MaintenanceAlerts() {
         if (!matchTitle && !matchClient && !matchDesc) return false;
       }
       if (filterClient !== 'all' && a.client_id !== filterClient) return false;
-      if (filterRecurrence !== 'all' && a.recurrence !== filterRecurrence) return false;
+      if (filterRecurrence === 'once' && a.recurrence_months !== 0) return false;
+      if (filterRecurrence === 'recurring' && a.recurrence_months === 0) return false;
       return true;
     });
   }, [alerts, searchQuery, filterClient, filterRecurrence]);
@@ -307,22 +323,21 @@ export default function MaintenanceAlerts() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="recurrence">Récurrence</Label>
-                  <Select
-                    value={formData.recurrence}
-                    onValueChange={(value: AlertRecurrence) => setFormData({ ...formData, recurrence: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="once">Une fois</SelectItem>
-                      <SelectItem value="weekly">Hebdomadaire</SelectItem>
-                      <SelectItem value="monthly">Mensuel</SelectItem>
-                      <SelectItem value="quarterly">Trimestriel</SelectItem>
-                      <SelectItem value="yearly">Annuel</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="recurrence_months">Récurrence (mois)</Label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground whitespace-nowrap">Tous les</span>
+                    <Input
+                      id="recurrence_months"
+                      type="number"
+                      min={0}
+                      max={120}
+                      value={formData.recurrence_months}
+                      onChange={(e) => setFormData({ ...formData, recurrence_months: parseInt(e.target.value) || 0 })}
+                      className="w-20"
+                    />
+                    <span className="text-sm text-muted-foreground whitespace-nowrap">mois</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">0 = une seule fois</p>
                 </div>
               </div>
 
@@ -435,10 +450,7 @@ export default function MaintenanceAlerts() {
               <SelectContent>
                 <SelectItem value="all">Toutes</SelectItem>
                 <SelectItem value="once">Une fois</SelectItem>
-                <SelectItem value="weekly">Hebdomadaire</SelectItem>
-                <SelectItem value="monthly">Mensuel</SelectItem>
-                <SelectItem value="quarterly">Trimestriel</SelectItem>
-                <SelectItem value="yearly">Annuel</SelectItem>
+                <SelectItem value="recurring">Récurrentes</SelectItem>
               </SelectContent>
             </Select>
             {hasFilters && (
@@ -522,10 +534,10 @@ export default function MaintenanceAlerts() {
                               <Calendar className="h-3.5 w-3.5" />
                               {format(parseISO(alert.alert_date), 'dd MMM yyyy', { locale: fr })}
                             </span>
-                            {alert.recurrence !== 'once' && (
+                            {(alert.recurrence_months > 0 || alert.recurrence !== 'once') && (
                               <span className="flex items-center gap-1">
                                 <RefreshCw className="h-3.5 w-3.5" />
-                                {recurrenceLabels[alert.recurrence]}
+                                {getRecurrenceLabel(alert)}
                               </span>
                             )}
                           </div>
@@ -635,10 +647,10 @@ export default function MaintenanceAlerts() {
                           <div className="flex items-center gap-3 text-sm text-muted-foreground">
                             {alert.clients?.name && <span>{alert.clients.name}</span>}
                             <span>{format(parseISO(alert.alert_date), 'dd MMM yyyy', { locale: fr })}</span>
-                            {alert.recurrence !== 'once' && (
+                            {(alert.recurrence_months > 0 || alert.recurrence !== 'once') && (
                               <span className="flex items-center gap-1">
                                 <RefreshCw className="h-3 w-3" />
-                                {recurrenceLabels[alert.recurrence]}
+                                {getRecurrenceLabel(alert)}
                               </span>
                             )}
                           </div>

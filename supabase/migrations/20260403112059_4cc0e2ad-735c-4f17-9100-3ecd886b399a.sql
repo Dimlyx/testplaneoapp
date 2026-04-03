@@ -1,0 +1,1 @@
+ALTER TABLE public.maintenance_alerts ADD COLUMN recurrence_months integer NOT NULL DEFAULT 0;

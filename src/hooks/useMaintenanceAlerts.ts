@@ -14,6 +14,7 @@ export interface MaintenanceAlert {
   equipment_id: string | null;
   alert_date: string;
   recurrence: AlertRecurrence;
+  recurrence_months: number;
   status: AlertStatus;
   last_triggered_at: string | null;
   created_at: string;
@@ -30,6 +31,7 @@ export interface CreateMaintenanceAlertData {
   client_id?: string;
   alert_date: string;
   recurrence?: AlertRecurrence;
+  recurrence_months?: number;
 }
 
 export interface UpdateMaintenanceAlertData {
@@ -39,6 +41,7 @@ export interface UpdateMaintenanceAlertData {
   client_id?: string | null;
   alert_date?: string;
   recurrence?: AlertRecurrence;
+  recurrence_months?: number;
   status?: AlertStatus;
 }
 
@@ -121,8 +124,9 @@ export function useCreateMaintenanceAlert() {
           client_id: data.client_id || null,
           alert_date: data.alert_date,
           recurrence: data.recurrence || 'once',
+          recurrence_months: data.recurrence_months ?? 0,
           organization_id: organizationId,
-        })
+        } as any)
         .select()
         .single();
 

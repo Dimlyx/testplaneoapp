@@ -1001,6 +1001,7 @@ export type Database = {
           last_triggered_at: string | null
           organization_id: string | null
           recurrence: Database["public"]["Enums"]["alert_recurrence"]
+          recurrence_months: number
           status: Database["public"]["Enums"]["alert_status"]
           title: string
           updated_at: string
@@ -1015,6 +1016,7 @@ export type Database = {
           last_triggered_at?: string | null
           organization_id?: string | null
           recurrence?: Database["public"]["Enums"]["alert_recurrence"]
+          recurrence_months?: number
           status?: Database["public"]["Enums"]["alert_status"]
           title: string
           updated_at?: string
@@ -1029,6 +1031,7 @@ export type Database = {
           last_triggered_at?: string | null
           organization_id?: string | null
           recurrence?: Database["public"]["Enums"]["alert_recurrence"]
+          recurrence_months?: number
           status?: Database["public"]["Enums"]["alert_status"]
           title?: string
           updated_at?: string
