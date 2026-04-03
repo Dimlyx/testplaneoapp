@@ -299,6 +299,9 @@ export const generateInterventionPDF = async (
   workflowSteps?: WorkflowStepData[],
   interventionTypes?: InterventionTypeData[]
 ) => {
+  // Clear image cache for fresh generation
+  imageCache.clear();
+  
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
