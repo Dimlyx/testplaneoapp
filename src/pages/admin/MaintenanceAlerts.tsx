@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useMaintenanceAlerts, useCreateMaintenanceAlert, useUpdateMaintenanceAlert, useDeleteMaintenanceAlert, MaintenanceAlert, AlertRecurrence, AlertStatus } from '@/hooks/useMaintenanceAlerts';
 import { useClients } from '@/hooks/useClients';
+import { QuickCreateClientDialog } from '@/components/admin/QuickCreateClientDialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
