@@ -709,10 +709,46 @@ const InterventionWorkflow = ({
       {loopableSteps.length > 0 && (() => {
         // Render loops recursively: each loop's steps appear inline,
         // and if "Oui" was clicked on trigger, the next loop appears right below it
+        // Helper: get summary info for a completed loop iteration
+        const getLoopSummary = (loopIdx: number) => {
+          let photoCount = 0;
+          let commentCount = 0;
+          let checklistTotal = 0;
+          let checklistChecked = 0;
+
+          for (const step of loopableSteps) {
+            const c = stepCompletions.find(
+              sc => sc.step_id === step.id && (sc.loop_index ?? 0) === loopIdx
+            );
+            if (!c) continue;
+            if (c.photo_url) {
+              try {
+                const parsed = JSON.parse(c.photo_url);
+                photoCount += Array.isArray(parsed) ? parsed.length : 1;
+              } catch {
+                photoCount += 1;
+              }
+            }
+            if (c.comment) commentCount++;
+            if (c.checklist_data && Array.isArray(c.checklist_data)) {
+              const items = c.checklist_data as { checked: boolean }[];
+              checklistTotal += items.length;
+              checklistChecked += items.filter(i => i.checked).length;
+            }
+          }
+          return { photoCount, commentCount, checklistTotal, checklistChecked };
+        };
+
+        // Render loops recursively: each loop's steps appear inline,
+        // and if "Oui" was clicked on trigger, the next loop appears right below it
         const renderLoop = (loopIdx: number): React.ReactNode[] => {
           const nodes: React.ReactNode[] = [];
+          const loopComplete = isLoopComplete(loopIdx);
+          // A past loop = completed and not the latest active one
+          const isActiveLoop = activeStep?.includes(`loop-${loopIdx}`);
+          const isPastLoop = loopComplete && !isActiveLoop && loopIdx < maxLoopIndex;
 
-          // Loop separator for iterations > 0
+          // Loop separator
           if (loopIdx > 0) {
             nodes.push(
               <div key={`loop-sep-${loopIdx}`} className="flex items-center gap-2 my-3 px-3">
@@ -724,6 +760,75 @@ const InterventionWorkflow = ({
               </div>
             );
           }
+
+          // If it's a completed past loop, wrap in collapsible summary
+          if (isPastLoop) {
+            const summary = getLoopSummary(loopIdx);
+            nodes.push(
+              <Collapsible key={`loop-collapsible-${loopIdx}`}>
+                <CollapsibleTrigger asChild>
+                  <button className="w-full flex items-center justify-between p-3 rounded-lg border bg-green-50/50 dark:bg-green-950/30 hover:bg-green-50 dark:hover:bg-green-950/50 transition-colors my-1">
+                    <div className="flex items-center gap-3">
+                      <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 shrink-0" />
+                      <div className="text-left">
+                        <p className="text-sm font-medium">Équipement {loopIdx + 1} — Terminé</p>
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+                          {summary.photoCount > 0 && (
+                            <span className="flex items-center gap-1">
+                              <Camera className="h-3 w-3" /> {summary.photoCount} photo{summary.photoCount > 1 ? 's' : ''}
+                            </span>
+                          )}
+                          {summary.commentCount > 0 && (
+                            <span className="flex items-center gap-1">
+                              <MessageSquare className="h-3 w-3" /> {summary.commentCount} commentaire{summary.commentCount > 1 ? 's' : ''}
+                            </span>
+                          )}
+                          {summary.checklistTotal > 0 && (
+                            <span className="flex items-center gap-1">
+                              <ClipboardList className="h-3 w-3" /> {summary.checklistChecked}/{summary.checklistTotal}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Eye className="h-3.5 w-3.5" />
+                      <span>Voir / Modifier</span>
+                      <ChevronDown className="h-4 w-4 transition-transform [[data-state=open]>&]:rotate-180" />
+                    </div>
+                  </button>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="pl-2 border-l-2 border-green-200 dark:border-green-800 ml-3 mt-1 space-y-0">
+                    {renderLoopSteps(loopIdx)}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            );
+
+            // Check if trigger was answered "Oui" to render next loop inline
+            const triggerCompletion = stepCompletions.find(
+              c => c.step_id === loopTriggerStep?.id && c.loop_index === loopIdx && c.completed_at
+            );
+            if (triggerCompletion?.comment?.includes("Oui")) {
+              const nextLoopIdx = loopIdx + 1;
+              if (nextLoopIdx < totalLoops) {
+                nodes.push(...renderLoop(nextLoopIdx));
+              }
+            }
+
+            return nodes;
+          }
+
+          // Active / current loop: render steps normally
+          nodes.push(...renderLoopSteps(loopIdx));
+
+          return nodes;
+        };
+
+        // Extracted: render individual steps for a given loop index
+        const renderLoopSteps = (loopIdx: number): React.ReactNode[] => {
+          const nodes: React.ReactNode[] = [];
 
           for (const step of loopableSteps) {
             const completion = stepCompletions.find(
@@ -816,7 +921,6 @@ const InterventionWorkflow = ({
 
             // If this is the loop trigger and it was answered "Oui", render next loop inline right below
             if (isLoopTrigger && isStepCompleted && completion?.comment?.includes("Oui")) {
-              // Check if next loop exists (has completions or is the new empty one)
               const nextLoopIdx = loopIdx + 1;
               if (nextLoopIdx < totalLoops) {
                 nodes.push(...renderLoop(nextLoopIdx));
