@@ -14,6 +14,7 @@ export interface MaintenanceAlert {
   equipment_id: string | null;
   alert_date: string;
   recurrence: AlertRecurrence;
+  recurrence_months: number;
   status: AlertStatus;
   last_triggered_at: string | null;
   created_at: string;
