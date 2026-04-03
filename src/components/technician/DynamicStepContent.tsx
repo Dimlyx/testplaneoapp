@@ -49,6 +49,7 @@ const DynamicStepContent = ({
   const [comment, setComment] = useState(completion?.comment || "");
   const [photoUrls, setPhotoUrls] = useState<string[]>(parsePhotoUrls(completion?.photo_url || null));
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadingCount, setUploadingCount] = useState(0);
   const [localSignerName, setLocalSignerName] = useState(signerName);
   
   // Initialize checklist state from completion or step template
@@ -148,34 +149,68 @@ const DynamicStepContent = ({
     ));
   };
 
+  // Map to track which local blob URLs map to which uploaded URLs
+  const pendingUploadsRef = useRef<Map<string, Promise<string | null>>>(new Map());
+
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
+    const fileArray = Array.from(files);
+    
+    // 1. Immediately show local previews using blob URLs
+    const localUrls = fileArray.map(file => URL.createObjectURL(file));
+    setPhotoUrls(prev => [...prev, ...localUrls]);
+    setUploadingCount(prev => prev + fileArray.length);
     setIsUploading(true);
-    try {
-      const newUrls: string[] = [];
-      for (const file of Array.from(files)) {
-        const compressed = await compressImage(file);
-        const fileName = `steps/${interventionId}/${step.id}-loop${loopIndex}-${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
-        const { error: uploadError } = await supabase.storage
-          .from("intervention-photos")
-          .upload(fileName, compressed, { contentType: 'image/jpeg' });
+    
+    // Reset input right away
+    e.target.value = '';
 
-        if (uploadError) throw uploadError;
+    // 2. Upload each file in the background and swap blob URL for remote URL
+    for (let i = 0; i < fileArray.length; i++) {
+      const file = fileArray[i];
+      const localUrl = localUrls[i];
+      
+      const uploadPromise = (async (): Promise<string | null> => {
+        try {
+          const compressed = await compressImage(file);
+          const fileName = `steps/${interventionId}/${step.id}-loop${loopIndex}-${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
+          const { error: uploadError } = await supabase.storage
+            .from("intervention-photos")
+            .upload(fileName, compressed, { contentType: 'image/jpeg' });
 
-        const { data: urlData } = supabase.storage
-          .from("intervention-photos")
-          .getPublicUrl(fileName);
+          if (uploadError) throw uploadError;
 
-        newUrls.push(urlData.publicUrl);
-      }
-      setPhotoUrls(prev => [...prev, ...newUrls]);
-    } catch (error: any) {
-      console.error("Upload error:", error);
-    } finally {
-      setIsUploading(false);
-      e.target.value = '';
+          const { data: urlData } = supabase.storage
+            .from("intervention-photos")
+            .getPublicUrl(fileName);
+
+          const remoteUrl = urlData.publicUrl;
+
+          // Swap local blob URL with remote URL
+          setPhotoUrls(prev => prev.map(u => u === localUrl ? remoteUrl : u));
+          
+          // Revoke blob URL to free memory
+          URL.revokeObjectURL(localUrl);
+          
+          return remoteUrl;
+        } catch (error: any) {
+          console.error("Upload error:", error);
+          // Remove failed photo from the list
+          setPhotoUrls(prev => prev.filter(u => u !== localUrl));
+          URL.revokeObjectURL(localUrl);
+          return null;
+        } finally {
+          setUploadingCount(prev => {
+            const next = prev - 1;
+            if (next <= 0) setIsUploading(false);
+            return Math.max(0, next);
+          });
+        }
+      })();
+
+      pendingUploadsRef.current.set(localUrl, uploadPromise);
     }
   };
 
@@ -279,21 +314,29 @@ const DynamicStepContent = ({
             
             {photoUrls.length > 0 && (
               <div className="grid grid-cols-2 gap-2 mb-3">
-                {photoUrls.map((url, index) => (
-                  <div key={index} className="relative">
-                    <img src={url} alt={`Photo ${index + 1}`} className="w-full h-32 object-cover rounded-lg" />
-                    {canEdit && (
-                      <Button
-                        variant="destructive"
-                        size="icon"
-                        className="absolute top-1 right-1 h-6 w-6"
-                        onClick={() => removePhoto(index)}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
+                {photoUrls.map((url, index) => {
+                  const isBlobUrl = url.startsWith('blob:');
+                  return (
+                    <div key={index} className="relative">
+                      <img src={url} alt={`Photo ${index + 1}`} className={`w-full h-32 object-cover rounded-lg ${isBlobUrl ? 'opacity-70' : ''}`} />
+                      {isBlobUrl && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                        </div>
+                      )}
+                      {canEdit && !isBlobUrl && (
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-1 right-1 h-6 w-6"
+                          onClick={() => removePhoto(index)}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
 
@@ -305,7 +348,7 @@ const DynamicStepContent = ({
                   <Upload className="h-6 w-6 text-muted-foreground mb-1" />
                 )}
                 <span className="text-sm text-muted-foreground">
-                  {isUploading ? "Envoi en cours..." : photoUrls.length > 0 ? "Ajouter une photo" : "Prendre une photo"}
+                  {isUploading ? `Envoi en cours (${uploadingCount})...` : photoUrls.length > 0 ? "Ajouter une photo" : "Prendre une photo"}
                 </span>
                 <input
                   type="file"
