@@ -449,10 +449,7 @@ export default function MaintenanceAlerts() {
               <SelectContent>
                 <SelectItem value="all">Toutes</SelectItem>
                 <SelectItem value="once">Une fois</SelectItem>
-                <SelectItem value="weekly">Hebdomadaire</SelectItem>
-                <SelectItem value="monthly">Mensuel</SelectItem>
-                <SelectItem value="quarterly">Trimestriel</SelectItem>
-                <SelectItem value="yearly">Annuel</SelectItem>
+                <SelectItem value="recurring">Récurrentes</SelectItem>
               </SelectContent>
             </Select>
             {hasFilters && (
