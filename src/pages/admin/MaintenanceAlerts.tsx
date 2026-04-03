@@ -207,7 +207,8 @@ export default function MaintenanceAlerts() {
         if (!matchTitle && !matchClient && !matchDesc) return false;
       }
       if (filterClient !== 'all' && a.client_id !== filterClient) return false;
-      if (filterRecurrence !== 'all' && a.recurrence !== filterRecurrence) return false;
+      if (filterRecurrence === 'once' && a.recurrence_months !== 0) return false;
+      if (filterRecurrence === 'recurring' && a.recurrence_months === 0) return false;
       return true;
     });
   }, [alerts, searchQuery, filterClient, filterRecurrence]);
