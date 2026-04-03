@@ -49,6 +49,7 @@ interface AlertFormData {
   client_id: string;
   alert_date: string;
   recurrence: AlertRecurrence;
+  recurrence_months: number;
 }
 
 export default function MaintenanceAlerts() {
