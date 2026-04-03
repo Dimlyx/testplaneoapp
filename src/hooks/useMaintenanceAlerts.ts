@@ -124,8 +124,9 @@ export function useCreateMaintenanceAlert() {
           client_id: data.client_id || null,
           alert_date: data.alert_date,
           recurrence: data.recurrence || 'once',
+          recurrence_months: data.recurrence_months ?? 0,
           organization_id: organizationId,
-        })
+        } as any)
         .select()
         .single();
 
