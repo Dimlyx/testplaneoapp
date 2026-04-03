@@ -696,5 +696,14 @@ export default function MaintenanceAlerts() {
         </TabsContent>
       </Tabs>
     </div>
+
+    <QuickCreateClientDialog
+      open={showCreateClient}
+      onOpenChange={setShowCreateClient}
+      onClientCreated={(clientId) => {
+        setFormData(prev => ({ ...prev, client_id: clientId }));
+        setShowCreateClient(false);
+      }}
+    />
   );
 }
