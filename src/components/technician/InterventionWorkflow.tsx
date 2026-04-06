@@ -517,7 +517,7 @@ const InterventionWorkflow = ({
                   return (
                     <button
                       type="button"
-                      className="flex items-start gap-2 text-sm text-primary hover:underline mt-2"
+                      className="flex items-start gap-2 text-sm text-primary dark:text-foreground hover:underline mt-2"
                       onClick={() => mapsChooser.openMaps(addr)}
                     >
                       <MapPin className="h-4 w-4 mt-0.5 shrink-0" />
@@ -540,7 +540,7 @@ const InterventionWorkflow = ({
                 {(intervention.intervention_phone || client.phone) && (
                   <a 
                     href={`tel:${intervention.intervention_phone || client.phone}`} 
-                    className="flex items-center gap-2 text-sm text-primary mt-2"
+                    className="flex items-center gap-2 text-sm text-primary dark:text-foreground mt-2"
                   >
                     📞 {intervention.intervention_phone || client.phone}
                   </a>
@@ -549,7 +549,7 @@ const InterventionWorkflow = ({
                 {(intervention.intervention_email || client.email) && (
                   <a 
                     href={`mailto:${intervention.intervention_email || client.email}`} 
-                    className="flex items-center gap-2 text-sm text-primary mt-1"
+                    className="flex items-center gap-2 text-sm text-primary dark:text-foreground mt-1"
                   >
                     ✉️ {intervention.intervention_email || client.email}
                   </a>
