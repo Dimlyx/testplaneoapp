@@ -239,7 +239,7 @@ const TechnicianInterventionDetail = () => {
 
       {/* Schedule info */}
       {(intervention.scheduled_date || intervention.scheduled_time) && (
-        <div className="flex items-center gap-4 text-sm text-muted-foreground bg-muted/50 rounded-lg p-3">
+        <div className="flex items-center gap-4 text-sm text-muted-foreground dark:text-foreground bg-muted/50 rounded-lg p-3">
           {intervention.scheduled_date && (
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
