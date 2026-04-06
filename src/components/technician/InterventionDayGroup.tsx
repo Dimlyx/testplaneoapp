@@ -79,7 +79,7 @@ export const InterventionDayGroup = ({
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
                   <div className="p-2 bg-primary/10 rounded-lg mt-0.5">
-                    <Calendar className="h-4 w-4 text-primary" />
+                    <Calendar className="h-4 w-4 text-primary dark:text-foreground" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
