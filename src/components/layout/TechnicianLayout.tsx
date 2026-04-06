@@ -15,7 +15,8 @@ import {
   CheckCircle2,
   CalendarDays as CalendarIcon,
 } from 'lucide-react';
-import planeoLogo from '@/assets/planeo-logo-white.png';
+import planeoLogoWhite from '@/assets/planeo-logo-white.png';
+import planeoLogoDark from '@/assets/planeo-logo-dark.png';
 import { cn } from '@/lib/utils';
 import { OfflineIndicator } from '@/components/technician/OfflineIndicator';
 import { NotificationBell } from '@/components/technician/NotificationBell';
