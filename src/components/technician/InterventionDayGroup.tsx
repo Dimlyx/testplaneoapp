@@ -110,7 +110,7 @@ export const InterventionDayGroup = ({
                           onClick={(e) => { e.stopPropagation(); mapsChooser.openMaps(getInterventionAddress(intervention)!); }}
                         >
                           <MapPin className="h-3 w-3" />
-                          <span className="truncate">{getInterventionAddress(intervention)}</span>
+                          <span className="break-words text-left">{getInterventionAddress(intervention)}</span>
                         </button>
                       )}
                     </div>
