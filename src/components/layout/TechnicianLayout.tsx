@@ -58,7 +58,7 @@ export default function TechnicianLayout() {
         <div className="flex h-full flex-col">
           <div className="flex h-16 items-center gap-3 px-6 border-b border-sidebar-border">
             <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-sidebar-accent">
-              <img src={planeoLogo} alt="PLANEO" className="h-7 w-7 object-contain" />
+              <img src={planeoLogoWhite} alt="PLANEO" className="h-7 w-7 object-contain" />
             </div>
             <div>
               <h1 className="text-lg font-semibold text-sidebar-foreground">PLANEO</h1>
@@ -126,7 +126,8 @@ export default function TechnicianLayout() {
             <Menu className="h-5 w-5" />
           </Button>
           <div className="flex items-center gap-2">
-            <img src={planeoLogo} alt="PLANEO" className="h-7" />
+            <img src={planeoLogoDark} alt="PLANEO" className="h-7 dark:hidden" />
+            <img src={planeoLogoWhite} alt="PLANEO" className="h-7 hidden dark:block" />
           </div>
           <div className="ml-auto flex items-center gap-2">
             <ThemeToggle />
