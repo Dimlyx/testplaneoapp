@@ -95,7 +95,7 @@ export const InterventionDayGroup = ({
                     </div>
                     <div className="mt-2 space-y-1">
                       {intervention.scheduled_time && (
-                        <div className="flex items-center gap-2 text-xs text-primary font-medium">
+                        <div className="flex items-center gap-2 text-xs text-primary dark:text-foreground font-medium">
                           <Clock className="h-3.5 w-3.5" />
                           {formatTimeRange(intervention.scheduled_time, intervention.estimated_duration)}
                         </div>
@@ -106,7 +106,7 @@ export const InterventionDayGroup = ({
                       {getInterventionAddress(intervention) && (
                         <button
                           type="button"
-                          className="flex items-center gap-1.5 text-xs text-primary hover:underline"
+                          className="flex items-start gap-1.5 text-xs text-primary dark:text-foreground hover:underline"
                           onClick={(e) => { e.stopPropagation(); mapsChooser.openMaps(getInterventionAddress(intervention)!); }}
                         >
                           <MapPin className="h-3 w-3" />
