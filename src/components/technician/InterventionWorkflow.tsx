@@ -854,24 +854,7 @@ const InterventionWorkflow = ({
         // Extracted: render individual steps for a given loop index
         const renderLoopSteps = (loopIdx: number): React.ReactNode[] => {
           const nodes: React.ReactNode[] = [];
-
-          // Build skip set: steps hidden by conditional branch "Non" answers
-          const skippedIds = new Set<string>();
-          const conditionalBranches = loopableSteps.filter(s => s.is_loop_trigger && s.id !== loopTriggerStep?.id);
-          for (const branch of conditionalBranches) {
-            const branchCompletion = stepCompletions.find(
-              c => c.step_id === branch.id && (c.loop_index ?? 0) === loopIdx && c.completed_at
-            );
-            if (branchCompletion?.comment?.includes("Non") && branch.loop_no_step_id) {
-              const branchIdx = loopableSteps.findIndex(s => s.id === branch.id);
-              const noIdx = loopableSteps.findIndex(s => s.id === branch.loop_no_step_id);
-              if (branchIdx !== -1 && noIdx !== -1 && noIdx > branchIdx) {
-                for (let i = branchIdx + 1; i < noIdx; i++) {
-                  skippedIds.add(loopableSteps[i].id);
-                }
-              }
-            }
-          }
+          const skippedIds = getSkippedStepIdsForLoop(loopIdx);
 
           for (const step of loopableSteps) {
             // Skip steps hidden by conditional branch
