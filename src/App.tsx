@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,45 +14,58 @@ import AdminLayout from "@/components/layout/AdminLayout";
 import TechnicianLayout from "@/components/layout/TechnicianLayout";
 import SuperAdminLayout from "@/components/layout/SuperAdminLayout";
 
-// Pages
+// Pages (eagerly loaded - small/critical)
 import Auth from "@/pages/Auth";
 import ResetPassword from "@/pages/ResetPassword";
 import NotFound from "@/pages/NotFound";
 
-// Admin pages
-import Dashboard from "@/pages/admin/Dashboard";
-import AdminCalendar from "@/pages/admin/Calendar";
-import Interventions from "@/pages/admin/Interventions";
-import InterventionForm from "@/pages/admin/InterventionForm";
-import InterventionDetail from "@/pages/admin/InterventionDetail";
-import InterventionTypes from "@/pages/admin/InterventionTypes";
-import Statistics from "@/pages/admin/Statistics";
-import MaintenanceAlerts from "@/pages/admin/MaintenanceAlerts";
-import Settings from "@/pages/admin/Settings";
-import Clients from "@/pages/admin/Clients";
-import ClientForm from "@/pages/admin/ClientForm";
-import ClientDetail from "@/pages/admin/ClientDetail";
-import Technicians from "@/pages/admin/Technicians";
+// Admin pages - lazy loaded (heavy)
+const Dashboard = lazy(() => import("@/pages/admin/Dashboard"));
+const AdminCalendar = lazy(() => import("@/pages/admin/Calendar"));
+const Interventions = lazy(() => import("@/pages/admin/Interventions"));
+const InterventionForm = lazy(() => import("@/pages/admin/InterventionForm"));
+const InterventionDetail = lazy(() => import("@/pages/admin/InterventionDetail"));
+const InterventionTypes = lazy(() => import("@/pages/admin/InterventionTypes"));
+const Statistics = lazy(() => import("@/pages/admin/Statistics"));
+const MaintenanceAlerts = lazy(() => import("@/pages/admin/MaintenanceAlerts"));
+const Settings = lazy(() => import("@/pages/admin/Settings"));
+const Clients = lazy(() => import("@/pages/admin/Clients"));
+const ClientForm = lazy(() => import("@/pages/admin/ClientForm"));
+const ClientDetail = lazy(() => import("@/pages/admin/ClientDetail"));
+const Technicians = lazy(() => import("@/pages/admin/Technicians"));
 
-// Technician pages
-import { TechnicianInterventionsByCategory } from "@/pages/technician/TechnicianInterventions";
-import TechnicianInterventionDetail from "@/pages/technician/TechnicianInterventionDetail";
-import TechnicianPlanning from "@/pages/technician/TechnicianPlanning";
-import PublicIntervention from "@/pages/public/PublicIntervention";
+// Technician pages - lazy loaded
+const TechnicianInterventionsByCategory = lazy(() => import("@/pages/technician/TechnicianInterventions").then(m => ({ default: m.TechnicianInterventionsByCategory })));
+const TechnicianInterventionDetail = lazy(() => import("@/pages/technician/TechnicianInterventionDetail"));
+const TechnicianPlanning = lazy(() => import("@/pages/technician/TechnicianPlanning"));
+const PublicIntervention = lazy(() => import("@/pages/public/PublicIntervention"));
 
+// Super Admin pages - lazy loaded
+const SuperAdminDashboard = lazy(() => import("@/pages/super-admin/Dashboard"));
+const SuperAdminOrganizations = lazy(() => import("@/pages/super-admin/Organizations"));
+const SuperAdminOrganizationDetail = lazy(() => import("@/pages/super-admin/OrganizationDetail"));
+const SuperAdminUsers = lazy(() => import("@/pages/super-admin/Users"));
+const SuperAdminAnnouncements = lazy(() => import("@/pages/super-admin/Announcements"));
+const SuperAdminEmailTemplates = lazy(() => import("@/pages/super-admin/EmailTemplates"));
+const DemoSetup = lazy(() => import("@/pages/super-admin/DemoSetup"));
+const SuperAdminStatistics = lazy(() => import("@/pages/super-admin/Statistics"));
+const Laboratory = lazy(() => import("@/pages/super-admin/Laboratory"));
 
-// Super Admin pages
-import SuperAdminDashboard from "@/pages/super-admin/Dashboard";
-import SuperAdminOrganizations from "@/pages/super-admin/Organizations";
-import SuperAdminOrganizationDetail from "@/pages/super-admin/OrganizationDetail";
-import SuperAdminUsers from "@/pages/super-admin/Users";
-import SuperAdminAnnouncements from "@/pages/super-admin/Announcements";
-import SuperAdminEmailTemplates from "@/pages/super-admin/EmailTemplates";
-import DemoSetup from "@/pages/super-admin/DemoSetup";
-import SuperAdminStatistics from "@/pages/super-admin/Statistics";
-import Laboratory from "@/pages/super-admin/Laboratory";
+// Suspense fallback
+const PageLoader = () => (
+  <div className="min-h-[50vh] flex items-center justify-center">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+  </div>
+);
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 2 * 60 * 1000, // 2 min default
+      gcTime: 10 * 60 * 1000, // 10 min garbage collection
+    },
+  },
+});
 
 // Protected route wrapper
 const ProtectedRoute = ({ children, requiredRole }: { children: React.ReactNode; requiredRole?: "admin" | "technician" | "super_admin" }) => {
