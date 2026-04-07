@@ -175,10 +175,32 @@ const InterventionWorkflow = ({
   // Current loop count (number of complete or in-progress loops)
   const loopCount = maxLoopIndex + 1;
 
-  // Check if all loopable steps are completed for a given loop index
+  // Get steps skipped by conditional branch "Non" answers for a given loop
+  const getSkippedStepIdsForLoop = (loopIdx: number): Set<string> => {
+    const skipped = new Set<string>();
+    const conditionalBranches = loopableSteps.filter(s => s.is_loop_trigger && s.id !== loopTriggerStep?.id);
+    for (const branch of conditionalBranches) {
+      const branchCompletion = stepCompletions.find(
+        c => c.step_id === branch.id && (c.loop_index ?? 0) === loopIdx && c.completed_at
+      );
+      if (branchCompletion?.comment?.includes("Non") && branch.loop_no_step_id) {
+        const branchIdx = loopableSteps.findIndex(s => s.id === branch.id);
+        const noIdx = loopableSteps.findIndex(s => s.id === branch.loop_no_step_id);
+        if (branchIdx !== -1 && noIdx !== -1 && noIdx > branchIdx) {
+          for (let i = branchIdx + 1; i < noIdx; i++) {
+            skipped.add(loopableSteps[i].id);
+          }
+        }
+      }
+    }
+    return skipped;
+  };
+
+  // Check if all loopable steps are completed for a given loop index (excluding skipped steps)
   const isLoopComplete = (loopIdx: number) => {
+    const skipped = getSkippedStepIdsForLoop(loopIdx);
     return loopableSteps.length > 0 && loopableSteps.every(
-      step => stepCompletions.some(c => c.step_id === step.id && c.loop_index === loopIdx && c.completed_at)
+      step => skipped.has(step.id) || stepCompletions.some(c => c.step_id === step.id && c.loop_index === loopIdx && c.completed_at)
     );
   };
 
