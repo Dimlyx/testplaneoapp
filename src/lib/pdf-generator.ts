@@ -722,6 +722,19 @@ export const generateInterventionPDF = async (
       doc.setFont("helvetica", "normal");
       yPos += 10;
       
+      // Render multiple choice data
+      const mcItems = completion.multiple_choice_data as { id: string; label: string; selected: boolean }[] | null;
+      if (mcItems && mcItems.length > 0) {
+        const selectedItems = mcItems.filter(i => i.selected);
+        if (selectedItems.length > 0) {
+          doc.setFontSize(9);
+          doc.setFont("helvetica", "italic");
+          doc.text("Choix : " + selectedItems.map(i => i.label).join(", "), 22, yPos);
+          doc.setFont("helvetica", "normal");
+          yPos += 6;
+        }
+      }
+
       if (completion.comment) {
         doc.setFontSize(9);
         const commentLines = doc.splitTextToSize(completion.comment, pageWidth - 35);
@@ -735,14 +748,12 @@ export const generateInterventionPDF = async (
         doc.setFontSize(9);
         for (const item of checklistItems) {
           checkNewPage(8);
-          // Draw a small checkbox square
           const boxSize = 3;
           const boxY = yPos - boxSize + 0.5;
           doc.setDrawColor(100, 100, 100);
           doc.setLineWidth(0.3);
           doc.rect(22, boxY, boxSize, boxSize);
           if (item.checked) {
-            // Draw checkmark inside the box
             doc.setDrawColor(34, 139, 34);
             doc.setLineWidth(0.5);
             doc.line(22.5, boxY + 1.5, 23, boxY + 2.5);
@@ -753,19 +764,6 @@ export const generateInterventionPDF = async (
           yPos += 5;
         }
         yPos += 2;
-      }
-
-      // Render multiple choice data
-      const mcItems = completion.multiple_choice_data as { id: string; label: string; selected: boolean }[] | null;
-      if (mcItems && mcItems.length > 0) {
-        const selectedItems = mcItems.filter(i => i.selected);
-        if (selectedItems.length > 0) {
-          doc.setFontSize(9);
-          doc.setFont("helvetica", "italic");
-          doc.text("Choix : " + selectedItems.map(i => i.label).join(", "), 22, yPos);
-          doc.setFont("helvetica", "normal");
-          yPos += 6;
-        }
       }
       
       const stepPhotoUrls = parsePhotoUrls(completion.photo_url);

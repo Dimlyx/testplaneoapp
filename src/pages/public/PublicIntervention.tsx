@@ -353,6 +353,21 @@ const PublicIntervention = () => {
                             <CheckCircle className="h-4 w-4 text-green-600" />
                             <span className="font-medium text-sm">{step.label}</span>
                           </div>
+                          {(() => {
+                            const mcItems = (completion as any).multiple_choice_data as { id: string; label: string; selected: boolean }[] | null;
+                            if (!mcItems || mcItems.length === 0) return null;
+                            const selected = mcItems.filter(i => i.selected);
+                            if (selected.length === 0) return null;
+                            return (
+                              <div className="ml-6 flex flex-wrap gap-1">
+                                {selected.map((item) => (
+                                  <span key={item.id} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                                    {item.label}
+                                  </span>
+                                ))}
+                              </div>
+                            );
+                          })()}
                           {completion.comment && (
                             <p className="text-sm text-muted-foreground ml-6 whitespace-pre-wrap">{completion.comment}</p>
                           )}
@@ -366,21 +381,6 @@ const PublicIntervention = () => {
                                     {item.checked ? <CheckCircle className="h-3 w-3 text-green-600" /> : <AlertTriangle className="h-3 w-3 text-muted-foreground" />}
                                     <span>{item.label}</span>
                                   </div>
-                                ))}
-                              </div>
-                            );
-                          })()}
-                          {(() => {
-                            const mcItems = (completion as any).multiple_choice_data as { id: string; label: string; selected: boolean }[] | null;
-                            if (!mcItems || mcItems.length === 0) return null;
-                            const selected = mcItems.filter(i => i.selected);
-                            if (selected.length === 0) return null;
-                            return (
-                              <div className="ml-6 flex flex-wrap gap-1">
-                                {selected.map((item) => (
-                                  <span key={item.id} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                                    {item.label}
-                                  </span>
                                 ))}
                               </div>
                             );
@@ -412,6 +412,21 @@ const PublicIntervention = () => {
                         <CheckCircle className="h-4 w-4 text-green-600" />
                         <span className="font-medium text-sm">{step.label}</span>
                       </div>
+                      {(() => {
+                        const mcItems = (completion as any).multiple_choice_data as { id: string; label: string; selected: boolean }[] | null;
+                        if (!mcItems || mcItems.length === 0) return null;
+                        const selected = mcItems.filter(i => i.selected);
+                        if (selected.length === 0) return null;
+                        return (
+                          <div className="ml-6 flex flex-wrap gap-1">
+                            {selected.map((item) => (
+                              <span key={item.id} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                                {item.label}
+                              </span>
+                            ))}
+                          </div>
+                        );
+                      })()}
                       {completion.comment && (
                         <p className="text-sm text-muted-foreground ml-6 whitespace-pre-wrap">{completion.comment}</p>
                       )}
@@ -425,21 +440,6 @@ const PublicIntervention = () => {
                                 {item.checked ? <CheckCircle className="h-3 w-3 text-green-600" /> : <AlertTriangle className="h-3 w-3 text-muted-foreground" />}
                                 <span>{item.label}</span>
                               </div>
-                            ))}
-                          </div>
-                        );
-                      })()}
-                      {(() => {
-                        const mcItems = (completion as any).multiple_choice_data as { id: string; label: string; selected: boolean }[] | null;
-                        if (!mcItems || mcItems.length === 0) return null;
-                        const selected = mcItems.filter(i => i.selected);
-                        if (selected.length === 0) return null;
-                        return (
-                          <div className="ml-6 flex flex-wrap gap-1">
-                            {selected.map((item) => (
-                              <span key={item.id} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                                {item.label}
-                              </span>
                             ))}
                           </div>
                         );
