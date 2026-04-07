@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import AttachmentsList from "@/components/technician/AttachmentsList";
+import { useInterventionAttachments } from "@/hooks/useInterventionAttachments";
 import JourneyTracker from "@/components/technician/JourneyTracker";
 import { Tables } from "@/integrations/supabase/types";
 import { useInterventionTypes } from "@/hooks/useInterventionTypes";
@@ -84,6 +85,7 @@ const InterventionWorkflow = ({
 }: InterventionWorkflowProps) => {
   const [activeStep, setActiveStep] = useState<string | null>(null);
   const mapsChooser = useMapsChooser();
+  const { data: attachments = [] } = useInterventionAttachments(intervention.id);
   
   // Fetch intervention type and its workflow steps
   const { data: interventionTypes = [] } = useInterventionTypes();
@@ -583,12 +585,14 @@ const InterventionWorkflow = ({
               </div>
             )}
 
-            <div className="border-t pt-4">
-              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3 block">
-                Pièces jointes
-              </label>
-              <AttachmentsList interventionId={intervention.id} isReadOnly={true} />
-            </div>
+            {attachments.length > 0 && (
+              <div className="border-t pt-4">
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3 block">
+                  Pièces jointes
+                </label>
+                <AttachmentsList interventionId={intervention.id} isReadOnly={true} />
+              </div>
+            )}
 
             <JourneyTracker
               interventionStatus={intervention.status}
