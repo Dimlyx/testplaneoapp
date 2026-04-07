@@ -55,6 +55,7 @@ export function useClients() {
       if (error) throw error;
       return data as Client[];
     },
+    staleTime: 5 * 60 * 1000, // 5 min
   });
 }
 

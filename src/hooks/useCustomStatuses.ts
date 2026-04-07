@@ -24,6 +24,7 @@ export function useCustomStatuses() {
       if (error) throw error;
       return (data || []) as CustomStatus[];
     },
+    staleTime: 5 * 60 * 1000, // 5 min
   });
 }
 
