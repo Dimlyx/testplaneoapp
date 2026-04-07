@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import AttachmentsList from "@/components/technician/AttachmentsList";
+import { useInterventionAttachments } from "@/hooks/useInterventionAttachments";
 import JourneyTracker from "@/components/technician/JourneyTracker";
 import { Tables } from "@/integrations/supabase/types";
 import { useInterventionTypes } from "@/hooks/useInterventionTypes";
