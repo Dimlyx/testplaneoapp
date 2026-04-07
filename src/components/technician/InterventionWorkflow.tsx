@@ -521,13 +521,7 @@ const InterventionWorkflow = ({
               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Titre</label>
               <p className="font-medium mt-1">{intervention.title}</p>
             </div>
-            {intervention.description && (
-              <div>
-                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Description</label>
-                <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{intervention.description}</p>
-              </div>
-            )}
-            
+
             {client && (
               <div className="border-t pt-4">
                 <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2 block">Contact</label>
@@ -579,6 +573,13 @@ const InterventionWorkflow = ({
                     ✉️ {intervention.intervention_email || client.email}
                   </a>
                 )}
+              </div>
+            )}
+
+            {intervention.description && (
+              <div className="border-t pt-4">
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Description</label>
+                <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{intervention.description}</p>
               </div>
             )}
 
