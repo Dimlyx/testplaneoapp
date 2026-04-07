@@ -581,7 +581,17 @@ const InterventionWorkflow = ({
             {intervention.description && (
               <div className="border-t pt-4">
                 <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Description</label>
-                <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{intervention.description}</p>
+                <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap break-words overflow-wrap-anywhere">
+                  {intervention.description.split(/(https?:\/\/[^\s]+)/g).map((part, i) =>
+                    /^https?:\/\//.test(part) ? (
+                      <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="text-primary underline break-all">
+                        {part}
+                      </a>
+                    ) : (
+                      <span key={i}>{part}</span>
+                    )
+                  )}
+                </p>
               </div>
             )}
 
