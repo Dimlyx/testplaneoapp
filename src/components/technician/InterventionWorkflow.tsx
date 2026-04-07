@@ -250,11 +250,34 @@ const InterventionWorkflow = ({
       return;
     }
     
+    // Build set of steps to skip based on conditional branch "Non" answers
+    const getSkippedStepIds = (loopIdx: number): Set<string> => {
+      const skipped = new Set<string>();
+      const conditionalBranches = loopableSteps.filter(s => s.is_loop_trigger && s.id !== loopTriggerStep?.id);
+      for (const branch of conditionalBranches) {
+        const branchCompletion = stepCompletions.find(
+          c => c.step_id === branch.id && (c.loop_index ?? 0) === loopIdx && c.completed_at
+        );
+        if (branchCompletion?.comment?.includes("Non") && branch.loop_no_step_id) {
+          // Skip steps between this branch and the loop_no target
+          const branchIdx = loopableSteps.findIndex(s => s.id === branch.id);
+          const noIdx = loopableSteps.findIndex(s => s.id === branch.loop_no_step_id);
+          if (branchIdx !== -1 && noIdx !== -1 && noIdx > branchIdx) {
+            for (let i = branchIdx + 1; i < noIdx; i++) {
+              skipped.add(loopableSteps[i].id);
+            }
+          }
+        }
+      }
+      return skipped;
+    };
+
     // Find first incomplete loopable step across all loops (including new empty ones)
     const loopsToCheck = Math.max(maxLoopIndex + 1, totalLoops);
     for (let loopIdx = 0; loopIdx < loopsToCheck; loopIdx++) {
+      const skippedIds = getSkippedStepIds(loopIdx);
       const firstIncomplete = loopableSteps.find(
-        step => !stepCompletions.some(c => c.step_id === step.id && c.loop_index === loopIdx && c.completed_at)
+        step => !skippedIds.has(step.id) && !stepCompletions.some(c => c.step_id === step.id && c.loop_index === loopIdx && c.completed_at)
       );
       if (firstIncomplete) {
         setActiveStep(`step-${firstIncomplete.id}-loop-${loopIdx}`);
