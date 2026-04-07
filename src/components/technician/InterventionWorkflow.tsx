@@ -250,11 +250,34 @@ const InterventionWorkflow = ({
       return;
     }
     
+    // Build set of steps to skip based on conditional branch "Non" answers
+    const getSkippedStepIds = (loopIdx: number): Set<string> => {
+      const skipped = new Set<string>();
+      const conditionalBranches = loopableSteps.filter(s => s.is_loop_trigger && s.id !== loopTriggerStep?.id);
+      for (const branch of conditionalBranches) {
+        const branchCompletion = stepCompletions.find(
+          c => c.step_id === branch.id && (c.loop_index ?? 0) === loopIdx && c.completed_at
+        );
+        if (branchCompletion?.comment?.includes("Non") && branch.loop_no_step_id) {
+          // Skip steps between this branch and the loop_no target
+          const branchIdx = loopableSteps.findIndex(s => s.id === branch.id);
+          const noIdx = loopableSteps.findIndex(s => s.id === branch.loop_no_step_id);
+          if (branchIdx !== -1 && noIdx !== -1 && noIdx > branchIdx) {
+            for (let i = branchIdx + 1; i < noIdx; i++) {
+              skipped.add(loopableSteps[i].id);
+            }
+          }
+        }
+      }
+      return skipped;
+    };
+
     // Find first incomplete loopable step across all loops (including new empty ones)
     const loopsToCheck = Math.max(maxLoopIndex + 1, totalLoops);
     for (let loopIdx = 0; loopIdx < loopsToCheck; loopIdx++) {
+      const skippedIds = getSkippedStepIds(loopIdx);
       const firstIncomplete = loopableSteps.find(
-        step => !stepCompletions.some(c => c.step_id === step.id && c.loop_index === loopIdx && c.completed_at)
+        step => !skippedIds.has(step.id) && !stepCompletions.some(c => c.step_id === step.id && c.loop_index === loopIdx && c.completed_at)
       );
       if (firstIncomplete) {
         setActiveStep(`step-${firstIncomplete.id}-loop-${loopIdx}`);
@@ -832,18 +855,39 @@ const InterventionWorkflow = ({
         const renderLoopSteps = (loopIdx: number): React.ReactNode[] => {
           const nodes: React.ReactNode[] = [];
 
+          // Build skip set: steps hidden by conditional branch "Non" answers
+          const skippedIds = new Set<string>();
+          const conditionalBranches = loopableSteps.filter(s => s.is_loop_trigger && s.id !== loopTriggerStep?.id);
+          for (const branch of conditionalBranches) {
+            const branchCompletion = stepCompletions.find(
+              c => c.step_id === branch.id && (c.loop_index ?? 0) === loopIdx && c.completed_at
+            );
+            if (branchCompletion?.comment?.includes("Non") && branch.loop_no_step_id) {
+              const branchIdx = loopableSteps.findIndex(s => s.id === branch.id);
+              const noIdx = loopableSteps.findIndex(s => s.id === branch.loop_no_step_id);
+              if (branchIdx !== -1 && noIdx !== -1 && noIdx > branchIdx) {
+                for (let i = branchIdx + 1; i < noIdx; i++) {
+                  skippedIds.add(loopableSteps[i].id);
+                }
+              }
+            }
+          }
+
           for (const step of loopableSteps) {
+            // Skip steps hidden by conditional branch
+            if (skippedIds.has(step.id)) continue;
             const completion = stepCompletions.find(
               c => c.step_id === step.id && (c.loop_index ?? 0) === loopIdx
             );
             const isStepCompleted = !!completion?.completed_at;
             const stepKey = `step-${step.id}-loop-${loopIdx}`;
-            const isLoopTrigger = step.is_loop_trigger && matchingType?.allow_loop;
+            const isMainLoopTrigger = step.id === loopTriggerStep?.id && matchingType?.allow_loop;
+            const isConditionalBranch = step.is_loop_trigger && !isMainLoopTrigger && matchingType?.allow_loop;
 
             nodes.push(
               <WorkflowStep
                 key={stepKey}
-                icon={isLoopTrigger ? RefreshCw : ClipboardList}
+                icon={isMainLoopTrigger ? RefreshCw : isConditionalBranch ? RefreshCw : ClipboardList}
                 label={step.label}
                 isActive={activeStep === stepKey}
                 isCompleted={isStepCompleted}
@@ -852,15 +896,17 @@ const InterventionWorkflow = ({
               >
                 <div className="relative">
                   {stepsLocked && <LockedOverlay />}
-                  {isLoopTrigger ? (
+                  {(isMainLoopTrigger || isConditionalBranch) ? (
                     <Card>
                       <CardContent className="p-4 space-y-4">
                         <div className="flex items-center gap-3">
                           <RefreshCw className="h-5 w-5 text-primary shrink-0" />
                           <div>
-                            <p className="font-medium">Souhaitez-vous continuer ?</p>
+                            <p className="font-medium">{step.label}</p>
                             <p className="text-sm text-muted-foreground mt-1">
-                              Choisissez pour reprendre les étapes ou passer à la suite.
+                              {isMainLoopTrigger 
+                                ? "Choisissez pour reprendre les étapes ou passer à la suite."
+                                : "Choisissez pour continuer."}
                             </p>
                           </div>
                         </div>
@@ -870,29 +916,37 @@ const InterventionWorkflow = ({
                               className="w-full h-12 text-base"
                               onClick={async () => {
                                 await handleCompleteStep(step.id, "Oui - continuer", undefined, undefined, undefined, loopIdx);
-                                handleAddLoop();
+                                if (isMainLoopTrigger) {
+                                  handleAddLoop();
+                                } else if (step.loop_yes_step_id) {
+                                  setActiveStep(`step-${step.loop_yes_step_id}-loop-${loopIdx}`);
+                                }
                               }}
                               disabled={completeStep.isPending}
                             >
                               <RefreshCw className="h-5 w-5 mr-2" />
-                              Oui, continuer
+                              Oui
                             </Button>
                             <Button
                               variant="outline"
                               className="w-full h-12 text-base"
                               onClick={async () => {
                                 await handleCompleteStep(step.id, "Non - passer à la suite", undefined, undefined, undefined, loopIdx);
-                                if (loopTriggerStep?.loop_no_step_id) {
-                                  setActiveStep(`step-${loopTriggerStep.loop_no_step_id}`);
-                                } else if (signatureSteps.length > 0) {
-                                  setActiveStep(`step-${signatureSteps[0].id}`);
-                                } else {
-                                  setActiveStep('finish');
+                                if (isMainLoopTrigger) {
+                                  if (loopTriggerStep?.loop_no_step_id) {
+                                    setActiveStep(`step-${loopTriggerStep.loop_no_step_id}`);
+                                  } else if (signatureSteps.length > 0) {
+                                    setActiveStep(`step-${signatureSteps[0].id}`);
+                                  } else {
+                                    setActiveStep('finish');
+                                  }
+                                } else if (step.loop_no_step_id) {
+                                  setActiveStep(`step-${step.loop_no_step_id}-loop-${loopIdx}`);
                                 }
                               }}
                               disabled={completeStep.isPending}
                             >
-                              Non, passer à la suite
+                              Non
                             </Button>
                           </div>
                         )}
@@ -921,15 +975,14 @@ const InterventionWorkflow = ({
               </WorkflowStep>
             );
 
-            // If this is the loop trigger and it was answered "Oui", render next loop inline right below
-            if (isLoopTrigger && isStepCompleted && completion?.comment?.includes("Oui")) {
+            // If this is the MAIN loop trigger and it was answered "Oui", render next loop inline right below
+            if (isMainLoopTrigger && isStepCompleted && completion?.comment?.includes("Oui")) {
               const nextLoopIdx = loopIdx + 1;
               if (nextLoopIdx < totalLoops) {
                 nodes.push(...renderLoop(nextLoopIdx));
               }
             }
           }
-
           return nodes;
         };
 
