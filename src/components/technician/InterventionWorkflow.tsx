@@ -844,7 +844,7 @@ const InterventionWorkflow = ({
             nodes.push(
               <WorkflowStep
                 key={stepKey}
-                icon={isLoopTrigger ? RefreshCw : ClipboardList}
+                icon={isMainLoopTrigger ? RefreshCw : isConditionalBranch ? RefreshCw : ClipboardList}
                 label={step.label}
                 isActive={activeStep === stepKey}
                 isCompleted={isStepCompleted}
@@ -853,15 +853,17 @@ const InterventionWorkflow = ({
               >
                 <div className="relative">
                   {stepsLocked && <LockedOverlay />}
-                  {isLoopTrigger ? (
+                  {(isMainLoopTrigger || isConditionalBranch) ? (
                     <Card>
                       <CardContent className="p-4 space-y-4">
                         <div className="flex items-center gap-3">
                           <RefreshCw className="h-5 w-5 text-primary shrink-0" />
                           <div>
-                            <p className="font-medium">Souhaitez-vous continuer ?</p>
+                            <p className="font-medium">{step.label}</p>
                             <p className="text-sm text-muted-foreground mt-1">
-                              Choisissez pour reprendre les étapes ou passer à la suite.
+                              {isMainLoopTrigger 
+                                ? "Choisissez pour reprendre les étapes ou passer à la suite."
+                                : "Choisissez pour continuer."}
                             </p>
                           </div>
                         </div>
@@ -871,29 +873,37 @@ const InterventionWorkflow = ({
                               className="w-full h-12 text-base"
                               onClick={async () => {
                                 await handleCompleteStep(step.id, "Oui - continuer", undefined, undefined, undefined, loopIdx);
-                                handleAddLoop();
+                                if (isMainLoopTrigger) {
+                                  handleAddLoop();
+                                } else if (step.loop_yes_step_id) {
+                                  setActiveStep(`step-${step.loop_yes_step_id}-loop-${loopIdx}`);
+                                }
                               }}
                               disabled={completeStep.isPending}
                             >
                               <RefreshCw className="h-5 w-5 mr-2" />
-                              Oui, continuer
+                              Oui
                             </Button>
                             <Button
                               variant="outline"
                               className="w-full h-12 text-base"
                               onClick={async () => {
                                 await handleCompleteStep(step.id, "Non - passer à la suite", undefined, undefined, undefined, loopIdx);
-                                if (loopTriggerStep?.loop_no_step_id) {
-                                  setActiveStep(`step-${loopTriggerStep.loop_no_step_id}`);
-                                } else if (signatureSteps.length > 0) {
-                                  setActiveStep(`step-${signatureSteps[0].id}`);
-                                } else {
-                                  setActiveStep('finish');
+                                if (isMainLoopTrigger) {
+                                  if (loopTriggerStep?.loop_no_step_id) {
+                                    setActiveStep(`step-${loopTriggerStep.loop_no_step_id}`);
+                                  } else if (signatureSteps.length > 0) {
+                                    setActiveStep(`step-${signatureSteps[0].id}`);
+                                  } else {
+                                    setActiveStep('finish');
+                                  }
+                                } else if (step.loop_no_step_id) {
+                                  setActiveStep(`step-${step.loop_no_step_id}-loop-${loopIdx}`);
                                 }
                               }}
                               disabled={completeStep.isPending}
                             >
-                              Non, passer à la suite
+                              Non
                             </Button>
                           </div>
                         )}
@@ -922,15 +932,14 @@ const InterventionWorkflow = ({
               </WorkflowStep>
             );
 
-            // If this is the loop trigger and it was answered "Oui", render next loop inline right below
-            if (isLoopTrigger && isStepCompleted && completion?.comment?.includes("Oui")) {
+            // If this is the MAIN loop trigger and it was answered "Oui", render next loop inline right below
+            if (isMainLoopTrigger && isStepCompleted && completion?.comment?.includes("Oui")) {
               const nextLoopIdx = loopIdx + 1;
               if (nextLoopIdx < totalLoops) {
                 nodes.push(...renderLoop(nextLoopIdx));
               }
             }
           }
-
           return nodes;
         };
 
