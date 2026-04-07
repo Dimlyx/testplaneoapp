@@ -838,7 +838,8 @@ const InterventionWorkflow = ({
             );
             const isStepCompleted = !!completion?.completed_at;
             const stepKey = `step-${step.id}-loop-${loopIdx}`;
-            const isLoopTrigger = step.is_loop_trigger && matchingType?.allow_loop;
+            const isMainLoopTrigger = step.id === loopTriggerStep?.id && matchingType?.allow_loop;
+            const isConditionalBranch = step.is_loop_trigger && !isMainLoopTrigger && matchingType?.allow_loop;
 
             nodes.push(
               <WorkflowStep
