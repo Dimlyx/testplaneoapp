@@ -294,7 +294,9 @@ const InterventionWorkflow = ({
     }
     
     setActiveStep('finish');
-  }, [isStarted, isLocked, workflowSteps.length, stepCompletions.length, maxLoopIndex, totalLoops]);
+  }, [isStarted, isLocked, workflowSteps.length, stepCompletions.length, maxLoopIndex, totalLoops, 
+    // Track actual completed count (not just array length) so advancing works when a draft is updated to completed
+    stepCompletions.filter(c => c.completed_at).length]);
 
   const handleStepClick = (step: string) => {
     if (stepsLocked && step !== 'general-info') return;
