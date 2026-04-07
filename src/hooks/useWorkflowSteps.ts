@@ -79,6 +79,7 @@ export function useWorkflowSteps(interventionTypeId?: string) {
       return data as unknown as WorkflowStep[];
     },
     enabled: !!organizationId,
+    staleTime: 5 * 60 * 1000, // 5 min
   });
 }
 

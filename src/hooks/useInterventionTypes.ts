@@ -25,6 +25,7 @@ export function useInterventionTypes() {
       if (error) throw error;
       return data as InterventionType[];
     },
+    staleTime: 5 * 60 * 1000, // 5 min
   });
 }
 
