@@ -82,6 +82,15 @@ export default function TechnicianLayout() {
 
           <ScrollArea className="flex-1 py-4">
             <nav className="space-y-1 px-3">
+              {permissions?.can_create_intervention && (
+                <button
+                  onClick={() => { setCreateOpen(true); setSidebarOpen(false); }}
+                  className="nav-link nav-link-inactive w-full text-left mb-2"
+                >
+                  <Plus className="h-5 w-5" />
+                  <span>Créer intervention</span>
+                </button>
+              )}
               {navigation.map((item) => {
                 const isActive = location.pathname === item.href;
                 return (
@@ -147,16 +156,6 @@ export default function TechnicianLayout() {
         </main>
       </div>
 
-      {/* Floating Action Button - only if permission granted */}
-      {permissions?.can_create_intervention && (
-        <Button
-          onClick={() => setCreateOpen(true)}
-          className="fixed bottom-6 right-6 z-40 h-14 w-14 rounded-full shadow-lg lg:bottom-8 lg:right-8"
-          size="icon"
-        >
-          <Plus className="h-6 w-6" />
-        </Button>
-      )}
 
       {/* Create Intervention Dialog */}
       {createOpen && (
