@@ -101,12 +101,12 @@ export function TechnicianStatsDialog({ open, onOpenChange, tech, rank, formatMi
     while (d <= weekEnd) {
       const dateStr = format(d, "yyyy-MM-dd");
       const dayInts = techInterventions.filter(i => i.scheduled_date === dateStr);
-      const totalMin = dayInts.reduce((sum, i) => sum + getWorkMinutes(i), 0);
+      const totalMin = getDayWorkMinutes(dayInts);
       days.push({
         date: dateStr,
         label: format(d, "EEE dd", { locale: fr }),
         minutes: totalMin,
-        count: dayInts.filter(i => getWorkMinutes(i) > 0).length,
+        count: dayInts.length,
       });
       d.setDate(d.getDate() + 1);
     }
@@ -117,13 +117,16 @@ export function TechnicianStatsDialog({ open, onOpenChange, tech, rank, formatMi
   const weekMinutes = dailyHours.reduce((sum, d) => sum + d.minutes, 0);
 
   const monthMinutes = useMemo(() => {
-    return techInterventions
-      .filter(i => {
-        if (!i.scheduled_date) return false;
-        const d = parseISO(i.scheduled_date);
-        return isWithinInterval(d, { start: mStart, end: mEnd });
-      })
-      .reduce((sum, i) => sum + getWorkMinutes(i), 0);
+    // Group by date then sum daily work
+    const byDate: Record<string, Intervention[]> = {};
+    techInterventions.forEach(i => {
+      if (!i.scheduled_date) return;
+      const d = parseISO(i.scheduled_date);
+      if (!isWithinInterval(d, { start: mStart, end: mEnd })) return;
+      if (!byDate[i.scheduled_date]) byDate[i.scheduled_date] = [];
+      byDate[i.scheduled_date].push(i);
+    });
+    return Object.values(byDate).reduce((sum, dayInts) => sum + getDayWorkMinutes(dayInts), 0);
   }, [techInterventions, mStart, mEnd]);
 
   const maxDailyMin = Math.max(...dailyHours.map(d => d.minutes), 1);
