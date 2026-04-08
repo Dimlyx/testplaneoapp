@@ -395,8 +395,39 @@ const InterventionWorkflow = ({
   return (
     <>
     <div className="space-y-0">
+      {/* Cancelled banner */}
+      {isCancelled && (
+        <Card className="mb-4 border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-red-700 dark:text-red-300">
+              <AlertCircle className="h-5 w-5" />
+              <div>
+                <span className="font-medium">Intervention annulée</span>
+                {intervention.cancellation_reason && (
+                  <p className="text-sm text-red-600 dark:text-red-400 mt-0.5">
+                    Motif : {intervention.cancellation_reason}
+                  </p>
+                )}
+                {intervention.cancellation_details && (
+                  <p className="text-sm text-red-600 dark:text-red-400 mt-0.5">
+                    {intervention.cancellation_details}
+                  </p>
+                )}
+              </div>
+            </div>
+            {intervention.cancellation_photos && (intervention.cancellation_photos as string[]).length > 0 && (
+              <div className="grid grid-cols-3 gap-2 mt-3">
+                {(intervention.cancellation_photos as string[]).map((url, i) => (
+                  <img key={i} src={url} alt="" className="rounded-lg aspect-square object-cover border" />
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Locked banner for completed interventions */}
-      {isLocked && (
+      {isLocked && !isCancelled && (
         <Card className="mb-4 border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300">
