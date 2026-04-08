@@ -1200,6 +1200,16 @@ const InterventionWorkflow = ({
       </WorkflowStep>
     </div>
     <MapsChooser address={mapsChooser.address} open={mapsChooser.open} onOpenChange={mapsChooser.setOpen} />
+    <CancelInterventionDialog
+      open={showCancelDialog}
+      onOpenChange={setShowCancelDialog}
+      interventionId={intervention.id}
+      onConfirm={async (data) => {
+        await onCancelIntervention(data);
+        setShowCancelDialog(false);
+      }}
+      isUpdating={isUpdating}
+    />
     </>
   );
 };
