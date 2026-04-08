@@ -3,7 +3,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Award, Car, Clock, Wrench, CheckCircle, CalendarClock, TrendingUp, Timer } from "lucide-react";
+import { Award, Car, Clock, Wrench, CheckCircle, CalendarClock, TrendingUp, Timer, ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { format, parseISO, startOfWeek, endOfWeek, isWithinInterval, startOfMonth, endOfMonth, addWeeks, subWeeks } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Tables } from "@/integrations/supabase/types";
