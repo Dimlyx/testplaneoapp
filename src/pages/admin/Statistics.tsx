@@ -31,6 +31,7 @@ import { format, startOfMonth, endOfMonth, isWithinInterval, parseISO, subMonths
 import { fr } from "date-fns/locale";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState, useEffect } from "react";
+import { TechnicianStatsDialog } from "@/components/admin/TechnicianStatsDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { Progress } from "@/components/ui/progress";
