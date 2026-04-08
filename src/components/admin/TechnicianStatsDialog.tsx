@@ -35,11 +35,41 @@ function timeToMinutes(time: string | null): number | null {
   return h * 60 + m;
 }
 
-function getWorkMinutes(intervention: Intervention): number {
-  const start = timeToMinutes(intervention.travel_departure_time);
-  const end = timeToMinutes(intervention.travel_return_time) ?? timeToMinutes(intervention.departure_time);
-  if (start === null || end === null) return 0;
-  const diff = end - start;
+/**
+ * Calculate total work minutes for a day's interventions.
+ * Uses travel_departure_time of the first intervention as start.
+ * Uses travel_return_time if available, otherwise departure_time of the last intervention as end.
+ */
+function getDayWorkMinutes(dayInterventions: Intervention[]): number {
+  if (dayInterventions.length === 0) return 0;
+
+  // Find the earliest travel_departure_time as start
+  const starts = dayInterventions
+    .map(i => timeToMinutes(i.travel_departure_time))
+    .filter((t): t is number => t !== null);
+  if (starts.length === 0) return 0;
+  const dayStart = Math.min(...starts);
+
+  // Find end: prefer travel_return_time, fallback to departure_time of last intervention
+  const returnTimes = dayInterventions
+    .map(i => timeToMinutes(i.travel_return_time))
+    .filter((t): t is number => t !== null);
+  
+  let dayEnd: number | null = null;
+  if (returnTimes.length > 0) {
+    dayEnd = Math.max(...returnTimes);
+  } else {
+    // Fallback: departure_time of the last intervention (latest one)
+    const departureTimes = dayInterventions
+      .map(i => timeToMinutes(i.departure_time))
+      .filter((t): t is number => t !== null);
+    if (departureTimes.length > 0) {
+      dayEnd = Math.max(...departureTimes);
+    }
+  }
+
+  if (dayEnd === null) return 0;
+  const diff = dayEnd - dayStart;
   return diff > 0 ? diff : 0;
 }
 
