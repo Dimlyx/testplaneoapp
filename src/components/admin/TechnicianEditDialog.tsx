@@ -140,6 +140,7 @@ export default function TechnicianEditDialog({ tech, onClose, onSave, onUploadDo
           <TabsList className="w-full">
             <TabsTrigger value="info" className="flex-1">Informations</TabsTrigger>
             <TabsTrigger value="contract" className="flex-1">Contrat</TabsTrigger>
+            <TabsTrigger value="permissions" className="flex-1">Permissions</TabsTrigger>
             <TabsTrigger value="documents" className="flex-1">Documents</TabsTrigger>
             {isSubcontractor && <TabsTrigger value="subcontractor" className="flex-1">Sous-traitant</TabsTrigger>}
           </TabsList>
