@@ -3,8 +3,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Award, Car, Clock, Wrench, CheckCircle, CalendarClock, TrendingUp, Timer } from "lucide-react";
-import { format, parseISO, startOfWeek, endOfWeek, isWithinInterval, startOfMonth, endOfMonth } from "date-fns";
+import { Award, Car, Clock, Wrench, CheckCircle, CalendarClock, TrendingUp, Timer, ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { format, parseISO, startOfWeek, endOfWeek, isWithinInterval, startOfMonth, endOfMonth, addWeeks, subWeeks } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Tables } from "@/integrations/supabase/types";
 
@@ -82,6 +83,7 @@ function formatHM(totalMinutes: number): string {
 
 export function TechnicianStatsDialog({ open, onOpenChange, tech, rank, formatMinutes, interventions }: TechnicianStatsDialogProps) {
   const [activeTab, setActiveTab] = useState("stats");
+  const [weekOffset, setWeekOffset] = useState(0);
 
   const techInterventions = useMemo(
     () => (tech ? interventions.filter(i => i.technician_id === tech.id) : []),
@@ -90,10 +92,11 @@ export function TechnicianStatsDialog({ open, onOpenChange, tech, rank, formatMi
 
   const today = useMemo(() => new Date(), []);
   const todayStr = format(today, "yyyy-MM-dd");
-  const weekStart = startOfWeek(today, { weekStartsOn: 1 });
-  const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
-  const mStart = startOfMonth(today);
-  const mEnd = endOfMonth(today);
+  const referenceDate = useMemo(() => weekOffset === 0 ? today : addWeeks(today, weekOffset), [today, weekOffset]);
+  const weekStart = startOfWeek(referenceDate, { weekStartsOn: 1 });
+  const weekEnd = endOfWeek(referenceDate, { weekStartsOn: 1 });
+  const mStart = startOfMonth(referenceDate);
+  const mEnd = endOfMonth(referenceDate);
 
   const dailyHours = useMemo(() => {
     const days: { date: string; label: string; minutes: number; count: number }[] = [];
@@ -235,7 +238,17 @@ export function TechnicianStatsDialog({ open, onOpenChange, tech, rank, formatMi
 
             <Card>
               <CardContent className="p-4 space-y-3">
-                <p className="text-sm font-medium">Semaine en cours</p>
+                <div className="flex items-center justify-between">
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setWeekOffset(o => o - 1)}>
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <p className="text-sm font-medium capitalize">
+                    {format(weekStart, "dd MMM", { locale: fr })} — {format(weekEnd, "dd MMM yyyy", { locale: fr })}
+                  </p>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setWeekOffset(o => o + 1)} disabled={weekOffset >= 0}>
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
                 <div className="space-y-2">
                   {dailyHours.map(day => (
                     <div key={day.date} className="flex items-center gap-3">
