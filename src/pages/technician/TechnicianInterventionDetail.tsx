@@ -293,6 +293,7 @@ const TechnicianInterventionDetail = () => {
         onDownloadPDF={handleDownloadPDF}
         onStatusChange={handleStatusChange}
         onTimeUpdate={handleTimeUpdate}
+        onCancelIntervention={handleCancelIntervention}
         isUpdating={updateIntervention.isPending}
         readOnly={!!isTeamMember}
       />

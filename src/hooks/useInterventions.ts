@@ -115,6 +115,9 @@ export interface UpdateInterventionData {
   intervention_contact_name?: string | null;
   estimated_duration?: number | null;
   is_paused?: boolean;
+  cancellation_reason?: string | null;
+  cancellation_details?: string | null;
+  cancellation_photos?: string[];
 }
 
 interface AssignmentPushPayload {
