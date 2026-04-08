@@ -58,6 +58,8 @@ export default function Statistics() {
   const { data: upcomingAlerts = [] } = useUpcomingAlerts(30);
   const { data: customStatuses = [] } = useCustomStatuses();
   const [isRealtime, setIsRealtime] = useState(true);
+  const [selectedTech, setSelectedTech] = useState<TechnicianStats | null>(null);
+  const [selectedTechRank, setSelectedTechRank] = useState(0);
 
   // Subscribe to realtime updates for interventions
   useEffect(() => {
