@@ -35,11 +35,41 @@ function timeToMinutes(time: string | null): number | null {
   return h * 60 + m;
 }
 
-function getWorkMinutes(intervention: Intervention): number {
-  const start = timeToMinutes(intervention.travel_departure_time);
-  const end = timeToMinutes(intervention.travel_return_time) ?? timeToMinutes(intervention.departure_time);
-  if (start === null || end === null) return 0;
-  const diff = end - start;
+/**
+ * Calculate total work minutes for a day's interventions.
+ * Uses travel_departure_time of the first intervention as start.
+ * Uses travel_return_time if available, otherwise departure_time of the last intervention as end.
+ */
+function getDayWorkMinutes(dayInterventions: Intervention[]): number {
+  if (dayInterventions.length === 0) return 0;
+
+  // Find the earliest travel_departure_time as start
+  const starts = dayInterventions
+    .map(i => timeToMinutes(i.travel_departure_time))
+    .filter((t): t is number => t !== null);
+  if (starts.length === 0) return 0;
+  const dayStart = Math.min(...starts);
+
+  // Find end: prefer travel_return_time, fallback to departure_time of last intervention
+  const returnTimes = dayInterventions
+    .map(i => timeToMinutes(i.travel_return_time))
+    .filter((t): t is number => t !== null);
+  
+  let dayEnd: number | null = null;
+  if (returnTimes.length > 0) {
+    dayEnd = Math.max(...returnTimes);
+  } else {
+    // Fallback: departure_time of the last intervention (latest one)
+    const departureTimes = dayInterventions
+      .map(i => timeToMinutes(i.departure_time))
+      .filter((t): t is number => t !== null);
+    if (departureTimes.length > 0) {
+      dayEnd = Math.max(...departureTimes);
+    }
+  }
+
+  if (dayEnd === null) return 0;
+  const diff = dayEnd - dayStart;
   return diff > 0 ? diff : 0;
 }
 
@@ -71,12 +101,12 @@ export function TechnicianStatsDialog({ open, onOpenChange, tech, rank, formatMi
     while (d <= weekEnd) {
       const dateStr = format(d, "yyyy-MM-dd");
       const dayInts = techInterventions.filter(i => i.scheduled_date === dateStr);
-      const totalMin = dayInts.reduce((sum, i) => sum + getWorkMinutes(i), 0);
+      const totalMin = getDayWorkMinutes(dayInts);
       days.push({
         date: dateStr,
         label: format(d, "EEE dd", { locale: fr }),
         minutes: totalMin,
-        count: dayInts.filter(i => getWorkMinutes(i) > 0).length,
+        count: dayInts.length,
       });
       d.setDate(d.getDate() + 1);
     }
@@ -87,13 +117,16 @@ export function TechnicianStatsDialog({ open, onOpenChange, tech, rank, formatMi
   const weekMinutes = dailyHours.reduce((sum, d) => sum + d.minutes, 0);
 
   const monthMinutes = useMemo(() => {
-    return techInterventions
-      .filter(i => {
-        if (!i.scheduled_date) return false;
-        const d = parseISO(i.scheduled_date);
-        return isWithinInterval(d, { start: mStart, end: mEnd });
-      })
-      .reduce((sum, i) => sum + getWorkMinutes(i), 0);
+    // Group by date then sum daily work
+    const byDate: Record<string, Intervention[]> = {};
+    techInterventions.forEach(i => {
+      if (!i.scheduled_date) return;
+      const d = parseISO(i.scheduled_date);
+      if (!isWithinInterval(d, { start: mStart, end: mEnd })) return;
+      if (!byDate[i.scheduled_date]) byDate[i.scheduled_date] = [];
+      byDate[i.scheduled_date].push(i);
+    });
+    return Object.values(byDate).reduce((sum, dayInts) => sum + getDayWorkMinutes(dayInts), 0);
   }, [techInterventions, mStart, mEnd]);
 
   const maxDailyMin = Math.max(...dailyHours.map(d => d.minutes), 1);
