@@ -491,8 +491,17 @@ export const generateInterventionPDF = async (
   }
   yPos += 5;
 
+  // ================== CANCELLATION SECTION ==================
+  if (intervention.status === 'cancelled' && intervention.cancellation_reason) {
+    checkNewPage(40);
+    yPos = addSection("INTERVENTION ANNULÉE", yPos);
+    yPos = addField("Motif", intervention.cancellation_reason, yPos);
+    if (intervention.cancellation_details) {
+      yPos = addField("Détails", intervention.cancellation_details, yPos);
+    }
+    yPos += 5;
+  }
 
-  // ================== EQUIPMENTS SECTION ==================
   if ((!docSettings || docSettings.showEquipmentDetails) && interventionEquipments && interventionEquipments.length > 0) {
     for (let i = 0; i < interventionEquipments.length; i++) {
       const eq = interventionEquipments[i];
