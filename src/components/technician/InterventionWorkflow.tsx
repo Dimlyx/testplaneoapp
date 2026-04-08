@@ -116,8 +116,9 @@ const InterventionWorkflow = ({
   const isCompleted = intervention.status === 'completed';
   const isToInvoice = intervention.status === 'to_invoice';
   const isArchived = intervention.status === 'archived';
+  const isCancelled = intervention.status === 'cancelled';
   
-  const isLocked = isCompleted || isToInvoice || isArchived;
+  const isLocked = isCompleted || isToInvoice || isArchived || isCancelled;
   const stepsLocked = !isStarted || isPaused;
 
   // Separate signature steps from loopable steps
