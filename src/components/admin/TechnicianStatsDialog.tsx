@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Award, Car, Clock, Wrench, CheckCircle, CalendarClock, TrendingUp, Timer } from "lucide-react";
-import { format, parseISO, startOfWeek, endOfWeek, isWithinInterval, startOfMonth, endOfMonth } from "date-fns";
+import { format, parseISO, startOfWeek, endOfWeek, isWithinInterval, startOfMonth, endOfMonth, addWeeks, subWeeks } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Tables } from "@/integrations/supabase/types";
 
