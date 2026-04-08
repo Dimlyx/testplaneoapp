@@ -82,6 +82,15 @@ export default function TechnicianLayout() {
 
           <ScrollArea className="flex-1 py-4">
             <nav className="space-y-1 px-3">
+              {permissions?.can_create_intervention && (
+                <button
+                  onClick={() => { setCreateOpen(true); setSidebarOpen(false); }}
+                  className="nav-link nav-link-inactive w-full text-left mb-2"
+                >
+                  <Plus className="h-5 w-5" />
+                  <span>Créer intervention</span>
+                </button>
+              )}
               {navigation.map((item) => {
                 const isActive = location.pathname === item.href;
                 return (
