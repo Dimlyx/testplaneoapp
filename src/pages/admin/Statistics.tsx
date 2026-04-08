@@ -714,7 +714,7 @@ export default function Statistics() {
               {/* Technician cards */}
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {technicianStats.map((tech, index) => (
-                  <Card key={tech.id} className={index === 0 && tech.completedInterventions > 0 ? 'border-2 border-amber-400' : ''}>
+                  <Card key={tech.id} className={`cursor-pointer transition-shadow hover:shadow-md ${index === 0 && tech.completedInterventions > 0 ? 'border-2 border-amber-400' : ''}`} onClick={() => { setSelectedTech(tech); setSelectedTechRank(index + 1); }}>
                     <CardHeader className="pb-2">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
