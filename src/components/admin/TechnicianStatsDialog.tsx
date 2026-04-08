@@ -54,13 +54,20 @@ function formatHoursMinutes(totalMinutes: number): string {
 export function TechnicianStatsDialog({ open, onOpenChange, tech, rank, formatMinutes, interventions }: TechnicianStatsDialogProps) {
   const [activeTab, setActiveTab] = useState("stats");
 
-  if (!tech) return null;
-
-  const completionRate = tech.totalInterventions > 0
-    ? Math.round((tech.completedInterventions / tech.totalInterventions) * 100)
+  const completionRate = tech
+    ? (tech.totalInterventions > 0 ? Math.round((tech.completedInterventions / tech.totalInterventions) * 100) : 0)
     : 0;
 
-  const totalAvgTime = tech.avgTravelTime + tech.avgInterventionTime;
+  const totalAvgTime = tech ? tech.avgTravelTime + tech.avgInterventionTime : 0;
+
+  const techInterventions = tech ? interventions.filter(i => i.technician_id === tech.id) : [];
+
+  const today = new Date();
+  const todayStr = format(today, "yyyy-MM-dd");
+  const weekStart = startOfWeek(today, { weekStartsOn: 1 });
+  const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
+  const monthStartDate = startOfMonth(today);
+  const monthEndDate = endOfMonth(today);
 
   // Filter interventions for this technician that have time data
   const techInterventions = interventions.filter(i => i.technician_id === tech.id);
