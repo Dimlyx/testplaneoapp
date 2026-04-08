@@ -650,10 +650,6 @@ export default function Statistics() {
             </Card>
           </div>
         </TabsContent>
-
-        {/* Charts Tab */}
-        <TabsContent value="charts" className="space-y-6">
-          <PerformanceCharts interventions={interventions} technicians={technicians} />
         </TabsContent>
 
         {/* Technicians Tab */}
