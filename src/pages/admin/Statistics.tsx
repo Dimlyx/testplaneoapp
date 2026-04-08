@@ -369,10 +369,6 @@ export default function Statistics() {
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList>
           <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
-          <TabsTrigger value="charts" className="flex items-center gap-1">
-            <LineChart className="h-4 w-4" />
-            Graphiques
-          </TabsTrigger>
           <TabsTrigger value="technicians">Performance techniciens</TabsTrigger>
           <TabsTrigger value="maintenance" className="flex items-center gap-1">
             <Bell className="h-4 w-4" />
