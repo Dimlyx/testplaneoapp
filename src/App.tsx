@@ -63,6 +63,12 @@ const queryClient = new QueryClient({
     queries: {
       staleTime: 2 * 60 * 1000, // 2 min default
       gcTime: 10 * 60 * 1000, // 10 min garbage collection
+      retry: 1, // Only 1 retry instead of 3 — faster failure on bad network
+      retryDelay: 1000, // 1s fixed delay instead of exponential backoff
+      networkMode: 'offlineFirst', // Serve cached data when offline, don't block
+    },
+    mutations: {
+      networkMode: 'offlineFirst',
     },
   },
 });
