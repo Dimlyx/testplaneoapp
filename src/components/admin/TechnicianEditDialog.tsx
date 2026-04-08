@@ -61,6 +61,15 @@ export default function TechnicianEditDialog({ tech, onClose, onSave, onUploadDo
     collaboration_start_date: tech?.details?.collaboration_start_date || '',
     collaboration_end_date: tech?.details?.collaboration_end_date || '',
     specialties: tech?.details?.specialties || '',
+    // Permissions
+    permissions: {
+      can_create_intervention: false,
+      can_view_history: true,
+      can_add_photos: true,
+      can_sign_client: true,
+      can_cancel_intervention: true,
+      ...(tech?.details?.permissions || {}),
+    } as Record<string, boolean>,
   }));
 
   const [docType, setDocType] = useState('other');
