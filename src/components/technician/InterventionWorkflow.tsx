@@ -1116,6 +1116,32 @@ const InterventionWorkflow = ({
                     <FileText className="h-4 w-4 mr-2" />
                     Télécharger le rapport PDF
                   </Button>
+                  
+                  {/* Return journey button - only if track_journey is enabled */}
+                  {matchingType?.track_journey && (
+                    <>
+                      {intervention.travel_return_time ? (
+                        <div className="flex items-center justify-center gap-2 text-muted-foreground text-sm bg-muted/50 rounded-lg p-3">
+                          <Clock className="h-4 w-4" />
+                          <span>Trajet retour démarré à {intervention.travel_return_time.substring(0, 5)}</span>
+                        </div>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          className="w-full border-blue-200 text-blue-700 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-300 dark:hover:bg-blue-950"
+                          onClick={async () => {
+                            const now = format(new Date(), 'HH:mm:ss');
+                            await onTimeUpdate('travel_return_time', now);
+                            toast({ title: "Trajet retour démarré à " + now.substring(0, 5) });
+                          }}
+                          disabled={isUpdating}
+                        >
+                          <MapPin className="h-4 w-4 mr-2" />
+                          Démarrer le trajet retour
+                        </Button>
+                      )}
+                    </>
+                  )}
                 </div>
               )}
             </CardContent>
