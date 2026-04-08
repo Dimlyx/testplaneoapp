@@ -663,7 +663,7 @@ const InterventionDetail = () => {
         )}
 
         {/* Bouton Clôturer */}
-        {intervention.status !== 'completed' && intervention.status !== 'archived' && intervention.status !== 'to_invoice' && (
+        {intervention.status !== 'completed' && intervention.status !== 'archived' && intervention.status !== 'to_invoice' && intervention.status !== 'cancelled' && (
           <Card className="lg:col-span-2">
             <CardContent className="pt-6 flex justify-center">
               <Button
