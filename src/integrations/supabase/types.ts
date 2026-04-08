@@ -837,6 +837,9 @@ export type Database = {
       interventions: {
         Row: {
           arrival_time: string | null
+          cancellation_details: string | null
+          cancellation_photos: Json | null
+          cancellation_reason: string | null
           client_id: string
           client_signature_name: string | null
           client_signature_url: string | null
@@ -876,6 +879,9 @@ export type Database = {
         }
         Insert: {
           arrival_time?: string | null
+          cancellation_details?: string | null
+          cancellation_photos?: Json | null
+          cancellation_reason?: string | null
           client_id: string
           client_signature_name?: string | null
           client_signature_url?: string | null
@@ -915,6 +921,9 @@ export type Database = {
         }
         Update: {
           arrival_time?: string | null
+          cancellation_details?: string | null
+          cancellation_photos?: Json | null
+          cancellation_reason?: string | null
           client_id?: string
           client_signature_name?: string | null
           client_signature_url?: string | null
@@ -1475,6 +1484,7 @@ export type Database = {
         | "completed"
         | "to_invoice"
         | "archived"
+        | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1614,6 +1624,7 @@ export const Constants = {
         "completed",
         "to_invoice",
         "archived",
+        "cancelled",
       ],
     },
   },
