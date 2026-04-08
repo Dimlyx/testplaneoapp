@@ -107,6 +107,7 @@ const InterventionWorkflow = ({
   const [showPauseDialog, setShowPauseDialog] = useState(false);
   const [pauseReason, setPauseReason] = useState("");
   const [showPauseHistory, setShowPauseHistory] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
   const isPaused = !!activePause;
 
   // Determine completed steps based on data
