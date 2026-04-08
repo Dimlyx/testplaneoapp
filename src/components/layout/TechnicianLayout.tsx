@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,7 @@ import {
   CalendarOff,
   CheckCircle2,
   CalendarDays as CalendarIcon,
+  Plus,
 } from 'lucide-react';
 import planeoLogoWhite from '@/assets/planeo-logo-white.png';
 import planeoLogoDark from '@/assets/planeo-logo-dark.png';
@@ -21,6 +22,9 @@ import { cn } from '@/lib/utils';
 import { OfflineIndicator } from '@/components/technician/OfflineIndicator';
 import { NotificationBell } from '@/components/technician/NotificationBell';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { useTechnicianPermissions } from '@/hooks/useTechnicianPermissions';
+
+const TechnicianCreateInterventionDialog = lazy(() => import('@/components/technician/TechnicianCreateInterventionDialog'));
 
 const navigation = [
   { name: 'Planifiées', href: '/technician/planifie', icon: Calendar },
@@ -35,6 +39,8 @@ export default function TechnicianLayout() {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const { data: permissions } = useTechnicianPermissions();
 
   const handleSignOut = async () => {
     await signOut();
@@ -140,6 +146,24 @@ export default function TechnicianLayout() {
           <Outlet />
         </main>
       </div>
+
+      {/* Floating Action Button - only if permission granted */}
+      {permissions?.can_create_intervention && (
+        <Button
+          onClick={() => setCreateOpen(true)}
+          className="fixed bottom-6 right-6 z-40 h-14 w-14 rounded-full shadow-lg lg:bottom-8 lg:right-8"
+          size="icon"
+        >
+          <Plus className="h-6 w-6" />
+        </Button>
+      )}
+
+      {/* Create Intervention Dialog */}
+      {createOpen && (
+        <Suspense fallback={null}>
+          <TechnicianCreateInterventionDialog open={createOpen} onOpenChange={setCreateOpen} />
+        </Suspense>
+      )}
     </div>
   );
 }
