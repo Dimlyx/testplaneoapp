@@ -62,6 +62,7 @@ interface InterventionWorkflowProps {
   onDownloadPDF: () => Promise<void>;
   onStatusChange: (newStatus: string) => Promise<void>;
   onTimeUpdate: (field: string, value: string) => Promise<void>;
+  onCancelIntervention: (data: { cancellation_reason: string; cancellation_details: string; cancellation_photos: string[] }) => Promise<void>;
   isUpdating: boolean;
   readOnly?: boolean;
 }
