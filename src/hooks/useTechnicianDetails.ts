@@ -26,6 +26,7 @@ export interface TechnicianDetail {
   collaboration_start_date: string | null;
   collaboration_end_date: string | null;
   specialties: string | null;
+  permissions: Record<string, boolean>;
   created_at: string;
   updated_at: string;
 }

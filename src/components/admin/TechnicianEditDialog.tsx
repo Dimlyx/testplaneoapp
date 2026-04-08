@@ -4,10 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { UserCog, Upload, Trash2, AlertTriangle, ExternalLink, FileText } from 'lucide-react';
+import { UserCog, Upload, Trash2, AlertTriangle, ExternalLink, FileText, Shield } from 'lucide-react';
 import { TechnicianWithDetails, TechnicianDocument } from '@/hooks/useTechnicianDetails';
 import { useAuth } from '@/lib/auth-context';
 import { format, differenceInDays, isPast, parseISO } from 'date-fns';
@@ -60,6 +61,15 @@ export default function TechnicianEditDialog({ tech, onClose, onSave, onUploadDo
     collaboration_start_date: tech?.details?.collaboration_start_date || '',
     collaboration_end_date: tech?.details?.collaboration_end_date || '',
     specialties: tech?.details?.specialties || '',
+    // Permissions
+    permissions: {
+      can_create_intervention: false,
+      can_view_history: true,
+      can_add_photos: true,
+      can_sign_client: true,
+      can_cancel_intervention: true,
+      ...(tech?.details?.permissions || {}),
+    } as Record<string, boolean>,
   }));
 
   const [docType, setDocType] = useState('other');
@@ -130,6 +140,7 @@ export default function TechnicianEditDialog({ tech, onClose, onSave, onUploadDo
           <TabsList className="w-full">
             <TabsTrigger value="info" className="flex-1">Informations</TabsTrigger>
             <TabsTrigger value="contract" className="flex-1">Contrat</TabsTrigger>
+            <TabsTrigger value="permissions" className="flex-1">Permissions</TabsTrigger>
             <TabsTrigger value="documents" className="flex-1">Documents</TabsTrigger>
             {isSubcontractor && <TabsTrigger value="subcontractor" className="flex-1">Sous-traitant</TabsTrigger>}
           </TabsList>
@@ -239,6 +250,37 @@ export default function TechnicianEditDialog({ tech, onClose, onSave, onUploadDo
                 rows={3}
               />
             </div>
+          </TabsContent>
+
+          {/* Tab: Permissions */}
+          <TabsContent value="permissions" className="space-y-4 mt-4">
+            <p className="text-sm text-muted-foreground">
+              Activez ou désactivez les fonctionnalités accessibles à cet intervenant depuis l'application mobile.
+            </p>
+            {[
+              { key: 'can_create_intervention', label: 'Créer une intervention', description: 'Permet de créer une nouvelle intervention directement depuis l\'app' },
+              { key: 'can_cancel_intervention', label: 'Annuler une intervention', description: 'Permet d\'annuler une intervention assignée avec motif et photos' },
+              { key: 'can_view_history', label: 'Voir l\'historique', description: 'Accès à l\'historique des interventions terminées' },
+              { key: 'can_add_photos', label: 'Ajouter des photos', description: 'Permet de prendre et joindre des photos pendant l\'intervention' },
+              { key: 'can_sign_client', label: 'Signature client', description: 'Permet de recueillir la signature du client en fin d\'intervention' },
+            ].map(perm => (
+              <div key={perm.key} className="flex items-center justify-between border rounded-lg p-4">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <Shield className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium text-sm">{perm.label}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{perm.description}</p>
+                </div>
+                <Switch
+                  checked={form.permissions[perm.key] ?? false}
+                  onCheckedChange={(checked) => setForm(f => ({
+                    ...f,
+                    permissions: { ...f.permissions, [perm.key]: checked },
+                  }))}
+                />
+              </div>
+            ))}
           </TabsContent>
 
           {/* Tab: Documents */}
