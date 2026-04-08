@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useUserOrganization } from '@/hooks/useUserOrganization';
 
-export type InterventionStatus = 'to_plan' | 'planned' | 'in_progress' | 'completed' | 'to_invoice' | 'archived';
+export type InterventionStatus = 'to_plan' | 'planned' | 'in_progress' | 'completed' | 'to_invoice' | 'archived' | 'cancelled';
 export type InterventionType = string;
 
 export interface Intervention {
@@ -42,6 +42,9 @@ export interface Intervention {
   custom_status_id: string | null;
   estimated_duration: number | null;
   team_id: string | null;
+  cancellation_reason: string | null;
+  cancellation_details: string | null;
+  cancellation_photos: string[] | null;
   created_at: string;
   updated_at: string;
   clients?: {
@@ -112,6 +115,9 @@ export interface UpdateInterventionData {
   intervention_contact_name?: string | null;
   estimated_duration?: number | null;
   is_paused?: boolean;
+  cancellation_reason?: string | null;
+  cancellation_details?: string | null;
+  cancellation_photos?: string[];
 }
 
 interface AssignmentPushPayload {

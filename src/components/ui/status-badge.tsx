@@ -5,7 +5,7 @@ import { useCustomStatuses } from '@/hooks/useCustomStatuses';
 
 // Status and Type badges with forwardRef support
 
-type InterventionStatus = 'to_plan' | 'planned' | 'in_progress' | 'completed' | 'to_invoice' | 'archived';
+type InterventionStatus = 'to_plan' | 'planned' | 'in_progress' | 'completed' | 'to_invoice' | 'archived' | 'cancelled';
 
 const statusConfig: Record<InterventionStatus, { label: string; className: string }> = {
   to_plan: {
@@ -31,6 +31,10 @@ const statusConfig: Record<InterventionStatus, { label: string; className: strin
   archived: {
     label: 'Archivée',
     className: 'status-archived',
+  },
+  cancelled: {
+    label: 'Annulée',
+    className: 'status-cancelled',
   },
 };
 

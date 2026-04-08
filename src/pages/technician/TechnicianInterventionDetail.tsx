@@ -175,6 +175,27 @@ const TechnicianInterventionDetail = () => {
     }
   };
 
+  const handleCancelIntervention = async (data: {
+    cancellation_reason: string;
+    cancellation_details: string;
+    cancellation_photos: string[];
+  }) => {
+    if (!id) return;
+    try {
+      await updateIntervention.mutateAsync({
+        id,
+        status: 'cancelled' as any,
+        cancellation_reason: data.cancellation_reason,
+        cancellation_details: data.cancellation_details || null,
+        cancellation_photos: data.cancellation_photos,
+      });
+      setStatus('cancelled');
+      toast({ title: "Intervention annulée" });
+    } catch (error) {
+      toast({ title: "Erreur lors de l'annulation", variant: "destructive" });
+    }
+  };
+
   const handleDownloadPDF = async () => {
     if (intervention && client) {
       toast({ title: "Génération du rapport en cours..." });
@@ -272,6 +293,7 @@ const TechnicianInterventionDetail = () => {
         onDownloadPDF={handleDownloadPDF}
         onStatusChange={handleStatusChange}
         onTimeUpdate={handleTimeUpdate}
+        onCancelIntervention={handleCancelIntervention}
         isUpdating={updateIntervention.isPending}
         readOnly={!!isTeamMember}
       />

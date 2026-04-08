@@ -190,7 +190,25 @@ const PublicIntervention = () => {
           </CardContent>
         </Card>
 
-        {/* Informations client */}
+        {/* Cancellation banner */}
+        {intervention.status === 'cancelled' && (
+          <Card className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5 shrink-0" />
+                <div className="space-y-1">
+                  <p className="font-semibold text-red-700 dark:text-red-300">Intervention annulée</p>
+                  {intervention.cancellation_reason && (
+                    <p className="text-sm text-red-600 dark:text-red-400">
+                      Motif : {intervention.cancellation_reason}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {docSettings.showClientInfo && client && (
           <Card>
             <CardHeader>

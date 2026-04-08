@@ -45,7 +45,7 @@ const interventionSchema = z.object({
   client_id: z.string().min(1, "Le client est requis"),
   technician_id: z.string().optional(),
   intervention_type: z.string().min(1, "Le type est requis"),
-  status: z.enum(["to_plan", "planned", "in_progress", "completed", "to_invoice", "archived"]),
+  status: z.enum(["to_plan", "planned", "in_progress", "completed", "to_invoice", "archived", "cancelled"]),
   custom_status_id: z.string().optional().nullable(),
   scheduled_date: z.string().optional(),
   scheduled_time: z.string().optional(),

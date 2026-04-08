@@ -33,6 +33,7 @@ import {
   Mail,
   Loader2,
   Lock,
+  AlertTriangle,
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -202,6 +203,35 @@ const InterventionDetail = () => {
           </Button>
         </div>
       </div>
+
+      {/* Cancellation info banner */}
+      {intervention.status === 'cancelled' && (
+        <Card className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5 shrink-0" />
+              <div className="space-y-1">
+                <p className="font-semibold text-red-700 dark:text-red-300">Intervention annulée</p>
+                {intervention.cancellation_reason && (
+                  <p className="text-sm text-red-600 dark:text-red-400">
+                    <span className="font-medium">Motif :</span> {intervention.cancellation_reason}
+                  </p>
+                )}
+                {intervention.cancellation_details && (
+                  <p className="text-sm text-red-600 dark:text-red-400">{intervention.cancellation_details}</p>
+                )}
+                {intervention.cancellation_photos && (intervention.cancellation_photos as string[]).length > 0 && (
+                  <div className="grid grid-cols-4 gap-2 mt-2">
+                    {(intervention.cancellation_photos as string[]).map((url, i) => (
+                      <img key={i} src={url} alt="" className="rounded-lg aspect-square object-cover border" />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Informations client */}
@@ -633,7 +663,7 @@ const InterventionDetail = () => {
         )}
 
         {/* Bouton Clôturer */}
-        {intervention.status !== 'completed' && intervention.status !== 'archived' && intervention.status !== 'to_invoice' && (
+        {intervention.status !== 'completed' && intervention.status !== 'archived' && intervention.status !== 'to_invoice' && intervention.status !== 'cancelled' && (
           <Card className="lg:col-span-2">
             <CardContent className="pt-6 flex justify-center">
               <Button

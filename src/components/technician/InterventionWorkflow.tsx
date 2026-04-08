@@ -22,6 +22,7 @@ import WorkflowStep from "./WorkflowStep";
 import { MapsChooser, useMapsChooser } from "@/components/technician/MapsChooser";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import DynamicStepContent from "./DynamicStepContent";
+import CancelInterventionDialog from "./CancelInterventionDialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
@@ -62,6 +63,7 @@ interface InterventionWorkflowProps {
   onDownloadPDF: () => Promise<void>;
   onStatusChange: (newStatus: string) => Promise<void>;
   onTimeUpdate: (field: string, value: string) => Promise<void>;
+  onCancelIntervention: (data: { cancellation_reason: string; cancellation_details: string; cancellation_photos: string[] }) => Promise<void>;
   isUpdating: boolean;
   readOnly?: boolean;
 }
@@ -80,6 +82,7 @@ const InterventionWorkflow = ({
   onDownloadPDF,
   onStatusChange,
   onTimeUpdate,
+  onCancelIntervention,
   isUpdating,
   readOnly = false,
 }: InterventionWorkflowProps) => {
@@ -104,6 +107,7 @@ const InterventionWorkflow = ({
   const [showPauseDialog, setShowPauseDialog] = useState(false);
   const [pauseReason, setPauseReason] = useState("");
   const [showPauseHistory, setShowPauseHistory] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
   const isPaused = !!activePause;
 
   // Determine completed steps based on data
@@ -112,8 +116,9 @@ const InterventionWorkflow = ({
   const isCompleted = intervention.status === 'completed';
   const isToInvoice = intervention.status === 'to_invoice';
   const isArchived = intervention.status === 'archived';
+  const isCancelled = intervention.status === 'cancelled';
   
-  const isLocked = isCompleted || isToInvoice || isArchived;
+  const isLocked = isCompleted || isToInvoice || isArchived || isCancelled;
   const stepsLocked = !isStarted || isPaused;
 
   // Separate signature steps from loopable steps
@@ -390,8 +395,39 @@ const InterventionWorkflow = ({
   return (
     <>
     <div className="space-y-0">
+      {/* Cancelled banner */}
+      {isCancelled && (
+        <Card className="mb-4 border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-red-700 dark:text-red-300">
+              <AlertCircle className="h-5 w-5" />
+              <div>
+                <span className="font-medium">Intervention annulée</span>
+                {intervention.cancellation_reason && (
+                  <p className="text-sm text-red-600 dark:text-red-400 mt-0.5">
+                    Motif : {intervention.cancellation_reason}
+                  </p>
+                )}
+                {intervention.cancellation_details && (
+                  <p className="text-sm text-red-600 dark:text-red-400 mt-0.5">
+                    {intervention.cancellation_details}
+                  </p>
+                )}
+              </div>
+            </div>
+            {intervention.cancellation_photos && (intervention.cancellation_photos as string[]).length > 0 && (
+              <div className="grid grid-cols-3 gap-2 mt-3">
+                {(intervention.cancellation_photos as string[]).map((url, i) => (
+                  <img key={i} src={url} alt="" className="rounded-lg aspect-square object-cover border" />
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Locked banner for completed interventions */}
-      {isLocked && (
+      {isLocked && !isCancelled && (
         <Card className="mb-4 border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300">
@@ -648,6 +684,20 @@ const InterventionWorkflow = ({
                     </Button>
                   )}
                 </div>
+              </div>
+            )}
+
+            {/* Cancel button - visible when planned or in_progress */}
+            {!isLocked && !readOnly && (intervention.status === 'planned' || intervention.status === 'in_progress') && (
+              <div className="border-t pt-4">
+                <Button
+                  variant="outline"
+                  className="w-full border-destructive/50 text-destructive hover:bg-destructive/10"
+                  onClick={() => setShowCancelDialog(true)}
+                >
+                  <AlertCircle className="h-4 w-4 mr-2" />
+                  Annuler l'intervention
+                </Button>
               </div>
             )}
           </CardContent>
@@ -1150,6 +1200,16 @@ const InterventionWorkflow = ({
       </WorkflowStep>
     </div>
     <MapsChooser address={mapsChooser.address} open={mapsChooser.open} onOpenChange={mapsChooser.setOpen} />
+    <CancelInterventionDialog
+      open={showCancelDialog}
+      onOpenChange={setShowCancelDialog}
+      interventionId={intervention.id}
+      onConfirm={async (data) => {
+        await onCancelIntervention(data);
+        setShowCancelDialog(false);
+      }}
+      isUpdating={isUpdating}
+    />
     </>
   );
 };
