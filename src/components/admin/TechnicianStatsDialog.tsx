@@ -238,7 +238,17 @@ export function TechnicianStatsDialog({ open, onOpenChange, tech, rank, formatMi
 
             <Card>
               <CardContent className="p-4 space-y-3">
-                <p className="text-sm font-medium">Semaine en cours</p>
+                <div className="flex items-center justify-between">
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setWeekOffset(o => o - 1)}>
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <p className="text-sm font-medium capitalize">
+                    {format(weekStart, "dd MMM", { locale: fr })} — {format(weekEnd, "dd MMM yyyy", { locale: fr })}
+                  </p>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setWeekOffset(o => o + 1)} disabled={weekOffset >= 0}>
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
                 <div className="space-y-2">
                   {dailyHours.map(day => (
                     <div key={day.date} className="flex items-center gap-3">
