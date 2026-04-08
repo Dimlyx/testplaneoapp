@@ -881,6 +881,14 @@ export default function Statistics() {
           </Card>
         </TabsContent>
       </Tabs>
+      
+      <TechnicianStatsDialog
+        open={!!selectedTech}
+        onOpenChange={(open) => { if (!open) setSelectedTech(null); }}
+        tech={selectedTech}
+        rank={selectedTechRank}
+        formatMinutes={formatMinutes}
+      />
     </div>
   );
 }
