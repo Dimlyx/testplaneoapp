@@ -42,6 +42,9 @@ export interface Intervention {
   custom_status_id: string | null;
   estimated_duration: number | null;
   team_id: string | null;
+  cancellation_reason: string | null;
+  cancellation_details: string | null;
+  cancellation_photos: string[] | null;
   created_at: string;
   updated_at: string;
   clients?: {
