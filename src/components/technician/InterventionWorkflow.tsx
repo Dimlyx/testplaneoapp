@@ -686,6 +686,20 @@ const InterventionWorkflow = ({
                 </div>
               </div>
             )}
+
+            {/* Cancel button - visible when planned or in_progress */}
+            {!isLocked && !readOnly && (intervention.status === 'planned' || intervention.status === 'in_progress') && (
+              <div className="border-t pt-4">
+                <Button
+                  variant="outline"
+                  className="w-full border-destructive/50 text-destructive hover:bg-destructive/10"
+                  onClick={() => setShowCancelDialog(true)}
+                >
+                  <AlertCircle className="h-4 w-4 mr-2" />
+                  Annuler l'intervention
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       </WorkflowStep>
