@@ -888,6 +888,7 @@ export default function Statistics() {
         tech={selectedTech}
         rank={selectedTechRank}
         formatMinutes={formatMinutes}
+        interventions={interventions}
       />
     </div>
   );
