@@ -31,6 +31,7 @@ import { format, startOfMonth, endOfMonth, isWithinInterval, parseISO, subMonths
 import { fr } from "date-fns/locale";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState, useEffect } from "react";
+import { TechnicianStatsDialog } from "@/components/admin/TechnicianStatsDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { Progress } from "@/components/ui/progress";
@@ -57,6 +58,8 @@ export default function Statistics() {
   const { data: upcomingAlerts = [] } = useUpcomingAlerts(30);
   const { data: customStatuses = [] } = useCustomStatuses();
   const [isRealtime, setIsRealtime] = useState(true);
+  const [selectedTech, setSelectedTech] = useState<TechnicianStats | null>(null);
+  const [selectedTechRank, setSelectedTechRank] = useState(0);
 
   // Subscribe to realtime updates for interventions
   useEffect(() => {
@@ -711,7 +714,7 @@ export default function Statistics() {
               {/* Technician cards */}
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {technicianStats.map((tech, index) => (
-                  <Card key={tech.id} className={index === 0 && tech.completedInterventions > 0 ? 'border-2 border-amber-400' : ''}>
+                  <Card key={tech.id} className={`cursor-pointer transition-shadow hover:shadow-md ${index === 0 && tech.completedInterventions > 0 ? 'border-2 border-amber-400' : ''}`} onClick={() => { setSelectedTech(tech); setSelectedTechRank(index + 1); }}>
                     <CardHeader className="pb-2">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -878,6 +881,14 @@ export default function Statistics() {
           </Card>
         </TabsContent>
       </Tabs>
+      
+      <TechnicianStatsDialog
+        open={!!selectedTech}
+        onOpenChange={(open) => { if (!open) setSelectedTech(null); }}
+        tech={selectedTech}
+        rank={selectedTechRank}
+        formatMinutes={formatMinutes}
+      />
     </div>
   );
 }
