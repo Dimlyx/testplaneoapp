@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,7 @@ import {
   CalendarOff,
   CheckCircle2,
   CalendarDays as CalendarIcon,
+  Plus,
 } from 'lucide-react';
 import planeoLogoWhite from '@/assets/planeo-logo-white.png';
 import planeoLogoDark from '@/assets/planeo-logo-dark.png';
@@ -21,6 +22,9 @@ import { cn } from '@/lib/utils';
 import { OfflineIndicator } from '@/components/technician/OfflineIndicator';
 import { NotificationBell } from '@/components/technician/NotificationBell';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { useTechnicianPermissions } from '@/hooks/useTechnicianPermissions';
+
+const TechnicianCreateInterventionDialog = lazy(() => import('@/components/technician/TechnicianCreateInterventionDialog'));
 
 const navigation = [
   { name: 'Planifiées', href: '/technician/planifie', icon: Calendar },
