@@ -81,6 +81,7 @@ const InterventionWorkflow = ({
   onDownloadPDF,
   onStatusChange,
   onTimeUpdate,
+  onCancelIntervention,
   isUpdating,
   readOnly = false,
 }: InterventionWorkflowProps) => {
