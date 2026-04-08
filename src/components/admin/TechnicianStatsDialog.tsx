@@ -36,7 +36,6 @@ function timeToMinutes(time: string | null): number | null {
 }
 
 function getWorkMinutes(intervention: Intervention): number {
-  // Work time = travel_departure_time to travel_return_time (or departure_time fallback)
   const start = timeToMinutes(intervention.travel_departure_time);
   const end = timeToMinutes(intervention.travel_return_time) ?? timeToMinutes(intervention.departure_time);
   if (start === null || end === null) return 0;
@@ -44,7 +43,7 @@ function getWorkMinutes(intervention: Intervention): number {
   return diff > 0 ? diff : 0;
 }
 
-function formatHoursMinutes(totalMinutes: number): string {
+function formatHM(totalMinutes: number): string {
   if (totalMinutes === 0) return "0h";
   const h = Math.floor(totalMinutes / 60);
   const m = totalMinutes % 60;
@@ -54,68 +53,57 @@ function formatHoursMinutes(totalMinutes: number): string {
 export function TechnicianStatsDialog({ open, onOpenChange, tech, rank, formatMinutes, interventions }: TechnicianStatsDialogProps) {
   const [activeTab, setActiveTab] = useState("stats");
 
-  const completionRate = tech
-    ? (tech.totalInterventions > 0 ? Math.round((tech.completedInterventions / tech.totalInterventions) * 100) : 0)
-    : 0;
+  const techInterventions = useMemo(
+    () => (tech ? interventions.filter(i => i.technician_id === tech.id) : []),
+    [interventions, tech]
+  );
 
-  const totalAvgTime = tech ? tech.avgTravelTime + tech.avgInterventionTime : 0;
-
-  const techInterventions = tech ? interventions.filter(i => i.technician_id === tech.id) : [];
-
-  const today = new Date();
+  const today = useMemo(() => new Date(), []);
   const todayStr = format(today, "yyyy-MM-dd");
   const weekStart = startOfWeek(today, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
-  const monthStartDate = startOfMonth(today);
-  const monthEndDate = endOfMonth(today);
+  const mStart = startOfMonth(today);
+  const mEnd = endOfMonth(today);
 
-  // Filter interventions for this technician that have time data
-  const techInterventions = interventions.filter(i => i.technician_id === tech.id);
-
-  // --- Work hours calculations ---
-  const today = new Date();
-  const todayStr = format(today, "yyyy-MM-dd");
-  const weekStart = startOfWeek(today, { weekStartsOn: 1 });
-  const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
-  const monthStart = startOfMonth(today);
-  const monthEnd = endOfMonth(today);
-
-  // Daily breakdown for the current week
   const dailyHours = useMemo(() => {
     const days: { date: string; label: string; minutes: number; count: number }[] = [];
-    for (let d = new Date(weekStart); d <= weekEnd; d.setDate(d.getDate() + 1)) {
+    const d = new Date(weekStart);
+    while (d <= weekEnd) {
       const dateStr = format(d, "yyyy-MM-dd");
-      const dayInterventions = techInterventions.filter(i => i.scheduled_date === dateStr);
-      const totalMin = dayInterventions.reduce((sum, i) => sum + getWorkMinutes(i), 0);
+      const dayInts = techInterventions.filter(i => i.scheduled_date === dateStr);
+      const totalMin = dayInts.reduce((sum, i) => sum + getWorkMinutes(i), 0);
       days.push({
         date: dateStr,
         label: format(d, "EEE dd", { locale: fr }),
         minutes: totalMin,
-        count: dayInterventions.filter(i => getWorkMinutes(i) > 0).length,
+        count: dayInts.filter(i => getWorkMinutes(i) > 0).length,
       });
+      d.setDate(d.getDate() + 1);
     }
     return days;
   }, [techInterventions, weekStart, weekEnd]);
 
-  // Today total
   const todayMinutes = dailyHours.find(d => d.date === todayStr)?.minutes ?? 0;
-
-  // This week total
   const weekMinutes = dailyHours.reduce((sum, d) => sum + d.minutes, 0);
 
-  // This month total
   const monthMinutes = useMemo(() => {
     return techInterventions
       .filter(i => {
         if (!i.scheduled_date) return false;
         const d = parseISO(i.scheduled_date);
-        return isWithinInterval(d, { start: monthStart, end: monthEnd });
+        return isWithinInterval(d, { start: mStart, end: mEnd });
       })
       .reduce((sum, i) => sum + getWorkMinutes(i), 0);
-  }, [techInterventions, monthStart, monthEnd]);
+  }, [techInterventions, mStart, mEnd]);
 
-  // Max daily minutes for bar chart scaling
   const maxDailyMin = Math.max(...dailyHours.map(d => d.minutes), 1);
+
+  if (!tech) return null;
+
+  const completionRate = tech.totalInterventions > 0
+    ? Math.round((tech.completedInterventions / tech.totalInterventions) * 100)
+    : 0;
+  const totalAvgTime = tech.avgTravelTime + tech.avgInterventionTime;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -138,7 +126,6 @@ export function TechnicianStatsDialog({ open, onOpenChange, tech, rank, formatMi
           </TabsList>
 
           <TabsContent value="stats" className="space-y-4 mt-4">
-            {/* KPI cards */}
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-muted/50 p-3 rounded-lg text-center">
                 <Wrench className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
@@ -162,7 +149,6 @@ export function TechnicianStatsDialog({ open, onOpenChange, tech, rank, formatMi
               </div>
             </div>
 
-            {/* Completion progress */}
             <div className="space-y-1.5">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Taux de complétion</span>
@@ -171,7 +157,6 @@ export function TechnicianStatsDialog({ open, onOpenChange, tech, rank, formatMi
               <Progress value={completionRate} className="h-2" />
             </div>
 
-            {/* Time stats */}
             <Card>
               <CardContent className="p-4 space-y-3">
                 <p className="text-sm font-medium">Temps moyens</p>
@@ -200,23 +185,21 @@ export function TechnicianStatsDialog({ open, onOpenChange, tech, rank, formatMi
           </TabsContent>
 
           <TabsContent value="hours" className="space-y-4 mt-4">
-            {/* Summary cards */}
             <div className="grid grid-cols-3 gap-3">
               <div className="bg-muted/50 p-3 rounded-lg text-center">
                 <p className="text-xs text-muted-foreground mb-1">Aujourd'hui</p>
-                <p className="text-xl font-bold">{formatHoursMinutes(todayMinutes)}</p>
+                <p className="text-xl font-bold">{formatHM(todayMinutes)}</p>
               </div>
               <div className="bg-muted/50 p-3 rounded-lg text-center">
                 <p className="text-xs text-muted-foreground mb-1">Semaine</p>
-                <p className="text-xl font-bold">{formatHoursMinutes(weekMinutes)}</p>
+                <p className="text-xl font-bold">{formatHM(weekMinutes)}</p>
               </div>
               <div className="bg-muted/50 p-3 rounded-lg text-center">
                 <p className="text-xs text-muted-foreground mb-1">Mois</p>
-                <p className="text-xl font-bold">{formatHoursMinutes(monthMinutes)}</p>
+                <p className="text-xl font-bold">{formatHM(monthMinutes)}</p>
               </div>
             </div>
 
-            {/* Weekly bar chart */}
             <Card>
               <CardContent className="p-4 space-y-3">
                 <p className="text-sm font-medium">Semaine en cours</p>
@@ -226,7 +209,7 @@ export function TechnicianStatsDialog({ open, onOpenChange, tech, rank, formatMi
                       <span className={`text-xs w-14 shrink-0 capitalize ${day.date === todayStr ? 'font-bold text-primary' : 'text-muted-foreground'}`}>
                         {day.label}
                       </span>
-                      <div className="flex-1 h-6 bg-muted/50 rounded-full overflow-hidden relative">
+                      <div className="flex-1 h-6 bg-muted/50 rounded-full overflow-hidden">
                         {day.minutes > 0 && (
                           <div
                             className="h-full bg-primary/80 rounded-full transition-all"
@@ -235,21 +218,21 @@ export function TechnicianStatsDialog({ open, onOpenChange, tech, rank, formatMi
                         )}
                       </div>
                       <span className={`text-xs w-16 text-right shrink-0 ${day.date === todayStr ? 'font-bold' : ''}`}>
-                        {day.minutes > 0 ? formatHoursMinutes(day.minutes) : '—'}
+                        {day.minutes > 0 ? formatHM(day.minutes) : '—'}
                       </span>
                     </div>
                   ))}
                 </div>
                 <div className="border-t pt-2 flex items-center justify-between text-sm">
                   <span className="text-muted-foreground font-medium">Total semaine</span>
-                  <span className="font-bold">{formatHoursMinutes(weekMinutes)}</span>
+                  <span className="font-bold">{formatHM(weekMinutes)}</span>
                 </div>
               </CardContent>
             </Card>
 
             {weekMinutes === 0 && monthMinutes === 0 && (
               <p className="text-sm text-muted-foreground text-center py-2">
-                Aucune donnée de temps enregistrée. Les heures sont calculées à partir du départ trajet jusqu'au retour.
+                Aucune donnée de temps enregistrée. Les heures sont calculées du départ trajet jusqu'au retour.
               </p>
             )}
           </TabsContent>
