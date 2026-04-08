@@ -252,6 +252,37 @@ export default function TechnicianEditDialog({ tech, onClose, onSave, onUploadDo
             </div>
           </TabsContent>
 
+          {/* Tab: Permissions */}
+          <TabsContent value="permissions" className="space-y-4 mt-4">
+            <p className="text-sm text-muted-foreground">
+              Activez ou désactivez les fonctionnalités accessibles à cet intervenant depuis l'application mobile.
+            </p>
+            {[
+              { key: 'can_create_intervention', label: 'Créer une intervention', description: 'Permet de créer une nouvelle intervention directement depuis l\'app' },
+              { key: 'can_cancel_intervention', label: 'Annuler une intervention', description: 'Permet d\'annuler une intervention assignée avec motif et photos' },
+              { key: 'can_view_history', label: 'Voir l\'historique', description: 'Accès à l\'historique des interventions terminées' },
+              { key: 'can_add_photos', label: 'Ajouter des photos', description: 'Permet de prendre et joindre des photos pendant l\'intervention' },
+              { key: 'can_sign_client', label: 'Signature client', description: 'Permet de recueillir la signature du client en fin d\'intervention' },
+            ].map(perm => (
+              <div key={perm.key} className="flex items-center justify-between border rounded-lg p-4">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <Shield className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium text-sm">{perm.label}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{perm.description}</p>
+                </div>
+                <Switch
+                  checked={form.permissions[perm.key] ?? false}
+                  onCheckedChange={(checked) => setForm(f => ({
+                    ...f,
+                    permissions: { ...f.permissions, [perm.key]: checked },
+                  }))}
+                />
+              </div>
+            ))}
+          </TabsContent>
+
           {/* Tab: Documents */}
           <TabsContent value="documents" className="space-y-4 mt-4">
             <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
