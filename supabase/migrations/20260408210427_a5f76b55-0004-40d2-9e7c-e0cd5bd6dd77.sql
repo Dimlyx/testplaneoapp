@@ -1,0 +1,1 @@
+ALTER TABLE public.technician_details ADD COLUMN permissions jsonb NOT NULL DEFAULT '{}'::jsonb;

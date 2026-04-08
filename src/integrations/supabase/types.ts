@@ -1299,6 +1299,7 @@ export type Database = {
           kbis_url: string | null
           notes: string | null
           organization_id: string | null
+          permissions: Json
           personal_email: string | null
           personal_phone: string | null
           position: string | null
@@ -1326,6 +1327,7 @@ export type Database = {
           kbis_url?: string | null
           notes?: string | null
           organization_id?: string | null
+          permissions?: Json
           personal_email?: string | null
           personal_phone?: string | null
           position?: string | null
@@ -1353,6 +1355,7 @@ export type Database = {
           kbis_url?: string | null
           notes?: string | null
           organization_id?: string | null
+          permissions?: Json
           personal_email?: string | null
           personal_phone?: string | null
           position?: string | null
