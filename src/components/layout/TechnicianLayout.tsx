@@ -39,6 +39,8 @@ export default function TechnicianLayout() {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const { data: permissions } = useTechnicianPermissions();
 
   const handleSignOut = async () => {
     await signOut();
