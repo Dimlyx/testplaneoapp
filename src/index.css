@@ -190,7 +190,10 @@
     @apply bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300;
   }
 
-  /* Page header */
+  .status-cancelled {
+    @apply bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300;
+  }
+
   .page-header {
     @apply mb-8;
   }
