@@ -83,6 +83,7 @@ function formatHM(totalMinutes: number): string {
 
 export function TechnicianStatsDialog({ open, onOpenChange, tech, rank, formatMinutes, interventions }: TechnicianStatsDialogProps) {
   const [activeTab, setActiveTab] = useState("stats");
+  const [weekOffset, setWeekOffset] = useState(0);
 
   const techInterventions = useMemo(
     () => (tech ? interventions.filter(i => i.technician_id === tech.id) : []),
@@ -91,10 +92,11 @@ export function TechnicianStatsDialog({ open, onOpenChange, tech, rank, formatMi
 
   const today = useMemo(() => new Date(), []);
   const todayStr = format(today, "yyyy-MM-dd");
-  const weekStart = startOfWeek(today, { weekStartsOn: 1 });
-  const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
-  const mStart = startOfMonth(today);
-  const mEnd = endOfMonth(today);
+  const referenceDate = useMemo(() => weekOffset === 0 ? today : addWeeks(today, weekOffset), [today, weekOffset]);
+  const weekStart = startOfWeek(referenceDate, { weekStartsOn: 1 });
+  const weekEnd = endOfWeek(referenceDate, { weekStartsOn: 1 });
+  const mStart = startOfMonth(referenceDate);
+  const mEnd = endOfMonth(referenceDate);
 
   const dailyHours = useMemo(() => {
     const days: { date: string; label: string; minutes: number; count: number }[] = [];
