@@ -158,20 +158,27 @@ export function useInterventions() {
       const { data, error } = await query;
       if (error) throw error;
       
-      // Fetch technician profiles separately
-      const interventionsWithProfiles = await Promise.all(
-        (data || []).map(async (intervention) => {
-          if (intervention.technician_id) {
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('id, full_name, email')
-              .eq('id', intervention.technician_id)
-              .maybeSingle();
-            return { ...intervention, profiles: profile };
-          }
-          return { ...intervention, profiles: null };
-        })
-      );
+      // Fetch all technician profiles in a single query instead of N+1
+      const technicianIds = [...new Set(
+        (data || []).map(i => i.technician_id).filter(Boolean)
+      )] as string[];
+      
+      let profilesMap: Record<string, { id: string; full_name: string | null; email: string }> = {};
+      if (technicianIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, full_name, email')
+          .in('id', technicianIds);
+        
+        if (profiles) {
+          profilesMap = Object.fromEntries(profiles.map(p => [p.id, p]));
+        }
+      }
+      
+      const interventionsWithProfiles = (data || []).map(intervention => ({
+        ...intervention,
+        profiles: intervention.technician_id ? profilesMap[intervention.technician_id] || null : null,
+      }));
       
       return interventionsWithProfiles as Intervention[];
     },
