@@ -260,9 +260,16 @@ export function TechnicianStatsDialog({ open, onOpenChange, tech, rank, formatMi
                 </div>
                 <div className="space-y-2">
                   {dailyHours.map(day => (
-                    <div key={day.date} className="flex items-center gap-3">
+                    <div key={day.date} className="flex items-center gap-2">
                       <span className={`text-xs w-14 shrink-0 capitalize ${day.date === todayStr ? 'font-bold text-primary' : 'text-muted-foreground'}`}>
                         {day.label}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground w-[90px] shrink-0 text-center">
+                        {day.startTime && day.endTime 
+                          ? `${day.startTime} → ${day.endTime}` 
+                          : day.startTime 
+                            ? `${day.startTime} → …` 
+                            : ''}
                       </span>
                       <div className="flex-1 h-6 bg-muted/50 rounded-full overflow-hidden">
                         {day.minutes > 0 && (
@@ -272,7 +279,7 @@ export function TechnicianStatsDialog({ open, onOpenChange, tech, rank, formatMi
                           />
                         )}
                       </div>
-                      <span className={`text-xs w-16 text-right shrink-0 ${day.date === todayStr ? 'font-bold' : ''}`}>
+                      <span className={`text-xs w-14 text-right shrink-0 ${day.date === todayStr ? 'font-bold' : ''}`}>
                         {day.minutes > 0 ? formatHM(day.minutes) : '—'}
                       </span>
                     </div>
