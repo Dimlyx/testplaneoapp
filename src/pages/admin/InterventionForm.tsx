@@ -537,7 +537,7 @@ const InterventionForm = () => {
                     name="scheduled_time"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Heure prévue</FormLabel>
+                        <FormLabel>Heure début</FormLabel>
                         <FormControl>
                           <Input type="time" {...field} />
                         </FormControl>

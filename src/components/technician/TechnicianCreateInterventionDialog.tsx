@@ -149,7 +149,7 @@ export default function TechnicianCreateInterventionDialog({ open, onOpenChange 
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div>
               <Label>Date</Label>
               <Input
@@ -159,11 +159,19 @@ export default function TechnicianCreateInterventionDialog({ open, onOpenChange 
               />
             </div>
             <div>
-              <Label>Heure</Label>
+              <Label>Heure début</Label>
               <Input
                 type="time"
                 value={form.scheduled_time}
                 onChange={e => setForm(f => ({ ...f, scheduled_time: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label>Heure fin</Label>
+              <Input
+                type="time"
+                value={form.scheduled_end_time}
+                onChange={e => setForm(f => ({ ...f, scheduled_end_time: e.target.value }))}
               />
             </div>
           </div>
