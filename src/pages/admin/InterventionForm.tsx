@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { TimePicker } from "@/components/ui/time-picker";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -539,7 +540,7 @@ const InterventionForm = () => {
                       <FormItem>
                         <FormLabel>Heure début</FormLabel>
                         <FormControl>
-                          <Input type="time" {...field} />
+                          <TimePicker value={field.value} onChange={field.onChange} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -555,7 +556,7 @@ const InterventionForm = () => {
                       <FormItem>
                         <FormLabel>Heure fin</FormLabel>
                         <FormControl>
-                          <Input type="time" {...field} />
+                          <TimePicker value={field.value} onChange={field.onChange} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { TimePicker } from '@/components/ui/time-picker';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -166,18 +167,16 @@ export default function TechnicianCreateInterventionDialog({ open, onOpenChange 
             </div>
             <div>
               <Label>Heure début</Label>
-              <Input
-                type="time"
+              <TimePicker
                 value={form.scheduled_time}
-                onChange={e => setForm(f => ({ ...f, scheduled_time: e.target.value }))}
+                onChange={v => setForm(f => ({ ...f, scheduled_time: v }))}
               />
             </div>
             <div>
               <Label>Heure fin</Label>
-              <Input
-                type="time"
+              <TimePicker
                 value={form.scheduled_end_time}
-                onChange={e => setForm(f => ({ ...f, scheduled_end_time: e.target.value }))}
+                onChange={v => setForm(f => ({ ...f, scheduled_end_time: v }))}
               />
             </div>
           </div>
