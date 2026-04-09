@@ -67,6 +67,10 @@ export default function TechnicianCreateInterventionDialog({ open, onOpenChange 
         description: form.description || undefined,
         scheduled_date: form.scheduled_date || null,
         scheduled_time: form.scheduled_time || null,
+        scheduled_end_time: form.scheduled_end_time || null,
+        estimated_duration: (form.scheduled_time && form.scheduled_end_time)
+          ? Math.round((new Date(`2000-01-01T${form.scheduled_end_time}`).getTime() - new Date(`2000-01-01T${form.scheduled_time}`).getTime()) / 60000)
+          : null,
         intervention_address: form.intervention_address || null,
         intervention_city: form.intervention_city || null,
         intervention_postal_code: form.intervention_postal_code || null,
