@@ -32,6 +32,7 @@ export default function TechnicianCreateInterventionDialog({ open, onOpenChange 
     description: '',
     scheduled_date: '',
     scheduled_time: '',
+    scheduled_end_time: '',
     intervention_address: '',
     intervention_city: '',
     intervention_postal_code: '',
@@ -45,6 +46,7 @@ export default function TechnicianCreateInterventionDialog({ open, onOpenChange 
       description: '',
       scheduled_date: '',
       scheduled_time: '',
+      scheduled_end_time: '',
       intervention_address: '',
       intervention_city: '',
       intervention_postal_code: '',
@@ -65,6 +67,10 @@ export default function TechnicianCreateInterventionDialog({ open, onOpenChange 
         description: form.description || undefined,
         scheduled_date: form.scheduled_date || null,
         scheduled_time: form.scheduled_time || null,
+        scheduled_end_time: form.scheduled_end_time || null,
+        estimated_duration: (form.scheduled_time && form.scheduled_end_time)
+          ? Math.round((new Date(`2000-01-01T${form.scheduled_end_time}`).getTime() - new Date(`2000-01-01T${form.scheduled_time}`).getTime()) / 60000)
+          : null,
         intervention_address: form.intervention_address || null,
         intervention_city: form.intervention_city || null,
         intervention_postal_code: form.intervention_postal_code || null,
@@ -149,7 +155,7 @@ export default function TechnicianCreateInterventionDialog({ open, onOpenChange 
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div>
               <Label>Date</Label>
               <Input
@@ -159,11 +165,19 @@ export default function TechnicianCreateInterventionDialog({ open, onOpenChange 
               />
             </div>
             <div>
-              <Label>Heure</Label>
+              <Label>Heure début</Label>
               <Input
                 type="time"
                 value={form.scheduled_time}
                 onChange={e => setForm(f => ({ ...f, scheduled_time: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label>Heure fin</Label>
+              <Input
+                type="time"
+                value={form.scheduled_end_time}
+                onChange={e => setForm(f => ({ ...f, scheduled_end_time: e.target.value }))}
               />
             </div>
           </div>

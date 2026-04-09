@@ -1,0 +1,1 @@
+ALTER TABLE public.interventions ADD COLUMN scheduled_end_time text;

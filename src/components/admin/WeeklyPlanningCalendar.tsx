@@ -357,7 +357,10 @@ export function WeeklyPlanningCalendar({
                                   const [h, m] = time.split(':').map(Number);
                                   const hourIndex = Math.max(0, Math.min(h - startHour, hours.length - 1));
                                   const topPx = hourIndex * 28 + (m / 60) * 28;
-                                  const durationMin = intervention.estimated_duration || 30;
+                                  const durationMin = intervention.estimated_duration 
+                                    || (intervention.scheduled_end_time && intervention.scheduled_time 
+                                      ? Math.round((new Date(`2000-01-01T${intervention.scheduled_end_time}`).getTime() - new Date(`2000-01-01T${intervention.scheduled_time}`).getTime()) / 60000) 
+                                      : 30);
                                   const heightPx = Math.max(24, (durationMin / 60) * 28);
                                   
                                   return (
@@ -379,11 +382,8 @@ export function WeeklyPlanningCalendar({
                                           }}
                                         >
                                           <div className="font-medium truncate text-[10px]">
-                                            {intervention.scheduled_time?.slice(0, 5)} {intervention.title}
+                                            {intervention.scheduled_time?.slice(0, 5)}{intervention.scheduled_end_time ? ` - ${intervention.scheduled_end_time.slice(0, 5)}` : ''} {intervention.title}
                                           </div>
-                                          {heightPx > 30 && intervention.estimated_duration && (
-                                            <div className="text-[9px] opacity-80">{intervention.estimated_duration} min</div>
-                                          )}
                                         </div>
                                       </TooltipTrigger>
                                       <TooltipContent side="right" className="max-w-[250px]">
@@ -396,10 +396,10 @@ export function WeeklyPlanningCalendar({
                                             <p className="text-sm">Client: {intervention.clients.name}</p>
                                           )}
                                           {intervention.scheduled_time && (
-                                            <p className="text-sm">Heure: {intervention.scheduled_time.slice(0, 5)}</p>
-                                          )}
-                                          {intervention.estimated_duration && (
-                                            <p className="text-sm">Durée: {intervention.estimated_duration} min</p>
+                                            <p className="text-sm">
+                                              Horaire: {intervention.scheduled_time.slice(0, 5)}
+                                              {intervention.scheduled_end_time ? ` - ${intervention.scheduled_end_time.slice(0, 5)}` : ''}
+                                            </p>
                                           )}
                                           {intervention.intervention_city && (
                                             <p className="text-sm text-muted-foreground">{intervention.intervention_city}</p>

@@ -49,7 +49,7 @@ const interventionSchema = z.object({
   custom_status_id: z.string().optional().nullable(),
   scheduled_date: z.string().optional(),
   scheduled_time: z.string().optional(),
-  estimated_duration: z.coerce.number().optional().nullable(),
+  scheduled_end_time: z.string().optional(),
   report: z.string().optional(),
   technical_comments: z.string().optional(),
   intervention_address: z.string().optional(),
@@ -100,7 +100,7 @@ const InterventionForm = () => {
       custom_status_id: null,
       scheduled_date: "",
       scheduled_time: "",
-      estimated_duration: 60,
+      scheduled_end_time: "",
       report: "",
       technical_comments: "",
       intervention_address: "",
@@ -126,7 +126,7 @@ const InterventionForm = () => {
         custom_status_id: intervention.custom_status_id || null,
         scheduled_date: intervention.scheduled_date || "",
         scheduled_time: intervention.scheduled_time || "",
-        estimated_duration: intervention.estimated_duration || null,
+        scheduled_end_time: intervention.scheduled_end_time || "",
         report: intervention.report || "",
         technical_comments: intervention.technical_comments || "",
         intervention_address: intervention.intervention_address || "",
@@ -179,7 +179,10 @@ const InterventionForm = () => {
         team_id: finalTeamId,
         scheduled_date: values.scheduled_date || null,
         scheduled_time: values.scheduled_time || null,
-        estimated_duration: values.estimated_duration || null,
+        scheduled_end_time: values.scheduled_end_time || null,
+        estimated_duration: (values.scheduled_time && values.scheduled_end_time) 
+          ? Math.round((new Date(`2000-01-01T${values.scheduled_end_time}`).getTime() - new Date(`2000-01-01T${values.scheduled_time}`).getTime()) / 60000) 
+          : null,
         description: values.description || null,
         report: values.report || null,
         technical_comments: values.technical_comments || null,
@@ -534,7 +537,7 @@ const InterventionForm = () => {
                     name="scheduled_time"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Heure prévue</FormLabel>
+                        <FormLabel>Heure début</FormLabel>
                         <FormControl>
                           <Input type="time" {...field} />
                         </FormControl>
@@ -547,20 +550,12 @@ const InterventionForm = () => {
                 <div className="grid gap-4 sm:grid-cols-2 mt-2">
                   <FormField
                     control={form.control}
-                    name="estimated_duration"
+                    name="scheduled_end_time"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Durée estimée (min)</FormLabel>
+                        <FormLabel>Heure fin</FormLabel>
                         <FormControl>
-                          <Input
-                            type="number"
-                            min={0}
-                            step={15}
-                            placeholder="Ex: 60"
-                            {...field}
-                            value={field.value ?? ''}
-                            onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)}
-                          />
+                          <Input type="time" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
