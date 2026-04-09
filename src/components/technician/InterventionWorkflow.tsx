@@ -17,6 +17,7 @@ import {
   Camera,
   MessageSquare,
   Eye,
+  Car,
 } from "lucide-react";
 import WorkflowStep from "./WorkflowStep";
 import { MapsChooser, useMapsChooser } from "@/components/technician/MapsChooser";
