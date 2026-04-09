@@ -49,6 +49,61 @@ import {
 type Client = Tables<"clients">;
 type Intervention = Tables<"interventions">;
 
+// Lazy collapsible: children only mount when opened, unmount when closed
+const LazyLoopCollapsible = ({ loopIdx, summary, children }: {
+  loopIdx: number;
+  summary: { photoCount: number; commentCount: number; checklistTotal: number; checklistChecked: number };
+  children: React.ReactNode;
+}) => {
+  const [hasOpened, setHasOpened] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+
+  const handleOpenChange = (open: boolean) => {
+    setIsOpen(open);
+    if (open && !hasOpened) setHasOpened(true);
+  };
+
+  return (
+    <Collapsible open={isOpen} onOpenChange={handleOpenChange}>
+      <CollapsibleTrigger asChild>
+        <button className="w-full flex items-center justify-between p-3 rounded-lg border bg-muted/30 hover:bg-muted/50 transition-colors my-1">
+          <div className="flex items-center gap-3">
+            <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 shrink-0" />
+            <div className="text-left">
+              <p className="text-sm font-medium">Équipement {loopIdx + 1} — Terminé</p>
+              <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+                {summary.photoCount > 0 && (
+                  <span className="flex items-center gap-1">
+                    <Camera className="h-3 w-3" /> {summary.photoCount} photo{summary.photoCount > 1 ? 's' : ''}
+                  </span>
+                )}
+                {summary.commentCount > 0 && (
+                  <span className="flex items-center gap-1">
+                    <MessageSquare className="h-3 w-3" /> {summary.commentCount} commentaire{summary.commentCount > 1 ? 's' : ''}
+                  </span>
+                )}
+                {summary.checklistTotal > 0 && (
+                  <span className="flex items-center gap-1">
+                    <ClipboardList className="h-3 w-3" /> {summary.checklistChecked}/{summary.checklistTotal}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <Eye className="h-3.5 w-3.5" />
+            <span>Détails</span>
+            <ChevronDown className="h-4 w-4 transition-transform data-[state=open]:rotate-180" />
+          </div>
+        </button>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        {hasOpened ? children : null}
+      </CollapsibleContent>
+    </Collapsible>
+  );
+};
+
 interface InterventionWorkflowProps {
   intervention: Intervention;
   client: Client | undefined;
@@ -855,45 +910,15 @@ const InterventionWorkflow = ({
           if (isPastLoop) {
             const summary = getLoopSummary(loopIdx);
             nodes.push(
-              <Collapsible key={`loop-collapsible-${loopIdx}`}>
-                <CollapsibleTrigger asChild>
-                  <button className="w-full flex items-center justify-between p-3 rounded-lg border bg-green-50/50 dark:bg-green-950/30 hover:bg-green-50 dark:hover:bg-green-950/50 transition-colors my-1">
-                    <div className="flex items-center gap-3">
-                      <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 shrink-0" />
-                      <div className="text-left">
-                        <p className="text-sm font-medium">Équipement {loopIdx + 1} — Terminé</p>
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
-                          {summary.photoCount > 0 && (
-                            <span className="flex items-center gap-1">
-                              <Camera className="h-3 w-3" /> {summary.photoCount} photo{summary.photoCount > 1 ? 's' : ''}
-                            </span>
-                          )}
-                          {summary.commentCount > 0 && (
-                            <span className="flex items-center gap-1">
-                              <MessageSquare className="h-3 w-3" /> {summary.commentCount} commentaire{summary.commentCount > 1 ? 's' : ''}
-                            </span>
-                          )}
-                          {summary.checklistTotal > 0 && (
-                            <span className="flex items-center gap-1">
-                              <ClipboardList className="h-3 w-3" /> {summary.checklistChecked}/{summary.checklistTotal}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <Eye className="h-3.5 w-3.5" />
-                      <span>Voir / Modifier</span>
-                      <ChevronDown className="h-4 w-4 transition-transform [[data-state=open]>&]:rotate-180" />
-                    </div>
-                  </button>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <div className="pl-2 border-l-2 border-green-200 dark:border-green-800 ml-3 mt-1 space-y-0">
-                    {renderLoopSteps(loopIdx)}
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
+              <LazyLoopCollapsible
+                key={`loop-collapsible-${loopIdx}`}
+                loopIdx={loopIdx}
+                summary={summary}
+              >
+                <div className="pl-2 border-l-2 border-green-200 dark:border-green-800 ml-3 mt-1 space-y-0">
+                  {renderLoopSteps(loopIdx)}
+                </div>
+              </LazyLoopCollapsible>
             );
 
             // Check if trigger was answered "Oui" to render next loop inline
