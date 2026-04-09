@@ -41,17 +41,15 @@ function timeToMinutes(time: string | null): number | null {
  * Uses travel_departure_time of the first intervention as start.
  * Uses travel_return_time if available, otherwise departure_time of the last intervention as end.
  */
-function getDayWorkMinutes(dayInterventions: Intervention[]): number {
-  if (dayInterventions.length === 0) return 0;
+function getDayWorkInfo(dayInterventions: Intervention[]): { minutes: number; startTime: string | null; endTime: string | null } {
+  if (dayInterventions.length === 0) return { minutes: 0, startTime: null, endTime: null };
 
-  // Find the earliest travel_departure_time as start
   const starts = dayInterventions
     .map(i => timeToMinutes(i.travel_departure_time))
     .filter((t): t is number => t !== null);
-  if (starts.length === 0) return 0;
+  if (starts.length === 0) return { minutes: 0, startTime: null, endTime: null };
   const dayStart = Math.min(...starts);
 
-  // Find end: prefer travel_return_time, fallback to departure_time of last intervention
   const returnTimes = dayInterventions
     .map(i => timeToMinutes(i.travel_return_time))
     .filter((t): t is number => t !== null);
@@ -60,7 +58,6 @@ function getDayWorkMinutes(dayInterventions: Intervention[]): number {
   if (returnTimes.length > 0) {
     dayEnd = Math.max(...returnTimes);
   } else {
-    // Fallback: departure_time of the last intervention (latest one)
     const departureTimes = dayInterventions
       .map(i => timeToMinutes(i.departure_time))
       .filter((t): t is number => t !== null);
@@ -69,9 +66,19 @@ function getDayWorkMinutes(dayInterventions: Intervention[]): number {
     }
   }
 
-  if (dayEnd === null) return 0;
+  if (dayEnd === null) return { minutes: 0, startTime: minutesToHM(dayStart), endTime: null };
   const diff = dayEnd - dayStart;
-  return diff > 0 ? diff : 0;
+  return { 
+    minutes: diff > 0 ? diff : 0, 
+    startTime: minutesToHM(dayStart), 
+    endTime: minutesToHM(dayEnd) 
+  };
+}
+
+function minutesToHM(m: number): string {
+  const h = Math.floor(m / 60);
+  const min = m % 60;
+  return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
 }
 
 function formatHM(totalMinutes: number): string {
@@ -99,17 +106,19 @@ export function TechnicianStatsDialog({ open, onOpenChange, tech, rank, formatMi
   const mEnd = endOfMonth(referenceDate);
 
   const dailyHours = useMemo(() => {
-    const days: { date: string; label: string; minutes: number; count: number }[] = [];
+    const days: { date: string; label: string; minutes: number; count: number; startTime: string | null; endTime: string | null }[] = [];
     const d = new Date(weekStart);
     while (d <= weekEnd) {
       const dateStr = format(d, "yyyy-MM-dd");
       const dayInts = techInterventions.filter(i => i.scheduled_date === dateStr);
-      const totalMin = getDayWorkMinutes(dayInts);
+      const info = getDayWorkInfo(dayInts);
       days.push({
         date: dateStr,
         label: format(d, "EEE dd", { locale: fr }),
-        minutes: totalMin,
+        minutes: info.minutes,
         count: dayInts.length,
+        startTime: info.startTime,
+        endTime: info.endTime,
       });
       d.setDate(d.getDate() + 1);
     }
@@ -129,7 +138,7 @@ export function TechnicianStatsDialog({ open, onOpenChange, tech, rank, formatMi
       if (!byDate[i.scheduled_date]) byDate[i.scheduled_date] = [];
       byDate[i.scheduled_date].push(i);
     });
-    return Object.values(byDate).reduce((sum, dayInts) => sum + getDayWorkMinutes(dayInts), 0);
+    return Object.values(byDate).reduce((sum, dayInts) => sum + getDayWorkInfo(dayInts).minutes, 0);
   }, [techInterventions, mStart, mEnd]);
 
   const maxDailyMin = Math.max(...dailyHours.map(d => d.minutes), 1);
@@ -251,9 +260,16 @@ export function TechnicianStatsDialog({ open, onOpenChange, tech, rank, formatMi
                 </div>
                 <div className="space-y-2">
                   {dailyHours.map(day => (
-                    <div key={day.date} className="flex items-center gap-3">
+                    <div key={day.date} className="flex items-center gap-2">
                       <span className={`text-xs w-14 shrink-0 capitalize ${day.date === todayStr ? 'font-bold text-primary' : 'text-muted-foreground'}`}>
                         {day.label}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground w-[90px] shrink-0 text-center">
+                        {day.startTime && day.endTime 
+                          ? `${day.startTime} → ${day.endTime}` 
+                          : day.startTime 
+                            ? `${day.startTime} → …` 
+                            : ''}
                       </span>
                       <div className="flex-1 h-6 bg-muted/50 rounded-full overflow-hidden">
                         {day.minutes > 0 && (
@@ -263,7 +279,7 @@ export function TechnicianStatsDialog({ open, onOpenChange, tech, rank, formatMi
                           />
                         )}
                       </div>
-                      <span className={`text-xs w-16 text-right shrink-0 ${day.date === todayStr ? 'font-bold' : ''}`}>
+                      <span className={`text-xs w-14 text-right shrink-0 ${day.date === todayStr ? 'font-bold' : ''}`}>
                         {day.minutes > 0 ? formatHM(day.minutes) : '—'}
                       </span>
                     </div>
