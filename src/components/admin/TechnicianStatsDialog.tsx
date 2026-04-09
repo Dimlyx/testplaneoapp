@@ -106,17 +106,19 @@ export function TechnicianStatsDialog({ open, onOpenChange, tech, rank, formatMi
   const mEnd = endOfMonth(referenceDate);
 
   const dailyHours = useMemo(() => {
-    const days: { date: string; label: string; minutes: number; count: number }[] = [];
+    const days: { date: string; label: string; minutes: number; count: number; startTime: string | null; endTime: string | null }[] = [];
     const d = new Date(weekStart);
     while (d <= weekEnd) {
       const dateStr = format(d, "yyyy-MM-dd");
       const dayInts = techInterventions.filter(i => i.scheduled_date === dateStr);
-      const totalMin = getDayWorkMinutes(dayInts);
+      const info = getDayWorkInfo(dayInts);
       days.push({
         date: dateStr,
         label: format(d, "EEE dd", { locale: fr }),
-        minutes: totalMin,
+        minutes: info.minutes,
         count: dayInts.length,
+        startTime: info.startTime,
+        endTime: info.endTime,
       });
       d.setDate(d.getDate() + 1);
     }
@@ -136,7 +138,7 @@ export function TechnicianStatsDialog({ open, onOpenChange, tech, rank, formatMi
       if (!byDate[i.scheduled_date]) byDate[i.scheduled_date] = [];
       byDate[i.scheduled_date].push(i);
     });
-    return Object.values(byDate).reduce((sum, dayInts) => sum + getDayWorkMinutes(dayInts), 0);
+    return Object.values(byDate).reduce((sum, dayInts) => sum + getDayWorkInfo(dayInts).minutes, 0);
   }, [techInterventions, mStart, mEnd]);
 
   const maxDailyMin = Math.max(...dailyHours.map(d => d.minutes), 1);
