@@ -82,7 +82,11 @@ export function TechnicianInterventionsByCategory({ category }: { category: Cate
   const filtered = useMemo(() => {
     switch (category) {
       case "en-cours":
-        return interventions.filter((i) => i.status === "in_progress");
+        return interventions.filter((i) => 
+          i.status === "in_progress" || 
+          // Show completed interventions with return journey in progress
+          (i.status === "completed" && i.travel_return_time && !i.travel_return_arrival_time)
+        );
       case "planning":
         return interventions
           .filter((i) => i.status === "planned" && i.scheduled_date)
@@ -91,7 +95,12 @@ export function TechnicianInterventionsByCategory({ category }: { category: Cate
         return interventions.filter((i) => i.status === "to_plan");
       case "terminees":
         return interventions
-          .filter((i) => ["completed", "to_invoice", "archived"].includes(i.status))
+          .filter((i) => {
+            if (["to_invoice", "archived"].includes(i.status)) return true;
+            // Completed but with return journey still in progress → show in "en-cours" instead
+            if (i.status === "completed" && i.travel_return_time && !i.travel_return_arrival_time) return false;
+            return i.status === "completed";
+          })
           .sort((a, b) => (b.scheduled_date || "").localeCompare(a.scheduled_date || ""))
           .slice(0, 30);
     }

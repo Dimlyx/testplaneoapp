@@ -17,6 +17,7 @@ import {
   Camera,
   MessageSquare,
   Eye,
+  Car,
 } from "lucide-react";
 import WorkflowStep from "./WorkflowStep";
 import { MapsChooser, useMapsChooser } from "@/components/technician/MapsChooser";
@@ -1195,11 +1196,25 @@ const InterventionWorkflow = ({
                   {/* Return journey button - only if track_journey is enabled */}
                   {matchingType?.track_journey && (
                     <>
-                      {intervention.travel_return_time ? (
+                      {intervention.travel_return_arrival_time ? (
                         <div className="flex items-center justify-center gap-2 text-muted-foreground text-sm bg-muted/50 rounded-lg p-3">
-                          <Clock className="h-4 w-4" />
-                          <span>Trajet retour démarré à {intervention.travel_return_time.substring(0, 5)}</span>
+                          <CheckCircle className="h-4 w-4" />
+                          <span>Trajet retour: {intervention.travel_return_time?.substring(0, 5)} → {intervention.travel_return_arrival_time.substring(0, 5)}</span>
                         </div>
+                      ) : intervention.travel_return_time ? (
+                        <Button
+                          variant="outline"
+                          className="w-full border-green-200 text-green-700 hover:bg-green-50 dark:border-green-800 dark:text-green-300 dark:hover:bg-green-950"
+                          onClick={async () => {
+                            const now = format(new Date(), 'HH:mm:ss');
+                            await onTimeUpdate('travel_return_arrival_time', now);
+                            toast({ title: "Trajet retour terminé à " + now.substring(0, 5) });
+                          }}
+                          disabled={isUpdating}
+                        >
+                          <MapPin className="h-4 w-4 mr-2" />
+                          Arrivée - Fin du trajet retour
+                        </Button>
                       ) : (
                         <Button
                           variant="outline"
@@ -1211,7 +1226,7 @@ const InterventionWorkflow = ({
                           }}
                           disabled={isUpdating}
                         >
-                          <MapPin className="h-4 w-4 mr-2" />
+                          <Car className="h-4 w-4 mr-2" />
                           Démarrer le trajet retour
                         </Button>
                       )}

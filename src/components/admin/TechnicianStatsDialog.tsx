@@ -50,9 +50,11 @@ function getDayWorkInfo(dayInterventions: Intervention[]): { minutes: number; st
   if (starts.length === 0) return { minutes: 0, startTime: null, endTime: null };
   const dayStart = Math.min(...starts);
 
-  const returnTimes = dayInterventions
-    .map(i => timeToMinutes(i.travel_return_time))
+  // Prefer travel_return_arrival_time (actual arrival back), then travel_return_time, then departure_time
+  const returnArrivalTimes = dayInterventions
+    .map(i => timeToMinutes((i as any).travel_return_arrival_time) ?? timeToMinutes(i.travel_return_time))
     .filter((t): t is number => t !== null);
+  const returnTimes = returnArrivalTimes;
   
   let dayEnd: number | null = null;
   if (returnTimes.length > 0) {

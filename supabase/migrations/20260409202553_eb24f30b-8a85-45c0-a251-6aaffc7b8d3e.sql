@@ -1,0 +1,1 @@
+ALTER TABLE public.interventions ADD COLUMN travel_return_arrival_time time without time zone DEFAULT NULL;
