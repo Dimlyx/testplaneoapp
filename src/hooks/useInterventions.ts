@@ -25,6 +25,7 @@ export interface Intervention {
   departure_time: string | null;
   travel_departure_time: string | null;
   travel_return_time: string | null;
+  travel_return_arrival_time: string | null;
   observations: string | null;
   equipment_functional: boolean | null;
   client_signature_name: string | null;
