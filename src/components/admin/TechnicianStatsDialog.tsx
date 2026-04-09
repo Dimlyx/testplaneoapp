@@ -41,17 +41,15 @@ function timeToMinutes(time: string | null): number | null {
  * Uses travel_departure_time of the first intervention as start.
  * Uses travel_return_time if available, otherwise departure_time of the last intervention as end.
  */
-function getDayWorkMinutes(dayInterventions: Intervention[]): number {
-  if (dayInterventions.length === 0) return 0;
+function getDayWorkInfo(dayInterventions: Intervention[]): { minutes: number; startTime: string | null; endTime: string | null } {
+  if (dayInterventions.length === 0) return { minutes: 0, startTime: null, endTime: null };
 
-  // Find the earliest travel_departure_time as start
   const starts = dayInterventions
     .map(i => timeToMinutes(i.travel_departure_time))
     .filter((t): t is number => t !== null);
-  if (starts.length === 0) return 0;
+  if (starts.length === 0) return { minutes: 0, startTime: null, endTime: null };
   const dayStart = Math.min(...starts);
 
-  // Find end: prefer travel_return_time, fallback to departure_time of last intervention
   const returnTimes = dayInterventions
     .map(i => timeToMinutes(i.travel_return_time))
     .filter((t): t is number => t !== null);
@@ -60,7 +58,6 @@ function getDayWorkMinutes(dayInterventions: Intervention[]): number {
   if (returnTimes.length > 0) {
     dayEnd = Math.max(...returnTimes);
   } else {
-    // Fallback: departure_time of the last intervention (latest one)
     const departureTimes = dayInterventions
       .map(i => timeToMinutes(i.departure_time))
       .filter((t): t is number => t !== null);
@@ -69,9 +66,19 @@ function getDayWorkMinutes(dayInterventions: Intervention[]): number {
     }
   }
 
-  if (dayEnd === null) return 0;
+  if (dayEnd === null) return { minutes: 0, startTime: minutesToHM(dayStart), endTime: null };
   const diff = dayEnd - dayStart;
-  return diff > 0 ? diff : 0;
+  return { 
+    minutes: diff > 0 ? diff : 0, 
+    startTime: minutesToHM(dayStart), 
+    endTime: minutesToHM(dayEnd) 
+  };
+}
+
+function minutesToHM(m: number): string {
+  const h = Math.floor(m / 60);
+  const min = m % 60;
+  return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
 }
 
 function formatHM(totalMinutes: number): string {
