@@ -81,6 +81,7 @@ export interface CreateInterventionData {
   intervention_phone?: string | null;
   intervention_email?: string | null;
   estimated_duration?: number | null;
+  scheduled_end_time?: string | null;
   organization_id?: string | null;
   equipment_id?: string | null;
   intervention_building?: string | null;
@@ -115,6 +116,7 @@ export interface UpdateInterventionData {
   intervention_email?: string | null;
   intervention_contact_name?: string | null;
   estimated_duration?: number | null;
+  scheduled_end_time?: string | null;
   is_paused?: boolean;
   cancellation_reason?: string | null;
   cancellation_details?: string | null;
