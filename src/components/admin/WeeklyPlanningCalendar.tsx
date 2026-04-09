@@ -384,7 +384,6 @@ export function WeeklyPlanningCalendar({
                                           <div className="font-medium truncate text-[10px]">
                                             {intervention.scheduled_time?.slice(0, 5)}{intervention.scheduled_end_time ? ` - ${intervention.scheduled_end_time.slice(0, 5)}` : ''} {intervention.title}
                                           </div>
-                                          )}
                                         </div>
                                       </TooltipTrigger>
                                       <TooltipContent side="right" className="max-w-[250px]">
