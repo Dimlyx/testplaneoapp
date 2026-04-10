@@ -38,7 +38,7 @@ const TechnicianInterventionDetail = () => {
   const { data: photos = [] } = useInterventionPhotos(id || "");
   const { data: companySettings } = useCompanySettings();
   const { data: documentSettings } = useDocumentSettings();
-  const updateIntervention = useUpdateIntervention();
+  const { updateIntervention: offlineUpdate } = useOfflineInterventionUpdate();
 
   // Determine if the current user is a team member (not the leader)
   const isTeamMember = intervention?.team_id && intervention?.technician_id !== user?.id;
