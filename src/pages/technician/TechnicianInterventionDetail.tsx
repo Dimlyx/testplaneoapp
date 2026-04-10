@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useIntervention, useUpdateIntervention } from "@/hooks/useInterventions";
+import { useIntervention } from "@/hooks/useInterventions";
+import { useOfflineInterventionUpdate } from "@/hooks/useOfflineInterventionUpdate";
 import { useClient } from "@/hooks/useClients";
 import { useCompanySettings, useDocumentSettings } from "@/hooks/useAppSettings";
 import { useInterventionTypes } from "@/hooks/useInterventionTypes";
@@ -37,7 +38,7 @@ const TechnicianInterventionDetail = () => {
   const { data: photos = [] } = useInterventionPhotos(id || "");
   const { data: companySettings } = useCompanySettings();
   const { data: documentSettings } = useDocumentSettings();
-  const updateIntervention = useUpdateIntervention();
+  const { updateIntervention: offlineUpdate } = useOfflineInterventionUpdate();
 
   // Determine if the current user is a team member (not the leader)
   const isTeamMember = intervention?.team_id && intervention?.technician_id !== user?.id;
@@ -55,6 +56,7 @@ const TechnicianInterventionDetail = () => {
   const [clientSignatureName, setClientSignatureName] = useState<string>("");
   const [clientSignatureUrl, setClientSignatureUrl] = useState<string | null>(null);
   const [isUploadingSignature, setIsUploadingSignature] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   // Initialize form when data loads
   useEffect(() => {
@@ -84,21 +86,19 @@ const TechnicianInterventionDetail = () => {
       
       if (uploadError) throw uploadError;
       
-      // Store the public URL path in DB (will be resolved to signed URL on display)
       const { data: urlData } = supabase.storage
         .from('intervention-photos')
         .getPublicUrl(fileName);
       
       const signatureUrl = urlData.publicUrl;
       
-      // Record departure time and complete intervention when client signs
       const departureTime = format(new Date(), 'HH:mm:ss');
       
-      await updateIntervention.mutateAsync({
+      await offlineUpdate({
         id,
         client_signature_name: signerName,
         client_signature_url: signatureUrl,
-        status: 'completed',
+        status: 'completed' as any,
         departure_time: departureTime,
         report,
       });
@@ -117,62 +117,54 @@ const TechnicianInterventionDetail = () => {
 
   const handleEndIntervention = async () => {
     if (!id) return;
+    setIsUpdating(true);
     setStatus('completed');
     const departureTime = format(new Date(), 'HH:mm:ss');
-    try {
-      await updateIntervention.mutateAsync({
-        id,
-        status: 'completed',
-        report,
-        client_signature_name: clientSignatureName,
-        departure_time: departureTime,
-      });
-      toast({ title: "Intervention terminée" });
-    } catch (error) {
-      toast({ title: "Erreur", variant: "destructive" });
-    }
+    await offlineUpdate({
+      id,
+      status: 'completed' as any,
+      report,
+      client_signature_name: clientSignatureName,
+      departure_time: departureTime,
+    });
+    toast({ title: "Intervention terminée" });
+    setIsUpdating(false);
   };
 
   const handleStatusChange = async (newStatus: string) => {
     if (!id) return;
+    setIsUpdating(true);
     setStatus(newStatus);
-    try {
-      await updateIntervention.mutateAsync({
-        id,
-        status: newStatus as any,
-      });
-      toast({ title: "Statut mis à jour" });
-    } catch (error) {
-      toast({ title: "Erreur", variant: "destructive" });
-    }
+    await offlineUpdate({
+      id,
+      status: newStatus as any,
+    });
+    toast({ title: "Statut mis à jour" });
+    setIsUpdating(false);
   };
 
   const handleTimeUpdate = async (field: string, value: string) => {
     if (!id) return;
-    try {
-      await updateIntervention.mutateAsync({
-        id,
-        [field]: value,
-      });
-      toast({ title: "Temps enregistré" });
-    } catch (error) {
-      toast({ title: "Erreur", variant: "destructive" });
-    }
+    setIsUpdating(true);
+    await offlineUpdate({
+      id,
+      [field]: value,
+    });
+    toast({ title: "Temps enregistré" });
+    setIsUpdating(false);
   };
 
   const handleSave = async () => {
     if (!id) return;
-    try {
-      await updateIntervention.mutateAsync({
-        id,
-        status: status as any,
-        report,
-        client_signature_name: clientSignatureName,
-      });
-      toast({ title: "Intervention mise à jour" });
-    } catch (error) {
-      toast({ title: "Erreur lors de la mise à jour", variant: "destructive" });
-    }
+    setIsUpdating(true);
+    await offlineUpdate({
+      id,
+      status: status as any,
+      report,
+      client_signature_name: clientSignatureName,
+    });
+    toast({ title: "Intervention mise à jour" });
+    setIsUpdating(false);
   };
 
   const handleCancelIntervention = async (data: {
@@ -181,19 +173,17 @@ const TechnicianInterventionDetail = () => {
     cancellation_photos: string[];
   }) => {
     if (!id) return;
-    try {
-      await updateIntervention.mutateAsync({
-        id,
-        status: 'cancelled' as any,
-        cancellation_reason: data.cancellation_reason,
-        cancellation_details: data.cancellation_details || null,
-        cancellation_photos: data.cancellation_photos,
-      });
-      setStatus('cancelled');
-      toast({ title: "Intervention annulée" });
-    } catch (error) {
-      toast({ title: "Erreur lors de l'annulation", variant: "destructive" });
-    }
+    setIsUpdating(true);
+    await offlineUpdate({
+      id,
+      status: 'cancelled' as any,
+      cancellation_reason: data.cancellation_reason,
+      cancellation_details: data.cancellation_details || null,
+      cancellation_photos: data.cancellation_photos,
+    });
+    setStatus('cancelled');
+    toast({ title: "Intervention annulée" });
+    setIsUpdating(false);
   };
 
   const handleDownloadPDF = async () => {
@@ -294,7 +284,7 @@ const TechnicianInterventionDetail = () => {
         onStatusChange={handleStatusChange}
         onTimeUpdate={handleTimeUpdate}
         onCancelIntervention={handleCancelIntervention}
-        isUpdating={updateIntervention.isPending}
+        isUpdating={isUpdating}
         readOnly={!!isTeamMember}
       />
     </div>

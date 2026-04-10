@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useUserOrganization } from '@/hooks/useUserOrganization';
+import { getInterventionOffline, getAllInterventionsOffline } from '@/lib/offline-db';
 
 export type InterventionStatus = 'to_plan' | 'planned' | 'in_progress' | 'completed' | 'to_invoice' | 'archived' | 'cancelled';
 export type InterventionType = string;
@@ -195,56 +196,64 @@ export function useTechnicianInterventions(technicianId: string | undefined) {
     queryFn: async () => {
       if (!technicianId) return [];
       
-      // Fetch directly assigned interventions
-      const { data: directData, error: directError } = await supabase
-        .from('interventions')
-        .select(`
-          *,
-          clients (id, name, email, phone, address, city)
-        `)
-        .eq('technician_id', technicianId)
-        .order('scheduled_date', { ascending: true });
-
-      if (directError) throw directError;
-
-      // Fetch team interventions (where user is a team member but not the leader/technician_id)
-      // RLS policy "Team members can view team interventions" handles access control
-      const { data: teamMemberships } = await supabase
-        .from('team_members')
-        .select('team_id')
-        .eq('user_id', technicianId);
-
-      let teamInterventions: any[] = [];
-      if (teamMemberships && teamMemberships.length > 0) {
-        const teamIds = teamMemberships.map(m => m.team_id);
-        const { data: teamData } = await supabase
+      try {
+        // Fetch directly assigned interventions
+        const { data: directData, error: directError } = await supabase
           .from('interventions')
           .select(`
             *,
             clients (id, name, email, phone, address, city)
           `)
-          .in('team_id', teamIds)
-          .neq('technician_id', technicianId)
+          .eq('technician_id', technicianId)
           .order('scheduled_date', { ascending: true });
-        teamInterventions = teamData || [];
+
+        if (directError) throw directError;
+
+        // Fetch team interventions (where user is a team member but not the leader/technician_id)
+        const { data: teamMemberships } = await supabase
+          .from('team_members')
+          .select('team_id')
+          .eq('user_id', technicianId);
+
+        let teamInterventions: any[] = [];
+        if (teamMemberships && teamMemberships.length > 0) {
+          const teamIds = teamMemberships.map(m => m.team_id);
+          const { data: teamData } = await supabase
+            .from('interventions')
+            .select(`
+              *,
+              clients (id, name, email, phone, address, city)
+            `)
+            .in('team_id', teamIds)
+            .neq('technician_id', technicianId)
+            .order('scheduled_date', { ascending: true });
+          teamInterventions = teamData || [];
+        }
+
+        const allInterventions = [
+          ...(directData || []).map(d => ({ ...d, profiles: null })),
+          ...teamInterventions.map((d: any) => ({ ...d, profiles: null, _isTeamMember: true })),
+        ] as Intervention[];
+
+        // Sort chronologically by date then time
+        allInterventions.sort((a, b) => {
+          const dateA = a.scheduled_date || '9999-12-31';
+          const dateB = b.scheduled_date || '9999-12-31';
+          if (dateA !== dateB) return dateA.localeCompare(dateB);
+          const timeA = a.scheduled_time || '99:99';
+          const timeB = b.scheduled_time || '99:99';
+          return timeA.localeCompare(timeB);
+        });
+
+        return allInterventions;
+      } catch (err) {
+        // Offline fallback: return cached interventions from IndexedDB
+        if (!navigator.onLine) {
+          const cached = await getAllInterventionsOffline();
+          if (cached.length > 0) return cached as Intervention[];
+        }
+        throw err;
       }
-
-      const allInterventions = [
-        ...(directData || []).map(d => ({ ...d, profiles: null })),
-        ...teamInterventions.map((d: any) => ({ ...d, profiles: null, _isTeamMember: true })),
-      ] as Intervention[];
-
-      // Sort chronologically by date then time
-      allInterventions.sort((a, b) => {
-        const dateA = a.scheduled_date || '9999-12-31';
-        const dateB = b.scheduled_date || '9999-12-31';
-        if (dateA !== dateB) return dateA.localeCompare(dateB);
-        const timeA = a.scheduled_time || '99:99';
-        const timeB = b.scheduled_time || '99:99';
-        return timeA.localeCompare(timeB);
-      });
-
-      return allInterventions;
     },
     enabled: !!technicianId,
   });
@@ -254,29 +263,38 @@ export function useIntervention(id: string) {
   return useQuery({
     queryKey: ['intervention', id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('interventions')
-        .select(`
-          *,
-          clients (id, name, email, phone, address, city, postal_code, client_type)
-        `)
-        .eq('id', id)
-        .maybeSingle();
-
-      if (error) throw error;
-      if (!data) return null;
-      
-      let profiles = null;
-      if (data.technician_id) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('id, full_name, email')
-          .eq('id', data.technician_id)
+      try {
+        const { data, error } = await supabase
+          .from('interventions')
+          .select(`
+            *,
+            clients (id, name, email, phone, address, city, postal_code, client_type)
+          `)
+          .eq('id', id)
           .maybeSingle();
-        profiles = profile;
+
+        if (error) throw error;
+        if (!data) return null;
+        
+        let profiles = null;
+        if (data.technician_id) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('id, full_name, email')
+            .eq('id', data.technician_id)
+            .maybeSingle();
+          profiles = profile;
+        }
+        
+        return { ...data, profiles } as Intervention;
+      } catch (err) {
+        // Offline fallback: try IndexedDB
+        if (!navigator.onLine) {
+          const cached = await getInterventionOffline(id);
+          if (cached) return cached as Intervention;
+        }
+        throw err;
       }
-      
-      return { ...data, profiles } as Intervention;
     },
   });
 }
