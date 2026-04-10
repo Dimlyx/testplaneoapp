@@ -476,7 +476,7 @@ const DynamicStepContent = ({
             {isCompleted && hasChanges && (
               <Button
                 onClick={handleUpdate}
-                disabled={isCompleting || isUploading}
+                disabled={isCompleting}
                 variant="outline"
                 className="w-full"
               >
