@@ -14,14 +14,10 @@ import {
   Clock,
   RefreshCw,
   ChevronDown,
-  Camera,
-  MessageSquare,
-  Eye,
   Car,
 } from "lucide-react";
 import WorkflowStep from "./WorkflowStep";
 import { MapsChooser, useMapsChooser } from "@/components/technician/MapsChooser";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import DynamicStepContent from "./DynamicStepContent";
 import CancelInterventionDialog from "./CancelInterventionDialog";
 import { Button } from "@/components/ui/button";
@@ -50,60 +46,8 @@ import {
 type Client = Tables<"clients">;
 type Intervention = Tables<"interventions">;
 
-// Lazy collapsible: children only mount when opened, unmount when closed
-const LazyLoopCollapsible = ({ loopIdx, summary, children }: {
-  loopIdx: number;
-  summary: { photoCount: number; commentCount: number; checklistTotal: number; checklistChecked: number };
-  children: React.ReactNode;
-}) => {
-  const [hasOpened, setHasOpened] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
-
-  const handleOpenChange = (open: boolean) => {
-    setIsOpen(open);
-    if (open && !hasOpened) setHasOpened(true);
-  };
-
-  return (
-    <Collapsible open={isOpen} onOpenChange={handleOpenChange}>
-      <CollapsibleTrigger asChild>
-        <button className="w-full flex items-center justify-between p-3 rounded-lg border bg-muted/30 hover:bg-muted/50 transition-colors my-1">
-          <div className="flex items-center gap-3">
-            <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 shrink-0" />
-            <div className="text-left">
-              <p className="text-sm font-medium">Équipement {loopIdx + 1} — Terminé</p>
-              <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
-                {summary.photoCount > 0 && (
-                  <span className="flex items-center gap-1">
-                    <Camera className="h-3 w-3" /> {summary.photoCount} photo{summary.photoCount > 1 ? 's' : ''}
-                  </span>
-                )}
-                {summary.commentCount > 0 && (
-                  <span className="flex items-center gap-1">
-                    <MessageSquare className="h-3 w-3" /> {summary.commentCount} commentaire{summary.commentCount > 1 ? 's' : ''}
-                  </span>
-                )}
-                {summary.checklistTotal > 0 && (
-                  <span className="flex items-center gap-1">
-                    <ClipboardList className="h-3 w-3" /> {summary.checklistChecked}/{summary.checklistTotal}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Eye className="h-3.5 w-3.5" />
-            <span>Détails</span>
-            <ChevronDown className="h-4 w-4 transition-transform data-[state=open]:rotate-180" />
-          </div>
-        </button>
-      </CollapsibleTrigger>
-      <CollapsibleContent>
-        {hasOpened ? children : null}
-      </CollapsibleContent>
-    </Collapsible>
-  );
-};
+// Equipment loop displayed as a WorkflowStep that can be expanded/collapsed
+// Children are only mounted once opened (lazy) for performance
 
 interface InterventionWorkflowProps {
   intervention: Intervention;
@@ -855,43 +799,12 @@ const InterventionWorkflow = ({
       {loopableSteps.length > 0 && (() => {
         // Render loops recursively: each loop's steps appear inline,
         // and if "Oui" was clicked on trigger, the next loop appears right below it
-        // Helper: get summary info for a completed loop iteration
-        const getLoopSummary = (loopIdx: number) => {
-          let photoCount = 0;
-          let commentCount = 0;
-          let checklistTotal = 0;
-          let checklistChecked = 0;
-
-          for (const step of loopableSteps) {
-            const c = stepCompletions.find(
-              sc => sc.step_id === step.id && (sc.loop_index ?? 0) === loopIdx
-            );
-            if (!c) continue;
-            if (c.photo_url) {
-              try {
-                const parsed = JSON.parse(c.photo_url);
-                photoCount += Array.isArray(parsed) ? parsed.length : 1;
-              } catch {
-                photoCount += 1;
-              }
-            }
-            if (c.comment) commentCount++;
-            if (c.checklist_data && Array.isArray(c.checklist_data)) {
-              const items = c.checklist_data as { checked: boolean }[];
-              checklistTotal += items.length;
-              checklistChecked += items.filter(i => i.checked).length;
-            }
-          }
-          return { photoCount, commentCount, checklistTotal, checklistChecked };
-        };
-
-        // Render loops recursively: each loop's steps appear inline,
-        // and if "Oui" was clicked on trigger, the next loop appears right below it
         const renderLoop = (loopIdx: number): React.ReactNode[] => {
           const nodes: React.ReactNode[] = [];
           const loopComplete = isLoopComplete(loopIdx);
           // A past loop = completed and not the latest active one
-          const isActiveLoop = activeStep?.includes(`loop-${loopIdx}`);
+          // Also check if the equipment-level step is expanded
+          const isActiveLoop = activeStep?.includes(`loop-${loopIdx}`) || activeStep === `equipment-${loopIdx}`;
           const isPastLoop = loopComplete && !isActiveLoop && loopIdx < maxLoopIndex;
 
           // Loop separator
@@ -907,19 +820,26 @@ const InterventionWorkflow = ({
             );
           }
 
-          // If it's a completed past loop, wrap in collapsible summary
+          // If it's a completed past loop, show as a single WorkflowStep
+          // that expands to show editable sub-steps when clicked
           if (isPastLoop) {
-            const summary = getLoopSummary(loopIdx);
+            const equipmentStepKey = `equipment-${loopIdx}`;
+            const isExpanded = activeStep === equipmentStepKey;
+
             nodes.push(
-              <LazyLoopCollapsible
-                key={`loop-collapsible-${loopIdx}`}
-                loopIdx={loopIdx}
-                summary={summary}
+              <WorkflowStep
+                key={equipmentStepKey}
+                icon={CheckCircle}
+                label={`Équipement ${loopIdx + 1}`}
+                isActive={isExpanded}
+                isCompleted={true}
+                onClick={() => handleStepClick(equipmentStepKey)}
+                isDisabled={stepsLocked}
               >
-                <div className="pl-2 border-l-2 border-green-200 dark:border-green-800 ml-3 mt-1 space-y-0">
+                <div className="space-y-0">
                   {renderLoopSteps(loopIdx)}
                 </div>
-              </LazyLoopCollapsible>
+              </WorkflowStep>
             );
 
             // Check if trigger was answered "Oui" to render next loop inline
