@@ -855,19 +855,26 @@ const InterventionWorkflow = ({
             );
           }
 
-          // If it's a completed past loop, wrap in collapsible summary
+          // If it's a completed past loop, show as a single WorkflowStep
+          // that expands to show editable sub-steps when clicked
           if (isPastLoop) {
-            const summary = getLoopSummary(loopIdx);
+            const equipmentStepKey = `equipment-${loopIdx}`;
+            const isExpanded = activeStep === equipmentStepKey;
+
             nodes.push(
-              <LazyLoopCollapsible
-                key={`loop-collapsible-${loopIdx}`}
-                loopIdx={loopIdx}
-                summary={summary}
+              <WorkflowStep
+                key={equipmentStepKey}
+                icon={CheckCircle}
+                label={`Équipement ${loopIdx + 1}`}
+                isActive={isExpanded}
+                isCompleted={true}
+                onClick={() => handleStepClick(equipmentStepKey)}
+                isDisabled={stepsLocked}
               >
-                <div className="pl-2 border-l-2 border-green-200 dark:border-green-800 ml-3 mt-1 space-y-0">
+                <div className="space-y-0">
                   {renderLoopSteps(loopIdx)}
                 </div>
-              </LazyLoopCollapsible>
+              </WorkflowStep>
             );
 
             // Check if trigger was answered "Oui" to render next loop inline
