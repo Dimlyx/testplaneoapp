@@ -1162,6 +1162,21 @@ const InterventionWorkflow = ({
       }}
       isUpdating={isUpdating}
     />
+    {openEquipmentPanel !== null && (
+      <EquipmentDetailPanel
+        loopIdx={openEquipmentPanel}
+        loopableSteps={loopableSteps}
+        stepCompletions={stepCompletions}
+        interventionId={intervention.id}
+        loopTriggerStepId={loopTriggerStep?.id}
+        allowLoop={matchingType?.allow_loop}
+        isLocked={isLocked}
+        isCompleting={completeStep.isPending}
+        skippedStepIds={getSkippedStepIdsForLoop(openEquipmentPanel)}
+        onComplete={handleCompleteStep}
+        onClose={() => setOpenEquipmentPanel(null)}
+      />
+    )}
     </>
   );
 };
