@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useIntervention, useUpdateIntervention } from "@/hooks/useInterventions";
+import { useIntervention } from "@/hooks/useInterventions";
+import { useOfflineInterventionUpdate } from "@/hooks/useOfflineInterventionUpdate";
 import { useClient } from "@/hooks/useClients";
 import { useCompanySettings, useDocumentSettings } from "@/hooks/useAppSettings";
 import { useInterventionTypes } from "@/hooks/useInterventionTypes";
