@@ -256,6 +256,8 @@ export function useTechnicianInterventions(technicianId: string | undefined) {
       }
     },
     enabled: !!technicianId,
+    refetchOnWindowFocus: () => navigator.onLine,
+    refetchOnReconnect: true,
   });
 }
 
@@ -296,6 +298,8 @@ export function useIntervention(id: string) {
         throw err;
       }
     },
+    refetchOnWindowFocus: () => navigator.onLine,
+    refetchOnReconnect: true,
   });
 }
 

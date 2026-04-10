@@ -52,13 +52,32 @@ export function useOfflineInterventionUpdate() {
         }
       }
 
-      // 3. Try Supabase
+      // 3. If offline, skip Supabase entirely and queue
+      if (!navigator.onLine) {
+        try {
+          await queueInterventionUpdate(id, data);
+          toast({
+            title: 'Enregistré hors-ligne',
+            description: 'La modification sera synchronisée au retour de la connexion.',
+          });
+        } catch (queueErr) {
+          console.error('Failed to queue offline mutation:', queueErr);
+        }
+        return false;
+      }
+
+      // 4. Online: try Supabase with a short timeout
       try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5000); // 5s timeout
+
         const { error } = await supabase
           .from('interventions')
           .update(data)
-          .eq('id', id);
+          .eq('id', id)
+          .abortSignal(controller.signal);
 
+        clearTimeout(timeout);
         if (error) throw error;
 
         // Refresh from server to get canonical data
