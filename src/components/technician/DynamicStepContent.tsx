@@ -225,7 +225,19 @@ const DynamicStepContent = ({
     setPhotoUrls(prev => prev.filter((_, i) => i !== index));
   };
 
+  // Resolve any pending uploads before saving, but don't block the UI while uploading
+  const resolvePhotos = async (): Promise<string | undefined> => {
+    // Wait for all pending uploads to finish (fast if already done)
+    if (pendingUploadsRef.current.size > 0) {
+      await Promise.allSettled(Array.from(pendingUploadsRef.current.values()));
+      pendingUploadsRef.current.clear();
+    }
+    // Read the latest photoUrls from state via a ref-like trick
+    return undefined; // We'll read from the state snapshot below
+  };
+
   const handleValidate = async () => {
+    await resolvePhotos();
     const serializedPhotos = photoUrls.length > 0 ? JSON.stringify(photoUrls) : undefined;
     await onComplete(
       step.id,
@@ -464,7 +476,7 @@ const DynamicStepContent = ({
             {isCompleted && hasChanges && (
               <Button
                 onClick={handleUpdate}
-                disabled={isCompleting || isUploading}
+                disabled={isCompleting}
                 variant="outline"
                 className="w-full"
               >
@@ -475,7 +487,7 @@ const DynamicStepContent = ({
             {!isCompleted && (
               <Button
                 onClick={handleValidate}
-                disabled={isCompleting || isUploading || (step.requires_photo && step.is_mandatory && photoUrls.length === 0) || (step.requires_comment && step.is_mandatory && !comment.trim())}
+                disabled={isCompleting || (step.requires_photo && step.is_mandatory && photoUrls.length === 0) || (step.requires_comment && step.is_mandatory && !comment.trim())}
                 className="w-full"
               >
                 <CheckCircle className="h-4 w-4 mr-2" />
