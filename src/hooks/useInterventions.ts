@@ -255,29 +255,38 @@ export function useIntervention(id: string) {
   return useQuery({
     queryKey: ['intervention', id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('interventions')
-        .select(`
-          *,
-          clients (id, name, email, phone, address, city, postal_code, client_type)
-        `)
-        .eq('id', id)
-        .maybeSingle();
-
-      if (error) throw error;
-      if (!data) return null;
-      
-      let profiles = null;
-      if (data.technician_id) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('id, full_name, email')
-          .eq('id', data.technician_id)
+      try {
+        const { data, error } = await supabase
+          .from('interventions')
+          .select(`
+            *,
+            clients (id, name, email, phone, address, city, postal_code, client_type)
+          `)
+          .eq('id', id)
           .maybeSingle();
-        profiles = profile;
+
+        if (error) throw error;
+        if (!data) return null;
+        
+        let profiles = null;
+        if (data.technician_id) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('id, full_name, email')
+            .eq('id', data.technician_id)
+            .maybeSingle();
+          profiles = profile;
+        }
+        
+        return { ...data, profiles } as Intervention;
+      } catch (err) {
+        // Offline fallback: try IndexedDB
+        if (!navigator.onLine) {
+          const cached = await getInterventionOffline(id);
+          if (cached) return cached as Intervention;
+        }
+        throw err;
       }
-      
-      return { ...data, profiles } as Intervention;
     },
   });
 }
