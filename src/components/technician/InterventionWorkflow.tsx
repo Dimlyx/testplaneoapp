@@ -87,6 +87,7 @@ const InterventionWorkflow = ({
   readOnly = false,
 }: InterventionWorkflowProps) => {
   const [activeStep, setActiveStep] = useState<string | null>(null);
+  const [expandedEquipments, setExpandedEquipments] = useState<Set<number>>(new Set());
   const mapsChooser = useMapsChooser();
   const { data: attachments = [] } = useInterventionAttachments(intervention.id);
   
@@ -802,12 +803,59 @@ const InterventionWorkflow = ({
         const renderLoop = (loopIdx: number): React.ReactNode[] => {
           const nodes: React.ReactNode[] = [];
           const loopComplete = isLoopComplete(loopIdx);
-          // A past loop = completed and not the latest active one
-          // Also check if the equipment-level step is expanded
-          const isActiveLoop = activeStep?.includes(`loop-${loopIdx}`) || activeStep === `equipment-${loopIdx}`;
-          const isPastLoop = loopComplete && !isActiveLoop && loopIdx < maxLoopIndex;
+          // A past loop = completed AND there's at least one more loop after it
+          // (the trigger was answered "Oui", meaning a next loop was started)
+          const triggerCompletion = stepCompletions.find(
+            c => c.step_id === loopTriggerStep?.id && c.loop_index === loopIdx && c.completed_at
+          );
+          const isPastLoop = loopComplete && !!triggerCompletion?.comment?.includes("Oui");
 
-          // Loop separator
+          // If it's a completed past loop, show as a single collapsible WorkflowStep
+          if (isPastLoop) {
+            const isExpanded = expandedEquipments.has(loopIdx);
+
+            nodes.push(
+              <WorkflowStep
+                key={`equipment-${loopIdx}`}
+                icon={CheckCircle}
+                label={`Équipement ${loopIdx + 1}`}
+                isActive={isExpanded}
+                isCompleted={true}
+                onClick={() => {
+                  setExpandedEquipments(prev => {
+                    const next = new Set(prev);
+                    if (next.has(loopIdx)) {
+                      next.delete(loopIdx);
+                      // Clear activeStep if it belongs to this loop
+                      if (activeStep?.includes(`loop-${loopIdx}`)) {
+                        setActiveStep(null);
+                      }
+                    } else {
+                      next.add(loopIdx);
+                    }
+                    return next;
+                  });
+                }}
+                isDisabled={stepsLocked}
+              >
+                {isExpanded && (
+                  <div className="space-y-0">
+                    {renderLoopSteps(loopIdx, true)}
+                  </div>
+                )}
+              </WorkflowStep>
+            );
+
+            // isPastLoop is true means trigger was "Oui", so always render next loop
+            const nextLoopIdx = loopIdx + 1;
+            if (nextLoopIdx < totalLoops) {
+              nodes.push(...renderLoop(nextLoopIdx));
+            }
+
+            return nodes;
+          }
+
+          // Active / current loop: show separator then render steps normally
           if (loopIdx > 0) {
             nodes.push(
               <div key={`loop-sep-${loopIdx}`} className="flex items-center gap-2 my-3 px-3">
@@ -819,51 +867,13 @@ const InterventionWorkflow = ({
               </div>
             );
           }
-
-          // If it's a completed past loop, show as a single WorkflowStep
-          // that expands to show editable sub-steps when clicked
-          if (isPastLoop) {
-            const equipmentStepKey = `equipment-${loopIdx}`;
-            const isExpanded = activeStep === equipmentStepKey;
-
-            nodes.push(
-              <WorkflowStep
-                key={equipmentStepKey}
-                icon={CheckCircle}
-                label={`Équipement ${loopIdx + 1}`}
-                isActive={isExpanded}
-                isCompleted={true}
-                onClick={() => handleStepClick(equipmentStepKey)}
-                isDisabled={stepsLocked}
-              >
-                <div className="space-y-0">
-                  {renderLoopSteps(loopIdx)}
-                </div>
-              </WorkflowStep>
-            );
-
-            // Check if trigger was answered "Oui" to render next loop inline
-            const triggerCompletion = stepCompletions.find(
-              c => c.step_id === loopTriggerStep?.id && c.loop_index === loopIdx && c.completed_at
-            );
-            if (triggerCompletion?.comment?.includes("Oui")) {
-              const nextLoopIdx = loopIdx + 1;
-              if (nextLoopIdx < totalLoops) {
-                nodes.push(...renderLoop(nextLoopIdx));
-              }
-            }
-
-            return nodes;
-          }
-
-          // Active / current loop: render steps normally
-          nodes.push(...renderLoopSteps(loopIdx));
+          nodes.push(...renderLoopSteps(loopIdx, false));
 
           return nodes;
         };
 
         // Extracted: render individual steps for a given loop index
-        const renderLoopSteps = (loopIdx: number): React.ReactNode[] => {
+        const renderLoopSteps = (loopIdx: number, insideCollapsible: boolean = false): React.ReactNode[] => {
           const nodes: React.ReactNode[] = [];
           const skippedIds = getSkippedStepIdsForLoop(loopIdx);
 
@@ -970,7 +980,8 @@ const InterventionWorkflow = ({
             );
 
             // If this is the MAIN loop trigger and it was answered "Oui", render next loop inline right below
-            if (isMainLoopTrigger && isStepCompleted && completion?.comment?.includes("Oui")) {
+            // (only when NOT inside a collapsed equipment — parent handles chaining in that case)
+            if (!insideCollapsible && isMainLoopTrigger && isStepCompleted && completion?.comment?.includes("Oui")) {
               const nextLoopIdx = loopIdx + 1;
               if (nextLoopIdx < totalLoops) {
                 nodes.push(...renderLoop(nextLoopIdx));
