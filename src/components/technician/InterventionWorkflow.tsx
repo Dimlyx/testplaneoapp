@@ -264,6 +264,11 @@ const InterventionWorkflow = ({
     }
     // Don't override if user is browsing inside an equipment panel
     if (openEquipmentPanel !== null) return;
+    // Don't override if user manually clicked a step
+    if (userOverride) {
+      setUserOverride(false);
+      return;
+    }
     
     if (isLocked) {
       setActiveStep('finish');
