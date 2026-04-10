@@ -981,7 +981,8 @@ const InterventionWorkflow = ({
             );
 
             // If this is the MAIN loop trigger and it was answered "Oui", render next loop inline right below
-            if (isMainLoopTrigger && isStepCompleted && completion?.comment?.includes("Oui")) {
+            // (only when NOT inside a collapsed equipment — parent handles chaining in that case)
+            if (!insideCollapsible && isMainLoopTrigger && isStepCompleted && completion?.comment?.includes("Oui")) {
               const nextLoopIdx = loopIdx + 1;
               if (nextLoopIdx < totalLoops) {
                 nodes.push(...renderLoop(nextLoopIdx));
