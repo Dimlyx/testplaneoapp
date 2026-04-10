@@ -803,43 +803,42 @@ const InterventionWorkflow = ({
         const renderLoop = (loopIdx: number): React.ReactNode[] => {
           const nodes: React.ReactNode[] = [];
           const loopComplete = isLoopComplete(loopIdx);
-          // A past loop = completed and not the latest active one
-          // Also check if the equipment-level step is expanded
-          const isActiveLoop = activeStep?.includes(`loop-${loopIdx}`) || activeStep === `equipment-${loopIdx}`;
-          const isPastLoop = loopComplete && !isActiveLoop && loopIdx < maxLoopIndex;
+          // A past loop = completed and not the latest loop being worked on
+          const isPastLoop = loopComplete && loopIdx < (hasNewEmptyLoop ? maxLoopIndex + 1 : loopCount - (isLatestLoopComplete ? 0 : 1));
 
-          // Loop separator
-          if (loopIdx > 0) {
-            nodes.push(
-              <div key={`loop-sep-${loopIdx}`} className="flex items-center gap-2 my-3 px-3">
-                <div className="flex-1 h-px bg-border" />
-                <span className="text-xs font-medium text-muted-foreground bg-muted px-3 py-1 rounded-full">
-                  Équipement {loopIdx + 1}
-                </span>
-                <div className="flex-1 h-px bg-border" />
-              </div>
-            );
-          }
-
-          // If it's a completed past loop, show as a single WorkflowStep
-          // that expands to show editable sub-steps when clicked
+          // If it's a completed past loop, show as a single collapsible WorkflowStep
           if (isPastLoop) {
-            const equipmentStepKey = `equipment-${loopIdx}`;
-            const isExpanded = activeStep === equipmentStepKey;
+            const isExpanded = expandedEquipments.has(loopIdx);
 
             nodes.push(
               <WorkflowStep
-                key={equipmentStepKey}
+                key={`equipment-${loopIdx}`}
                 icon={CheckCircle}
                 label={`Équipement ${loopIdx + 1}`}
                 isActive={isExpanded}
                 isCompleted={true}
-                onClick={() => handleStepClick(equipmentStepKey)}
+                onClick={() => {
+                  setExpandedEquipments(prev => {
+                    const next = new Set(prev);
+                    if (next.has(loopIdx)) {
+                      next.delete(loopIdx);
+                      // Clear activeStep if it belongs to this loop
+                      if (activeStep?.includes(`loop-${loopIdx}`)) {
+                        setActiveStep(null);
+                      }
+                    } else {
+                      next.add(loopIdx);
+                    }
+                    return next;
+                  });
+                }}
                 isDisabled={stepsLocked}
               >
-                <div className="space-y-0">
-                  {renderLoopSteps(loopIdx)}
-                </div>
+                {isExpanded && (
+                  <div className="space-y-0">
+                    {renderLoopSteps(loopIdx, true)}
+                  </div>
+                )}
               </WorkflowStep>
             );
 
@@ -857,8 +856,19 @@ const InterventionWorkflow = ({
             return nodes;
           }
 
-          // Active / current loop: render steps normally
-          nodes.push(...renderLoopSteps(loopIdx));
+          // Active / current loop: show separator then render steps normally
+          if (loopIdx > 0) {
+            nodes.push(
+              <div key={`loop-sep-${loopIdx}`} className="flex items-center gap-2 my-3 px-3">
+                <div className="flex-1 h-px bg-border" />
+                <span className="text-xs font-medium text-muted-foreground bg-muted px-3 py-1 rounded-full">
+                  Équipement {loopIdx + 1}
+                </span>
+                <div className="flex-1 h-px bg-border" />
+              </div>
+            );
+          }
+          nodes.push(...renderLoopSteps(loopIdx, false));
 
           return nodes;
         };
