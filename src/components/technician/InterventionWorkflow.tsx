@@ -799,38 +799,6 @@ const InterventionWorkflow = ({
       {loopableSteps.length > 0 && (() => {
         // Render loops recursively: each loop's steps appear inline,
         // and if "Oui" was clicked on trigger, the next loop appears right below it
-        // Helper: get summary info for a completed loop iteration
-        const getLoopSummary = (loopIdx: number) => {
-          let photoCount = 0;
-          let commentCount = 0;
-          let checklistTotal = 0;
-          let checklistChecked = 0;
-
-          for (const step of loopableSteps) {
-            const c = stepCompletions.find(
-              sc => sc.step_id === step.id && (sc.loop_index ?? 0) === loopIdx
-            );
-            if (!c) continue;
-            if (c.photo_url) {
-              try {
-                const parsed = JSON.parse(c.photo_url);
-                photoCount += Array.isArray(parsed) ? parsed.length : 1;
-              } catch {
-                photoCount += 1;
-              }
-            }
-            if (c.comment) commentCount++;
-            if (c.checklist_data && Array.isArray(c.checklist_data)) {
-              const items = c.checklist_data as { checked: boolean }[];
-              checklistTotal += items.length;
-              checklistChecked += items.filter(i => i.checked).length;
-            }
-          }
-          return { photoCount, commentCount, checklistTotal, checklistChecked };
-        };
-
-        // Render loops recursively: each loop's steps appear inline,
-        // and if "Oui" was clicked on trigger, the next loop appears right below it
         const renderLoop = (loopIdx: number): React.ReactNode[] => {
           const nodes: React.ReactNode[] = [];
           const loopComplete = isLoopComplete(loopIdx);
