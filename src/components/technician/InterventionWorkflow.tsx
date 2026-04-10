@@ -803,8 +803,12 @@ const InterventionWorkflow = ({
         const renderLoop = (loopIdx: number): React.ReactNode[] => {
           const nodes: React.ReactNode[] = [];
           const loopComplete = isLoopComplete(loopIdx);
-          // A past loop = completed and not the latest loop being worked on
-          const isPastLoop = loopComplete && loopIdx < (hasNewEmptyLoop ? maxLoopIndex + 1 : loopCount - (isLatestLoopComplete ? 0 : 1));
+          // A past loop = completed AND there's at least one more loop after it
+          // (the trigger was answered "Oui", meaning a next loop was started)
+          const triggerCompletion = stepCompletions.find(
+            c => c.step_id === loopTriggerStep?.id && c.loop_index === loopIdx && c.completed_at
+          );
+          const isPastLoop = loopComplete && !!triggerCompletion?.comment?.includes("Oui");
 
           // If it's a completed past loop, show as a single collapsible WorkflowStep
           if (isPastLoop) {
