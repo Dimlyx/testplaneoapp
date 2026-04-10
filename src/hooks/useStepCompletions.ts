@@ -100,7 +100,11 @@ export function useCompleteStep() {
       toast.success("Étape validée");
     },
     onError: (error: Error) => {
-      toast.error("Erreur: " + error.message);
+      if (!navigator.onLine) {
+        toast.info("Étape enregistrée localement — sera synchronisée au retour de la connexion");
+      } else {
+        toast.error("Erreur: " + error.message);
+      }
     },
   });
 }
