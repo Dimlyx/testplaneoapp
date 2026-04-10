@@ -813,40 +813,18 @@ const InterventionWorkflow = ({
           );
           const isPastLoop = loopComplete && !!triggerCompletion?.comment?.includes("Oui");
 
-          // If it's a completed past loop, show as a single collapsible WorkflowStep
+          // If it's a completed past loop, show as a clickable card that opens the slide-in panel
           if (isPastLoop) {
-            const isExpanded = expandedEquipments.has(loopIdx);
-
             nodes.push(
               <WorkflowStep
                 key={`equipment-${loopIdx}`}
                 icon={CheckCircle}
                 label={`Équipement ${loopIdx + 1}`}
-                isActive={isExpanded}
+                isActive={false}
                 isCompleted={true}
-                onClick={() => {
-                  setExpandedEquipments(prev => {
-                    const next = new Set(prev);
-                    if (next.has(loopIdx)) {
-                      next.delete(loopIdx);
-                      // Clear activeStep if it belongs to this loop
-                      if (activeStep?.includes(`loop-${loopIdx}`)) {
-                        setActiveStep(null);
-                      }
-                    } else {
-                      next.add(loopIdx);
-                    }
-                    return next;
-                  });
-                }}
+                onClick={() => setOpenEquipmentPanel(loopIdx)}
                 isDisabled={stepsLocked}
-              >
-                {isExpanded && (
-                  <div className="space-y-0">
-                    {renderLoopSteps(loopIdx, true)}
-                  </div>
-                )}
-              </WorkflowStep>
+              />
             );
 
             // isPastLoop is true means trigger was "Oui", so always render next loop
