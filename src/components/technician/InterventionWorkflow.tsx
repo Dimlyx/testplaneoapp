@@ -87,6 +87,7 @@ const InterventionWorkflow = ({
   readOnly = false,
 }: InterventionWorkflowProps) => {
   const [activeStep, setActiveStep] = useState<string | null>(null);
+  const [expandedEquipments, setExpandedEquipments] = useState<Set<number>>(new Set());
   const mapsChooser = useMapsChooser();
   const { data: attachments = [] } = useInterventionAttachments(intervention.id);
   
