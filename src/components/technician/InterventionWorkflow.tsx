@@ -874,7 +874,7 @@ const InterventionWorkflow = ({
         };
 
         // Extracted: render individual steps for a given loop index
-        const renderLoopSteps = (loopIdx: number): React.ReactNode[] => {
+        const renderLoopSteps = (loopIdx: number, insideCollapsible: boolean = false): React.ReactNode[] => {
           const nodes: React.ReactNode[] = [];
           const skippedIds = getSkippedStepIdsForLoop(loopIdx);
 
