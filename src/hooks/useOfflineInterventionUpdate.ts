@@ -55,13 +55,14 @@ export function useOfflineInterventionUpdate() {
       }
 
       // 4. Online: fire-and-forget Supabase push in background
-      supabase
-        .from('interventions')
-        .update(data)
-        .eq('id', id)
+      Promise.resolve(
+        supabase
+          .from('interventions')
+          .update(data)
+          .eq('id', id)
+      )
         .then(({ error }) => {
           if (error) throw error;
-          // Silently refresh canonical data in background
           queryClient.invalidateQueries({ queryKey: ['intervention', id] });
           queryClient.invalidateQueries({ queryKey: ['technician-interventions'] });
         })
