@@ -284,7 +284,7 @@ const TechnicianInterventionDetail = () => {
         onStatusChange={handleStatusChange}
         onTimeUpdate={handleTimeUpdate}
         onCancelIntervention={handleCancelIntervention}
-        isUpdating={updateIntervention.isPending}
+        isUpdating={isUpdating}
         readOnly={!!isTeamMember}
       />
     </div>
