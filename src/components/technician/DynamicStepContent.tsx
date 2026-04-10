@@ -487,7 +487,7 @@ const DynamicStepContent = ({
             {!isCompleted && (
               <Button
                 onClick={handleValidate}
-                disabled={isCompleting || isUploading || (step.requires_photo && step.is_mandatory && photoUrls.length === 0) || (step.requires_comment && step.is_mandatory && !comment.trim())}
+                disabled={isCompleting || (step.requires_photo && step.is_mandatory && photoUrls.length === 0) || (step.requires_comment && step.is_mandatory && !comment.trim())}
                 className="w-full"
               >
                 <CheckCircle className="h-4 w-4 mr-2" />
