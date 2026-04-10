@@ -174,6 +174,16 @@ const DynamicStepContent = ({
       
       const uploadPromise = (async (): Promise<string | null> => {
         try {
+          // If offline, keep the blob URL — it will be visible locally
+          if (!navigator.onLine) {
+            setUploadingCount(prev => {
+              const next = prev - 1;
+              if (next <= 0) setIsUploading(false);
+              return Math.max(0, next);
+            });
+            return localUrl; // Keep blob URL as-is
+          }
+
           const compressed = await compressImage(file);
           const fileName = `steps/${interventionId}/${step.id}-loop${loopIndex}-${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
           const { error: uploadError } = await supabase.storage
@@ -196,17 +206,14 @@ const DynamicStepContent = ({
           
           return remoteUrl;
         } catch (error: any) {
-          console.error("Upload error:", error);
-          // Remove failed photo from the list
-          setPhotoUrls(prev => prev.filter(u => u !== localUrl));
-          URL.revokeObjectURL(localUrl);
-          return null;
-        } finally {
+          console.warn("Photo upload failed, keeping local preview:", error?.message);
+          // Don't remove the photo — keep the blob URL so the user sees it
           setUploadingCount(prev => {
             const next = prev - 1;
             if (next <= 0) setIsUploading(false);
             return Math.max(0, next);
           });
+          return localUrl; // Keep blob URL as fallback
         }
       })();
 
