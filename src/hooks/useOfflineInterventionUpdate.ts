@@ -8,8 +8,8 @@ import type { Intervention, UpdateInterventionData } from '@/hooks/useInterventi
 
 /**
  * Offline-first intervention update hook.
- * 1. Applies optimistic update to React Query cache + IndexedDB immediately.
- * 2. Tries to push to Supabase.
+ * 1. Applies optimistic update to React Query cache + IndexedDB immediately (instant UI).
+ * 2. Fires Supabase push in the background (non-blocking).
  * 3. On network failure, queues the mutation for later sync.
  */
 export function useOfflineInterventionUpdate() {
@@ -25,84 +25,51 @@ export function useOfflineInterventionUpdate() {
         return { ...old, ...data } as Intervention;
       };
 
-      // Update single intervention cache
       queryClient.setQueryData<Intervention>(
         ['intervention', id],
         (old) => patchCache(old)
       );
 
-      // Update list caches (technician-interventions, interventions)
-      const patchList = (old: Intervention[] | undefined) => {
-        if (!old) return old;
-        return old.map((i) => (i.id === id ? { ...i, ...data } : i));
-      };
-
       queryClient.setQueriesData<Intervention[]>(
         { queryKey: ['technician-interventions'] },
-        patchList
+        (old) => {
+          if (!old) return old;
+          return old.map((i) => (i.id === id ? { ...i, ...data } : i));
+        }
       );
 
-      // 2. Update IndexedDB cache for offline reads
+      // 2. Save to IndexedDB (fast, non-blocking for UI)
       const cached = queryClient.getQueryData<Intervention>(['intervention', id]);
       if (cached) {
-        try {
-          await saveInterventionOffline({ ...cached, ...data });
-        } catch {
-          // IndexedDB write failure is non-critical
-        }
+        saveInterventionOffline({ ...cached, ...data }).catch(() => {});
       }
 
-      // 3. If offline, skip Supabase entirely and queue
+      // 3. If offline, queue and return immediately
       if (!navigator.onLine) {
-        try {
-          await queueInterventionUpdate(id, data);
-          toast({
-            title: 'Enregistré hors-ligne',
-            description: 'La modification sera synchronisée au retour de la connexion.',
-          });
-        } catch (queueErr) {
-          console.error('Failed to queue offline mutation:', queueErr);
-        }
-        return false;
+        queueInterventionUpdate(id, data).catch(() => {});
+        toast({
+          title: 'Enregistré hors-ligne',
+          description: 'Synchronisation au retour de la connexion.',
+        });
+        return;
       }
 
-      // 4. Online: try Supabase with a short timeout
-      try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 5000); // 5s timeout
-
-        const { error } = await supabase
+      // 4. Online: fire-and-forget Supabase push in background
+      Promise.resolve(
+        supabase
           .from('interventions')
           .update(data)
           .eq('id', id)
-          .abortSignal(controller.signal);
-
-        clearTimeout(timeout);
-        if (error) throw error;
-
-        // Refresh from server to get canonical data
-        queryClient.invalidateQueries({ queryKey: ['intervention', id] });
-        queryClient.invalidateQueries({ queryKey: ['technician-interventions'] });
-        return true;
-      } catch (err: any) {
-        // 4. Network/server error → queue for later sync
-        console.warn('Online update failed, queuing offline:', err?.message);
-        try {
-          await queueInterventionUpdate(id, data);
-          toast({
-            title: 'Enregistré hors-ligne',
-            description: 'La modification sera synchronisée au retour de la connexion.',
-          });
-        } catch (queueErr) {
-          console.error('Failed to queue offline mutation:', queueErr);
-          toast({
-            title: 'Erreur',
-            description: "Impossible d'enregistrer la modification.",
-            variant: 'destructive',
-          });
-        }
-        return false;
-      }
+      )
+        .then(({ error }) => {
+          if (error) throw error;
+          queryClient.invalidateQueries({ queryKey: ['intervention', id] });
+          queryClient.invalidateQueries({ queryKey: ['technician-interventions'] });
+        })
+        .catch((err: any) => {
+          console.warn('Background sync failed, queuing offline:', err?.message);
+          queueInterventionUpdate(id, data).catch(() => {});
+        });
     },
     [queryClient, queueInterventionUpdate, toast]
   );
