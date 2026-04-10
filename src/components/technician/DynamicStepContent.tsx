@@ -225,7 +225,19 @@ const DynamicStepContent = ({
     setPhotoUrls(prev => prev.filter((_, i) => i !== index));
   };
 
+  // Resolve any pending uploads before saving, but don't block the UI while uploading
+  const resolvePhotos = async (): Promise<string | undefined> => {
+    // Wait for all pending uploads to finish (fast if already done)
+    if (pendingUploadsRef.current.size > 0) {
+      await Promise.allSettled(Array.from(pendingUploadsRef.current.values()));
+      pendingUploadsRef.current.clear();
+    }
+    // Read the latest photoUrls from state via a ref-like trick
+    return undefined; // We'll read from the state snapshot below
+  };
+
   const handleValidate = async () => {
+    await resolvePhotos();
     const serializedPhotos = photoUrls.length > 0 ? JSON.stringify(photoUrls) : undefined;
     await onComplete(
       step.id,
