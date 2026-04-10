@@ -256,6 +256,8 @@ export function useTechnicianInterventions(technicianId: string | undefined) {
       }
     },
     enabled: !!technicianId,
+    refetchOnWindowFocus: () => navigator.onLine,
+    refetchOnReconnect: true,
   });
 }
 
