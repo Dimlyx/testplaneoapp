@@ -846,15 +846,10 @@ const InterventionWorkflow = ({
               </WorkflowStep>
             );
 
-            // Check if trigger was answered "Oui" to render next loop inline
-            const triggerCompletion = stepCompletions.find(
-              c => c.step_id === loopTriggerStep?.id && c.loop_index === loopIdx && c.completed_at
-            );
-            if (triggerCompletion?.comment?.includes("Oui")) {
-              const nextLoopIdx = loopIdx + 1;
-              if (nextLoopIdx < totalLoops) {
-                nodes.push(...renderLoop(nextLoopIdx));
-              }
+            // isPastLoop is true means trigger was "Oui", so always render next loop
+            const nextLoopIdx = loopIdx + 1;
+            if (nextLoopIdx < totalLoops) {
+              nodes.push(...renderLoop(nextLoopIdx));
             }
 
             return nodes;
