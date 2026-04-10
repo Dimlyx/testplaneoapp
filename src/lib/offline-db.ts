@@ -9,7 +9,7 @@ export interface OfflineIntervention {
 
 export interface OfflineMutation {
   id: string;
-  type: 'update_intervention' | 'add_photo' | 'add_signature' | 'update_equipment';
+  type: 'update_intervention' | 'add_photo' | 'add_signature' | 'update_equipment' | 'complete_step' | 'save_draft_step' | 'uncomplete_step';
   payload: any;
   createdAt: number;
   synced: boolean;

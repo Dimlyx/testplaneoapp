@@ -107,6 +107,104 @@ export function useOfflineSync() {
           if (error) throw error;
           break;
         }
+        case 'complete_step': {
+          const { interventionId, stepId, comment, photoUrl, loopIndex = 0, checklistData, multipleChoiceData } = mutation.payload;
+          const { data: { user } } = await supabase.auth.getUser();
+
+          const { data: existing } = await supabase
+            .from('intervention_step_completions')
+            .select('id')
+            .eq('intervention_id', interventionId)
+            .eq('step_id', stepId)
+            .eq('loop_index', loopIndex)
+            .maybeSingle();
+
+          if (existing) {
+            const { error } = await supabase
+              .from('intervention_step_completions')
+              .update({
+                completed_at: new Date().toISOString(),
+                completed_by: user?.id || null,
+                comment: comment || null,
+                photo_url: photoUrl || null,
+                checklist_data: checklistData || null,
+                multiple_choice_data: multipleChoiceData || null,
+              } as any)
+              .eq('id', existing.id);
+            if (error) throw error;
+          } else {
+            const { error } = await supabase
+              .from('intervention_step_completions')
+              .insert({
+                intervention_id: interventionId,
+                step_id: stepId,
+                completed_at: new Date().toISOString(),
+                completed_by: user?.id || null,
+                comment: comment || null,
+                photo_url: photoUrl || null,
+                loop_index: loopIndex,
+                checklist_data: checklistData || null,
+                multiple_choice_data: multipleChoiceData || null,
+              } as any);
+            if (error) throw error;
+          }
+          break;
+        }
+        case 'save_draft_step': {
+          const { interventionId, stepId, comment, photoUrl, loopIndex = 0, checklistData, multipleChoiceData } = mutation.payload;
+          const { data: { user } } = await supabase.auth.getUser();
+
+          const { data: existing } = await supabase
+            .from('intervention_step_completions')
+            .select('id')
+            .eq('intervention_id', interventionId)
+            .eq('step_id', stepId)
+            .eq('loop_index', loopIndex)
+            .maybeSingle();
+
+          if (existing) {
+            const { error } = await supabase
+              .from('intervention_step_completions')
+              .update({
+                comment: comment || null,
+                photo_url: photoUrl || null,
+                checklist_data: checklistData || null,
+                multiple_choice_data: multipleChoiceData || null,
+              } as any)
+              .eq('id', existing.id);
+            if (error) throw error;
+          } else {
+            const { error } = await supabase
+              .from('intervention_step_completions')
+              .insert({
+                intervention_id: interventionId,
+                step_id: stepId,
+                completed_at: null,
+                completed_by: user?.id || null,
+                comment: comment || null,
+                photo_url: photoUrl || null,
+                loop_index: loopIndex,
+                checklist_data: checklistData || null,
+                multiple_choice_data: multipleChoiceData || null,
+              } as any);
+            if (error) throw error;
+          }
+          break;
+        }
+        case 'uncomplete_step': {
+          const { interventionId, stepId, loopIndex } = mutation.payload;
+          let query = supabase
+            .from('intervention_step_completions')
+            .delete()
+            .eq('intervention_id', interventionId)
+            .eq('step_id', stepId);
+          if (loopIndex !== undefined) {
+            query = query.eq('loop_index', loopIndex);
+          }
+          const { error } = await query;
+          if (error) throw error;
+          break;
+        }
         default:
           console.warn('Unknown mutation type:', mutation.type);
       }

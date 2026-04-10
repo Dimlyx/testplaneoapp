@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { addMutation } from "@/lib/offline-db";
 
 export interface StepCompletion {
   id: string;
@@ -30,73 +31,130 @@ export function useStepCompletions(interventionId: string) {
       return data as unknown as StepCompletion[];
     },
     enabled: !!interventionId,
+    refetchOnWindowFocus: () => navigator.onLine,
   });
+}
+
+interface CompleteStepParams {
+  interventionId: string;
+  stepId: string;
+  comment?: string;
+  photoUrl?: string;
+  loopIndex?: number;
+  checklistData?: { id: string; label: string; checked: boolean }[];
+  multipleChoiceData?: { id: string; label: string; selected: boolean }[];
 }
 
 export function useCompleteStep() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      interventionId,
-      stepId,
-      comment,
-      photoUrl,
-      loopIndex = 0,
-      checklistData,
-      multipleChoiceData,
-    }: {
-      interventionId: string;
-      stepId: string;
-      comment?: string;
-      photoUrl?: string;
-      loopIndex?: number;
-      checklistData?: { id: string; label: string; checked: boolean }[];
-      multipleChoiceData?: { id: string; label: string; selected: boolean }[];
-    }) => {
-      const { data: { user } } = await supabase.auth.getUser();
+    mutationFn: async (params: CompleteStepParams) => {
+      const {
+        interventionId, stepId, comment, photoUrl,
+        loopIndex = 0, checklistData, multipleChoiceData,
+      } = params;
 
-      // Check if a completion already exists for this step+loop combo
-      const { data: existing } = await supabase
-        .from("intervention_step_completions")
-        .select("id")
-        .eq("intervention_id", interventionId)
-        .eq("step_id", stepId)
-        .eq("loop_index", loopIndex)
-        .maybeSingle();
+      // 1. Optimistic update — patch cache immediately
+      const tempId = crypto.randomUUID();
+      const now = new Date().toISOString();
+      
+      queryClient.setQueryData<StepCompletion[]>(
+        ["step-completions", interventionId],
+        (old = []) => {
+          const existing = old.find(
+            (c) => c.step_id === stepId && c.loop_index === loopIndex
+          );
+          if (existing) {
+            return old.map((c) =>
+              c.step_id === stepId && c.loop_index === loopIndex
+                ? { ...c, completed_at: now, comment: comment || null, photo_url: photoUrl || null, checklist_data: checklistData || null, multiple_choice_data: multipleChoiceData || null }
+                : c
+            );
+          }
+          return [
+            ...old,
+            {
+              id: tempId,
+              intervention_id: interventionId,
+              step_id: stepId,
+              completed_at: now,
+              completed_by: null,
+              photo_url: photoUrl || null,
+              comment: comment || null,
+              checklist_data: checklistData || null,
+              multiple_choice_data: multipleChoiceData || null,
+              created_at: now,
+              loop_index: loopIndex,
+            },
+          ];
+        }
+      );
 
-      if (existing) {
-        const { error: updateError } = await supabase
-          .from("intervention_step_completions")
-          .update({
-            completed_at: new Date().toISOString(),
-            completed_by: user?.id || null,
-            comment: comment || null,
-            photo_url: photoUrl || null,
-            checklist_data: checklistData || null,
-            multiple_choice_data: multipleChoiceData || null,
-          } as any)
-          .eq("id", existing.id);
-        if (updateError) throw updateError;
-      } else {
-        const { error: insertError } = await supabase
-          .from("intervention_step_completions")
-          .insert({
-            intervention_id: interventionId,
-            step_id: stepId,
-            completed_at: new Date().toISOString(),
-            completed_by: user?.id || null,
-            comment: comment || null,
-            photo_url: photoUrl || null,
-            loop_index: loopIndex,
-            checklist_data: checklistData || null,
-            multiple_choice_data: multipleChoiceData || null,
-          } as any);
-        if (insertError) throw insertError;
+      // 2. If offline, queue and return
+      if (!navigator.onLine) {
+        await addMutation({
+          type: 'complete_step',
+          payload: { interventionId, stepId, comment, photoUrl, loopIndex, checklistData, multipleChoiceData },
+        });
+        return;
       }
+
+      // 3. Online: fire-and-forget background sync
+      const syncToServer = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+
+        const { data: existing } = await supabase
+          .from("intervention_step_completions")
+          .select("id")
+          .eq("intervention_id", interventionId)
+          .eq("step_id", stepId)
+          .eq("loop_index", loopIndex)
+          .maybeSingle();
+
+        if (existing) {
+          const { error } = await supabase
+            .from("intervention_step_completions")
+            .update({
+              completed_at: now,
+              completed_by: user?.id || null,
+              comment: comment || null,
+              photo_url: photoUrl || null,
+              checklist_data: checklistData || null,
+              multiple_choice_data: multipleChoiceData || null,
+            } as any)
+            .eq("id", existing.id);
+          if (error) throw error;
+        } else {
+          const { error } = await supabase
+            .from("intervention_step_completions")
+            .insert({
+              intervention_id: interventionId,
+              step_id: stepId,
+              completed_at: now,
+              completed_by: user?.id || null,
+              comment: comment || null,
+              photo_url: photoUrl || null,
+              loop_index: loopIndex,
+              checklist_data: checklistData || null,
+              multiple_choice_data: multipleChoiceData || null,
+            } as any);
+          if (error) throw error;
+        }
+
+        // Refresh from server
+        queryClient.invalidateQueries({ queryKey: ["step-completions", interventionId] });
+      };
+
+      syncToServer().catch(async (err) => {
+        console.warn("Step completion background sync failed, queuing:", err?.message);
+        await addMutation({
+          type: 'complete_step',
+          payload: { interventionId, stepId, comment, photoUrl, loopIndex, checklistData, multipleChoiceData },
+        }).catch(() => {});
+      });
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["step-completions", variables.interventionId] });
+    onSuccess: () => {
       toast.success("Étape validée");
     },
     onError: (error: Error) => {
@@ -113,68 +171,111 @@ export function useSaveDraft() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      interventionId,
-      stepId,
-      comment,
-      photoUrl,
-      loopIndex = 0,
-      checklistData,
-      multipleChoiceData,
-    }: {
-      interventionId: string;
-      stepId: string;
-      comment?: string;
-      photoUrl?: string;
-      loopIndex?: number;
-      checklistData?: { id: string; label: string; checked: boolean }[];
-      multipleChoiceData?: { id: string; label: string; selected: boolean }[];
-    }) => {
-      const { data: { user } } = await supabase.auth.getUser();
+    mutationFn: async (params: CompleteStepParams) => {
+      const {
+        interventionId, stepId, comment, photoUrl,
+        loopIndex = 0, checklistData, multipleChoiceData,
+      } = params;
 
-      // Check if a completion already exists
-      const { data: existing } = await supabase
-        .from("intervention_step_completions")
-        .select("id, completed_at")
-        .eq("intervention_id", interventionId)
-        .eq("step_id", stepId)
-        .eq("loop_index", loopIndex)
-        .maybeSingle();
+      // 1. Optimistic update
+      const tempId = crypto.randomUUID();
+      const now = new Date().toISOString();
+      
+      queryClient.setQueryData<StepCompletion[]>(
+        ["step-completions", interventionId],
+        (old = []) => {
+          const existing = old.find(
+            (c) => c.step_id === stepId && c.loop_index === loopIndex
+          );
+          if (existing) {
+            return old.map((c) =>
+              c.step_id === stepId && c.loop_index === loopIndex
+                ? { ...c, comment: comment || null, photo_url: photoUrl || null, checklist_data: checklistData || null, multiple_choice_data: multipleChoiceData || null }
+                : c
+            );
+          }
+          return [
+            ...old,
+            {
+              id: tempId,
+              intervention_id: interventionId,
+              step_id: stepId,
+              completed_at: null,
+              completed_by: null,
+              photo_url: photoUrl || null,
+              comment: comment || null,
+              checklist_data: checklistData || null,
+              multiple_choice_data: multipleChoiceData || null,
+              created_at: now,
+              loop_index: loopIndex,
+            },
+          ];
+        }
+      );
 
-      if (existing) {
-        // Update existing record, preserve completed_at if already validated
-        const { error } = await supabase
-          .from("intervention_step_completions")
-          .update({
-            comment: comment || null,
-            photo_url: photoUrl || null,
-            checklist_data: checklistData || null,
-            multiple_choice_data: multipleChoiceData || null,
-          } as any)
-          .eq("id", existing.id);
-        if (error) throw error;
-      } else {
-        // Insert as draft (completed_at = null)
-        const { error } = await supabase
-          .from("intervention_step_completions")
-          .insert({
-            intervention_id: interventionId,
-            step_id: stepId,
-            completed_at: null,
-            completed_by: user?.id || null,
-            comment: comment || null,
-            photo_url: photoUrl || null,
-            loop_index: loopIndex,
-            checklist_data: checklistData || null,
-            multiple_choice_data: multipleChoiceData || null,
-          } as any);
-        if (error) throw error;
+      // 2. If offline, queue
+      if (!navigator.onLine) {
+        await addMutation({
+          type: 'save_draft_step',
+          payload: { interventionId, stepId, comment, photoUrl, loopIndex, checklistData, multipleChoiceData },
+        });
+        return;
       }
+
+      // 3. Background sync
+      const syncToServer = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+
+        const { data: existing } = await supabase
+          .from("intervention_step_completions")
+          .select("id, completed_at")
+          .eq("intervention_id", interventionId)
+          .eq("step_id", stepId)
+          .eq("loop_index", loopIndex)
+          .maybeSingle();
+
+        if (existing) {
+          const { error } = await supabase
+            .from("intervention_step_completions")
+            .update({
+              comment: comment || null,
+              photo_url: photoUrl || null,
+              checklist_data: checklistData || null,
+              multiple_choice_data: multipleChoiceData || null,
+            } as any)
+            .eq("id", existing.id);
+          if (error) throw error;
+        } else {
+          const { error } = await supabase
+            .from("intervention_step_completions")
+            .insert({
+              intervention_id: interventionId,
+              step_id: stepId,
+              completed_at: null,
+              completed_by: user?.id || null,
+              comment: comment || null,
+              photo_url: photoUrl || null,
+              loop_index: loopIndex,
+              checklist_data: checklistData || null,
+              multiple_choice_data: multipleChoiceData || null,
+            } as any);
+          if (error) throw error;
+        }
+
+        queryClient.invalidateQueries({ queryKey: ["step-completions", interventionId] });
+      };
+
+      syncToServer().catch(async (err) => {
+        console.warn("Draft save background sync failed, queuing:", err?.message);
+        await addMutation({
+          type: 'save_draft_step',
+          payload: { interventionId, stepId, comment, photoUrl, loopIndex, checklistData, multipleChoiceData },
+        }).catch(() => {});
+      });
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["step-completions", variables.interventionId] });
+      // Silent for drafts
     },
-    // Silent - no toast for drafts
   });
 }
 
@@ -191,21 +292,47 @@ export function useUncompleteStep() {
       stepId: string;
       loopIndex?: number;
     }) => {
-      let query = supabase
-        .from("intervention_step_completions")
-        .delete()
-        .eq("intervention_id", interventionId)
-        .eq("step_id", stepId);
+      // 1. Optimistic: remove from cache
+      queryClient.setQueryData<StepCompletion[]>(
+        ["step-completions", interventionId],
+        (old = []) => old.filter(
+          (c) => !(c.step_id === stepId && (loopIndex === undefined || c.loop_index === loopIndex))
+        )
+      );
 
-      if (loopIndex !== undefined) {
-        query = query.eq("loop_index", loopIndex);
+      // 2. If offline, queue
+      if (!navigator.onLine) {
+        await addMutation({
+          type: 'uncomplete_step',
+          payload: { interventionId, stepId, loopIndex },
+        });
+        return;
       }
 
-      const { error } = await query;
-      if (error) throw error;
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["step-completions", variables.interventionId] });
+      // 3. Background sync
+      const syncToServer = async () => {
+        let query = supabase
+          .from("intervention_step_completions")
+          .delete()
+          .eq("intervention_id", interventionId)
+          .eq("step_id", stepId);
+
+        if (loopIndex !== undefined) {
+          query = query.eq("loop_index", loopIndex);
+        }
+
+        const { error } = await query;
+        if (error) throw error;
+        queryClient.invalidateQueries({ queryKey: ["step-completions", interventionId] });
+      };
+
+      syncToServer().catch(async (err) => {
+        console.warn("Uncomplete step background sync failed, queuing:", err?.message);
+        await addMutation({
+          type: 'uncomplete_step',
+          payload: { interventionId, stepId, loopIndex },
+        }).catch(() => {});
+      });
     },
     onError: (error: Error) => {
       toast.error("Erreur: " + error.message);
