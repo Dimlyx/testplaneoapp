@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import AttachmentsList from "@/components/technician/AttachmentsList";
+import EquipmentDetailPanel from "@/components/technician/EquipmentDetailPanel";
 import { useInterventionAttachments } from "@/hooks/useInterventionAttachments";
 import JourneyTracker from "@/components/technician/JourneyTracker";
 import { Tables } from "@/integrations/supabase/types";
@@ -87,7 +88,7 @@ const InterventionWorkflow = ({
   readOnly = false,
 }: InterventionWorkflowProps) => {
   const [activeStep, setActiveStep] = useState<string | null>(null);
-  const [expandedEquipments, setExpandedEquipments] = useState<Set<number>>(new Set());
+  const [openEquipmentPanel, setOpenEquipmentPanel] = useState<number | null>(null);
   const mapsChooser = useMapsChooser();
   const { data: attachments = [] } = useInterventionAttachments(intervention.id);
   
@@ -261,8 +262,8 @@ const InterventionWorkflow = ({
       setJustAddedLoop(false);
       return;
     }
-    // Don't override if user is browsing inside an expanded past equipment
-    if (expandedEquipments.size > 0) return;
+    // Don't override if user is browsing inside an equipment panel
+    if (openEquipmentPanel !== null) return;
     
     if (isLocked) {
       setActiveStep('finish');
@@ -812,40 +813,18 @@ const InterventionWorkflow = ({
           );
           const isPastLoop = loopComplete && !!triggerCompletion?.comment?.includes("Oui");
 
-          // If it's a completed past loop, show as a single collapsible WorkflowStep
+          // If it's a completed past loop, show as a clickable card that opens the slide-in panel
           if (isPastLoop) {
-            const isExpanded = expandedEquipments.has(loopIdx);
-
             nodes.push(
               <WorkflowStep
                 key={`equipment-${loopIdx}`}
                 icon={CheckCircle}
                 label={`Équipement ${loopIdx + 1}`}
-                isActive={isExpanded}
+                isActive={false}
                 isCompleted={true}
-                onClick={() => {
-                  setExpandedEquipments(prev => {
-                    const next = new Set(prev);
-                    if (next.has(loopIdx)) {
-                      next.delete(loopIdx);
-                      // Clear activeStep if it belongs to this loop
-                      if (activeStep?.includes(`loop-${loopIdx}`)) {
-                        setActiveStep(null);
-                      }
-                    } else {
-                      next.add(loopIdx);
-                    }
-                    return next;
-                  });
-                }}
+                onClick={() => setOpenEquipmentPanel(loopIdx)}
                 isDisabled={stepsLocked}
-              >
-                {isExpanded && (
-                  <div className="space-y-0">
-                    {renderLoopSteps(loopIdx, true)}
-                  </div>
-                )}
-              </WorkflowStep>
+              />
             );
 
             // isPastLoop is true means trigger was "Oui", so always render next loop
@@ -1183,6 +1162,21 @@ const InterventionWorkflow = ({
       }}
       isUpdating={isUpdating}
     />
+    {openEquipmentPanel !== null && (
+      <EquipmentDetailPanel
+        loopIdx={openEquipmentPanel}
+        loopableSteps={loopableSteps}
+        stepCompletions={stepCompletions}
+        interventionId={intervention.id}
+        loopTriggerStepId={loopTriggerStep?.id}
+        allowLoop={matchingType?.allow_loop}
+        isLocked={isLocked}
+        isCompleting={completeStep.isPending}
+        skippedStepIds={getSkippedStepIdsForLoop(openEquipmentPanel)}
+        onComplete={handleCompleteStep}
+        onClose={() => setOpenEquipmentPanel(null)}
+      />
+    )}
     </>
   );
 };
