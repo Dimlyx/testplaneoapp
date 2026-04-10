@@ -839,7 +839,8 @@ const InterventionWorkflow = ({
           const nodes: React.ReactNode[] = [];
           const loopComplete = isLoopComplete(loopIdx);
           // A past loop = completed and not the latest active one
-          const isActiveLoop = activeStep?.includes(`loop-${loopIdx}`);
+          // Also check if the equipment-level step is expanded
+          const isActiveLoop = activeStep?.includes(`loop-${loopIdx}`) || activeStep === `equipment-${loopIdx}`;
           const isPastLoop = loopComplete && !isActiveLoop && loopIdx < maxLoopIndex;
 
           // Loop separator
