@@ -66,13 +66,18 @@ export function useOfflineInterventionUpdate() {
         return false;
       }
 
-      // 4. Online: try Supabase
+      // 4. Online: try Supabase with a short timeout
       try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5000); // 5s timeout
+
         const { error } = await supabase
           .from('interventions')
           .update(data)
-          .eq('id', id);
+          .eq('id', id)
+          .abortSignal(controller.signal);
 
+        clearTimeout(timeout);
         if (error) throw error;
 
         // Refresh from server to get canonical data
