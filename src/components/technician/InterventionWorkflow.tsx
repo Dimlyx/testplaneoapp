@@ -262,8 +262,8 @@ const InterventionWorkflow = ({
       setJustAddedLoop(false);
       return;
     }
-    // Don't override if user is browsing inside an expanded past equipment
-    if (expandedEquipments.size > 0) return;
+    // Don't override if user is browsing inside an equipment panel
+    if (openEquipmentPanel !== null) return;
     
     if (isLocked) {
       setActiveStep('finish');
