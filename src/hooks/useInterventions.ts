@@ -296,6 +296,8 @@ export function useIntervention(id: string) {
         throw err;
       }
     },
+    refetchOnWindowFocus: () => navigator.onLine,
+    refetchOnReconnect: true,
   });
 }
 
