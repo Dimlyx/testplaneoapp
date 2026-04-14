@@ -16,7 +16,8 @@ const MultiPhotoCamera = ({ onCapture, onClose }: MultiPhotoCameraProps) => {
   const [facingMode, setFacingMode] = useState<"environment" | "user">("environment");
   const [isStarting, setIsStarting] = useState(true);
   const [flashEffect, setFlashEffect] = useState(false);
-
+  const [torchOn, setTorchOn] = useState(false);
+  const [torchSupported, setTorchSupported] = useState(false);
   const startCamera = useCallback(async (facing: "environment" | "user") => {
     // Stop existing stream
     if (streamRef.current) {
