@@ -413,25 +413,41 @@ const DynamicStepContent = ({
             )}
 
             {canEdit && (
-              <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-muted-foreground/30 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
-                {photoUrls.length > 0 ? (
-                  <Plus className="h-6 w-6 text-muted-foreground mb-1" />
-                ) : (
-                  <Upload className="h-6 w-6 text-muted-foreground mb-1" />
-                )}
-                <span className="text-sm text-muted-foreground">
-                  {isUploading ? `Envoi en cours (${uploadingCount})...` : photoUrls.length > 0 ? "Ajouter une photo" : "Prendre une photo"}
-                </span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  className="hidden"
-                  onChange={handlePhotoUpload}
+              <div className="flex gap-2">
+                {/* Camera button - opens custom multi-photo camera */}
+                <button
+                  type="button"
+                  onClick={() => setShowCamera(true)}
                   disabled={isUploading || isLocked}
-                  multiple
-                />
-              </label>
+                  className="flex-1 flex flex-col items-center justify-center h-24 border-2 border-dashed border-muted-foreground/30 rounded-lg cursor-pointer active:bg-muted/50 transition-colors disabled:opacity-50"
+                >
+                  <Camera className="h-6 w-6 text-muted-foreground mb-1" />
+                  <span className="text-sm text-muted-foreground">
+                    {isUploading ? `Envoi (${uploadingCount})...` : "Prendre des photos"}
+                  </span>
+                </button>
+                {/* File picker for importing from gallery */}
+                <label className="flex flex-col items-center justify-center w-24 h-24 border-2 border-dashed border-muted-foreground/30 rounded-lg cursor-pointer active:bg-muted/50 transition-colors">
+                  <Upload className="h-5 w-5 text-muted-foreground mb-1" />
+                  <span className="text-xs text-muted-foreground">Galerie</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handlePhotoUpload}
+                    disabled={isUploading || isLocked}
+                    multiple
+                  />
+                </label>
+              </div>
+            )}
+
+            {/* Multi-photo camera overlay */}
+            {showCamera && (
+              <MultiPhotoCamera
+                onCapture={handleCameraCapture}
+                onClose={() => setShowCamera(false)}
+              />
             )}
           </div>
         )}
