@@ -155,13 +155,13 @@ export function useCompleteStep() {
       });
     },
     onSuccess: () => {
-      toast.success("Étape validée");
+      toast({ title: "Étape validée" });
     },
     onError: (error: Error) => {
       if (!navigator.onLine) {
-        toast.info("Étape enregistrée localement — sera synchronisée au retour de la connexion");
+        toast({ title: "Étape enregistrée localement", description: "Sera synchronisée au retour de la connexion" });
       } else {
-        toast.error("Erreur: " + error.message);
+        toast({ title: "Erreur", description: error.message, variant: "destructive" });
       }
     },
   });
@@ -335,7 +335,7 @@ export function useUncompleteStep() {
       });
     },
     onError: (error: Error) => {
-      toast.error("Erreur: " + error.message);
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
     },
   });
 }

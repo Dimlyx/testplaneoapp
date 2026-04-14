@@ -83,7 +83,7 @@ const StepItem = ({ step, completion, interventionId, index, loopIndex }: StepIt
       }
       setPhotoUrls(prev => [...prev, ...newUrls]);
     } catch (error: any) {
-      toast.error("Erreur upload: " + error.message);
+      toast({ title: "Erreur upload", description: error.message, variant: "destructive" });
     } finally {
       setIsUploading(false);
       e.target.value = "";
@@ -107,7 +107,7 @@ const StepItem = ({ step, completion, interventionId, index, loopIndex }: StepIt
       });
       setEditing(false);
     } catch (error: any) {
-      toast.error("Erreur: " + error.message);
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
     } finally {
       setIsSaving(false);
     }
@@ -120,7 +120,7 @@ const StepItem = ({ step, completion, interventionId, index, loopIndex }: StepIt
       setPhotoUrls([]);
       setEditing(false);
     } catch (error: any) {
-      toast.error("Erreur: " + error.message);
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
     }
   };
 

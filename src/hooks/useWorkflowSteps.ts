@@ -134,10 +134,10 @@ export function useCreateWorkflowStep() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["workflow-steps"] });
       queryClient.invalidateQueries({ queryKey: ["workflow-steps-by-type"] });
-      toast.success("Étape créée avec succès");
+      toast({ title: "Étape créée avec succès" });
     },
     onError: (error: Error) => {
-      toast.error("Erreur lors de la création: " + error.message);
+      toast({ title: "Erreur lors de la création", description: error.message, variant: "destructive" });
     },
   });
 }
@@ -162,7 +162,7 @@ export function useUpdateWorkflowStep() {
       queryClient.invalidateQueries({ queryKey: ["workflow-steps-by-type"] });
     },
     onError: (error: Error) => {
-      toast.error("Erreur lors de la mise à jour: " + error.message);
+      toast({ title: "Erreur lors de la mise à jour", description: error.message, variant: "destructive" });
     },
   });
 }
@@ -182,10 +182,10 @@ export function useDeleteWorkflowStep() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["workflow-steps"] });
       queryClient.invalidateQueries({ queryKey: ["workflow-steps-by-type"] });
-      toast.success("Étape supprimée");
+      toast({ title: "Étape supprimée" });
     },
     onError: (error: Error) => {
-      toast.error("Erreur lors de la suppression: " + error.message);
+      toast({ title: "Erreur lors de la suppression", description: error.message, variant: "destructive" });
     },
   });
 }
@@ -207,10 +207,10 @@ export function useReorderWorkflowSteps() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["workflow-steps"] });
       queryClient.invalidateQueries({ queryKey: ["workflow-steps-by-type"] });
-      toast.success("Ordre des étapes mis à jour");
+      toast({ title: "Ordre des étapes mis à jour" });
     },
     onError: (error: Error) => {
-      toast.error("Erreur lors de la réorganisation: " + error.message);
+      toast({ title: "Erreur lors de la réorganisation", description: error.message, variant: "destructive" });
     },
   });
 }
