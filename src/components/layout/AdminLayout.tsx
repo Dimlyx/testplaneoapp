@@ -239,7 +239,7 @@ export default function AdminLayout() {
           <Outlet />
         </main>
       </div>
-      <ChatBot />
+      {location.pathname === '/admin' && <ChatBot />}
     </div>
   );
 }
