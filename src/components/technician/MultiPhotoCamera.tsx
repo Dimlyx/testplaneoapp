@@ -34,6 +34,11 @@ const MultiPhotoCamera = ({ onCapture, onClose }: MultiPhotoCameraProps) => {
         videoRef.current.srcObject = stream;
         await videoRef.current.play();
       }
+      // Check torch support
+      const track = stream.getVideoTracks()[0];
+      const capabilities = track?.getCapabilities?.() as any;
+      setTorchSupported(!!capabilities?.torch);
+      setTorchOn(false);
       setError(null);
     } catch (err: any) {
       console.error("Camera error:", err);
