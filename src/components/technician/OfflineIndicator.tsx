@@ -86,24 +86,10 @@ export function OfflineIndicator() {
           )}
 
           {isOnline && pendingCount > 0 && (
-            <Button 
-              onClick={() => syncAll()} 
-              disabled={isSyncing}
-              size="sm"
-              className="w-full"
-            >
-              {isSyncing ? (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  Synchronisation...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Synchroniser maintenant
-                </>
-              )}
-            </Button>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <RefreshCw className="h-4 w-4 animate-spin" />
+              <span>Synchronisation automatique en cours...</span>
+            </div>
           )}
         </div>
       </PopoverContent>
