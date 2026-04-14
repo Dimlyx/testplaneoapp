@@ -136,9 +136,16 @@ const MultiPhotoCamera = ({ onCapture, onClose }: MultiPhotoCameraProps) => {
         <Button variant="ghost" size="icon" onClick={handleCancel} className="text-white hover:bg-white/20">
           <X className="h-6 w-6" />
         </Button>
-        <span className="text-white font-medium text-sm">
-          {capturedPhotos.length > 0 ? `${capturedPhotos.length} photo${capturedPhotos.length > 1 ? "s" : ""}` : "Caméra"}
-        </span>
+        <div className="flex items-center gap-2">
+          {torchSupported && (
+            <Button variant="ghost" size="icon" onClick={toggleTorch} className={`hover:bg-white/20 ${torchOn ? 'text-yellow-400' : 'text-white/60'}`}>
+              {torchOn ? <Zap className="h-5 w-5" /> : <ZapOff className="h-5 w-5" />}
+            </Button>
+          )}
+          <span className="text-white font-medium text-sm">
+            {capturedPhotos.length > 0 ? `${capturedPhotos.length} photo${capturedPhotos.length > 1 ? "s" : ""}` : "Caméra"}
+          </span>
+        </div>
         <Button variant="ghost" size="icon" onClick={handleSwitchCamera} className="text-white hover:bg-white/20">
           <RotateCcw className="h-5 w-5" />
         </Button>
