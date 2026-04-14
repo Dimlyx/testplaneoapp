@@ -70,7 +70,7 @@ const WorkflowStep = ({
           <span className={cn(
             "font-medium",
             isDisabled && "text-muted-foreground",
-            !isDisabled && isCompleted && "text-primary",
+            !isDisabled && isCompleted && "text-foreground",
             !isDisabled && isActive && "text-foreground",
             !isDisabled && !isActive && !isCompleted && "text-muted-foreground"
           )}>
