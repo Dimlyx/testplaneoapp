@@ -343,6 +343,18 @@ export function useOfflineSync() {
     }
   }, [queryClient, toast, loadSyncStatus]);
 
+  // Auto-sync every 10 seconds when online and there are pending items
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (navigator.onLine && !syncingRef.current) {
+        loadSyncStatus().then(() => {
+          syncAll();
+        });
+      }
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [syncAll, loadSyncStatus]);
+
   const cacheInterventions = useCallback(async (interventions: any[]) => {
     for (const intervention of interventions) {
       await saveInterventionOffline(intervention);
