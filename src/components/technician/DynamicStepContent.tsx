@@ -234,6 +234,50 @@ const DynamicStepContent = ({
     setPhotoUrls(prev => prev.filter((_, i) => i !== index));
   };
 
+  // Handle files from MultiPhotoCamera
+  const handleCameraCapture = (files: File[]) => {
+    setShowCamera(false);
+    if (files.length === 0) return;
+
+    const localUrls = files.map(file => URL.createObjectURL(file));
+    setPhotoUrls(prev => [...prev, ...localUrls]);
+    setUploadingCount(prev => prev + files.length);
+    setIsUploading(true);
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const localUrl = localUrls[i];
+
+      const uploadPromise = (async (): Promise<string | null> => {
+        try {
+          if (!navigator.onLine) {
+            setUploadingCount(prev => { const n = prev - 1; if (n <= 0) setIsUploading(false); return Math.max(0, n); });
+            return localUrl;
+          }
+          const compressed = await compressImage(file);
+          const fileName = `steps/${interventionId}/${step.id}-loop${loopIndex}-${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
+          const { error: uploadError } = await supabase.storage
+            .from("intervention-photos")
+            .upload(fileName, compressed, { contentType: 'image/jpeg' });
+          if (uploadError) throw uploadError;
+          const { data: urlData } = supabase.storage
+            .from("intervention-photos")
+            .getPublicUrl(fileName);
+          const remoteUrl = urlData.publicUrl;
+          setPhotoUrls(prev => prev.map(u => u === localUrl ? remoteUrl : u));
+          setUploadingCount(prev => { const n = prev - 1; if (n <= 0) setIsUploading(false); return Math.max(0, n); });
+          URL.revokeObjectURL(localUrl);
+          return remoteUrl;
+        } catch (error: any) {
+          console.warn("Photo upload failed, keeping local preview:", error?.message);
+          setUploadingCount(prev => { const n = prev - 1; if (n <= 0) setIsUploading(false); return Math.max(0, n); });
+          return localUrl;
+        }
+      })();
+      pendingUploadsRef.current.set(localUrl, uploadPromise);
+    }
+  };
+
   // Resolve any pending uploads before saving, but don't block the UI while uploading
   const resolvePhotos = async (): Promise<string | undefined> => {
     // Wait for all pending uploads to finish (fast if already done)
