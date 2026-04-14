@@ -28,7 +28,7 @@ import {
 import { WorkflowStep } from "@/hooks/useWorkflowSteps";
 import { StepCompletion, useCompleteStep, useUncompleteStep } from "@/hooks/useStepCompletions";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 
 interface AdminStepEditorProps {
   steps: WorkflowStep[];
