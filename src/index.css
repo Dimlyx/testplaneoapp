@@ -124,6 +124,12 @@
     --sidebar-border: 217 33% 17%;
     --sidebar-ring: 212 27% 84%;
   }
+
+  /* Text selection styles - dark mode */
+  .dark ::selection {
+    background-color: hsl(215 55% 55%);
+    color: white;
+  }
 }
 
 @layer base {
