@@ -62,6 +62,17 @@ const MultiPhotoCamera = ({ onCapture, onClose }: MultiPhotoCameraProps) => {
     startCamera(next);
   };
 
+  const toggleTorch = async () => {
+    const track = streamRef.current?.getVideoTracks()[0];
+    if (!track) return;
+    try {
+      await (track as any).applyConstraints({ advanced: [{ torch: !torchOn }] });
+      setTorchOn(prev => !prev);
+    } catch (err) {
+      console.warn("Torch toggle failed:", err);
+    }
+  };
+
   const takePhoto = useCallback(() => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
