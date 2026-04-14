@@ -124,6 +124,12 @@
     --sidebar-border: 217 33% 17%;
     --sidebar-ring: 212 27% 84%;
   }
+
+  /* Text selection styles - dark mode */
+  .dark ::selection {
+    background-color: hsl(215 55% 55%);
+    color: white;
+  }
 }
 
 @layer base {
@@ -152,6 +158,12 @@
 
   h1, h2, h3, h4, h5, h6 {
     @apply font-semibold tracking-tight;
+  }
+
+  /* Text selection styles - light mode */
+  ::selection {
+    background-color: hsl(215 55% 35%);
+    color: white;
   }
 }
 
