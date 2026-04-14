@@ -64,19 +64,6 @@ export function useOfflineSync() {
     };
   }, []);
 
-  // Auto-sync every 10 seconds when online and there are pending items
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (navigator.onLine && !syncingRef.current) {
-        loadSyncStatus().then(() => {
-          // syncAll checks pendingCount internally via IndexedDB
-          syncAll();
-        });
-      }
-    }, 10000);
-    return () => clearInterval(interval);
-  }, [syncAll, loadSyncStatus]);
-
   // Load initial sync status
   useEffect(() => {
     loadSyncStatus();
