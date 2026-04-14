@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import { useUserOrganization } from "./useUserOrganization";
 
 export interface InterventionType {
@@ -47,10 +47,10 @@ export function useCreateInterventionType() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["intervention-types"] });
-      toast.success("Type d'intervention créé");
+      toast({ title: "Type d'intervention créé" });
     },
     onError: (error: Error) => {
-      toast.error("Erreur lors de la création: " + error.message);
+      toast({ title: "Erreur lors de la création", description: error.message, variant: "destructive" });
     },
   });
 }
@@ -69,10 +69,10 @@ export function useUpdateInterventionType() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["intervention-types"] });
-      toast.success("Type d'intervention mis à jour");
+      toast({ title: "Type d'intervention mis à jour" });
     },
     onError: (error: Error) => {
-      toast.error("Erreur lors de la mise à jour: " + error.message);
+      toast({ title: "Erreur lors de la mise à jour", description: error.message, variant: "destructive" });
     },
   });
 }
@@ -102,10 +102,10 @@ export function useDeleteInterventionType() {
       queryClient.invalidateQueries({ queryKey: ["workflow-steps"] });
       queryClient.invalidateQueries({ queryKey: ["interventions"] });
       queryClient.invalidateQueries({ queryKey: ["technician-interventions"] });
-      toast.success("Type d'intervention supprimé");
+      toast({ title: "Type d'intervention supprimé" });
     },
     onError: (error: Error) => {
-      toast.error("Erreur lors de la suppression: " + error.message);
+      toast({ title: "Erreur lors de la suppression", description: error.message, variant: "destructive" });
     },
   });
 }
