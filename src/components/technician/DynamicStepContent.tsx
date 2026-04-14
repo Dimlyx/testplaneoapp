@@ -465,7 +465,7 @@ const DynamicStepContent = ({
                   <List className="h-4 w-4 text-primary" />
                   <span className="text-sm font-medium">Choix multiple</span>
                   {selectedCount > 0 && (
-                    <span className="text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded-full">
+                    <span className="text-xs bg-primary/20 text-primary-foreground px-2 py-0.5 rounded-full">
                       {selectedCount} sélectionné{selectedCount > 1 ? "s" : ""}
                     </span>
                   )}
@@ -481,7 +481,7 @@ const DynamicStepContent = ({
                     onCheckedChange={() => toggleMultipleChoiceItem(item.id)}
                     disabled={isLocked}
                   />
-                  <span className={`text-sm ${item.selected ? "font-medium text-primary" : ""}`}>
+                  <span className={`text-sm ${item.selected ? "font-medium text-foreground" : "text-foreground"}`}>
                     {item.label}
                   </span>
                 </label>
@@ -520,7 +520,7 @@ const DynamicStepContent = ({
                   onCheckedChange={() => toggleChecklistItem(item.id)}
                   disabled={isLocked}
                 />
-                <span className={`text-sm ${item.checked ? "text-muted-foreground" : ""}`}>
+                <span className={`text-sm ${item.checked ? "text-muted-foreground line-through" : "text-foreground"}`}>
                   {item.label}
                 </span>
               </label>
