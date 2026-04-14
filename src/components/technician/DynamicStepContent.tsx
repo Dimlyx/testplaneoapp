@@ -201,6 +201,13 @@ const DynamicStepContent = ({
           // Swap local blob URL with remote URL
           setPhotoUrls(prev => prev.map(u => u === localUrl ? remoteUrl : u));
           
+          // Decrement uploading count
+          setUploadingCount(prev => {
+            const next = prev - 1;
+            if (next <= 0) setIsUploading(false);
+            return Math.max(0, next);
+          });
+          
           // Revoke blob URL to free memory
           URL.revokeObjectURL(localUrl);
           
