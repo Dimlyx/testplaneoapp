@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Camera, X, Check, RotateCcw, ImageIcon } from "lucide-react";
+import { Camera, X, Check, RotateCcw, ImageIcon, Zap, ZapOff } from "lucide-react";
 
 interface MultiPhotoCameraProps {
   onCapture: (files: File[]) => void;
