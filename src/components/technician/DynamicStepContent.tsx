@@ -10,6 +10,7 @@ import { StepCompletion, useSaveDraft } from "@/hooks/useStepCompletions";
 import { supabase } from "@/integrations/supabase/client";
 import SignaturePad from "@/components/SignaturePad";
 import { compressImage } from "@/lib/image-compression";
+import MultiPhotoCamera from "@/components/technician/MultiPhotoCamera";
 
 interface DynamicStepContentProps {
   step: WorkflowStepType;
