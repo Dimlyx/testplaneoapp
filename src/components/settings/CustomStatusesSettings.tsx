@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Edit2, Check, X, GripVertical } from "lucide-react";
+import { Plus, Trash2, Edit2, Check, X, GripVertical, Palette } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -146,7 +147,7 @@ export default function CustomStatusesSettings() {
                       className="h-8 text-sm flex-1"
                       onKeyDown={(e) => e.key === 'Enter' && handleUpdate()}
                     />
-                    <div className="flex gap-1">
+                    <div className="flex gap-1 items-center">
                       {PRESET_COLORS.map((c) => (
                         <button
                           key={c}
@@ -158,6 +159,15 @@ export default function CustomStatusesSettings() {
                           }}
                         />
                       ))}
+                      <label className="relative cursor-pointer w-5 h-5 flex items-center justify-center" title="Nuancier">
+                        <Palette className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors" />
+                        <input
+                          type="color"
+                          value={form.color}
+                          onChange={(e) => setForm(f => ({ ...f, color: e.target.value }))}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        />
+                      </label>
                     </div>
                     <Button size="icon" variant="ghost" className="h-7 w-7" onClick={handleUpdate} disabled={updateMutation.isPending}>
                       <Check className="h-3.5 w-3.5" />
@@ -197,7 +207,7 @@ export default function CustomStatusesSettings() {
                   autoFocus
                   onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
                 />
-                <div className="flex gap-1">
+                <div className="flex gap-1 items-center">
                   {PRESET_COLORS.map((c) => (
                     <button
                       key={c}
@@ -209,6 +219,15 @@ export default function CustomStatusesSettings() {
                       }}
                     />
                   ))}
+                  <label className="relative cursor-pointer w-5 h-5 flex items-center justify-center" title="Nuancier">
+                    <Palette className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors" />
+                    <input
+                      type="color"
+                      value={form.color}
+                      onChange={(e) => setForm(f => ({ ...f, color: e.target.value }))}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    />
+                  </label>
                 </div>
                 <Button size="icon" variant="ghost" className="h-7 w-7" onClick={handleAdd} disabled={createMutation.isPending || !form.label.trim()}>
                   <Check className="h-3.5 w-3.5" />
