@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Camera, X, Check, RotateCcw, ImageIcon } from "lucide-react";
+import { Camera, X, Check, RotateCcw, ImageIcon, Zap, ZapOff } from "lucide-react";
 
 interface MultiPhotoCameraProps {
   onCapture: (files: File[]) => void;
@@ -16,7 +16,8 @@ const MultiPhotoCamera = ({ onCapture, onClose }: MultiPhotoCameraProps) => {
   const [facingMode, setFacingMode] = useState<"environment" | "user">("environment");
   const [isStarting, setIsStarting] = useState(true);
   const [flashEffect, setFlashEffect] = useState(false);
-
+  const [torchOn, setTorchOn] = useState(false);
+  const [torchSupported, setTorchSupported] = useState(false);
   const startCamera = useCallback(async (facing: "environment" | "user") => {
     // Stop existing stream
     if (streamRef.current) {
@@ -33,6 +34,11 @@ const MultiPhotoCamera = ({ onCapture, onClose }: MultiPhotoCameraProps) => {
         videoRef.current.srcObject = stream;
         await videoRef.current.play();
       }
+      // Check torch support
+      const track = stream.getVideoTracks()[0];
+      const capabilities = track?.getCapabilities?.() as any;
+      setTorchSupported(!!capabilities?.torch);
+      setTorchOn(false);
       setError(null);
     } catch (err: any) {
       console.error("Camera error:", err);
@@ -54,6 +60,17 @@ const MultiPhotoCamera = ({ onCapture, onClose }: MultiPhotoCameraProps) => {
     const next = facingMode === "environment" ? "user" : "environment";
     setFacingMode(next);
     startCamera(next);
+  };
+
+  const toggleTorch = async () => {
+    const track = streamRef.current?.getVideoTracks()[0];
+    if (!track) return;
+    try {
+      await (track as any).applyConstraints({ advanced: [{ torch: !torchOn }] });
+      setTorchOn(prev => !prev);
+    } catch (err) {
+      console.warn("Torch toggle failed:", err);
+    }
   };
 
   const takePhoto = useCallback(() => {
@@ -119,9 +136,16 @@ const MultiPhotoCamera = ({ onCapture, onClose }: MultiPhotoCameraProps) => {
         <Button variant="ghost" size="icon" onClick={handleCancel} className="text-white hover:bg-white/20">
           <X className="h-6 w-6" />
         </Button>
-        <span className="text-white font-medium text-sm">
-          {capturedPhotos.length > 0 ? `${capturedPhotos.length} photo${capturedPhotos.length > 1 ? "s" : ""}` : "Caméra"}
-        </span>
+        <div className="flex items-center gap-2">
+          {torchSupported && (
+            <Button variant="ghost" size="icon" onClick={toggleTorch} className={`hover:bg-white/20 ${torchOn ? 'text-yellow-400' : 'text-white/60'}`}>
+              {torchOn ? <Zap className="h-5 w-5" /> : <ZapOff className="h-5 w-5" />}
+            </Button>
+          )}
+          <span className="text-white font-medium text-sm">
+            {capturedPhotos.length > 0 ? `${capturedPhotos.length} photo${capturedPhotos.length > 1 ? "s" : ""}` : "Caméra"}
+          </span>
+        </div>
         <Button variant="ghost" size="icon" onClick={handleSwitchCamera} className="text-white hover:bg-white/20">
           <RotateCcw className="h-5 w-5" />
         </Button>
