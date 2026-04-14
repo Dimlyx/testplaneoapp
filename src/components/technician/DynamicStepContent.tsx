@@ -10,6 +10,7 @@ import { StepCompletion, useSaveDraft } from "@/hooks/useStepCompletions";
 import { supabase } from "@/integrations/supabase/client";
 import SignaturePad from "@/components/SignaturePad";
 import { compressImage } from "@/lib/image-compression";
+import MultiPhotoCamera from "@/components/technician/MultiPhotoCamera";
 
 interface DynamicStepContentProps {
   step: WorkflowStepType;
@@ -50,6 +51,7 @@ const DynamicStepContent = ({
   const [photoUrls, setPhotoUrls] = useState<string[]>(parsePhotoUrls(completion?.photo_url || null));
   const [isUploading, setIsUploading] = useState(false);
   const [uploadingCount, setUploadingCount] = useState(0);
+  const [showCamera, setShowCamera] = useState(false);
   const [localSignerName, setLocalSignerName] = useState(signerName);
   
   // Initialize checklist state from completion or step template
@@ -232,6 +234,50 @@ const DynamicStepContent = ({
     setPhotoUrls(prev => prev.filter((_, i) => i !== index));
   };
 
+  // Handle files from MultiPhotoCamera
+  const handleCameraCapture = (files: File[]) => {
+    setShowCamera(false);
+    if (files.length === 0) return;
+
+    const localUrls = files.map(file => URL.createObjectURL(file));
+    setPhotoUrls(prev => [...prev, ...localUrls]);
+    setUploadingCount(prev => prev + files.length);
+    setIsUploading(true);
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const localUrl = localUrls[i];
+
+      const uploadPromise = (async (): Promise<string | null> => {
+        try {
+          if (!navigator.onLine) {
+            setUploadingCount(prev => { const n = prev - 1; if (n <= 0) setIsUploading(false); return Math.max(0, n); });
+            return localUrl;
+          }
+          const compressed = await compressImage(file);
+          const fileName = `steps/${interventionId}/${step.id}-loop${loopIndex}-${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
+          const { error: uploadError } = await supabase.storage
+            .from("intervention-photos")
+            .upload(fileName, compressed, { contentType: 'image/jpeg' });
+          if (uploadError) throw uploadError;
+          const { data: urlData } = supabase.storage
+            .from("intervention-photos")
+            .getPublicUrl(fileName);
+          const remoteUrl = urlData.publicUrl;
+          setPhotoUrls(prev => prev.map(u => u === localUrl ? remoteUrl : u));
+          setUploadingCount(prev => { const n = prev - 1; if (n <= 0) setIsUploading(false); return Math.max(0, n); });
+          URL.revokeObjectURL(localUrl);
+          return remoteUrl;
+        } catch (error: any) {
+          console.warn("Photo upload failed, keeping local preview:", error?.message);
+          setUploadingCount(prev => { const n = prev - 1; if (n <= 0) setIsUploading(false); return Math.max(0, n); });
+          return localUrl;
+        }
+      })();
+      pendingUploadsRef.current.set(localUrl, uploadPromise);
+    }
+  };
+
   // Resolve any pending uploads before saving, but don't block the UI while uploading
   const resolvePhotos = async (): Promise<string | undefined> => {
     // Wait for all pending uploads to finish (fast if already done)
@@ -367,25 +413,41 @@ const DynamicStepContent = ({
             )}
 
             {canEdit && (
-              <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-muted-foreground/30 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
-                {photoUrls.length > 0 ? (
-                  <Plus className="h-6 w-6 text-muted-foreground mb-1" />
-                ) : (
-                  <Upload className="h-6 w-6 text-muted-foreground mb-1" />
-                )}
-                <span className="text-sm text-muted-foreground">
-                  {isUploading ? `Envoi en cours (${uploadingCount})...` : photoUrls.length > 0 ? "Ajouter une photo" : "Prendre une photo"}
-                </span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  className="hidden"
-                  onChange={handlePhotoUpload}
+              <div className="flex gap-2">
+                {/* Camera button - opens custom multi-photo camera */}
+                <button
+                  type="button"
+                  onClick={() => setShowCamera(true)}
                   disabled={isUploading || isLocked}
-                  multiple
-                />
-              </label>
+                  className="flex-1 flex flex-col items-center justify-center h-24 border-2 border-dashed border-muted-foreground/30 rounded-lg cursor-pointer active:bg-muted/50 transition-colors disabled:opacity-50"
+                >
+                  <Camera className="h-6 w-6 text-muted-foreground mb-1" />
+                  <span className="text-sm text-muted-foreground">
+                    {isUploading ? `Envoi (${uploadingCount})...` : "Prendre des photos"}
+                  </span>
+                </button>
+                {/* File picker for importing from gallery */}
+                <label className="flex flex-col items-center justify-center w-24 h-24 border-2 border-dashed border-muted-foreground/30 rounded-lg cursor-pointer active:bg-muted/50 transition-colors">
+                  <Upload className="h-5 w-5 text-muted-foreground mb-1" />
+                  <span className="text-xs text-muted-foreground">Galerie</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handlePhotoUpload}
+                    disabled={isUploading || isLocked}
+                    multiple
+                  />
+                </label>
+              </div>
+            )}
+
+            {/* Multi-photo camera overlay */}
+            {showCamera && (
+              <MultiPhotoCamera
+                onCapture={handleCameraCapture}
+                onClose={() => setShowCamera(false)}
+              />
             )}
           </div>
         )}
