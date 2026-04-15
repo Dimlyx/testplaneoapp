@@ -558,10 +558,23 @@ const DynamicStepContent = ({
 
         {step.requires_comment && (
           <div>
-            <label className="text-sm font-medium mb-2 flex items-center gap-2">
-              <MessageSquare className="h-4 w-4" />
-              Commentaire {step.is_mandatory && !isCompleted && <span className="text-destructive">*</span>}
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-sm font-medium flex items-center gap-2">
+                <MessageSquare className="h-4 w-4" />
+                Commentaire {step.is_mandatory && !isCompleted && <span className="text-destructive">*</span>}
+              </label>
+              {!isLocked && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 text-xs"
+                  onClick={() => setIsCommentFullscreen(true)}
+                >
+                  <Maximize2 className="h-3.5 w-3.5 mr-1" />
+                  Agrandir
+                </Button>
+              )}
+            </div>
             <Textarea
               placeholder="Ajouter un commentaire..."
               value={comment}
@@ -569,6 +582,49 @@ const DynamicStepContent = ({
               className="min-h-[80px]"
               disabled={isLocked}
             />
+
+            {/* Fullscreen comment overlay */}
+            {isCommentFullscreen && (
+              <div
+                className="fixed inset-0 z-[9999] bg-background flex flex-col"
+                style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between p-4 border-b bg-card">
+                  <h3 className="font-semibold">Commentaire</h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsCommentFullscreen(false)}
+                  >
+                    <Minimize2 className="h-4 w-4 mr-1" />
+                    Fermer
+                  </Button>
+                </div>
+
+                {/* Large textarea */}
+                <div className="flex-1 p-4 overflow-hidden">
+                  <Textarea
+                    placeholder="Ajouter un commentaire détaillé..."
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    className="w-full h-full min-h-[200px] resize-none text-base leading-relaxed"
+                    disabled={isLocked}
+                    autoFocus
+                  />
+                </div>
+
+                {/* Footer with character count */}
+                <div className="flex items-center justify-between p-4 border-t bg-card">
+                  <span className="text-xs text-muted-foreground">
+                    {comment.length} caractère{comment.length > 1 ? 's' : ''}
+                  </span>
+                  <Button onClick={() => setIsCommentFullscreen(false)}>
+                    Enregistrer
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
