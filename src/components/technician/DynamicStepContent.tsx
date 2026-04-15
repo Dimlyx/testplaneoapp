@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
-import { Camera, MessageSquare, CheckCircle, Upload, X, Plus, ChevronDown, List, Save } from "lucide-react";
+import { Camera, MessageSquare, CheckCircle, Upload, X, Plus, ChevronDown, List, Save, ChevronLeft, ChevronRight } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { WorkflowStep as WorkflowStepType } from "@/hooks/useWorkflowSteps";
@@ -57,6 +57,7 @@ const DynamicStepContent = ({
   useEffect(() => { photoUrlsRef.current = photoUrls; }, [photoUrls]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadingCount, setUploadingCount] = useState(0);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [showCamera, setShowCamera] = useState(false);
   const [localSignerName, setLocalSignerName] = useState(signerName);
   
@@ -398,7 +399,12 @@ const DynamicStepContent = ({
                   const isBlobUrl = url.startsWith('blob:');
                   return (
                     <div key={index} className="relative">
-                      <img src={url} alt={`Photo ${index + 1}`} className={`w-full h-32 object-cover rounded-lg ${isBlobUrl ? 'opacity-70' : ''}`} />
+                      <img
+                        src={url}
+                        alt={`Photo ${index + 1}`}
+                        className={`w-full h-32 object-cover rounded-lg cursor-pointer ${isBlobUrl ? 'opacity-70' : ''}`}
+                        onClick={() => !isBlobUrl && setLightboxIndex(index)}
+                      />
                       {isBlobUrl && (
                         <div className="absolute inset-0 flex items-center justify-center">
                           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
@@ -409,7 +415,7 @@ const DynamicStepContent = ({
                           variant="destructive"
                           size="icon"
                           className="absolute top-1 right-1 h-6 w-6"
-                          onClick={() => removePhoto(index)}
+                          onClick={(e) => { e.stopPropagation(); removePhoto(index); }}
                         >
                           <X className="h-3 w-3" />
                         </Button>
@@ -418,6 +424,58 @@ const DynamicStepContent = ({
                   );
                 })}
               </div>
+            )}
+
+            {/* Lightbox */}
+            {lightboxIndex !== null && photoUrls[lightboxIndex] && (
+              <div
+                className="fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center"
+                style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
+                onClick={() => setLightboxIndex(null)}
+              >
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-4 right-4 text-white z-10 h-10 w-10"
+                  onClick={() => setLightboxIndex(null)}
+                >
+                  <X className="h-6 w-6" />
+                </Button>
+
+                {photoUrls.length > 1 && lightboxIndex > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute left-2 top-1/2 -translate-y-1/2 text-white z-10 h-10 w-10"
+                    onClick={(e) => { e.stopPropagation(); setLightboxIndex(lightboxIndex - 1); }}
+                  >
+                    <ChevronLeft className="h-6 w-6" />
+                  </Button>
+                )}
+
+                {photoUrls.length > 1 && lightboxIndex < photoUrls.length - 1 && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-white z-10 h-10 w-10"
+                    onClick={(e) => { e.stopPropagation(); setLightboxIndex(lightboxIndex + 1); }}
+                  >
+                    <ChevronRight className="h-6 w-6" />
+                  </Button>
+                )}
+
+                <img
+                  src={photoUrls[lightboxIndex]}
+                  alt={`Photo ${lightboxIndex + 1}`}
+                  className="max-h-[85vh] max-w-[95vw] object-contain rounded-lg"
+                  onClick={(e) => e.stopPropagation()}
+                />
+
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white text-sm">
+                  {lightboxIndex + 1} / {photoUrls.length}
+                </div>
+              </div>
+            )}
             )}
 
             {canEdit && (
