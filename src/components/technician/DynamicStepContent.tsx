@@ -27,13 +27,16 @@ interface DynamicStepContentProps {
 // Helper to parse photo_url which can be a single URL or JSON array
 const parsePhotoUrls = (photoUrl: string | null): string[] => {
   if (!photoUrl) return [];
+  let urls: string[] = [];
   try {
     const parsed = JSON.parse(photoUrl);
-    if (Array.isArray(parsed)) return parsed;
+    if (Array.isArray(parsed)) urls = parsed;
   } catch {
     // Not JSON, single URL
+    urls = photoUrl ? [photoUrl] : [];
   }
-  return photoUrl ? [photoUrl] : [];
+  // Filter out temporary blob: URLs that were persisted by mistake
+  return urls.filter(u => !u.startsWith('blob:'));
 };
 
 const DynamicStepContent = ({
