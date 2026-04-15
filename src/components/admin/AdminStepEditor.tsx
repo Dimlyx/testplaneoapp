@@ -128,6 +128,26 @@ const StepItem = ({ step, completion, interventionId, index, loopIndex }: StepIt
     }
   };
 
+  const handleDeleteSinglePhoto = async (urlToRemove: string) => {
+    if (!completion) return;
+    const currentUrls = parsePhotoUrls(completion.photo_url || null);
+    const updatedUrls = currentUrls.filter(u => u !== urlToRemove);
+    try {
+      await completeStep.mutateAsync({
+        interventionId,
+        stepId: step.id,
+        comment: completion.comment || undefined,
+        photoUrl: updatedUrls.length > 0 ? JSON.stringify(updatedUrls) : undefined,
+        loopIndex,
+        checklistData: completion.checklist_data || undefined,
+        multipleChoiceData: completion.multiple_choice_data || undefined,
+      });
+      toast({ title: "Photo supprimée" });
+    } catch (error: any) {
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+    }
+  };
+
   const handleStartEdit = () => {
     setComment(completion?.comment || "");
     setPhotoUrls(parsePhotoUrls(completion?.photo_url || null));
