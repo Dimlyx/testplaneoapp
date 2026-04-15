@@ -49,6 +49,9 @@ const DynamicStepContent = ({
 }: DynamicStepContentProps) => {
   const [comment, setComment] = useState(completion?.comment || "");
   const [photoUrls, setPhotoUrls] = useState<string[]>(parsePhotoUrls(completion?.photo_url || null));
+  const photoUrlsRef = useRef<string[]>(photoUrls);
+  // Keep ref in sync with state
+  useEffect(() => { photoUrlsRef.current = photoUrls; }, [photoUrls]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadingCount, setUploadingCount] = useState(0);
   const [showCamera, setShowCamera] = useState(false);
@@ -84,9 +87,11 @@ const DynamicStepContent = ({
   const hasMountedRef = useRef(false);
 
   // Auto-save draft with debounce (2s after last change)
+  // Filter out blob: URLs before saving to avoid persisting temporary browser URLs
   const saveDraftNow = useCallback(() => {
     if (isLocked) return;
-    const serializedPhotos = photoUrls.length > 0 ? JSON.stringify(photoUrls) : undefined;
+    const persistableUrls = photoUrls.filter(u => !u.startsWith('blob:'));
+    const serializedPhotos = persistableUrls.length > 0 ? JSON.stringify(persistableUrls) : undefined;
     saveDraft.mutate({
       interventionId,
       stepId: step.id,
@@ -278,20 +283,20 @@ const DynamicStepContent = ({
     }
   };
 
-  // Resolve any pending uploads before saving, but don't block the UI while uploading
-  const resolvePhotos = async (): Promise<string | undefined> => {
+  // Resolve any pending uploads before saving — returns only persistable (non-blob) URLs
+  const resolvePhotos = async (): Promise<string[]> => {
     // Wait for all pending uploads to finish (fast if already done)
     if (pendingUploadsRef.current.size > 0) {
       await Promise.allSettled(Array.from(pendingUploadsRef.current.values()));
       pendingUploadsRef.current.clear();
     }
-    // Read the latest photoUrls from state via a ref-like trick
-    return undefined; // We'll read from the state snapshot below
+    // Read the latest photoUrls from the ref (always up-to-date) and filter out any remaining blob URLs
+    return photoUrlsRef.current.filter(u => !u.startsWith('blob:'));
   };
 
   const handleValidate = async () => {
-    await resolvePhotos();
-    const serializedPhotos = photoUrls.length > 0 ? JSON.stringify(photoUrls) : undefined;
+    const resolvedUrls = await resolvePhotos();
+    const serializedPhotos = resolvedUrls.length > 0 ? JSON.stringify(resolvedUrls) : undefined;
     await onComplete(
       step.id,
       comment || undefined,
@@ -302,7 +307,7 @@ const DynamicStepContent = ({
     // Update initial data ref after save
     initialDataRef.current = {
       comment,
-      photoUrls: [...photoUrls],
+      photoUrls: [...resolvedUrls],
       checklist: [...checklistState],
       multipleChoice: [...multipleChoiceState],
     };
