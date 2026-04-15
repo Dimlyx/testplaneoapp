@@ -218,9 +218,22 @@ const StepItem = ({ step, completion, interventionId, index, loopIndex }: StepIt
               </p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 {parsePhotoUrls(completion?.photo_url || null).map((url, photoIdx) => (
-                  <a key={photoIdx} href={url} target="_blank" rel="noopener noreferrer">
-                    <img src={url} alt={`Photo ${photoIdx + 1}`} className="w-full aspect-square object-cover rounded-lg hover:opacity-90 transition-opacity" />
-                  </a>
+                  <div key={photoIdx} className="relative group">
+                    <a href={url} target="_blank" rel="noopener noreferrer">
+                      <img src={url} alt={`Photo ${photoIdx + 1}`} className="w-full aspect-square object-cover rounded-lg hover:opacity-90 transition-opacity" />
+                    </a>
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleDeleteSinglePhoto(url);
+                      }}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
                 ))}
               </div>
             </div>
