@@ -43,11 +43,15 @@ import { supabase } from "@/integrations/supabase/client";
 
 const parsePhotoUrls = (photoUrl: string | null): string[] => {
   if (!photoUrl) return [];
+  let urls: string[] = [];
   try {
     const parsed = JSON.parse(photoUrl);
-    if (Array.isArray(parsed)) return parsed;
-  } catch {}
-  return photoUrl ? [photoUrl] : [];
+    if (Array.isArray(parsed)) urls = parsed;
+    else urls = photoUrl ? [photoUrl] : [];
+  } catch {
+    urls = photoUrl ? [photoUrl] : [];
+  }
+  return urls.filter(u => !u.startsWith('blob:'));
 };
 
 const InterventionDetail = () => {
