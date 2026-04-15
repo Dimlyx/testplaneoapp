@@ -237,15 +237,15 @@ const StepItem = ({ step, completion, interventionId, index, loopIndex }: StepIt
                 Photos ({parsePhotoUrls(completion?.photo_url || null).length})
               </p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                {parsePhotoUrls(completion?.photo_url || null).map((url, photoIdx) => (
-                  <div key={photoIdx} className="relative group">
+              {parsePhotoUrls(completion?.photo_url || null).map((url, photoIdx) => (
+                  <div key={photoIdx} className="relative">
                     <a href={url} target="_blank" rel="noopener noreferrer">
-                      <img src={url} alt={`Photo ${photoIdx + 1}`} className="w-full aspect-square object-cover rounded-lg hover:opacity-90 transition-opacity" />
+                      <img src={url} alt={`Photo ${photoIdx + 1}`} className="w-full aspect-square object-cover rounded-lg" />
                     </a>
                     <Button
                       variant="destructive"
                       size="icon"
-                      className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute top-1 right-1 h-6 w-6"
                       onClick={(e) => {
                         e.preventDefault();
                         handleDeleteSinglePhoto(url);
