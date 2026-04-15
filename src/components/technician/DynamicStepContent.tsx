@@ -476,7 +476,6 @@ const DynamicStepContent = ({
                 </div>
               </div>
             )}
-            )}
 
             {canEdit && (
               <div className="flex gap-2">
