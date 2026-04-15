@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
-import { Camera, MessageSquare, CheckCircle, Upload, X, Plus, ChevronDown, List, Save, ChevronLeft, ChevronRight } from "lucide-react";
+import { Camera, MessageSquare, CheckCircle, Upload, X, Plus, ChevronDown, List, Save, ChevronLeft, ChevronRight, Maximize2, Minimize2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { WorkflowStep as WorkflowStepType } from "@/hooks/useWorkflowSteps";
