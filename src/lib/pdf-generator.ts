@@ -248,11 +248,15 @@ interface InterventionTypeData {
 
 const parsePhotoUrls = (photoUrl: string | null): string[] => {
   if (!photoUrl) return [];
+  let urls: string[] = [];
   try {
     const parsed = JSON.parse(photoUrl);
-    if (Array.isArray(parsed)) return parsed.filter(u => typeof u === 'string' && u.trim() !== '');
-  } catch {}
-  return photoUrl.trim() ? [photoUrl.trim()] : [];
+    if (Array.isArray(parsed)) urls = parsed.filter(u => typeof u === 'string' && u.trim() !== '');
+    else urls = photoUrl.trim() ? [photoUrl.trim()] : [];
+  } catch {
+    urls = photoUrl.trim() ? [photoUrl.trim()] : [];
+  }
+  return urls.filter(u => !u.startsWith('blob:'));
 };
 
 const getImageFormat = (base64: string): string => {
