@@ -128,6 +128,26 @@ const StepItem = ({ step, completion, interventionId, index, loopIndex }: StepIt
     }
   };
 
+  const handleDeleteSinglePhoto = async (urlToRemove: string) => {
+    if (!completion) return;
+    const currentUrls = parsePhotoUrls(completion.photo_url || null);
+    const updatedUrls = currentUrls.filter(u => u !== urlToRemove);
+    try {
+      await completeStep.mutateAsync({
+        interventionId,
+        stepId: step.id,
+        comment: completion.comment || undefined,
+        photoUrl: updatedUrls.length > 0 ? JSON.stringify(updatedUrls) : undefined,
+        loopIndex,
+        checklistData: completion.checklist_data || undefined,
+        multipleChoiceData: completion.multiple_choice_data || undefined,
+      });
+      toast({ title: "Photo supprimée" });
+    } catch (error: any) {
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+    }
+  };
+
   const handleStartEdit = () => {
     setComment(completion?.comment || "");
     setPhotoUrls(parsePhotoUrls(completion?.photo_url || null));
@@ -217,10 +237,23 @@ const StepItem = ({ step, completion, interventionId, index, loopIndex }: StepIt
                 Photos ({parsePhotoUrls(completion?.photo_url || null).length})
               </p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                {parsePhotoUrls(completion?.photo_url || null).map((url, photoIdx) => (
-                  <a key={photoIdx} href={url} target="_blank" rel="noopener noreferrer">
-                    <img src={url} alt={`Photo ${photoIdx + 1}`} className="w-full aspect-square object-cover rounded-lg hover:opacity-90 transition-opacity" />
-                  </a>
+              {parsePhotoUrls(completion?.photo_url || null).map((url, photoIdx) => (
+                  <div key={photoIdx} className="relative">
+                    <a href={url} target="_blank" rel="noopener noreferrer">
+                      <img src={url} alt={`Photo ${photoIdx + 1}`} className="w-full aspect-square object-cover rounded-lg" />
+                    </a>
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-1 right-1 h-6 w-6"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleDeleteSinglePhoto(url);
+                      }}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
                 ))}
               </div>
             </div>
