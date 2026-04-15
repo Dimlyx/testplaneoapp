@@ -60,6 +60,7 @@ const DynamicStepContent = ({
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [showCamera, setShowCamera] = useState(false);
   const [localSignerName, setLocalSignerName] = useState(signerName);
+  const [isCommentFullscreen, setIsCommentFullscreen] = useState(false);
   
   // Initialize checklist state from completion or step template
   const [checklistState, setChecklistState] = useState<{ id: string; label: string; checked: boolean }[]>(() => {
