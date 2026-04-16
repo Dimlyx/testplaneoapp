@@ -327,6 +327,7 @@ export const generateInterventionPDF = async (
 ) => {
   // Clear image cache for fresh generation
   imageCache.clear();
+  imageDimsCache.clear();
   
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
