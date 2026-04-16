@@ -827,21 +827,26 @@ export const generateInterventionPDF = async (
       if (stepPhotoUrls.length > 0) {
         let xPos = 20;
         let photoCount = 0;
+        let rowMaxH = 0;
         for (const photoUrl of stepPhotoUrls) {
           const base64 = await loadImageAsBase64(photoUrl);
           if (base64) {
+            const { w, h } = fitInBox(base64, 75, 56);
             if (photoCount > 0 && photoCount % 2 === 0) {
               xPos = 20;
-              yPos += 65;
-              checkNewPage(65);
+              yPos += rowMaxH + 5;
+              rowMaxH = 0;
+              checkNewPage(h + 5);
             }
-            if (safeAddImage(doc, base64, xPos, yPos, 75, 56)) {
+            const slotY = yPos + (56 - h) / 2;
+            if (safeAddImage(doc, base64, xPos, slotY, w, h)) {
               xPos += 85;
               photoCount++;
+              if (h > rowMaxH) rowMaxH = h;
             }
           }
         }
-        if (photoCount > 0) yPos += 60;
+        if (photoCount > 0) yPos += (rowMaxH || 56) + 4;
       }
       
       yPos += 3;
