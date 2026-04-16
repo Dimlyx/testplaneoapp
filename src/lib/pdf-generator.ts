@@ -713,33 +713,38 @@ export const generateInterventionPDF = async (
         checkNewPage(60);
         yPos = addSection(title, yPos);
 
-        const photoWidth = 80;
+        const photoWidth = 60;
         const photoHeight = 60;
         const photosPerRow = 3;
         let xPos = 15;
         let photoCount = 0;
+        let rowMaxH = 0;
 
         for (const photo of typePhotos) {
           const base64 = await loadImageAsBase64(photo.photo_url);
           
           if (base64) {
+            const { w, h } = fitInBox(base64, photoWidth, photoHeight);
             if (photoCount > 0 && photoCount % photosPerRow === 0) {
               xPos = 15;
-              yPos += photoHeight + 5;
-              checkNewPage(photoHeight + 10);
+              yPos += rowMaxH + 5;
+              rowMaxH = 0;
+              checkNewPage(h + 10);
             }
+            const slotY = yPos + (photoHeight - h) / 2;
 
-            if (!safeAddImage(doc, base64, xPos, yPos, photoWidth, photoHeight)) {
+            if (!safeAddImage(doc, base64, xPos, slotY, w, h)) {
               doc.setDrawColor(200, 200, 200);
               doc.rect(xPos, yPos, photoWidth, photoHeight);
             }
             
             xPos += photoWidth + 5;
             photoCount++;
+            if (h > rowMaxH) rowMaxH = h;
           }
         }
         
-        yPos += photoHeight + 10;
+        yPos += (rowMaxH || photoHeight) + 10;
       }
     }
     
