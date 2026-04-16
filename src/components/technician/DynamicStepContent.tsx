@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import SignaturePad from "@/components/SignaturePad";
 import { compressImage } from "@/lib/image-compression";
 import MultiPhotoCamera from "@/components/technician/MultiPhotoCamera";
+import PinchZoomImage from "@/components/technician/PinchZoomImage";
 
 interface DynamicStepContentProps {
   step: WorkflowStepType;
@@ -430,14 +431,13 @@ const DynamicStepContent = ({
             {/* Lightbox */}
             {lightboxIndex !== null && photoUrls[lightboxIndex] && (
               <div
-                className="fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center"
+                className="fixed inset-0 z-[9999] bg-black/95"
                 style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
-                onClick={() => setLightboxIndex(null)}
               >
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="absolute top-4 right-4 text-white z-10 h-10 w-10"
+                  className="absolute top-4 right-4 text-white z-20 h-10 w-10"
                   onClick={() => setLightboxIndex(null)}
                 >
                   <X className="h-6 w-6" />
@@ -447,7 +447,7 @@ const DynamicStepContent = ({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="absolute left-2 top-1/2 -translate-y-1/2 text-white z-10 h-10 w-10"
+                    className="absolute left-2 top-1/2 -translate-y-1/2 text-white z-20 h-10 w-10"
                     onClick={(e) => { e.stopPropagation(); setLightboxIndex(lightboxIndex - 1); }}
                   >
                     <ChevronLeft className="h-6 w-6" />
@@ -458,22 +458,22 @@ const DynamicStepContent = ({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-white z-10 h-10 w-10"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-white z-20 h-10 w-10"
                     onClick={(e) => { e.stopPropagation(); setLightboxIndex(lightboxIndex + 1); }}
                   >
                     <ChevronRight className="h-6 w-6" />
                   </Button>
                 )}
 
-                <img
+                <PinchZoomImage
                   src={photoUrls[lightboxIndex]}
                   alt={`Photo ${lightboxIndex + 1}`}
                   className="max-h-[85vh] max-w-[95vw] object-contain rounded-lg"
-                  onClick={(e) => e.stopPropagation()}
+                  onTap={() => setLightboxIndex(null)}
                 />
 
-                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white text-sm">
-                  {lightboxIndex + 1} / {photoUrls.length}
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white text-sm pointer-events-none">
+                  {lightboxIndex + 1} / {photoUrls.length} · Pincez pour zoomer
                 </div>
               </div>
             )}
