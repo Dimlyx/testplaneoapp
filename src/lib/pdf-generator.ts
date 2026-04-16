@@ -121,12 +121,31 @@ const hexToRgb = (hex: string): [number, number, number] => {
     : [0, 48, 87]; // Default navy blue
 };
 
-const MAX_IMAGE_WIDTH = 600;
-const MAX_IMAGE_HEIGHT = 450;
-const JPEG_QUALITY = 0.75;
+const MAX_IMAGE_WIDTH = 1200;
+const MAX_IMAGE_HEIGHT = 1200;
+const JPEG_QUALITY = 0.85;
 
 // In-memory cache to avoid re-downloading the same image during PDF generation
 const imageCache = new Map<string, string | null>();
+// Cache of natural dimensions of the (resized) base64 image so we can preserve aspect ratio in the PDF
+const imageDimsCache = new Map<string, { w: number; h: number }>();
+
+/**
+ * Compute the rendered (w, h) in mm that fits inside a `maxW × maxH` box
+ * while preserving the original aspect ratio of the image.
+ */
+const fitInBox = (
+  base64: string,
+  maxW: number,
+  maxH: number
+): { w: number; h: number } => {
+  const dims = imageDimsCache.get(base64);
+  if (!dims || dims.w <= 0 || dims.h <= 0) {
+    return { w: maxW, h: maxH };
+  }
+  const ratio = Math.min(maxW / dims.w, maxH / dims.h);
+  return { w: dims.w * ratio, h: dims.h * ratio };
+};
 
 const loadImageAsBase64 = async (url: string): Promise<string | null> => {
   try {
@@ -196,15 +215,18 @@ const loadImageAsBase64 = async (url: string): Promise<string | null> => {
           
           if (ctx) {
             ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = 'medium';
+            ctx.imageSmoothingQuality = 'high';
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
             const result = canvas.toDataURL('image/jpeg', JPEG_QUALITY);
+            imageDimsCache.set(result, { w: canvas.width, h: canvas.height });
             resolve(result);
           } else {
+            imageDimsCache.set(base64, { w: img.naturalWidth, h: img.naturalHeight });
             resolve(base64);
           }
         } catch (err) {
           console.error('Error resizing image:', err);
+          imageDimsCache.set(base64, { w: img.naturalWidth, h: img.naturalHeight });
           resolve(base64);
         }
       };
@@ -305,6 +327,7 @@ export const generateInterventionPDF = async (
 ) => {
   // Clear image cache for fresh generation
   imageCache.clear();
+  imageDimsCache.clear();
   
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -550,9 +573,10 @@ export const generateInterventionPDF = async (
         for (const photo of snPhotos) {
           const base64 = await loadImageAsBase64(photo.photo_url);
           if (base64) {
-            checkNewPage(50);
-            if (safeAddImage(doc, base64, 15, yPos, 80, 60)) {
-              yPos += 65;
+            const { w, h } = fitInBox(base64, 80, 60);
+            checkNewPage(h + 5);
+            if (safeAddImage(doc, base64, 15, yPos, w, h)) {
+              yPos += h + 5;
             }
           }
         }
@@ -570,21 +594,27 @@ export const generateInterventionPDF = async (
         
         let xPos = 15;
         let photoCount = 0;
+        let rowMaxH = 0;
         for (const photo of duringPhotos) {
           const base64 = await loadImageAsBase64(photo.photo_url);
           if (base64) {
+            const { w, h } = fitInBox(base64, 80, 60);
             if (photoCount > 0 && photoCount % 2 === 0) {
               xPos = 15;
-              yPos += 65;
-              checkNewPage(65);
+              yPos += rowMaxH + 5;
+              rowMaxH = 0;
+              checkNewPage(h + 5);
             }
-            if (safeAddImage(doc, base64, xPos, yPos, 80, 60)) {
+            // Vertically center within the row slot
+            const slotY = yPos + (60 - h) / 2;
+            if (safeAddImage(doc, base64, xPos, slotY, w, h)) {
               xPos += 90;
               photoCount++;
+              if (h > rowMaxH) rowMaxH = h;
             }
           }
         }
-        if (photoCount > 0) yPos += 65;
+        if (photoCount > 0) yPos += (rowMaxH || 60) + 5;
       }
 
       // Technical comments / Observation
@@ -632,21 +662,26 @@ export const generateInterventionPDF = async (
         
         let xPos = 15;
         let photoCount = 0;
+        let rowMaxH = 0;
         for (const photo of afterPhotos) {
           const base64 = await loadImageAsBase64(photo.photo_url);
           if (base64) {
+            const { w, h } = fitInBox(base64, 80, 60);
             if (photoCount > 0 && photoCount % 2 === 0) {
               xPos = 15;
-              yPos += 65;
-              checkNewPage(65);
+              yPos += rowMaxH + 5;
+              rowMaxH = 0;
+              checkNewPage(h + 5);
             }
-            if (safeAddImage(doc, base64, xPos, yPos, 80, 60)) {
+            const slotY = yPos + (60 - h) / 2;
+            if (safeAddImage(doc, base64, xPos, slotY, w, h)) {
               xPos += 90;
               photoCount++;
+              if (h > rowMaxH) rowMaxH = h;
             }
           }
         }
-        if (photoCount > 0) yPos += 65;
+        if (photoCount > 0) yPos += (rowMaxH || 60) + 5;
       }
       
       yPos += 5;
@@ -678,33 +713,38 @@ export const generateInterventionPDF = async (
         checkNewPage(60);
         yPos = addSection(title, yPos);
 
-        const photoWidth = 80;
+        const photoWidth = 60;
         const photoHeight = 60;
         const photosPerRow = 3;
         let xPos = 15;
         let photoCount = 0;
+        let rowMaxH = 0;
 
         for (const photo of typePhotos) {
           const base64 = await loadImageAsBase64(photo.photo_url);
           
           if (base64) {
+            const { w, h } = fitInBox(base64, photoWidth, photoHeight);
             if (photoCount > 0 && photoCount % photosPerRow === 0) {
               xPos = 15;
-              yPos += photoHeight + 5;
-              checkNewPage(photoHeight + 10);
+              yPos += rowMaxH + 5;
+              rowMaxH = 0;
+              checkNewPage(h + 10);
             }
+            const slotY = yPos + (photoHeight - h) / 2;
 
-            if (!safeAddImage(doc, base64, xPos, yPos, photoWidth, photoHeight)) {
+            if (!safeAddImage(doc, base64, xPos, slotY, w, h)) {
               doc.setDrawColor(200, 200, 200);
               doc.rect(xPos, yPos, photoWidth, photoHeight);
             }
             
             xPos += photoWidth + 5;
             photoCount++;
+            if (h > rowMaxH) rowMaxH = h;
           }
         }
         
-        yPos += photoHeight + 10;
+        yPos += (rowMaxH || photoHeight) + 10;
       }
     }
     
@@ -787,21 +827,26 @@ export const generateInterventionPDF = async (
       if (stepPhotoUrls.length > 0) {
         let xPos = 20;
         let photoCount = 0;
+        let rowMaxH = 0;
         for (const photoUrl of stepPhotoUrls) {
           const base64 = await loadImageAsBase64(photoUrl);
           if (base64) {
+            const { w, h } = fitInBox(base64, 75, 56);
             if (photoCount > 0 && photoCount % 2 === 0) {
               xPos = 20;
-              yPos += 65;
-              checkNewPage(65);
+              yPos += rowMaxH + 5;
+              rowMaxH = 0;
+              checkNewPage(h + 5);
             }
-            if (safeAddImage(doc, base64, xPos, yPos, 75, 56)) {
+            const slotY = yPos + (56 - h) / 2;
+            if (safeAddImage(doc, base64, xPos, slotY, w, h)) {
               xPos += 85;
               photoCount++;
+              if (h > rowMaxH) rowMaxH = h;
             }
           }
         }
-        if (photoCount > 0) yPos += 60;
+        if (photoCount > 0) yPos += (rowMaxH || 56) + 4;
       }
       
       yPos += 3;
