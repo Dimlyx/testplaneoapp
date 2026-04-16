@@ -8,7 +8,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 export function OfflineIndicator() {
-  const { isOnline, isSyncing, pendingCount, lastSync, syncAll } = useOffline();
+  const { isOnline, isSyncing, pendingCount, lastSync } = useOffline();
 
   return (
     <Popover>
