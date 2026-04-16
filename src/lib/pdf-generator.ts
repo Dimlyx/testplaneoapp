@@ -191,14 +191,29 @@ const loadImageAsBase64 = async (url: string): Promise<string | null> => {
       return null;
     }
     
-    // Resize using canvas (no CORS issue since we loaded via fetch)
+    // Try to honor EXIF orientation via createImageBitmap (modern browsers).
+    // Fallback to <img> if unavailable. This ensures landscape photos stay landscape
+    // and portrait photos stay portrait, regardless of EXIF rotation tags.
+    let bitmap: ImageBitmap | null = null;
+    try {
+      if (typeof createImageBitmap === 'function') {
+        bitmap = await createImageBitmap(blob, { imageOrientation: 'from-image' } as any);
+      }
+    } catch (e) {
+      console.warn('createImageBitmap with EXIF orientation failed, falling back', e);
+      bitmap = null;
+    }
+
     const result = await new Promise<string | null>((resolve) => {
-      const img = new Image();
-      img.onload = () => {
+      const drawAndEncode = (
+        source: CanvasImageSource,
+        srcW: number,
+        srcH: number
+      ) => {
         try {
-          let width = img.naturalWidth;
-          let height = img.naturalHeight;
-          
+          let width = srcW;
+          let height = srcH;
+
           if (width > MAX_IMAGE_WIDTH) {
             height = (height * MAX_IMAGE_WIDTH) / width;
             width = MAX_IMAGE_WIDTH;
@@ -207,34 +222,42 @@ const loadImageAsBase64 = async (url: string): Promise<string | null> => {
             width = (width * MAX_IMAGE_HEIGHT) / height;
             height = MAX_IMAGE_HEIGHT;
           }
-          
+
           const canvas = document.createElement('canvas');
           canvas.width = Math.max(1, Math.round(width));
           canvas.height = Math.max(1, Math.round(height));
           const ctx = canvas.getContext('2d');
-          
+
           if (ctx) {
             ctx.imageSmoothingEnabled = true;
             ctx.imageSmoothingQuality = 'high';
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            const result = canvas.toDataURL('image/jpeg', JPEG_QUALITY);
-            imageDimsCache.set(result, { w: canvas.width, h: canvas.height });
-            resolve(result);
+            ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
+            const encoded = canvas.toDataURL('image/jpeg', JPEG_QUALITY);
+            imageDimsCache.set(encoded, { w: canvas.width, h: canvas.height });
+            resolve(encoded);
           } else {
-            imageDimsCache.set(base64, { w: img.naturalWidth, h: img.naturalHeight });
+            imageDimsCache.set(base64, { w: srcW, h: srcH });
             resolve(base64);
           }
         } catch (err) {
           console.error('Error resizing image:', err);
-          imageDimsCache.set(base64, { w: img.naturalWidth, h: img.naturalHeight });
+          imageDimsCache.set(base64, { w: srcW, h: srcH });
           resolve(base64);
         }
       };
-      img.onerror = () => {
-        console.warn('Image failed to load from base64, using raw data');
-        resolve(base64);
-      };
-      img.src = base64;
+
+      if (bitmap) {
+        drawAndEncode(bitmap, bitmap.width, bitmap.height);
+        bitmap.close?.();
+      } else {
+        const img = new Image();
+        img.onload = () => drawAndEncode(img, img.naturalWidth, img.naturalHeight);
+        img.onerror = () => {
+          console.warn('Image failed to load from base64, using raw data');
+          resolve(base64);
+        };
+        img.src = base64;
+      }
     });
 
     imageCache.set(url, result);
