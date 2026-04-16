@@ -121,12 +121,31 @@ const hexToRgb = (hex: string): [number, number, number] => {
     : [0, 48, 87]; // Default navy blue
 };
 
-const MAX_IMAGE_WIDTH = 600;
-const MAX_IMAGE_HEIGHT = 450;
-const JPEG_QUALITY = 0.75;
+const MAX_IMAGE_WIDTH = 1200;
+const MAX_IMAGE_HEIGHT = 1200;
+const JPEG_QUALITY = 0.85;
 
 // In-memory cache to avoid re-downloading the same image during PDF generation
 const imageCache = new Map<string, string | null>();
+// Cache of natural dimensions of the (resized) base64 image so we can preserve aspect ratio in the PDF
+const imageDimsCache = new Map<string, { w: number; h: number }>();
+
+/**
+ * Compute the rendered (w, h) in mm that fits inside a `maxW × maxH` box
+ * while preserving the original aspect ratio of the image.
+ */
+const fitInBox = (
+  base64: string,
+  maxW: number,
+  maxH: number
+): { w: number; h: number } => {
+  const dims = imageDimsCache.get(base64);
+  if (!dims || dims.w <= 0 || dims.h <= 0) {
+    return { w: maxW, h: maxH };
+  }
+  const ratio = Math.min(maxW / dims.w, maxH / dims.h);
+  return { w: dims.w * ratio, h: dims.h * ratio };
+};
 
 const loadImageAsBase64 = async (url: string): Promise<string | null> => {
   try {
@@ -196,15 +215,18 @@ const loadImageAsBase64 = async (url: string): Promise<string | null> => {
           
           if (ctx) {
             ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = 'medium';
+            ctx.imageSmoothingQuality = 'high';
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
             const result = canvas.toDataURL('image/jpeg', JPEG_QUALITY);
+            imageDimsCache.set(result, { w: canvas.width, h: canvas.height });
             resolve(result);
           } else {
+            imageDimsCache.set(base64, { w: img.naturalWidth, h: img.naturalHeight });
             resolve(base64);
           }
         } catch (err) {
           console.error('Error resizing image:', err);
+          imageDimsCache.set(base64, { w: img.naturalWidth, h: img.naturalHeight });
           resolve(base64);
         }
       };
