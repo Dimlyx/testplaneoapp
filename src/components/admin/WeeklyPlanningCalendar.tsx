@@ -158,24 +158,56 @@ export function WeeklyPlanningCalendar({
     e.dataTransfer.dropEffect = 'move';
   };
 
-  const handleDrop = (e: DragEvent<HTMLDivElement>, technicianId: string, date: Date) => {
+  const handleDrop = (
+    e: DragEvent<HTMLDivElement>,
+    technicianId: string,
+    date: Date,
+    targetHour?: number,
+  ) => {
     e.preventDefault();
-    
+    e.stopPropagation();
+
     if (!draggedIntervention) return;
-    
+
     const newDate = format(date, 'yyyy-MM-dd');
-    const hasChanged = 
-      draggedIntervention.technician_id !== technicianId ||
-      draggedIntervention.scheduled_date !== newDate;
-    
-    if (hasChanged) {
-      updateIntervention.mutate({
-        id: draggedIntervention.id,
-        technician_id: technicianId,
-        scheduled_date: newDate,
-      });
+    const updates: Parameters<typeof updateIntervention.mutate>[0] = {
+      id: draggedIntervention.id,
+      technician_id: technicianId,
+      scheduled_date: newDate,
+    };
+
+    // If dropped on a precise hour slot, snap start time to that hour and preserve duration
+    if (typeof targetHour === 'number') {
+      const newStart = `${String(targetHour).padStart(2, '0')}:00:00`;
+
+      // Compute existing duration (minutes) from current start/end, fallback to estimated_duration or 60
+      let durationMin = draggedIntervention.estimated_duration ?? null;
+      if (draggedIntervention.scheduled_time && draggedIntervention.scheduled_end_time) {
+        const start = new Date(`2000-01-01T${draggedIntervention.scheduled_time}`);
+        const end = new Date(`2000-01-01T${draggedIntervention.scheduled_end_time}`);
+        const diff = Math.round((end.getTime() - start.getTime()) / 60000);
+        if (diff > 0) durationMin = diff;
+      }
+      if (!durationMin || durationMin <= 0) durationMin = 60;
+
+      const endDate = new Date(`2000-01-01T${newStart}`);
+      endDate.setMinutes(endDate.getMinutes() + durationMin);
+      const newEnd = `${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}:00`;
+
+      updates.scheduled_time = newStart;
+      updates.scheduled_end_time = newEnd;
+      updates.estimated_duration = durationMin;
     }
-    
+
+    const hasChanged =
+      draggedIntervention.technician_id !== technicianId ||
+      draggedIntervention.scheduled_date !== newDate ||
+      (typeof targetHour === 'number' && updates.scheduled_time !== draggedIntervention.scheduled_time);
+
+    if (hasChanged) {
+      updateIntervention.mutate(updates);
+    }
+
     setDraggedIntervention(null);
   };
 
@@ -343,14 +375,22 @@ export function WeeklyPlanningCalendar({
                       >
                         {isExpanded ? (
                           <div className="relative">
-                            {/* Hour grid lines */}
+                            {/* Hour grid lines (each acts as a precise drop target) */}
                             <div className="mt-2">
                               {hours.map(hour => (
-                                <div key={hour} className="h-[28px] border-t border-border/30 first:border-t-0" />
+                                <div
+                                  key={hour}
+                                  className={cn(
+                                    "h-[28px] border-t border-border/30 first:border-t-0 transition-colors",
+                                    draggedIntervention && "hover:bg-primary/20"
+                                  )}
+                                  onDragOver={handleDragOver}
+                                  onDrop={(e) => handleDrop(e, tech.id, day, hour)}
+                                />
                               ))}
                             </div>
-                            {/* Interventions positioned by time */}
-                            <div className="absolute inset-0 mt-2 px-0.5">
+                            {/* Interventions positioned by time (pointer-events-none on wrapper so hour slots receive drops) */}
+                            <div className="absolute inset-0 mt-2 px-0.5 pointer-events-none">
                               <TooltipProvider>
                                 {cellInterventions.map(intervention => {
                                   const time = intervention.scheduled_time || `${String(startHour).padStart(2, '0')}:00`;
@@ -368,7 +408,7 @@ export function WeeklyPlanningCalendar({
                                       <TooltipTrigger asChild>
                                         <div
                                           className={cn(
-                                            "intervention-card absolute left-0.5 right-0.5 text-xs p-1 rounded cursor-pointer text-white truncate transition-opacity z-10 overflow-hidden",
+                                            "intervention-card pointer-events-auto absolute left-0.5 right-0.5 text-xs p-1 rounded cursor-pointer text-white truncate transition-opacity z-10 overflow-hidden",
                                             getTypeColor(intervention.intervention_type),
                                             draggedIntervention?.id === intervention.id && "opacity-50"
                                           )}
@@ -529,7 +569,7 @@ export function WeeklyPlanningCalendar({
             </div>
           ))}
           <div className="text-muted-foreground">
-            | Glissez-déposez pour réassigner
+            | Glissez-déposez pour réassigner — déposez sur une ligne d'heure pour fixer le créneau
           </div>
         </div>
       </CardContent>
