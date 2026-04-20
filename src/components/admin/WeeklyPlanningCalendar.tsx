@@ -375,14 +375,22 @@ export function WeeklyPlanningCalendar({
                       >
                         {isExpanded ? (
                           <div className="relative">
-                            {/* Hour grid lines */}
+                            {/* Hour grid lines (each acts as a precise drop target) */}
                             <div className="mt-2">
                               {hours.map(hour => (
-                                <div key={hour} className="h-[28px] border-t border-border/30 first:border-t-0" />
+                                <div
+                                  key={hour}
+                                  className={cn(
+                                    "h-[28px] border-t border-border/30 first:border-t-0 transition-colors",
+                                    draggedIntervention && "hover:bg-primary/20"
+                                  )}
+                                  onDragOver={handleDragOver}
+                                  onDrop={(e) => handleDrop(e, tech.id, day, hour)}
+                                />
                               ))}
                             </div>
-                            {/* Interventions positioned by time */}
-                            <div className="absolute inset-0 mt-2 px-0.5">
+                            {/* Interventions positioned by time (pointer-events-none on wrapper so hour slots receive drops) */}
+                            <div className="absolute inset-0 mt-2 px-0.5 pointer-events-none">
                               <TooltipProvider>
                                 {cellInterventions.map(intervention => {
                                   const time = intervention.scheduled_time || `${String(startHour).padStart(2, '0')}:00`;
