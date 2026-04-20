@@ -158,24 +158,56 @@ export function WeeklyPlanningCalendar({
     e.dataTransfer.dropEffect = 'move';
   };
 
-  const handleDrop = (e: DragEvent<HTMLDivElement>, technicianId: string, date: Date) => {
+  const handleDrop = (
+    e: DragEvent<HTMLDivElement>,
+    technicianId: string,
+    date: Date,
+    targetHour?: number,
+  ) => {
     e.preventDefault();
-    
+    e.stopPropagation();
+
     if (!draggedIntervention) return;
-    
+
     const newDate = format(date, 'yyyy-MM-dd');
-    const hasChanged = 
-      draggedIntervention.technician_id !== technicianId ||
-      draggedIntervention.scheduled_date !== newDate;
-    
-    if (hasChanged) {
-      updateIntervention.mutate({
-        id: draggedIntervention.id,
-        technician_id: technicianId,
-        scheduled_date: newDate,
-      });
+    const updates: Parameters<typeof updateIntervention.mutate>[0] = {
+      id: draggedIntervention.id,
+      technician_id: technicianId,
+      scheduled_date: newDate,
+    };
+
+    // If dropped on a precise hour slot, snap start time to that hour and preserve duration
+    if (typeof targetHour === 'number') {
+      const newStart = `${String(targetHour).padStart(2, '0')}:00:00`;
+
+      // Compute existing duration (minutes) from current start/end, fallback to estimated_duration or 60
+      let durationMin = draggedIntervention.estimated_duration ?? null;
+      if (draggedIntervention.scheduled_time && draggedIntervention.scheduled_end_time) {
+        const start = new Date(`2000-01-01T${draggedIntervention.scheduled_time}`);
+        const end = new Date(`2000-01-01T${draggedIntervention.scheduled_end_time}`);
+        const diff = Math.round((end.getTime() - start.getTime()) / 60000);
+        if (diff > 0) durationMin = diff;
+      }
+      if (!durationMin || durationMin <= 0) durationMin = 60;
+
+      const endDate = new Date(`2000-01-01T${newStart}`);
+      endDate.setMinutes(endDate.getMinutes() + durationMin);
+      const newEnd = `${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}:00`;
+
+      updates.scheduled_time = newStart;
+      updates.scheduled_end_time = newEnd;
+      updates.estimated_duration = durationMin;
     }
-    
+
+    const hasChanged =
+      draggedIntervention.technician_id !== technicianId ||
+      draggedIntervention.scheduled_date !== newDate ||
+      (typeof targetHour === 'number' && updates.scheduled_time !== draggedIntervention.scheduled_time);
+
+    if (hasChanged) {
+      updateIntervention.mutate(updates);
+    }
+
     setDraggedIntervention(null);
   };
 
