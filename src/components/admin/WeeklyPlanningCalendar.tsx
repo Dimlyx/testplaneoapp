@@ -408,7 +408,7 @@ export function WeeklyPlanningCalendar({
                                       <TooltipTrigger asChild>
                                         <div
                                           className={cn(
-                                            "intervention-card absolute left-0.5 right-0.5 text-xs p-1 rounded cursor-pointer text-white truncate transition-opacity z-10 overflow-hidden",
+                                            "intervention-card pointer-events-auto absolute left-0.5 right-0.5 text-xs p-1 rounded cursor-pointer text-white truncate transition-opacity z-10 overflow-hidden",
                                             getTypeColor(intervention.intervention_type),
                                             draggedIntervention?.id === intervention.id && "opacity-50"
                                           )}
