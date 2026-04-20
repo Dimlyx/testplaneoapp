@@ -569,7 +569,7 @@ export function WeeklyPlanningCalendar({
             </div>
           ))}
           <div className="text-muted-foreground">
-            | Glissez-déposez pour réassigner
+            | Glissez-déposez pour réassigner — déposez sur une ligne d'heure pour fixer le créneau
           </div>
         </div>
       </CardContent>
