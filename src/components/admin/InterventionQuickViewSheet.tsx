@@ -120,6 +120,59 @@ export function InterventionQuickViewSheet({
         </SheetHeader>
 
         <div className="flex-1 p-6 space-y-5">
+          {/* Changer le statut */}
+          <div className="space-y-2">
+            <h4 className="text-xs font-semibold uppercase text-muted-foreground tracking-wide">
+              Changer le statut
+            </h4>
+            <Select
+              value={currentValue}
+              onValueChange={handleStatusChange}
+              disabled={updateIntervention.isPending}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Sélectionner un statut" />
+              </SelectTrigger>
+              <SelectContent>
+                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                  Statuts par défaut
+                </div>
+                {DEFAULT_STATUSES.map((s) => (
+                  <SelectItem key={s.value} value={`default:${s.value}`}>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="w-2.5 h-2.5 rounded-full shrink-0"
+                        style={{ backgroundColor: s.color }}
+                      />
+                      <span>{s.label}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+                {customStatuses.length > 0 && (
+                  <>
+                    <Separator className="my-1" />
+                    <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                      Statuts personnalisés
+                    </div>
+                    {customStatuses.map((s) => (
+                      <SelectItem key={s.id} value={`custom:${s.id}`}>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="w-2.5 h-2.5 rounded-full shrink-0"
+                            style={{ backgroundColor: s.color }}
+                          />
+                          <span>{s.label}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <Separator />
+
           {/* Date & heure */}
           {intervention.scheduled_date && (
             <div className="space-y-2">
