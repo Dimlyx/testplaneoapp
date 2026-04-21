@@ -86,6 +86,14 @@ export function useOfflineSync() {
   const syncMutation = async (mutation: OfflineMutation): Promise<boolean> => {
     try {
       switch (mutation.type) {
+        case 'create_intervention': {
+          const { _tempId, ...insertData } = mutation.payload;
+          const { error } = await supabase
+            .from('interventions')
+            .insert(insertData);
+          if (error) throw error;
+          break;
+        }
         case 'update_intervention': {
           const { id, ...updateData } = mutation.payload;
           const { error } = await supabase
