@@ -173,10 +173,10 @@ const Interventions = () => {
 
   // Selection handlers
   const toggleSelectAll = () => {
-    if (selectedIds.size === filteredInterventions.length) {
+    if (selectedIds.size === filteredInterventionsList.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(filteredInterventions.map(i => i.id)));
+      setSelectedIds(new Set(filteredInterventionsList.map(i => i.id)));
     }
   };
 
