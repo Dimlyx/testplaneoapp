@@ -446,7 +446,7 @@ const Interventions = () => {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredInterventions.map((intervention) => (
+              filteredInterventions.map(({ intervention, matchInfo }) => (
                 <TableRow 
                   key={intervention.id}
                   className={selectedIds.has(intervention.id) ? "bg-muted/50" : ""}
@@ -458,7 +458,20 @@ const Interventions = () => {
                       aria-label={`Sélectionner ${intervention.title}`}
                     />
                   </TableCell>
-                  <TableCell className="font-medium">{intervention.title}</TableCell>
+                  <TableCell className="font-medium">
+                    <div className="flex flex-col gap-1">
+                      <span>{intervention.title}</span>
+                      {matchInfo.hint && (
+                        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                          <Search className="h-3 w-3" />
+                          <span className="font-normal">
+                            {matchInfo.hint.label}:{" "}
+                            <span className="text-foreground/80">{matchInfo.hint.value}</span>
+                          </span>
+                        </span>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell>{getClientName(intervention.client_id)}</TableCell>
                   <TableCell><TypeBadge type={intervention.intervention_type} /></TableCell>
                   <TableCell><StatusBadge status={intervention.status} customStatusId={intervention.custom_status_id} /></TableCell>
