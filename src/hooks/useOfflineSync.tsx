@@ -15,10 +15,18 @@ import {
   addMutation,
   savePhotoOffline,
   saveSignatureOffline,
+  incrementMutationAttempts,
+  deleteMutation,
   OfflineMutation,
   OfflinePhoto,
   OfflineSignature,
 } from '@/lib/offline-db';
+import {
+  isReallyOnline,
+  subscribeNetworkStatus,
+  checkNetworkNow,
+} from '@/lib/network-status';
+import { withTimeout, isTimeoutError } from '@/lib/supabase-with-timeout';
 
 interface SyncState {
   isOnline: boolean;
@@ -32,37 +40,30 @@ export function useOfflineSync() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [syncState, setSyncState] = useState<SyncState>({
-    isOnline: navigator.onLine,
+    isOnline: isReallyOnline(),
     isSyncing: false,
     pendingCount: 0,
     lastSync: null,
     error: null,
   });
   const syncingRef = useRef(false);
+  const syncAllRef = useRef<() => void>(() => {});
 
-  // Update online status
+  // Subscribe to real network heartbeat (not navigator.onLine alone)
   useEffect(() => {
-    const handleOnline = () => {
-      setSyncState(prev => ({ ...prev, isOnline: true }));
-      syncAll();
-    };
-    
-    const handleOffline = () => {
-      setSyncState(prev => ({ ...prev, isOnline: false }));
-      toast({
-        title: 'Mode hors-ligne activé',
-        description: 'Vos modifications seront synchronisées au retour de la connexion.',
-      });
-    };
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
+    const unsub = subscribeNetworkStatus((online) => {
+      setSyncState(prev => ({ ...prev, isOnline: online }));
+      if (online) {
+        syncAllRef.current();
+      } else {
+        toast({
+          title: 'Mode hors-ligne activé',
+          description: 'Vos modifications seront synchronisées au retour de la connexion.',
+        });
+      }
+    });
+    return unsub;
+  }, [toast]);
 
   // Load initial sync status
   useEffect(() => {
@@ -86,6 +87,14 @@ export function useOfflineSync() {
   const syncMutation = async (mutation: OfflineMutation): Promise<boolean> => {
     try {
       switch (mutation.type) {
+        case 'create_intervention': {
+          const { _tempId, ...insertData } = mutation.payload;
+          const { error } = await supabase
+            .from('interventions')
+            .insert(insertData);
+          if (error) throw error;
+          break;
+        }
         case 'update_intervention': {
           const { id, ...updateData } = mutation.payload;
           const { error } = await supabase
@@ -213,7 +222,13 @@ export function useOfflineSync() {
       return true;
     } catch (error: any) {
       console.error('Error syncing mutation:', error);
-      await markMutationError(mutation.id, error.message);
+      const attempts = await incrementMutationAttempts(mutation.id);
+      await markMutationError(mutation.id, error?.message || 'unknown');
+      // Drop mutation after 10 failed attempts to prevent infinite loops
+      if (attempts >= 10) {
+        console.warn(`Dropping mutation ${mutation.id} after ${attempts} failed attempts`);
+        await deleteMutation(mutation.id);
+      }
       return false;
     }
   };
@@ -223,12 +238,15 @@ export function useOfflineSync() {
     try {
       const fileName = `${photo.interventionId}/${Date.now()}_${photo.id}.jpg`;
       
-      const { error: uploadError } = await supabase.storage
-        .from('intervention-photos')
-        .upload(fileName, photo.blob, {
-          contentType: 'image/jpeg',
-          cacheControl: '3600',
-        });
+      const { error: uploadError } = await withTimeout(
+        supabase.storage
+          .from('intervention-photos')
+          .upload(fileName, photo.blob, {
+            contentType: 'image/jpeg',
+            cacheControl: '3600',
+          }),
+        30_000, // photos can be large
+      );
 
       if (uploadError) throw uploadError;
 
@@ -236,21 +254,28 @@ export function useOfflineSync() {
         .from('intervention-photos')
         .getPublicUrl(fileName);
 
-      const { error: dbError } = await supabase
-        .from('intervention_photos')
-        .insert({
-          intervention_id: photo.interventionId,
-          equipment_id: photo.equipmentId || null,
-          photo_type: photo.photoType,
-          photo_url: urlData.publicUrl,
-        });
+      const { error: dbError } = await withTimeout(
+        supabase
+          .from('intervention_photos')
+          .insert({
+            intervention_id: photo.interventionId,
+            equipment_id: photo.equipmentId || null,
+            photo_type: photo.photoType,
+            photo_url: urlData.publicUrl,
+          }),
+        8000,
+      );
 
       if (dbError) throw dbError;
 
       await markPhotoSynced(photo.id);
       return true;
     } catch (error: any) {
-      console.error('Error syncing photo:', error);
+      if (isTimeoutError(error)) {
+        console.warn('Photo upload timed out, will retry later');
+      } else {
+        console.error('Error syncing photo:', error);
+      }
       return false;
     }
   };
@@ -260,12 +285,15 @@ export function useOfflineSync() {
     try {
       const fileName = `signatures/${signature.interventionId}_${Date.now()}.png`;
       
-      const { error: uploadError } = await supabase.storage
-        .from('intervention-photos')
-        .upload(fileName, signature.blob, {
-          contentType: 'image/png',
-          cacheControl: '3600',
-        });
+      const { error: uploadError } = await withTimeout(
+        supabase.storage
+          .from('intervention-photos')
+          .upload(fileName, signature.blob, {
+            contentType: 'image/png',
+            cacheControl: '3600',
+          }),
+        30_000,
+      );
 
       if (uploadError) throw uploadError;
 
@@ -273,27 +301,37 @@ export function useOfflineSync() {
         .from('intervention-photos')
         .getPublicUrl(fileName);
 
-      const { error: dbError } = await supabase
-        .from('interventions')
-        .update({
-          client_signature_url: urlData.publicUrl,
-          client_signature_name: signature.signatureName,
-        })
-        .eq('id', signature.interventionId);
+      const { error: dbError } = await withTimeout(
+        supabase
+          .from('interventions')
+          .update({
+            client_signature_url: urlData.publicUrl,
+            client_signature_name: signature.signatureName,
+          })
+          .eq('id', signature.interventionId),
+        8000,
+      );
 
       if (dbError) throw dbError;
 
       await markSignatureSynced(signature.id);
       return true;
     } catch (error: any) {
-      console.error('Error syncing signature:', error);
+      if (isTimeoutError(error)) {
+        console.warn('Signature upload timed out, will retry later');
+      } else {
+        console.error('Error syncing signature:', error);
+      }
       return false;
     }
   };
 
   // Sync all pending data
   const syncAll = useCallback(async () => {
-    if (!navigator.onLine || syncingRef.current) return;
+    if (syncingRef.current) return;
+    // Verify network before attempting expensive sync (avoid zombie requests)
+    const reallyOnline = await checkNetworkNow();
+    if (!reallyOnline) return;
     
     syncingRef.current = true;
     setSyncState(prev => ({ ...prev, isSyncing: true, error: null }));
@@ -304,6 +342,7 @@ export function useOfflineSync() {
     try {
       const mutations = await getPendingMutations();
       for (const mutation of mutations) {
+        if (!isReallyOnline()) break;
         const success = await syncMutation(mutation);
         if (success) successCount++;
         else errorCount++;
@@ -311,6 +350,7 @@ export function useOfflineSync() {
 
       const photos = await getPendingPhotos();
       for (const photo of photos) {
+        if (!isReallyOnline()) break;
         const success = await syncPhoto(photo);
         if (success) successCount++;
         else errorCount++;
@@ -318,6 +358,7 @@ export function useOfflineSync() {
 
       const signatures = await getPendingSignatures();
       for (const signature of signatures) {
+        if (!isReallyOnline()) break;
         const success = await syncSignature(signature);
         if (success) successCount++;
         else errorCount++;
@@ -325,6 +366,8 @@ export function useOfflineSync() {
 
       await queryClient.invalidateQueries({ queryKey: ['technician-interventions'] });
       await queryClient.invalidateQueries({ queryKey: ['intervention'] });
+      await queryClient.invalidateQueries({ queryKey: ['intervention-photos'] });
+      await queryClient.invalidateQueries({ queryKey: ['step-completions'] });
 
       await loadSyncStatus();
 
@@ -343,15 +386,18 @@ export function useOfflineSync() {
     }
   }, [queryClient, toast, loadSyncStatus]);
 
-  // Auto-sync every 10 seconds when online and there are pending items
+  // Keep ref in sync so the network listener can call latest syncAll
+  useEffect(() => {
+    syncAllRef.current = syncAll;
+  }, [syncAll]);
+
+  // Auto-sync every 30s — only attempts if real heartbeat says online
   useEffect(() => {
     const interval = setInterval(() => {
-      if (navigator.onLine && !syncingRef.current) {
-        loadSyncStatus().then(() => {
-          syncAll();
-        });
+      if (isReallyOnline() && !syncingRef.current) {
+        loadSyncStatus().then(() => syncAll());
       }
-    }, 10000);
+    }, 30_000);
     return () => clearInterval(interval);
   }, [syncAll, loadSyncStatus]);
 
@@ -361,6 +407,17 @@ export function useOfflineSync() {
     }
   }, []);
 
+  const queueInterventionCreate = useCallback(async (data: any) => {
+    const tempId = `temp_${crypto.randomUUID()}`;
+    await addMutation({
+      type: 'create_intervention',
+      payload: { _tempId: tempId, ...data },
+    });
+    await loadSyncStatus();
+    if (isReallyOnline()) syncAll();
+    return tempId;
+  }, [loadSyncStatus, syncAll]);
+
   const queueInterventionUpdate = useCallback(async (id: string, data: any) => {
     await addMutation({
       type: 'update_intervention',
@@ -368,7 +425,7 @@ export function useOfflineSync() {
     });
     await loadSyncStatus();
     
-    if (navigator.onLine) {
+    if (isReallyOnline()) {
       syncAll();
     }
   }, [loadSyncStatus, syncAll]);
@@ -387,7 +444,7 @@ export function useOfflineSync() {
     });
     await loadSyncStatus();
     
-    if (navigator.onLine) {
+    if (isReallyOnline()) {
       syncAll();
     }
   }, [loadSyncStatus, syncAll]);
@@ -404,7 +461,7 @@ export function useOfflineSync() {
     });
     await loadSyncStatus();
     
-    if (navigator.onLine) {
+    if (isReallyOnline()) {
       syncAll();
     }
   }, [loadSyncStatus, syncAll]);
@@ -420,7 +477,7 @@ export function useOfflineSync() {
     });
     await loadSyncStatus();
     
-    if (navigator.onLine) {
+    if (isReallyOnline()) {
       syncAll();
     }
   }, [loadSyncStatus, syncAll]);
@@ -429,6 +486,7 @@ export function useOfflineSync() {
     ...syncState,
     syncAll,
     cacheInterventions,
+    queueInterventionCreate,
     queueInterventionUpdate,
     queuePhoto,
     queueSignature,
@@ -445,6 +503,7 @@ interface OfflineContextType {
   lastSync: number | null;
   syncAll: () => Promise<void>;
   cacheInterventions: (interventions: any[]) => Promise<void>;
+  queueInterventionCreate: (data: any) => Promise<string>;
   queueInterventionUpdate: (id: string, data: any) => Promise<void>;
   queuePhoto: (interventionId: string, blob: Blob, photoType: string, equipmentId?: string) => Promise<void>;
   queueSignature: (interventionId: string, blob: Blob, signatureName: string) => Promise<void>;

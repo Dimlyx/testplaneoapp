@@ -11,6 +11,8 @@ import { useInterventionTypes } from '@/hooks/useInterventionTypes';
 import { useCreateIntervention } from '@/hooks/useInterventions';
 import { useAuth } from '@/lib/auth-context';
 import { useUserOrganization } from '@/hooks/useUserOrganization';
+import { useOffline } from '@/hooks/useOfflineSync';
+import { isReallyOnline } from '@/lib/network-status';
 import { toast } from '@/hooks/use-toast';
 import { Plus, Loader2 } from 'lucide-react';
 
@@ -25,6 +27,8 @@ export default function TechnicianCreateInterventionDialog({ open, onOpenChange 
   const { data: clients = [] } = useClients();
   const { data: interventionTypes = [] } = useInterventionTypes();
   const createIntervention = useCreateIntervention(organizationId);
+  const { queueInterventionCreate } = useOffline();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [form, setForm] = useState({
     title: '',
@@ -55,39 +59,63 @@ export default function TechnicianCreateInterventionDialog({ open, onOpenChange 
   };
 
   const handleSubmit = async () => {
+    if (isSubmitting) return; // anti double-clic
     if (!form.title || !form.client_id || !form.intervention_type) {
       toast({ title: 'Veuillez remplir les champs obligatoires', variant: 'destructive' });
       return;
     }
 
+    const payload = {
+      title: form.title,
+      client_id: form.client_id,
+      intervention_type: form.intervention_type,
+      description: form.description || undefined,
+      scheduled_date: form.scheduled_date || null,
+      scheduled_time: form.scheduled_time || null,
+      scheduled_end_time: form.scheduled_end_time || null,
+      estimated_duration: (form.scheduled_time && form.scheduled_end_time)
+        ? Math.round((new Date(`2000-01-01T${form.scheduled_end_time}`).getTime() - new Date(`2000-01-01T${form.scheduled_time}`).getTime()) / 60000)
+        : null,
+      intervention_address: form.intervention_address || null,
+      intervention_city: form.intervention_city || null,
+      intervention_postal_code: form.intervention_postal_code || null,
+      technician_id: user?.id,
+      organization_id: organizationId,
+      status: form.scheduled_date ? 'planned' as const : 'to_plan' as const,
+    };
+
+    setIsSubmitting(true);
     try {
-      await createIntervention.mutateAsync({
-        title: form.title,
-        client_id: form.client_id,
-        intervention_type: form.intervention_type,
-        description: form.description || undefined,
-        scheduled_date: form.scheduled_date || null,
-        scheduled_time: form.scheduled_time || null,
-        scheduled_end_time: form.scheduled_end_time || null,
-        estimated_duration: (form.scheduled_time && form.scheduled_end_time)
-          ? Math.round((new Date(`2000-01-01T${form.scheduled_end_time}`).getTime() - new Date(`2000-01-01T${form.scheduled_time}`).getTime()) / 60000)
-          : null,
-        intervention_address: form.intervention_address || null,
-        intervention_city: form.intervention_city || null,
-        intervention_postal_code: form.intervention_postal_code || null,
-        technician_id: user?.id,
-        organization_id: organizationId,
-        status: form.scheduled_date ? 'planned' : 'to_plan',
-      });
-      toast({ title: 'Intervention créée avec succès' });
-      resetForm();
-      onOpenChange(false);
-    } catch (err: any) {
-      toast({
-        title: 'Erreur lors de la création',
-        description: err?.message || 'Une erreur est survenue',
-        variant: 'destructive',
-      });
+      // Offline-first: if no real network, queue immediately and close
+      if (!isReallyOnline()) {
+        await queueInterventionCreate(payload);
+        toast({
+          title: 'Intervention enregistrée hors-ligne',
+          description: 'Elle sera créée automatiquement au retour de la connexion.',
+        });
+        resetForm();
+        onOpenChange(false);
+        return;
+      }
+
+      try {
+        await createIntervention.mutateAsync(payload);
+        toast({ title: 'Intervention créée avec succès' });
+        resetForm();
+        onOpenChange(false);
+      } catch (err: any) {
+        // Network or timeout — fallback to offline queue instead of failing
+        console.warn('Online create failed, queuing offline:', err?.message);
+        await queueInterventionCreate(payload);
+        toast({
+          title: 'Connexion instable — enregistré hors-ligne',
+          description: 'L\'intervention sera créée dès que possible.',
+        });
+        resetForm();
+        onOpenChange(false);
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -215,9 +243,9 @@ export default function TechnicianCreateInterventionDialog({ open, onOpenChange 
           </div>
 
           <div className="flex justify-end gap-2 pt-2 border-t">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>Annuler</Button>
-            <Button onClick={handleSubmit} disabled={createIntervention.isPending}>
-              {createIntervention.isPending ? (
+            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>Annuler</Button>
+            <Button onClick={handleSubmit} disabled={isSubmitting}>
+              {isSubmitting ? (
                 <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Création...</>
               ) : (
                 'Créer l\'intervention'
