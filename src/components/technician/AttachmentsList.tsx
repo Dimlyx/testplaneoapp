@@ -39,11 +39,11 @@ const AttachmentsList = ({ interventionId, isReadOnly = false }: AttachmentsList
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    const MAX_SIZE = 50 * 1024 * 1024; // 50 Mo
+    const MAX_SIZE = 100 * 1024 * 1024; // 100 Mo
     
     for (const file of Array.from(files)) {
       if (file.size > MAX_SIZE) {
-        alert(`Le fichier "${file.name}" est trop volumineux (max 50 Mo)`);
+        alert(`Le fichier "${file.name}" est trop volumineux (max 100 Mo)`);
         continue;
       }
       await addAttachment.mutateAsync({ interventionId, file });
@@ -146,7 +146,7 @@ const AttachmentsList = ({ interventionId, isReadOnly = false }: AttachmentsList
             Ajouter des pièces jointes
           </Button>
           <p className="text-xs text-muted-foreground text-center">
-            PDF, Word, Excel, images, vidéos, archives... Max 50 Mo par fichier
+            PDF, Word, Excel, images, vidéos, archives... Max 100 Mo par fichier
           </p>
         </>
       )}

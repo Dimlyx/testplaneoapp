@@ -29,9 +29,9 @@ const PendingAttachmentsList = ({ files, onFilesChange }: PendingAttachmentsList
 
     const file = selectedFiles[0];
     
-    // Validate file size (max 10 Mo)
-    if (file.size > 10 * 1024 * 1024) {
-      alert('Le fichier est trop volumineux (max 10 Mo)');
+    // Validate file size (max 100 Mo)
+    if (file.size > 100 * 1024 * 1024) {
+      alert('Le fichier est trop volumineux (max 100 Mo)');
       return;
     }
 
@@ -93,7 +93,7 @@ const PendingAttachmentsList = ({ files, onFilesChange }: PendingAttachmentsList
         type="file"
         onChange={handleFileSelect}
         className="hidden"
-        accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.gif,.txt"
+        accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.gif,.txt,.mp4,.mov,.avi,.zip,.rar"
       />
       <Button
         type="button"
@@ -105,7 +105,7 @@ const PendingAttachmentsList = ({ files, onFilesChange }: PendingAttachmentsList
         Ajouter une pièce jointe
       </Button>
       <p className="text-xs text-muted-foreground text-center">
-        PDF, Word, Excel, images. Max 10 Mo
+        PDF, Word, Excel, images, vidéos, archives. Max 100 Mo
       </p>
     </div>
   );
