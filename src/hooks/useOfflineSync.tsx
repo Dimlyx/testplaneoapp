@@ -444,7 +444,7 @@ export function useOfflineSync() {
     });
     await loadSyncStatus();
     
-    if (navigator.onLine) {
+    if (isReallyOnline()) {
       syncAll();
     }
   }, [loadSyncStatus, syncAll]);
@@ -461,7 +461,7 @@ export function useOfflineSync() {
     });
     await loadSyncStatus();
     
-    if (navigator.onLine) {
+    if (isReallyOnline()) {
       syncAll();
     }
   }, [loadSyncStatus, syncAll]);
@@ -477,7 +477,7 @@ export function useOfflineSync() {
     });
     await loadSyncStatus();
     
-    if (navigator.onLine) {
+    if (isReallyOnline()) {
       syncAll();
     }
   }, [loadSyncStatus, syncAll]);
@@ -486,6 +486,7 @@ export function useOfflineSync() {
     ...syncState,
     syncAll,
     cacheInterventions,
+    queueInterventionCreate,
     queueInterventionUpdate,
     queuePhoto,
     queueSignature,
@@ -502,6 +503,7 @@ interface OfflineContextType {
   lastSync: number | null;
   syncAll: () => Promise<void>;
   cacheInterventions: (interventions: any[]) => Promise<void>;
+  queueInterventionCreate: (data: any) => Promise<string>;
   queueInterventionUpdate: (id: string, data: any) => Promise<void>;
   queuePhoto: (interventionId: string, blob: Blob, photoType: string, equipmentId?: string) => Promise<void>;
   queueSignature: (interventionId: string, blob: Blob, signatureName: string) => Promise<void>;
