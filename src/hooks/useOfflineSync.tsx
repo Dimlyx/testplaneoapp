@@ -222,7 +222,13 @@ export function useOfflineSync() {
       return true;
     } catch (error: any) {
       console.error('Error syncing mutation:', error);
-      await markMutationError(mutation.id, error.message);
+      const attempts = await incrementMutationAttempts(mutation.id);
+      await markMutationError(mutation.id, error?.message || 'unknown');
+      // Drop mutation after 10 failed attempts to prevent infinite loops
+      if (attempts >= 10) {
+        console.warn(`Dropping mutation ${mutation.id} after ${attempts} failed attempts`);
+        await deleteMutation(mutation.id);
+      }
       return false;
     }
   };
