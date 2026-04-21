@@ -186,6 +186,23 @@ export async function deleteMutation(id: string): Promise<void> {
   await updatePendingCount();
 }
 
+export async function deleteMutation(id: string): Promise<void> {
+  const db = await getDB();
+  await db.delete('mutations', id);
+  await updatePendingCount();
+}
+
+export async function incrementMutationAttempts(id: string): Promise<number> {
+  const db = await getDB();
+  const mutation = await db.get('mutations', id);
+  if (!mutation) return 0;
+  const next = (mutation.attempts || 0) + 1;
+  mutation.attempts = next;
+  mutation.lastAttemptAt = Date.now();
+  await db.put('mutations', mutation);
+  return next;
+}
+
 // Photo operations
 export async function savePhotoOffline(photo: Omit<OfflinePhoto, 'id' | 'createdAt' | 'synced'>): Promise<string> {
   const db = await getDB();
@@ -198,6 +215,12 @@ export async function savePhotoOffline(photo: Omit<OfflinePhoto, 'id' | 'created
   });
   await updatePendingCount();
   return id;
+}
+
+export async function getPhotoBlobOffline(id: string): Promise<OfflinePhoto | null> {
+  const db = await getDB();
+  const photo = await db.get('photos', id);
+  return photo || null;
 }
 
 export async function getPendingPhotos(): Promise<OfflinePhoto[]> {
