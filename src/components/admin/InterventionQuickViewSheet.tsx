@@ -47,11 +47,40 @@ export function InterventionQuickViewSheet({
 }: InterventionQuickViewSheetProps) {
   const navigate = useNavigate();
   const { data: clients = [] } = useClients();
+  const { data: customStatuses = [] } = useCustomStatuses();
+  const updateIntervention = useUpdateIntervention();
 
   if (!intervention) return null;
 
   const client = clients.find((c) => c.id === intervention.client_id);
   const technician = technicians.find((t) => t.id === intervention.technician_id);
+
+  const currentValue = intervention.custom_status_id
+    ? `custom:${intervention.custom_status_id}`
+    : `default:${intervention.status}`;
+
+  const handleStatusChange = (value: string) => {
+    if (value.startsWith("custom:")) {
+      const customId = value.replace("custom:", "");
+      const custom = customStatuses.find((s) => s.id === customId);
+      if (!custom) return;
+      const matchingBase = DEFAULT_STATUSES.find(
+        (d) => d.value === (custom.name as InterventionStatus),
+      );
+      updateIntervention.mutate({
+        id: intervention.id,
+        custom_status_id: customId,
+        ...(matchingBase ? { status: matchingBase.value } : {}),
+      });
+    } else {
+      const status = value.replace("default:", "") as InterventionStatus;
+      updateIntervention.mutate({
+        id: intervention.id,
+        status,
+        custom_status_id: null,
+      });
+    }
+  };
 
   const formatTimeRange = () => {
     if (!intervention.scheduled_time) return null;
