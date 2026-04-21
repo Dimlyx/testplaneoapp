@@ -59,39 +59,63 @@ export default function TechnicianCreateInterventionDialog({ open, onOpenChange 
   };
 
   const handleSubmit = async () => {
+    if (isSubmitting) return; // anti double-clic
     if (!form.title || !form.client_id || !form.intervention_type) {
       toast({ title: 'Veuillez remplir les champs obligatoires', variant: 'destructive' });
       return;
     }
 
+    const payload = {
+      title: form.title,
+      client_id: form.client_id,
+      intervention_type: form.intervention_type,
+      description: form.description || undefined,
+      scheduled_date: form.scheduled_date || null,
+      scheduled_time: form.scheduled_time || null,
+      scheduled_end_time: form.scheduled_end_time || null,
+      estimated_duration: (form.scheduled_time && form.scheduled_end_time)
+        ? Math.round((new Date(`2000-01-01T${form.scheduled_end_time}`).getTime() - new Date(`2000-01-01T${form.scheduled_time}`).getTime()) / 60000)
+        : null,
+      intervention_address: form.intervention_address || null,
+      intervention_city: form.intervention_city || null,
+      intervention_postal_code: form.intervention_postal_code || null,
+      technician_id: user?.id,
+      organization_id: organizationId,
+      status: form.scheduled_date ? 'planned' as const : 'to_plan' as const,
+    };
+
+    setIsSubmitting(true);
     try {
-      await createIntervention.mutateAsync({
-        title: form.title,
-        client_id: form.client_id,
-        intervention_type: form.intervention_type,
-        description: form.description || undefined,
-        scheduled_date: form.scheduled_date || null,
-        scheduled_time: form.scheduled_time || null,
-        scheduled_end_time: form.scheduled_end_time || null,
-        estimated_duration: (form.scheduled_time && form.scheduled_end_time)
-          ? Math.round((new Date(`2000-01-01T${form.scheduled_end_time}`).getTime() - new Date(`2000-01-01T${form.scheduled_time}`).getTime()) / 60000)
-          : null,
-        intervention_address: form.intervention_address || null,
-        intervention_city: form.intervention_city || null,
-        intervention_postal_code: form.intervention_postal_code || null,
-        technician_id: user?.id,
-        organization_id: organizationId,
-        status: form.scheduled_date ? 'planned' : 'to_plan',
-      });
-      toast({ title: 'Intervention créée avec succès' });
-      resetForm();
-      onOpenChange(false);
-    } catch (err: any) {
-      toast({
-        title: 'Erreur lors de la création',
-        description: err?.message || 'Une erreur est survenue',
-        variant: 'destructive',
-      });
+      // Offline-first: if no real network, queue immediately and close
+      if (!isReallyOnline()) {
+        await queueInterventionCreate(payload);
+        toast({
+          title: 'Intervention enregistrée hors-ligne',
+          description: 'Elle sera créée automatiquement au retour de la connexion.',
+        });
+        resetForm();
+        onOpenChange(false);
+        return;
+      }
+
+      try {
+        await createIntervention.mutateAsync(payload);
+        toast({ title: 'Intervention créée avec succès' });
+        resetForm();
+        onOpenChange(false);
+      } catch (err: any) {
+        // Network or timeout — fallback to offline queue instead of failing
+        console.warn('Online create failed, queuing offline:', err?.message);
+        await queueInterventionCreate(payload);
+        toast({
+          title: 'Connexion instable — enregistré hors-ligne',
+          description: 'L\'intervention sera créée dès que possible.',
+        });
+        resetForm();
+        onOpenChange(false);
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
