@@ -238,12 +238,15 @@ export function useOfflineSync() {
     try {
       const fileName = `${photo.interventionId}/${Date.now()}_${photo.id}.jpg`;
       
-      const { error: uploadError } = await supabase.storage
-        .from('intervention-photos')
-        .upload(fileName, photo.blob, {
-          contentType: 'image/jpeg',
-          cacheControl: '3600',
-        });
+      const { error: uploadError } = await withTimeout(
+        supabase.storage
+          .from('intervention-photos')
+          .upload(fileName, photo.blob, {
+            contentType: 'image/jpeg',
+            cacheControl: '3600',
+          }),
+        30_000, // photos can be large
+      );
 
       if (uploadError) throw uploadError;
 
@@ -251,21 +254,28 @@ export function useOfflineSync() {
         .from('intervention-photos')
         .getPublicUrl(fileName);
 
-      const { error: dbError } = await supabase
-        .from('intervention_photos')
-        .insert({
-          intervention_id: photo.interventionId,
-          equipment_id: photo.equipmentId || null,
-          photo_type: photo.photoType,
-          photo_url: urlData.publicUrl,
-        });
+      const { error: dbError } = await withTimeout(
+        supabase
+          .from('intervention_photos')
+          .insert({
+            intervention_id: photo.interventionId,
+            equipment_id: photo.equipmentId || null,
+            photo_type: photo.photoType,
+            photo_url: urlData.publicUrl,
+          }),
+        8000,
+      );
 
       if (dbError) throw dbError;
 
       await markPhotoSynced(photo.id);
       return true;
     } catch (error: any) {
-      console.error('Error syncing photo:', error);
+      if (isTimeoutError(error)) {
+        console.warn('Photo upload timed out, will retry later');
+      } else {
+        console.error('Error syncing photo:', error);
+      }
       return false;
     }
   };
@@ -275,12 +285,15 @@ export function useOfflineSync() {
     try {
       const fileName = `signatures/${signature.interventionId}_${Date.now()}.png`;
       
-      const { error: uploadError } = await supabase.storage
-        .from('intervention-photos')
-        .upload(fileName, signature.blob, {
-          contentType: 'image/png',
-          cacheControl: '3600',
-        });
+      const { error: uploadError } = await withTimeout(
+        supabase.storage
+          .from('intervention-photos')
+          .upload(fileName, signature.blob, {
+            contentType: 'image/png',
+            cacheControl: '3600',
+          }),
+        30_000,
+      );
 
       if (uploadError) throw uploadError;
 
@@ -288,20 +301,27 @@ export function useOfflineSync() {
         .from('intervention-photos')
         .getPublicUrl(fileName);
 
-      const { error: dbError } = await supabase
-        .from('interventions')
-        .update({
-          client_signature_url: urlData.publicUrl,
-          client_signature_name: signature.signatureName,
-        })
-        .eq('id', signature.interventionId);
+      const { error: dbError } = await withTimeout(
+        supabase
+          .from('interventions')
+          .update({
+            client_signature_url: urlData.publicUrl,
+            client_signature_name: signature.signatureName,
+          })
+          .eq('id', signature.interventionId),
+        8000,
+      );
 
       if (dbError) throw dbError;
 
       await markSignatureSynced(signature.id);
       return true;
     } catch (error: any) {
-      console.error('Error syncing signature:', error);
+      if (isTimeoutError(error)) {
+        console.warn('Signature upload timed out, will retry later');
+      } else {
+        console.error('Error syncing signature:', error);
+      }
       return false;
     }
   };
