@@ -4,12 +4,33 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { StatusBadge, TypeBadge } from "@/components/ui/status-badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Clock, MapPin, User, Phone, Mail, FileText, ExternalLink, CalendarDays, Building2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
-import type { Intervention } from "@/hooks/useInterventions";
+import { useUpdateIntervention, type Intervention } from "@/hooks/useInterventions";
 import type { Technician } from "@/hooks/useTechnicians";
 import { useClients } from "@/hooks/useClients";
+import { useCustomStatuses } from "@/hooks/useCustomStatuses";
+import type { Database } from "@/integrations/supabase/types";
+
+type InterventionStatus = Database["public"]["Enums"]["intervention_status"];
+
+const DEFAULT_STATUSES: { value: InterventionStatus; label: string; color: string }[] = [
+  { value: "to_plan", label: "À planifier", color: "#f59e0b" },
+  { value: "planned", label: "Planifiée", color: "#3b82f6" },
+  { value: "in_progress", label: "En cours", color: "#8b5cf6" },
+  { value: "completed", label: "Terminée", color: "#10b981" },
+  { value: "to_invoice", label: "À facturer", color: "#f97316" },
+  { value: "archived", label: "Archivée", color: "#6b7280" },
+  { value: "cancelled", label: "Annulée", color: "#ef4444" },
+];
 
 interface InterventionQuickViewSheetProps {
   intervention: Intervention | null;
@@ -26,11 +47,40 @@ export function InterventionQuickViewSheet({
 }: InterventionQuickViewSheetProps) {
   const navigate = useNavigate();
   const { data: clients = [] } = useClients();
+  const { data: customStatuses = [] } = useCustomStatuses();
+  const updateIntervention = useUpdateIntervention();
 
   if (!intervention) return null;
 
   const client = clients.find((c) => c.id === intervention.client_id);
   const technician = technicians.find((t) => t.id === intervention.technician_id);
+
+  const currentValue = intervention.custom_status_id
+    ? `custom:${intervention.custom_status_id}`
+    : `default:${intervention.status}`;
+
+  const handleStatusChange = (value: string) => {
+    if (value.startsWith("custom:")) {
+      const customId = value.replace("custom:", "");
+      const custom = customStatuses.find((s) => s.id === customId);
+      if (!custom) return;
+      const matchingBase = DEFAULT_STATUSES.find(
+        (d) => d.value === (custom.name as InterventionStatus),
+      );
+      updateIntervention.mutate({
+        id: intervention.id,
+        custom_status_id: customId,
+        ...(matchingBase ? { status: matchingBase.value } : {}),
+      });
+    } else {
+      const status = value.replace("default:", "") as InterventionStatus;
+      updateIntervention.mutate({
+        id: intervention.id,
+        status,
+        custom_status_id: null,
+      });
+    }
+  };
 
   const formatTimeRange = () => {
     if (!intervention.scheduled_time) return null;
@@ -70,6 +120,59 @@ export function InterventionQuickViewSheet({
         </SheetHeader>
 
         <div className="flex-1 p-6 space-y-5">
+          {/* Changer le statut */}
+          <div className="space-y-2">
+            <h4 className="text-xs font-semibold uppercase text-muted-foreground tracking-wide">
+              Changer le statut
+            </h4>
+            <Select
+              value={currentValue}
+              onValueChange={handleStatusChange}
+              disabled={updateIntervention.isPending}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Sélectionner un statut" />
+              </SelectTrigger>
+              <SelectContent>
+                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                  Statuts par défaut
+                </div>
+                {DEFAULT_STATUSES.map((s) => (
+                  <SelectItem key={s.value} value={`default:${s.value}`}>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="w-2.5 h-2.5 rounded-full shrink-0"
+                        style={{ backgroundColor: s.color }}
+                      />
+                      <span>{s.label}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+                {customStatuses.length > 0 && (
+                  <>
+                    <Separator className="my-1" />
+                    <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                      Statuts personnalisés
+                    </div>
+                    {customStatuses.map((s) => (
+                      <SelectItem key={s.id} value={`custom:${s.id}`}>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="w-2.5 h-2.5 rounded-full shrink-0"
+                            style={{ backgroundColor: s.color }}
+                          />
+                          <span>{s.label}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <Separator />
+
           {/* Date & heure */}
           {intervention.scheduled_date && (
             <div className="space-y-2">

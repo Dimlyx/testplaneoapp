@@ -123,6 +123,7 @@ export interface UpdateInterventionData {
   cancellation_reason?: string | null;
   cancellation_details?: string | null;
   cancellation_photos?: string[];
+  custom_status_id?: string | null;
 }
 
 interface AssignmentPushPayload {
