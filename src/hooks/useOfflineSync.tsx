@@ -40,37 +40,30 @@ export function useOfflineSync() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [syncState, setSyncState] = useState<SyncState>({
-    isOnline: navigator.onLine,
+    isOnline: isReallyOnline(),
     isSyncing: false,
     pendingCount: 0,
     lastSync: null,
     error: null,
   });
   const syncingRef = useRef(false);
+  const syncAllRef = useRef<() => void>(() => {});
 
-  // Update online status
+  // Subscribe to real network heartbeat (not navigator.onLine alone)
   useEffect(() => {
-    const handleOnline = () => {
-      setSyncState(prev => ({ ...prev, isOnline: true }));
-      syncAll();
-    };
-    
-    const handleOffline = () => {
-      setSyncState(prev => ({ ...prev, isOnline: false }));
-      toast({
-        title: 'Mode hors-ligne activé',
-        description: 'Vos modifications seront synchronisées au retour de la connexion.',
-      });
-    };
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
+    const unsub = subscribeNetworkStatus((online) => {
+      setSyncState(prev => ({ ...prev, isOnline: online }));
+      if (online) {
+        syncAllRef.current();
+      } else {
+        toast({
+          title: 'Mode hors-ligne activé',
+          description: 'Vos modifications seront synchronisées au retour de la connexion.',
+        });
+      }
+    });
+    return unsub;
+  }, [toast]);
 
   // Load initial sync status
   useEffect(() => {
