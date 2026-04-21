@@ -82,8 +82,12 @@ export default function TechnicianCreateInterventionDialog({ open, onOpenChange 
       toast({ title: 'Intervention créée avec succès' });
       resetForm();
       onOpenChange(false);
-    } catch {
-      toast({ title: 'Erreur lors de la création', variant: 'destructive' });
+    } catch (err: any) {
+      toast({
+        title: 'Erreur lors de la création',
+        description: err?.message || 'Une erreur est survenue',
+        variant: 'destructive',
+      });
     }
   };
 
