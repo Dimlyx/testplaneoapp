@@ -4,12 +4,33 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { StatusBadge, TypeBadge } from "@/components/ui/status-badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Clock, MapPin, User, Phone, Mail, FileText, ExternalLink, CalendarDays, Building2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
-import type { Intervention } from "@/hooks/useInterventions";
+import { useUpdateIntervention, type Intervention } from "@/hooks/useInterventions";
 import type { Technician } from "@/hooks/useTechnicians";
 import { useClients } from "@/hooks/useClients";
+import { useCustomStatuses } from "@/hooks/useCustomStatuses";
+import type { Database } from "@/integrations/supabase/types";
+
+type InterventionStatus = Database["public"]["Enums"]["intervention_status"];
+
+const DEFAULT_STATUSES: { value: InterventionStatus; label: string; color: string }[] = [
+  { value: "to_plan", label: "À planifier", color: "#f59e0b" },
+  { value: "planned", label: "Planifiée", color: "#3b82f6" },
+  { value: "in_progress", label: "En cours", color: "#8b5cf6" },
+  { value: "completed", label: "Terminée", color: "#10b981" },
+  { value: "to_invoice", label: "À facturer", color: "#f97316" },
+  { value: "archived", label: "Archivée", color: "#6b7280" },
+  { value: "cancelled", label: "Annulée", color: "#ef4444" },
+];
 
 interface InterventionQuickViewSheetProps {
   intervention: Intervention | null;
