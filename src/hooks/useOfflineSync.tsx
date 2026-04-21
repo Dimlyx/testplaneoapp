@@ -15,10 +15,18 @@ import {
   addMutation,
   savePhotoOffline,
   saveSignatureOffline,
+  incrementMutationAttempts,
+  deleteMutation,
   OfflineMutation,
   OfflinePhoto,
   OfflineSignature,
 } from '@/lib/offline-db';
+import {
+  isReallyOnline,
+  subscribeNetworkStatus,
+  checkNetworkNow,
+} from '@/lib/network-status';
+import { withTimeout, isTimeoutError } from '@/lib/supabase-with-timeout';
 
 interface SyncState {
   isOnline: boolean;
