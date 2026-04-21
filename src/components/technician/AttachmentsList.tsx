@@ -146,7 +146,7 @@ const AttachmentsList = ({ interventionId, isReadOnly = false }: AttachmentsList
             Ajouter des pièces jointes
           </Button>
           <p className="text-xs text-muted-foreground text-center">
-            PDF, Word, Excel, images, vidéos, archives... Max 50 Mo par fichier
+            PDF, Word, Excel, images, vidéos, archives... Max 100 Mo par fichier
           </p>
         </>
       )}
