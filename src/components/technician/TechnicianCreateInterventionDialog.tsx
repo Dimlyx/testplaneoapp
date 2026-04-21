@@ -27,6 +27,8 @@ export default function TechnicianCreateInterventionDialog({ open, onOpenChange 
   const { data: clients = [] } = useClients();
   const { data: interventionTypes = [] } = useInterventionTypes();
   const createIntervention = useCreateIntervention(organizationId);
+  const { queueInterventionCreate } = useOffline();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [form, setForm] = useState({
     title: '',
