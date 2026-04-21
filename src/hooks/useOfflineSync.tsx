@@ -328,7 +328,10 @@ export function useOfflineSync() {
 
   // Sync all pending data
   const syncAll = useCallback(async () => {
-    if (!navigator.onLine || syncingRef.current) return;
+    if (syncingRef.current) return;
+    // Verify network before attempting expensive sync (avoid zombie requests)
+    const reallyOnline = await checkNetworkNow();
+    if (!reallyOnline) return;
     
     syncingRef.current = true;
     setSyncState(prev => ({ ...prev, isSyncing: true, error: null }));
@@ -339,6 +342,7 @@ export function useOfflineSync() {
     try {
       const mutations = await getPendingMutations();
       for (const mutation of mutations) {
+        if (!isReallyOnline()) break;
         const success = await syncMutation(mutation);
         if (success) successCount++;
         else errorCount++;
@@ -346,6 +350,7 @@ export function useOfflineSync() {
 
       const photos = await getPendingPhotos();
       for (const photo of photos) {
+        if (!isReallyOnline()) break;
         const success = await syncPhoto(photo);
         if (success) successCount++;
         else errorCount++;
@@ -353,6 +358,7 @@ export function useOfflineSync() {
 
       const signatures = await getPendingSignatures();
       for (const signature of signatures) {
+        if (!isReallyOnline()) break;
         const success = await syncSignature(signature);
         if (success) successCount++;
         else errorCount++;
@@ -360,6 +366,8 @@ export function useOfflineSync() {
 
       await queryClient.invalidateQueries({ queryKey: ['technician-interventions'] });
       await queryClient.invalidateQueries({ queryKey: ['intervention'] });
+      await queryClient.invalidateQueries({ queryKey: ['intervention-photos'] });
+      await queryClient.invalidateQueries({ queryKey: ['step-completions'] });
 
       await loadSyncStatus();
 
@@ -378,15 +386,18 @@ export function useOfflineSync() {
     }
   }, [queryClient, toast, loadSyncStatus]);
 
-  // Auto-sync every 10 seconds when online and there are pending items
+  // Keep ref in sync so the network listener can call latest syncAll
+  useEffect(() => {
+    syncAllRef.current = syncAll;
+  }, [syncAll]);
+
+  // Auto-sync every 30s — only attempts if real heartbeat says online
   useEffect(() => {
     const interval = setInterval(() => {
-      if (navigator.onLine && !syncingRef.current) {
-        loadSyncStatus().then(() => {
-          syncAll();
-        });
+      if (isReallyOnline() && !syncingRef.current) {
+        loadSyncStatus().then(() => syncAll());
       }
-    }, 10000);
+    }, 30_000);
     return () => clearInterval(interval);
   }, [syncAll, loadSyncStatus]);
 
@@ -396,6 +407,17 @@ export function useOfflineSync() {
     }
   }, []);
 
+  const queueInterventionCreate = useCallback(async (data: any) => {
+    const tempId = `temp_${crypto.randomUUID()}`;
+    await addMutation({
+      type: 'create_intervention',
+      payload: { _tempId: tempId, ...data },
+    });
+    await loadSyncStatus();
+    if (isReallyOnline()) syncAll();
+    return tempId;
+  }, [loadSyncStatus, syncAll]);
+
   const queueInterventionUpdate = useCallback(async (id: string, data: any) => {
     await addMutation({
       type: 'update_intervention',
@@ -403,7 +425,7 @@ export function useOfflineSync() {
     });
     await loadSyncStatus();
     
-    if (navigator.onLine) {
+    if (isReallyOnline()) {
       syncAll();
     }
   }, [loadSyncStatus, syncAll]);
