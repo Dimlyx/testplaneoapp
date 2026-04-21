@@ -22,6 +22,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { WeeklyPlanningCalendar } from "@/components/admin/WeeklyPlanningCalendar";
 import { QuickInterventionDialog } from "@/components/admin/QuickInterventionDialog";
+import { InterventionQuickViewSheet } from "@/components/admin/InterventionQuickViewSheet";
 
 const AdminCalendar = () => {
   const { data: interventions = [], isLoading: loadingInterventions } = useInterventions();
@@ -39,6 +40,10 @@ const AdminCalendar = () => {
   const [quickDialogOpen, setQuickDialogOpen] = useState(false);
   const [quickDialogTechId, setQuickDialogTechId] = useState<string | undefined>();
   const [quickDialogDate, setQuickDialogDate] = useState<Date | undefined>();
+
+  // Quick view side panel state
+  const [quickViewIntervention, setQuickViewIntervention] = useState<Intervention | null>(null);
+  const [quickViewOpen, setQuickViewOpen] = useState(false);
 
   // Filter interventions by technician
   const filteredInterventions = useMemo(() => {
@@ -94,7 +99,8 @@ const AdminCalendar = () => {
   };
 
   const handleInterventionClick = (intervention: Intervention) => {
-    navigate(`/admin/interventions/${intervention.id}`);
+    setQuickViewIntervention(intervention);
+    setQuickViewOpen(true);
   };
 
   if (loadingInterventions || loadingTechnicians) {
@@ -329,6 +335,14 @@ const AdminCalendar = () => {
         onOpenChange={setQuickDialogOpen}
         defaultTechnicianId={quickDialogTechId}
         defaultDate={quickDialogDate}
+        technicians={technicians}
+      />
+
+      {/* Quick view side panel */}
+      <InterventionQuickViewSheet
+        intervention={quickViewIntervention}
+        open={quickViewOpen}
+        onOpenChange={setQuickViewOpen}
         technicians={technicians}
       />
     </div>
