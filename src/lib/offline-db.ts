@@ -186,12 +186,6 @@ export async function deleteMutation(id: string): Promise<void> {
   await updatePendingCount();
 }
 
-export async function deleteMutation(id: string): Promise<void> {
-  const db = await getDB();
-  await db.delete('mutations', id);
-  await updatePendingCount();
-}
-
 export async function incrementMutationAttempts(id: string): Promise<number> {
   const db = await getDB();
   const mutation = await db.get('mutations', id);
