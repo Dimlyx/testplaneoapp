@@ -29,9 +29,9 @@ const PendingAttachmentsList = ({ files, onFilesChange }: PendingAttachmentsList
 
     const file = selectedFiles[0];
     
-    // Validate file size (max 10 Mo)
-    if (file.size > 10 * 1024 * 1024) {
-      alert('Le fichier est trop volumineux (max 10 Mo)');
+    // Validate file size (max 100 Mo)
+    if (file.size > 100 * 1024 * 1024) {
+      alert('Le fichier est trop volumineux (max 100 Mo)');
       return;
     }
 
