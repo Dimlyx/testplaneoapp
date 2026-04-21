@@ -228,7 +228,18 @@ const TechnicianInterventionDetail = () => {
     <div className="space-y-4 pb-20">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+        <Button
+          variant="ghost"
+          size="icon"
+          type="button"
+          onPointerUp={(e) => {
+            e.preventDefault();
+            e.currentTarget.blur();
+            navigate(-1);
+          }}
+          onClick={(e) => e.preventDefault()}
+          className="touch-manipulation focus:outline-none focus-visible:outline-none"
+        >
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="flex-1">
