@@ -86,23 +86,66 @@ const Interventions = () => {
     return client?.name || "Client inconnu";
   };
 
+  const getClient = (clientId: string) => clients.find(c => c.id === clientId);
+
   const getTechnicianName = (technicianId: string | null) => {
     if (!technicianId) return "Non assigné";
     const tech = technicians.find(t => t.id === technicianId);
     return tech?.full_name || tech?.email || "Technicien inconnu";
   };
 
-  const filteredInterventions = interventions.filter((intervention) => {
-    const matchesSearch = 
-      intervention.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      getClientName(intervention.client_id).toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "all" || intervention.status === statusFilter || intervention.custom_status_id === statusFilter;
-    const matchesType = typeFilter === "all" || intervention.intervention_type === typeFilter;
-    const matchesTechnician = technicianFilter === "all" || intervention.technician_id === technicianFilter;
-    const matchesClient = clientFilter === "all" || intervention.client_id === clientFilter;
+  // Compute search match info: returns null if no match, or { field, value } describing where the match was found
+  const computeMatchInfo = (intervention: typeof interventions[0], term: string) => {
+    if (!term.trim()) return { matches: true, hint: null as null | { label: string; value: string } };
+    const t = term.toLowerCase().trim();
+    const client = getClient(intervention.client_id);
 
-    return matchesSearch && matchesStatus && matchesType && matchesTechnician && matchesClient;
-  });
+    // Visible columns first (no hint needed)
+    if (intervention.title?.toLowerCase().includes(t)) return { matches: true, hint: null };
+    if (client?.name?.toLowerCase().includes(t)) return { matches: true, hint: null };
+
+    // Hidden fields - show a hint badge so user understands why it matched
+    const checks: Array<[string, string | null | undefined]> = [
+      ['Contact', intervention.intervention_contact_name],
+      ['Adresse', intervention.intervention_address],
+      ['Ville', intervention.intervention_city],
+      ['Code postal', intervention.intervention_postal_code],
+      ['Bâtiment', intervention.intervention_building],
+      ['Étage', intervention.intervention_floor],
+      ['Téléphone', intervention.intervention_phone],
+      ['Email', intervention.intervention_email],
+      ['Description', intervention.description],
+      ['Téléphone client', client?.phone],
+      ['Email client', client?.email],
+      ['Adresse client', client?.address],
+      ['Ville client', client?.city],
+      ['Code postal client', client?.postal_code],
+    ];
+
+    for (const [label, value] of checks) {
+      if (value && value.toLowerCase().includes(t)) {
+        return { matches: true, hint: { label, value } };
+      }
+    }
+
+    return { matches: false, hint: null };
+  };
+
+  const filteredInterventions = interventions
+    .map((intervention) => ({
+      intervention,
+      matchInfo: computeMatchInfo(intervention, searchTerm),
+    }))
+    .filter(({ intervention, matchInfo }) => {
+      if (!matchInfo.matches) return false;
+      const matchesStatus = statusFilter === "all" || intervention.status === statusFilter || intervention.custom_status_id === statusFilter;
+      const matchesType = typeFilter === "all" || intervention.intervention_type === typeFilter;
+      const matchesTechnician = technicianFilter === "all" || intervention.technician_id === technicianFilter;
+      const matchesClient = clientFilter === "all" || intervention.client_id === clientFilter;
+      return matchesStatus && matchesType && matchesTechnician && matchesClient;
+    });
+
+  const filteredInterventionsList = filteredInterventions.map(f => f.intervention);
 
   const handleDuplicate = async (intervention: typeof interventions[0]) => {
     try {
@@ -130,10 +173,10 @@ const Interventions = () => {
 
   // Selection handlers
   const toggleSelectAll = () => {
-    if (selectedIds.size === filteredInterventions.length) {
+    if (selectedIds.size === filteredInterventionsList.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(filteredInterventions.map(i => i.id)));
+      setSelectedIds(new Set(filteredInterventionsList.map(i => i.id)));
     }
   };
 
@@ -151,7 +194,7 @@ const Interventions = () => {
     setSelectedIds(new Set());
   };
 
-  const isAllSelected = filteredInterventions.length > 0 && selectedIds.size === filteredInterventions.length;
+  const isAllSelected = filteredInterventionsList.length > 0 && selectedIds.size === filteredInterventionsList.length;
   const isSomeSelected = selectedIds.size > 0;
 
   // Bulk action handlers
@@ -403,7 +446,7 @@ const Interventions = () => {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredInterventions.map((intervention) => (
+              filteredInterventions.map(({ intervention, matchInfo }) => (
                 <TableRow 
                   key={intervention.id}
                   className={selectedIds.has(intervention.id) ? "bg-muted/50" : ""}
@@ -415,7 +458,20 @@ const Interventions = () => {
                       aria-label={`Sélectionner ${intervention.title}`}
                     />
                   </TableCell>
-                  <TableCell className="font-medium">{intervention.title}</TableCell>
+                  <TableCell className="font-medium">
+                    <div className="flex flex-col gap-1">
+                      <span>{intervention.title}</span>
+                      {matchInfo.hint && (
+                        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                          <Search className="h-3 w-3" />
+                          <span className="font-normal">
+                            {matchInfo.hint.label}:{" "}
+                            <span className="text-foreground/80">{matchInfo.hint.value}</span>
+                          </span>
+                        </span>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell>{getClientName(intervention.client_id)}</TableCell>
                   <TableCell><TypeBadge type={intervention.intervention_type} /></TableCell>
                   <TableCell><StatusBadge status={intervention.status} customStatusId={intervention.custom_status_id} /></TableCell>
