@@ -11,6 +11,8 @@ import { useInterventionTypes } from '@/hooks/useInterventionTypes';
 import { useCreateIntervention } from '@/hooks/useInterventions';
 import { useAuth } from '@/lib/auth-context';
 import { useUserOrganization } from '@/hooks/useUserOrganization';
+import { useOffline } from '@/hooks/useOfflineSync';
+import { isReallyOnline } from '@/lib/network-status';
 import { toast } from '@/hooks/use-toast';
 import { Plus, Loader2 } from 'lucide-react';
 
