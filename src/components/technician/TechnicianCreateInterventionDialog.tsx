@@ -243,9 +243,9 @@ export default function TechnicianCreateInterventionDialog({ open, onOpenChange 
           </div>
 
           <div className="flex justify-end gap-2 pt-2 border-t">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>Annuler</Button>
-            <Button onClick={handleSubmit} disabled={createIntervention.isPending}>
-              {createIntervention.isPending ? (
+            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>Annuler</Button>
+            <Button onClick={handleSubmit} disabled={isSubmitting}>
+              {isSubmitting ? (
                 <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Création...</>
               ) : (
                 'Créer l\'intervention'
