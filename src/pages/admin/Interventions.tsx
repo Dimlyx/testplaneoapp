@@ -86,23 +86,66 @@ const Interventions = () => {
     return client?.name || "Client inconnu";
   };
 
+  const getClient = (clientId: string) => clients.find(c => c.id === clientId);
+
   const getTechnicianName = (technicianId: string | null) => {
     if (!technicianId) return "Non assigné";
     const tech = technicians.find(t => t.id === technicianId);
     return tech?.full_name || tech?.email || "Technicien inconnu";
   };
 
-  const filteredInterventions = interventions.filter((intervention) => {
-    const matchesSearch = 
-      intervention.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      getClientName(intervention.client_id).toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "all" || intervention.status === statusFilter || intervention.custom_status_id === statusFilter;
-    const matchesType = typeFilter === "all" || intervention.intervention_type === typeFilter;
-    const matchesTechnician = technicianFilter === "all" || intervention.technician_id === technicianFilter;
-    const matchesClient = clientFilter === "all" || intervention.client_id === clientFilter;
+  // Compute search match info: returns null if no match, or { field, value } describing where the match was found
+  const computeMatchInfo = (intervention: typeof interventions[0], term: string) => {
+    if (!term.trim()) return { matches: true, hint: null as null | { label: string; value: string } };
+    const t = term.toLowerCase().trim();
+    const client = getClient(intervention.client_id);
 
-    return matchesSearch && matchesStatus && matchesType && matchesTechnician && matchesClient;
-  });
+    // Visible columns first (no hint needed)
+    if (intervention.title?.toLowerCase().includes(t)) return { matches: true, hint: null };
+    if (client?.name?.toLowerCase().includes(t)) return { matches: true, hint: null };
+
+    // Hidden fields - show a hint badge so user understands why it matched
+    const checks: Array<[string, string | null | undefined]> = [
+      ['Contact', intervention.intervention_contact_name],
+      ['Adresse', intervention.intervention_address],
+      ['Ville', intervention.intervention_city],
+      ['Code postal', intervention.intervention_postal_code],
+      ['Bâtiment', intervention.intervention_building],
+      ['Étage', intervention.intervention_floor],
+      ['Téléphone', intervention.intervention_phone],
+      ['Email', intervention.intervention_email],
+      ['Description', intervention.description],
+      ['Téléphone client', client?.phone],
+      ['Email client', client?.email],
+      ['Adresse client', client?.address],
+      ['Ville client', client?.city],
+      ['Code postal client', client?.postal_code],
+    ];
+
+    for (const [label, value] of checks) {
+      if (value && value.toLowerCase().includes(t)) {
+        return { matches: true, hint: { label, value } };
+      }
+    }
+
+    return { matches: false, hint: null };
+  };
+
+  const filteredInterventions = interventions
+    .map((intervention) => ({
+      intervention,
+      matchInfo: computeMatchInfo(intervention, searchTerm),
+    }))
+    .filter(({ intervention, matchInfo }) => {
+      if (!matchInfo.matches) return false;
+      const matchesStatus = statusFilter === "all" || intervention.status === statusFilter || intervention.custom_status_id === statusFilter;
+      const matchesType = typeFilter === "all" || intervention.intervention_type === typeFilter;
+      const matchesTechnician = technicianFilter === "all" || intervention.technician_id === technicianFilter;
+      const matchesClient = clientFilter === "all" || intervention.client_id === clientFilter;
+      return matchesStatus && matchesType && matchesTechnician && matchesClient;
+    });
+
+  const filteredInterventionsList = filteredInterventions.map(f => f.intervention);
 
   const handleDuplicate = async (intervention: typeof interventions[0]) => {
     try {
