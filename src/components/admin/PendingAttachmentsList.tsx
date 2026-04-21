@@ -93,7 +93,7 @@ const PendingAttachmentsList = ({ files, onFilesChange }: PendingAttachmentsList
         type="file"
         onChange={handleFileSelect}
         className="hidden"
-        accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.gif,.txt"
+        accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.gif,.txt,.mp4,.mov,.avi,.zip,.rar"
       />
       <Button
         type="button"
@@ -105,7 +105,7 @@ const PendingAttachmentsList = ({ files, onFilesChange }: PendingAttachmentsList
         Ajouter une pièce jointe
       </Button>
       <p className="text-xs text-muted-foreground text-center">
-        PDF, Word, Excel, images. Max 10 Mo
+        PDF, Word, Excel, images, vidéos, archives. Max 100 Mo
       </p>
     </div>
   );
