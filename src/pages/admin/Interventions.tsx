@@ -194,7 +194,7 @@ const Interventions = () => {
     setSelectedIds(new Set());
   };
 
-  const isAllSelected = filteredInterventions.length > 0 && selectedIds.size === filteredInterventions.length;
+  const isAllSelected = filteredInterventionsList.length > 0 && selectedIds.size === filteredInterventionsList.length;
   const isSomeSelected = selectedIds.size > 0;
 
   // Bulk action handlers
