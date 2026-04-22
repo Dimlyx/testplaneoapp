@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -11,13 +12,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Clock, MapPin, User, Phone, Mail, FileText, ExternalLink, CalendarDays, Building2 } from "lucide-react";
+import { Clock, MapPin, User, Phone, Mail, FileText, ExternalLink, CalendarDays, Building2, Download, Link2, Loader2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useUpdateIntervention, type Intervention } from "@/hooks/useInterventions";
 import type { Technician } from "@/hooks/useTechnicians";
 import { useClients } from "@/hooks/useClients";
 import { useCustomStatuses } from "@/hooks/useCustomStatuses";
+import { useInterventionPhotos } from "@/hooks/useInterventionPhotos";
+import { useInterventionTypes } from "@/hooks/useInterventionTypes";
+import { useWorkflowSteps } from "@/hooks/useWorkflowSteps";
+import { useStepCompletions } from "@/hooks/useStepCompletions";
+import { useCompanySettings, useDocumentSettings } from "@/hooks/useAppSettings";
+import { generateInterventionPDF } from "@/lib/pdf-generator";
+import { toast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
 
 type InterventionStatus = Database["public"]["Enums"]["intervention_status"];
@@ -49,11 +57,77 @@ export function InterventionQuickViewSheet({
   const { data: clients = [] } = useClients();
   const { data: customStatuses = [] } = useCustomStatuses();
   const updateIntervention = useUpdateIntervention();
+  const [generatingPdf, setGeneratingPdf] = useState(false);
+
+  const { data: photos = [] } = useInterventionPhotos(intervention?.id || "");
+  const { data: interventionTypes = [] } = useInterventionTypes();
+  const matchingType = interventionTypes.find(
+    (t) => t.name === intervention?.intervention_type,
+  );
+  const { data: workflowSteps = [] } = useWorkflowSteps(matchingType?.id);
+  const { data: stepCompletions = [] } = useStepCompletions(intervention?.id || "");
+  const { data: companySettings } = useCompanySettings();
+  const { data: documentSettings } = useDocumentSettings();
 
   if (!intervention) return null;
 
   const client = clients.find((c) => c.id === intervention.client_id);
   const technician = technicians.find((t) => t.id === intervention.technician_id);
+
+  const handleOpenExtranet = () => {
+    if (!intervention.public_token) {
+      toast({
+        title: "Lien extranet indisponible",
+        description: "Cette intervention n'a pas encore de lien public.",
+        variant: "destructive",
+      });
+      return;
+    }
+    window.open(`/intervention/${intervention.public_token}`, "_blank");
+  };
+
+  const handleDownloadPdf = async () => {
+    if (!client || !companySettings || !documentSettings) {
+      toast({
+        title: "Données en cours de chargement",
+        description: "Merci de patienter quelques secondes.",
+      });
+      return;
+    }
+    try {
+      setGeneratingPdf(true);
+      toast({ title: "Génération du PDF en cours..." });
+      await generateInterventionPDF(
+        intervention,
+        client,
+        undefined,
+        intervention.profiles?.full_name || undefined,
+        photos,
+        [],
+        {
+          company: companySettings,
+          report: {
+            primaryColor: documentSettings?.primaryColor || "#003057",
+            accentColor: documentSettings?.accentColor || "#0050A0",
+            footerText: documentSettings?.footerText || "",
+          },
+          documents: documentSettings,
+        },
+        stepCompletions,
+        workflowSteps,
+        interventionTypes,
+      );
+      toast({ title: "PDF généré avec succès" });
+    } catch (err: any) {
+      toast({
+        title: "Erreur",
+        description: err?.message || "Impossible de générer le PDF",
+        variant: "destructive",
+      });
+    } finally {
+      setGeneratingPdf(false);
+    }
+  };
 
   const currentValue = intervention.custom_status_id
     ? `custom:${intervention.custom_status_id}`
