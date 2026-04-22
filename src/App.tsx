@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from "@/lib/auth-context";
 import { OrganizationProvider, useOrganizationContext } from "@/lib/organization-context";
 import { OfflineProvider } from "@/hooks/useOfflineSync";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { useVersionCheck } from "@/hooks/useVersionCheck";
 
 // Layouts
 import AdminLayout from "@/components/layout/AdminLayout";
@@ -128,6 +129,7 @@ const RootRedirect = () => {
 };
 
 const AppRoutes = () => {
+  useVersionCheck();
   return (
     <Suspense fallback={<PageLoader />}>
     <Routes>
