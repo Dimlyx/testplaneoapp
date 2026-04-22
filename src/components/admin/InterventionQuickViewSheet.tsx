@@ -355,7 +355,29 @@ export function InterventionQuickViewSheet({
           )}
         </div>
 
-        <div className="p-6 pt-4 border-t bg-background">
+        <div className="p-6 pt-4 border-t bg-background space-y-2">
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              variant="outline"
+              onClick={handleDownloadPdf}
+              disabled={generatingPdf}
+            >
+              {generatingPdf ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4 mr-2" />
+              )}
+              PDF
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleOpenExtranet}
+              disabled={!intervention.public_token}
+            >
+              <Link2 className="h-4 w-4 mr-2" />
+              Extranet
+            </Button>
+          </div>
           <Button
             className="w-full"
             onClick={() => navigate(`/admin/interventions/${intervention.id}`)}
