@@ -12,6 +12,12 @@ import SignaturePad from "@/components/SignaturePad";
 import { compressImage } from "@/lib/image-compression";
 import MultiPhotoCamera from "@/components/technician/MultiPhotoCamera";
 import PinchZoomImage from "@/components/technician/PinchZoomImage";
+import StepPhotoImg from "@/components/technician/StepPhotoImg";
+import {
+  saveStepPhoto,
+  deleteStepPhoto,
+  isLocalPhotoUrl,
+} from "@/lib/step-photo-store";
 
 interface DynamicStepContentProps {
   step: WorkflowStepType;
@@ -25,7 +31,9 @@ interface DynamicStepContentProps {
   loopIndex?: number;
 }
 
-// Helper to parse photo_url which can be a single URL or JSON array
+// Helper to parse photo_url which can be a single URL or JSON array.
+// We KEEP `local://` URLs (persistent IndexedDB references) and only filter
+// out ephemeral `blob:` URLs that may have leaked into the DB by mistake.
 const parsePhotoUrls = (photoUrl: string | null): string[] => {
   if (!photoUrl) return [];
   let urls: string[] = [];
@@ -33,10 +41,8 @@ const parsePhotoUrls = (photoUrl: string | null): string[] => {
     const parsed = JSON.parse(photoUrl);
     if (Array.isArray(parsed)) urls = parsed;
   } catch {
-    // Not JSON, single URL
     urls = photoUrl ? [photoUrl] : [];
   }
-  // Filter out temporary blob: URLs that were persisted by mistake
   return urls.filter(u => !u.startsWith('blob:'));
 };
 
@@ -92,8 +98,10 @@ const DynamicStepContent = ({
   const draftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasMountedRef = useRef(false);
 
-  // Auto-save draft with debounce (2s after last change)
-  // Filter out blob: URLs before saving to avoid persisting temporary browser URLs
+  // Auto-save draft with debounce (2s after last change).
+  // We persist BOTH remote URLs (https://...) AND local IndexedDB references
+  // (local://...) so a photo never disappears, even if its upload failed.
+  // Only ephemeral blob: URLs are filtered out (they don't survive a refresh).
   const saveDraftNow = useCallback(() => {
     if (isLocked) return;
     const persistableUrls = photoUrls.filter(u => !u.startsWith('blob:'));
@@ -162,131 +170,109 @@ const DynamicStepContent = ({
     ));
   };
 
-  // Map to track which local blob URLs map to which uploaded URLs
+  // Map of local:// URL -> in-flight upload promise (so we can wait on save)
   const pendingUploadsRef = useRef<Map<string, Promise<string | null>>>(new Map());
+
+  /**
+   * Capture pipeline (used by both gallery picker and custom camera):
+   * 1. Compress the file.
+   * 2. Persist the blob to IndexedDB and get a stable `local://` URL.
+   *    => From this point, the photo CAN'T be lost, even if the app crashes.
+   * 3. Add the local:// URL to the state immediately (instant preview).
+   * 4. In the background, try to upload to Supabase Storage.
+   *    - On success: swap local:// for the remote URL and delete from IndexedDB.
+   *    - On failure: keep the local:// URL — it stays in IndexedDB and will be
+   *      retried by the offline sync queue later.
+   */
+  const handleFiles = async (files: File[]) => {
+    if (files.length === 0) return;
+
+    setUploadingCount(prev => prev + files.length);
+    setIsUploading(true);
+
+    for (const file of files) {
+      let compressed: Blob;
+      let localUrl: string;
+      try {
+        compressed = await compressImage(file);
+        localUrl = await saveStepPhoto({
+          interventionId,
+          stepId: step.id,
+          loopIndex,
+          blob: compressed,
+        });
+      } catch (err) {
+        console.error('Failed to persist captured photo locally', err);
+        setUploadingCount(prev => {
+          const next = prev - 1;
+          if (next <= 0) setIsUploading(false);
+          return Math.max(0, next);
+        });
+        continue;
+      }
+
+      // Show the photo immediately via the persistent local URL
+      setPhotoUrls(prev => [...prev, localUrl]);
+
+      const uploadPromise = (async (): Promise<string | null> => {
+        try {
+          if (!navigator.onLine) {
+            // Offline → keep local copy. Sync queue will pick it up later.
+            return localUrl;
+          }
+          const fileName = `steps/${interventionId}/${step.id}-loop${loopIndex}-${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
+          const { error: uploadError } = await supabase.storage
+            .from('intervention-photos')
+            .upload(fileName, compressed, { contentType: 'image/jpeg' });
+          if (uploadError) throw uploadError;
+
+          const { data: urlData } = supabase.storage
+            .from('intervention-photos')
+            .getPublicUrl(fileName);
+          const remoteUrl = urlData.publicUrl;
+
+          // Swap local:// for remote and free the IndexedDB slot
+          setPhotoUrls(prev => prev.map(u => u === localUrl ? remoteUrl : u));
+          await deleteStepPhoto(localUrl);
+          return remoteUrl;
+        } catch (error: any) {
+          console.warn('Photo upload failed, keeping local copy in IndexedDB:', error?.message);
+          // IMPORTANT: do not delete — local:// URL stays, photo is safe.
+          return localUrl;
+        } finally {
+          setUploadingCount(prev => {
+            const next = prev - 1;
+            if (next <= 0) setIsUploading(false);
+            return Math.max(0, next);
+          });
+        }
+      })();
+
+      pendingUploadsRef.current.set(localUrl, uploadPromise);
+    }
+  };
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
-
     const fileArray = Array.from(files);
-    
-    // 1. Immediately show local previews using blob URLs
-    const localUrls = fileArray.map(file => URL.createObjectURL(file));
-    setPhotoUrls(prev => [...prev, ...localUrls]);
-    setUploadingCount(prev => prev + fileArray.length);
-    setIsUploading(true);
-    
-    // Reset input right away
     e.target.value = '';
-
-    // 2. Upload each file in the background and swap blob URL for remote URL
-    for (let i = 0; i < fileArray.length; i++) {
-      const file = fileArray[i];
-      const localUrl = localUrls[i];
-      
-      const uploadPromise = (async (): Promise<string | null> => {
-        try {
-          // If offline, keep the blob URL — it will be visible locally
-          if (!navigator.onLine) {
-            setUploadingCount(prev => {
-              const next = prev - 1;
-              if (next <= 0) setIsUploading(false);
-              return Math.max(0, next);
-            });
-            return localUrl; // Keep blob URL as-is
-          }
-
-          const compressed = await compressImage(file);
-          const fileName = `steps/${interventionId}/${step.id}-loop${loopIndex}-${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
-          const { error: uploadError } = await supabase.storage
-            .from("intervention-photos")
-            .upload(fileName, compressed, { contentType: 'image/jpeg' });
-
-          if (uploadError) throw uploadError;
-
-          const { data: urlData } = supabase.storage
-            .from("intervention-photos")
-            .getPublicUrl(fileName);
-
-          const remoteUrl = urlData.publicUrl;
-
-          // Swap local blob URL with remote URL
-          setPhotoUrls(prev => prev.map(u => u === localUrl ? remoteUrl : u));
-          
-          // Decrement uploading count
-          setUploadingCount(prev => {
-            const next = prev - 1;
-            if (next <= 0) setIsUploading(false);
-            return Math.max(0, next);
-          });
-          
-          // Revoke blob URL to free memory
-          URL.revokeObjectURL(localUrl);
-          
-          return remoteUrl;
-        } catch (error: any) {
-          console.warn("Photo upload failed, keeping local preview:", error?.message);
-          // Don't remove the photo — keep the blob URL so the user sees it
-          setUploadingCount(prev => {
-            const next = prev - 1;
-            if (next <= 0) setIsUploading(false);
-            return Math.max(0, next);
-          });
-          return localUrl; // Keep blob URL as fallback
-        }
-      })();
-
-      pendingUploadsRef.current.set(localUrl, uploadPromise);
-    }
+    await handleFiles(fileArray);
   };
 
-  const removePhoto = (index: number) => {
+  const removePhoto = async (index: number) => {
+    const url = photoUrls[index];
     setPhotoUrls(prev => prev.filter((_, i) => i !== index));
+    if (isLocalPhotoUrl(url)) {
+      await deleteStepPhoto(url);
+      pendingUploadsRef.current.delete(url);
+    }
   };
 
   // Handle files from MultiPhotoCamera
-  const handleCameraCapture = (files: File[]) => {
+  const handleCameraCapture = async (files: File[]) => {
     setShowCamera(false);
-    if (files.length === 0) return;
-
-    const localUrls = files.map(file => URL.createObjectURL(file));
-    setPhotoUrls(prev => [...prev, ...localUrls]);
-    setUploadingCount(prev => prev + files.length);
-    setIsUploading(true);
-
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      const localUrl = localUrls[i];
-
-      const uploadPromise = (async (): Promise<string | null> => {
-        try {
-          if (!navigator.onLine) {
-            setUploadingCount(prev => { const n = prev - 1; if (n <= 0) setIsUploading(false); return Math.max(0, n); });
-            return localUrl;
-          }
-          const compressed = await compressImage(file);
-          const fileName = `steps/${interventionId}/${step.id}-loop${loopIndex}-${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
-          const { error: uploadError } = await supabase.storage
-            .from("intervention-photos")
-            .upload(fileName, compressed, { contentType: 'image/jpeg' });
-          if (uploadError) throw uploadError;
-          const { data: urlData } = supabase.storage
-            .from("intervention-photos")
-            .getPublicUrl(fileName);
-          const remoteUrl = urlData.publicUrl;
-          setPhotoUrls(prev => prev.map(u => u === localUrl ? remoteUrl : u));
-          setUploadingCount(prev => { const n = prev - 1; if (n <= 0) setIsUploading(false); return Math.max(0, n); });
-          URL.revokeObjectURL(localUrl);
-          return remoteUrl;
-        } catch (error: any) {
-          console.warn("Photo upload failed, keeping local preview:", error?.message);
-          setUploadingCount(prev => { const n = prev - 1; if (n <= 0) setIsUploading(false); return Math.max(0, n); });
-          return localUrl;
-        }
-      })();
-      pendingUploadsRef.current.set(localUrl, uploadPromise);
-    }
+    await handleFiles(files);
   };
 
   // Resolve any pending uploads before saving — returns only persistable (non-blob) URLs
@@ -398,21 +384,21 @@ const DynamicStepContent = ({
             {photoUrls.length > 0 && (
               <div className="grid grid-cols-2 gap-2 mb-3">
                 {photoUrls.map((url, index) => {
-                  const isBlobUrl = url.startsWith('blob:');
+                  const isLocal = isLocalPhotoUrl(url);
                   return (
-                    <div key={index} className="relative">
-                      <img
-                        src={url}
+                    <div key={`${url}-${index}`} className="relative">
+                      <StepPhotoImg
+                        url={url}
                         alt={`Photo ${index + 1}`}
-                        className={`w-full h-32 object-cover rounded-lg cursor-pointer ${isBlobUrl ? 'opacity-70' : ''}`}
-                        onClick={() => !isBlobUrl && setLightboxIndex(index)}
+                        className="w-full h-32 object-cover rounded-lg cursor-pointer"
+                        onClick={() => setLightboxIndex(index)}
                       />
-                      {isBlobUrl && (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                      {isLocal && (
+                        <div className="absolute bottom-1 left-1 text-[10px] px-1.5 py-0.5 rounded bg-amber-500/90 text-white font-medium">
+                          En attente d'envoi
                         </div>
                       )}
-                      {canEdit && !isBlobUrl && (
+                      {canEdit && (
                         <Button
                           variant="destructive"
                           size="icon"
@@ -465,10 +451,9 @@ const DynamicStepContent = ({
                   </Button>
                 )}
 
-                <PinchZoomImage
-                  src={photoUrls[lightboxIndex]}
+                <LightboxImage
+                  url={photoUrls[lightboxIndex]}
                   alt={`Photo ${lightboxIndex + 1}`}
-                  className="max-h-[85vh] max-w-[95vw] object-contain rounded-lg"
                   onTap={() => setLightboxIndex(null)}
                 />
 
@@ -696,6 +681,55 @@ const DynamicStepContent = ({
         )}
       </CardContent>
     </Card>
+  );
+};
+
+/**
+ * Lightbox-friendly wrapper around <PinchZoomImage> that resolves
+ * persistent local:// URLs to usable blob: URLs.
+ */
+const LightboxImage = ({
+  url,
+  alt,
+  onTap,
+}: {
+  url: string;
+  alt: string;
+  onTap: () => void;
+}) => {
+  const [resolved, setResolved] = useState<string | null>(() =>
+    isLocalPhotoUrl(url) ? null : url,
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!isLocalPhotoUrl(url)) {
+      setResolved(url);
+      return;
+    }
+    import("@/lib/step-photo-store").then(({ resolveStepPhotoUrl }) => {
+      resolveStepPhotoUrl(url).then((r) => {
+        if (!cancelled) setResolved(r);
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [url]);
+
+  if (!resolved) {
+    return (
+      <div className="text-white text-sm">Chargement…</div>
+    );
+  }
+
+  return (
+    <PinchZoomImage
+      src={resolved}
+      alt={alt}
+      className="max-h-[85vh] max-w-[95vw] object-contain rounded-lg"
+      onTap={onTap}
+    />
   );
 };
 
