@@ -596,7 +596,7 @@ export const generateInterventionPDF = async (
         for (const photo of snPhotos) {
           const base64 = await loadImageAsBase64(photo.photo_url);
           if (base64) {
-            const { w, h } = fitInBox(base64, 80, 60);
+            const { w, h } = fitInBox(base64, 110, 85);
             checkNewPage(h + 5);
             if (safeAddImage(doc, base64, 15, yPos, w, h)) {
               yPos += h + 5;
@@ -621,7 +621,7 @@ export const generateInterventionPDF = async (
         for (const photo of duringPhotos) {
           const base64 = await loadImageAsBase64(photo.photo_url);
           if (base64) {
-            const { w, h } = fitInBox(base64, 80, 60);
+            const { w, h } = fitInBox(base64, 90, 70);
             if (photoCount > 0 && photoCount % 2 === 0) {
               xPos = 15;
               yPos += rowMaxH + 5;
@@ -629,15 +629,15 @@ export const generateInterventionPDF = async (
               checkNewPage(h + 5);
             }
             // Vertically center within the row slot
-            const slotY = yPos + (60 - h) / 2;
+            const slotY = yPos + (70 - h) / 2;
             if (safeAddImage(doc, base64, xPos, slotY, w, h)) {
-              xPos += 90;
+              xPos += 95;
               photoCount++;
               if (h > rowMaxH) rowMaxH = h;
             }
           }
         }
-        if (photoCount > 0) yPos += (rowMaxH || 60) + 5;
+        if (photoCount > 0) yPos += (rowMaxH || 70) + 5;
       }
 
       // Technical comments / Observation
@@ -689,22 +689,22 @@ export const generateInterventionPDF = async (
         for (const photo of afterPhotos) {
           const base64 = await loadImageAsBase64(photo.photo_url);
           if (base64) {
-            const { w, h } = fitInBox(base64, 80, 60);
+            const { w, h } = fitInBox(base64, 90, 70);
             if (photoCount > 0 && photoCount % 2 === 0) {
               xPos = 15;
               yPos += rowMaxH + 5;
               rowMaxH = 0;
               checkNewPage(h + 5);
             }
-            const slotY = yPos + (60 - h) / 2;
+            const slotY = yPos + (70 - h) / 2;
             if (safeAddImage(doc, base64, xPos, slotY, w, h)) {
-              xPos += 90;
+              xPos += 95;
               photoCount++;
               if (h > rowMaxH) rowMaxH = h;
             }
           }
         }
-        if (photoCount > 0) yPos += (rowMaxH || 60) + 5;
+        if (photoCount > 0) yPos += (rowMaxH || 70) + 5;
       }
       
       yPos += 5;
@@ -736,9 +736,9 @@ export const generateInterventionPDF = async (
         checkNewPage(60);
         yPos = addSection(title, yPos);
 
-        const photoWidth = 60;
-        const photoHeight = 60;
-        const photosPerRow = 3;
+        const photoWidth = 85;
+        const photoHeight = 65;
+        const photosPerRow = 2;
         let xPos = 15;
         let photoCount = 0;
         let rowMaxH = 0;
@@ -854,22 +854,22 @@ export const generateInterventionPDF = async (
         for (const photoUrl of stepPhotoUrls) {
           const base64 = await loadImageAsBase64(photoUrl);
           if (base64) {
-            const { w, h } = fitInBox(base64, 75, 56);
+            const { w, h } = fitInBox(base64, 85, 65);
             if (photoCount > 0 && photoCount % 2 === 0) {
               xPos = 20;
               yPos += rowMaxH + 5;
               rowMaxH = 0;
               checkNewPage(h + 5);
             }
-            const slotY = yPos + (56 - h) / 2;
+            const slotY = yPos + (65 - h) / 2;
             if (safeAddImage(doc, base64, xPos, slotY, w, h)) {
-              xPos += 85;
+              xPos += 90;
               photoCount++;
               if (h > rowMaxH) rowMaxH = h;
             }
           }
         }
-        if (photoCount > 0) yPos += (rowMaxH || 56) + 4;
+        if (photoCount > 0) yPos += (rowMaxH || 65) + 4;
       }
       
       yPos += 3;
