@@ -596,7 +596,7 @@ export const generateInterventionPDF = async (
         for (const photo of snPhotos) {
           const base64 = await loadImageAsBase64(photo.photo_url);
           if (base64) {
-            const { w, h } = fitInBox(base64, 80, 60);
+            const { w, h } = fitInBox(base64, 110, 85);
             checkNewPage(h + 5);
             if (safeAddImage(doc, base64, 15, yPos, w, h)) {
               yPos += h + 5;
