@@ -684,4 +684,53 @@ const DynamicStepContent = ({
   );
 };
 
+/**
+ * Lightbox-friendly wrapper around <PinchZoomImage> that resolves
+ * persistent local:// URLs to usable blob: URLs.
+ */
+const LightboxImage = ({
+  url,
+  alt,
+  onTap,
+}: {
+  url: string;
+  alt: string;
+  onTap: () => void;
+}) => {
+  const [resolved, setResolved] = useState<string | null>(() =>
+    isLocalPhotoUrl(url) ? null : url,
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!isLocalPhotoUrl(url)) {
+      setResolved(url);
+      return;
+    }
+    import("@/lib/step-photo-store").then(({ resolveStepPhotoUrl }) => {
+      resolveStepPhotoUrl(url).then((r) => {
+        if (!cancelled) setResolved(r);
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [url]);
+
+  if (!resolved) {
+    return (
+      <div className="text-white text-sm">Chargement…</div>
+    );
+  }
+
+  return (
+    <PinchZoomImage
+      src={resolved}
+      alt={alt}
+      className="max-h-[85vh] max-w-[95vw] object-contain rounded-lg"
+      onTap={onTap}
+    />
+  );
+};
+
 export default DynamicStepContent;
