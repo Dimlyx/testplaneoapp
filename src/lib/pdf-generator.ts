@@ -131,6 +131,55 @@ const imageCache = new Map<string, string | null>();
 const imageDimsCache = new Map<string, { w: number; h: number }>();
 
 /**
+ * Read the EXIF orientation tag from a JPEG blob.
+ * Returns 1 (default / no rotation) if absent or unreadable.
+ * Values 1-8 follow the EXIF specification.
+ */
+const readExifOrientation = async (blob: Blob): Promise<number> => {
+  try {
+    if (!blob.type.includes('jpeg') && !blob.type.includes('jpg')) return 1;
+    // Only the first ~64KB are needed to find the orientation tag.
+    const slice = blob.slice(0, Math.min(blob.size, 64 * 1024));
+    const buf = await slice.arrayBuffer();
+    const view = new DataView(buf);
+    if (view.getUint16(0) !== 0xffd8) return 1; // not a JPEG
+
+    let offset = 2;
+    const length = view.byteLength;
+    while (offset < length) {
+      const marker = view.getUint16(offset);
+      offset += 2;
+      if (marker === 0xffe1) {
+        // APP1 (EXIF)
+        if (view.getUint32(offset + 2) !== 0x45786966) return 1; // "Exif"
+        const tiffOffset = offset + 8;
+        const little = view.getUint16(tiffOffset) === 0x4949;
+        const get16 = (o: number) => view.getUint16(o, little);
+        const get32 = (o: number) => view.getUint32(o, little);
+        if (get16(tiffOffset + 2) !== 0x002a) return 1;
+        const firstIFD = get32(tiffOffset + 4);
+        const ifdStart = tiffOffset + firstIFD;
+        const tags = get16(ifdStart);
+        for (let i = 0; i < tags; i++) {
+          const entry = ifdStart + 2 + i * 12;
+          if (get16(entry) === 0x0112) {
+            return get16(entry + 8);
+          }
+        }
+        return 1;
+      } else if ((marker & 0xff00) !== 0xff00) {
+        return 1;
+      } else {
+        offset += view.getUint16(offset);
+      }
+    }
+    return 1;
+  } catch {
+    return 1;
+  }
+};
+
+/**
  * Compute the rendered (w, h) in mm that fits inside a `maxW × maxH` box
  * while preserving the original aspect ratio of the image.
  */
@@ -191,13 +240,19 @@ const loadImageAsBase64 = async (url: string): Promise<string | null> => {
       return null;
     }
     
+    // Read the EXIF orientation from the original blob.
+    // We always re-apply it manually on the canvas so the result is correct
+    // even when createImageBitmap ignores it (Safari/iOS WebView, old photos).
+    const exifOrientation = await readExifOrientation(blob);
+
     // Try to honor EXIF orientation via createImageBitmap (modern browsers).
-    // Fallback to <img> if unavailable. This ensures landscape photos stay landscape
-    // and portrait photos stay portrait, regardless of EXIF rotation tags.
+    // Fallback to <img> if unavailable.
     let bitmap: ImageBitmap | null = null;
+    let bitmapHonoredExif = false;
     try {
       if (typeof createImageBitmap === 'function') {
         bitmap = await createImageBitmap(blob, { imageOrientation: 'from-image' } as any);
+        bitmapHonoredExif = true;
       }
     } catch (e) {
       console.warn('createImageBitmap with EXIF orientation failed, falling back', e);
@@ -208,11 +263,14 @@ const loadImageAsBase64 = async (url: string): Promise<string | null> => {
       const drawAndEncode = (
         source: CanvasImageSource,
         srcW: number,
-        srcH: number
+        srcH: number,
+        applyExif: boolean
       ) => {
         try {
-          let width = srcW;
-          let height = srcH;
+          // Effective intrinsic size after EXIF rotation.
+          const rotated = applyExif && exifOrientation >= 5 && exifOrientation <= 8;
+          let width = rotated ? srcH : srcW;
+          let height = rotated ? srcW : srcH;
 
           if (width > MAX_IMAGE_WIDTH) {
             height = (height * MAX_IMAGE_WIDTH) / width;
@@ -231,7 +289,29 @@ const loadImageAsBase64 = async (url: string): Promise<string | null> => {
           if (ctx) {
             ctx.imageSmoothingEnabled = true;
             ctx.imageSmoothingQuality = 'high';
-            ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
+
+            if (applyExif) {
+              // Apply EXIF transform so landscape stays landscape, etc.
+              const cw = canvas.width;
+              const ch = canvas.height;
+              switch (exifOrientation) {
+                case 2: ctx.transform(-1, 0, 0, 1, cw, 0); break;
+                case 3: ctx.transform(-1, 0, 0, -1, cw, ch); break;
+                case 4: ctx.transform(1, 0, 0, -1, 0, ch); break;
+                case 5: ctx.transform(0, 1, 1, 0, 0, 0); break;
+                case 6: ctx.transform(0, 1, -1, 0, ch, 0); break;
+                case 7: ctx.transform(0, -1, -1, 0, ch, cw); break;
+                case 8: ctx.transform(0, -1, 1, 0, 0, cw); break;
+                default: break;
+              }
+              // After rotation, draw using the original (non-rotated) dimensions.
+              const drawW = rotated ? canvas.height : canvas.width;
+              const drawH = rotated ? canvas.width : canvas.height;
+              ctx.drawImage(source, 0, 0, drawW, drawH);
+            } else {
+              ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
+            }
+
             const encoded = canvas.toDataURL('image/jpeg', JPEG_QUALITY);
             imageDimsCache.set(encoded, { w: canvas.width, h: canvas.height });
             resolve(encoded);
@@ -247,11 +327,12 @@ const loadImageAsBase64 = async (url: string): Promise<string | null> => {
       };
 
       if (bitmap) {
-        drawAndEncode(bitmap, bitmap.width, bitmap.height);
+        // createImageBitmap already applied EXIF when bitmapHonoredExif is true.
+        drawAndEncode(bitmap, bitmap.width, bitmap.height, !bitmapHonoredExif);
         bitmap.close?.();
       } else {
         const img = new Image();
-        img.onload = () => drawAndEncode(img, img.naturalWidth, img.naturalHeight);
+        img.onload = () => drawAndEncode(img, img.naturalWidth, img.naturalHeight, true);
         img.onerror = () => {
           console.warn('Image failed to load from base64, using raw data');
           resolve(base64);

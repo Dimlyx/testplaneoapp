@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Honor EXIF orientation on every <img> so landscape photos
+   (especially from iOS) display correctly in the extranet and admin views. */
+img {
+  image-orientation: from-image;
+}
+
 /* SAV Management System - Professional Navy & White Theme */
 
 @layer base {
