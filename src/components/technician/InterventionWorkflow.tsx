@@ -1197,6 +1197,11 @@ const InterventionWorkflow = ({
         onClose={() => setOpenEquipmentPanel(null)}
       />
     )}
+    <PreCloseGuardDialog
+      open={showPreCloseGuard}
+      onOpenChange={setShowPreCloseGuard}
+      pending={pendingForIntervention}
+    />
     </>
   );
 };
