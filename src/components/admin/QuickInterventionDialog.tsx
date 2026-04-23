@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { TimePicker } from '@/components/ui/time-picker';
@@ -502,10 +503,18 @@ export function QuickInterventionDialog({
 
             <div className="space-y-2">
               <Label>Adresse</Label>
-              <Input
+              <AddressAutocomplete
                 value={formData.intervention_address}
-                onChange={(e) =>
-                  setFormData(prev => ({ ...prev, intervention_address: e.target.value }))
+                onChange={(v) =>
+                  setFormData(prev => ({ ...prev, intervention_address: v }))
+                }
+                onAddressSelect={(s) =>
+                  setFormData(prev => ({
+                    ...prev,
+                    intervention_address: s.street || s.label,
+                    intervention_postal_code: s.postcode,
+                    intervention_city: s.city,
+                  }))
                 }
               />
             </div>

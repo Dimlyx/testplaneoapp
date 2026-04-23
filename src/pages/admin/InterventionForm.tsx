@@ -15,6 +15,7 @@ import { useTeams } from "@/hooks/useTeams";
 import { useOrganizationPlan } from "@/hooks/useOrganizationPlan";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Form,
@@ -653,7 +654,16 @@ const InterventionForm = () => {
                     <FormItem>
                       <FormLabel>Adresse</FormLabel>
                       <FormControl>
-                        <Input placeholder="Adresse de l'intervention" {...field} />
+                        <AddressAutocomplete
+                          value={field.value || ""}
+                          onChange={field.onChange}
+                          onAddressSelect={(s) => {
+                            field.onChange(s.street || s.label);
+                            form.setValue("intervention_postal_code", s.postcode, { shouldDirty: true });
+                            form.setValue("intervention_city", s.city, { shouldDirty: true });
+                          }}
+                          placeholder="Adresse de l'intervention"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
