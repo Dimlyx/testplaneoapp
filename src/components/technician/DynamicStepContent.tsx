@@ -310,22 +310,59 @@ const DynamicStepContent = ({
     await handleValidate();
   };
 
-  // Handle signature step
+  // Handle signature step (offline-first):
+  // 1. Always persist the signature blob in IndexedDB first (never lose it).
+  // 2. If online, try a direct upload and complete the step with the remote URL.
+  // 3. If offline OR upload fails, complete the step with a local:// URL —
+  //    the step-photo-retry worker will upload + patch the row later.
   const handleSignatureValidation = async (signatureDataUrl: string, sName: string) => {
+    let localUrl: string | null = null;
     try {
       const response = await fetch(signatureDataUrl);
       const blob = await response.blob();
-      const fileName = `steps/${interventionId}/${step.id}-signature-${Date.now()}.png`;
-      const { error: uploadError } = await supabase.storage
-        .from('intervention-photos')
-        .upload(fileName, blob, { contentType: 'image/png', upsert: false });
-      if (uploadError) throw uploadError;
-      const { data: urlData } = supabase.storage
-        .from('intervention-photos')
-        .getPublicUrl(fileName);
-      await onComplete(step.id, sName, urlData.publicUrl);
+
+      // Persist locally BEFORE any network attempt (guarantees no data loss)
+      localUrl = await saveStepPhoto({
+        interventionId,
+        stepId: step.id,
+        loopIndex,
+        blob,
+      });
+
+      // Offline → complete with local URL, sync worker will handle upload
+      if (!navigator.onLine) {
+        await onComplete(step.id, sName, localUrl);
+        return;
+      }
+
+      // Online → try direct upload
+      try {
+        const fileName = `steps/${interventionId}/${step.id}-signature-${Date.now()}.png`;
+        const { error: uploadError } = await supabase.storage
+          .from('intervention-photos')
+          .upload(fileName, blob, { contentType: 'image/png', upsert: false });
+        if (uploadError) throw uploadError;
+        const { data: urlData } = supabase.storage
+          .from('intervention-photos')
+          .getPublicUrl(fileName);
+        await onComplete(step.id, sName, urlData.publicUrl);
+        // Upload succeeded → free the local copy
+        await deleteStepPhoto(localUrl);
+      } catch (uploadErr) {
+        console.warn('Step signature upload failed, keeping local copy:', uploadErr);
+        // Complete the step anyway with the local URL — worker will retry
+        await onComplete(step.id, sName, localUrl);
+      }
     } catch (error) {
-      console.error('Error uploading step signature:', error);
+      console.error('Error saving step signature:', error);
+      // Last-resort fallback: if we managed to persist locally, still complete
+      if (localUrl) {
+        try {
+          await onComplete(step.id, sName, localUrl);
+        } catch (e) {
+          console.error('Failed to complete signature step with local URL', e);
+        }
+      }
     }
   };
 
