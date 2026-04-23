@@ -71,6 +71,12 @@ const queryClient = new QueryClient({
       },
       retryDelay: 1000,
       networkMode: 'offlineFirst', // Serve cached data when offline, don't block
+      // Force refetch every time the tab regains focus, even if data is still
+      // within staleTime. This ensures admins always see fresh data when they
+      // come back to the tab without needing to hit F5.
+      refetchOnWindowFocus: 'always',
+      // Same behavior when the browser regains network connectivity.
+      refetchOnReconnect: 'always',
     },
     mutations: {
       networkMode: 'offlineFirst',
