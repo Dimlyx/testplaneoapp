@@ -384,21 +384,21 @@ const DynamicStepContent = ({
             {photoUrls.length > 0 && (
               <div className="grid grid-cols-2 gap-2 mb-3">
                 {photoUrls.map((url, index) => {
-                  const isBlobUrl = url.startsWith('blob:');
+                  const isLocal = isLocalPhotoUrl(url);
                   return (
-                    <div key={index} className="relative">
-                      <img
-                        src={url}
+                    <div key={`${url}-${index}`} className="relative">
+                      <StepPhotoImg
+                        url={url}
                         alt={`Photo ${index + 1}`}
-                        className={`w-full h-32 object-cover rounded-lg cursor-pointer ${isBlobUrl ? 'opacity-70' : ''}`}
-                        onClick={() => !isBlobUrl && setLightboxIndex(index)}
+                        className="w-full h-32 object-cover rounded-lg cursor-pointer"
+                        onClick={() => setLightboxIndex(index)}
                       />
-                      {isBlobUrl && (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                      {isLocal && (
+                        <div className="absolute bottom-1 left-1 text-[10px] px-1.5 py-0.5 rounded bg-amber-500/90 text-white font-medium">
+                          En attente d'envoi
                         </div>
                       )}
-                      {canEdit && !isBlobUrl && (
+                      {canEdit && (
                         <Button
                           variant="destructive"
                           size="icon"
