@@ -170,131 +170,114 @@ const DynamicStepContent = ({
     ));
   };
 
-  // Map to track which local blob URLs map to which uploaded URLs
+  // Map of local:// URL -> in-flight upload promise (so we can wait on save)
   const pendingUploadsRef = useRef<Map<string, Promise<string | null>>>(new Map());
+
+  /**
+   * Capture pipeline (used by both gallery picker and custom camera):
+   * 1. Compress the file.
+   * 2. Persist the blob to IndexedDB and get a stable `local://` URL.
+   *    => From this point, the photo CAN'T be lost, even if the app crashes.
+   * 3. Add the local:// URL to the state immediately (instant preview).
+   * 4. In the background, try to upload to Supabase Storage.
+   *    - On success: swap local:// for the remote URL and delete from IndexedDB.
+   *    - On failure: keep the local:// URL — it stays in IndexedDB and will be
+   *      retried by the offline sync queue later.
+   */
+  const handleFiles = async (files: File[]) => {
+    if (files.length === 0) return;
+
+    setUploadingCount(prev => prev + files.length);
+    setIsUploading(true);
+
+    for (const file of files) {
+      let localUrl: string;
+      try {
+        const compressed = await compressImage(file);
+        localUrl = await saveStepPhoto({
+          interventionId,
+          stepId: step.id,
+          loopIndex,
+          blob: compressed,
+        });
+      } catch (err) {
+        console.error('Failed to persist captured photo locally', err);
+        setUploadingCount(prev => {
+          const next = prev - 1;
+          if (next <= 0) setIsUploading(false);
+          return Math.max(0, next);
+        });
+        continue;
+      }
+
+      // Show the photo immediately via the persistent local URL
+      setPhotoUrls(prev => [...prev, localUrl]);
+
+      const uploadPromise = (async (): Promise<string | null> => {
+        try {
+          if (!navigator.onLine) {
+            // Offline → keep local copy. Sync queue will pick it up later.
+            return localUrl;
+          }
+          const blob = (await (await fetch(
+            // re-read from IndexedDB-resolved URL would also work, but we already
+            // have the compressed blob in memory via the local URL
+            (await import('@/lib/step-photo-store')).resolveStepPhotoUrl(localUrl).then(u => u || ''),
+          )).blob());
+
+          const fileName = `steps/${interventionId}/${step.id}-loop${loopIndex}-${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
+          const { error: uploadError } = await supabase.storage
+            .from('intervention-photos')
+            .upload(fileName, blob, { contentType: 'image/jpeg' });
+          if (uploadError) throw uploadError;
+
+          const { data: urlData } = supabase.storage
+            .from('intervention-photos')
+            .getPublicUrl(fileName);
+          const remoteUrl = urlData.publicUrl;
+
+          // Swap local:// for remote and free the IndexedDB slot
+          setPhotoUrls(prev => prev.map(u => u === localUrl ? remoteUrl : u));
+          await deleteStepPhoto(localUrl);
+          return remoteUrl;
+        } catch (error: any) {
+          console.warn('Photo upload failed, keeping local copy in IndexedDB:', error?.message);
+          // IMPORTANT: do not delete — local:// URL stays, photo is safe.
+          return localUrl;
+        } finally {
+          setUploadingCount(prev => {
+            const next = prev - 1;
+            if (next <= 0) setIsUploading(false);
+            return Math.max(0, next);
+          });
+        }
+      })();
+
+      pendingUploadsRef.current.set(localUrl, uploadPromise);
+    }
+  };
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
-
     const fileArray = Array.from(files);
-    
-    // 1. Immediately show local previews using blob URLs
-    const localUrls = fileArray.map(file => URL.createObjectURL(file));
-    setPhotoUrls(prev => [...prev, ...localUrls]);
-    setUploadingCount(prev => prev + fileArray.length);
-    setIsUploading(true);
-    
-    // Reset input right away
     e.target.value = '';
-
-    // 2. Upload each file in the background and swap blob URL for remote URL
-    for (let i = 0; i < fileArray.length; i++) {
-      const file = fileArray[i];
-      const localUrl = localUrls[i];
-      
-      const uploadPromise = (async (): Promise<string | null> => {
-        try {
-          // If offline, keep the blob URL — it will be visible locally
-          if (!navigator.onLine) {
-            setUploadingCount(prev => {
-              const next = prev - 1;
-              if (next <= 0) setIsUploading(false);
-              return Math.max(0, next);
-            });
-            return localUrl; // Keep blob URL as-is
-          }
-
-          const compressed = await compressImage(file);
-          const fileName = `steps/${interventionId}/${step.id}-loop${loopIndex}-${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
-          const { error: uploadError } = await supabase.storage
-            .from("intervention-photos")
-            .upload(fileName, compressed, { contentType: 'image/jpeg' });
-
-          if (uploadError) throw uploadError;
-
-          const { data: urlData } = supabase.storage
-            .from("intervention-photos")
-            .getPublicUrl(fileName);
-
-          const remoteUrl = urlData.publicUrl;
-
-          // Swap local blob URL with remote URL
-          setPhotoUrls(prev => prev.map(u => u === localUrl ? remoteUrl : u));
-          
-          // Decrement uploading count
-          setUploadingCount(prev => {
-            const next = prev - 1;
-            if (next <= 0) setIsUploading(false);
-            return Math.max(0, next);
-          });
-          
-          // Revoke blob URL to free memory
-          URL.revokeObjectURL(localUrl);
-          
-          return remoteUrl;
-        } catch (error: any) {
-          console.warn("Photo upload failed, keeping local preview:", error?.message);
-          // Don't remove the photo — keep the blob URL so the user sees it
-          setUploadingCount(prev => {
-            const next = prev - 1;
-            if (next <= 0) setIsUploading(false);
-            return Math.max(0, next);
-          });
-          return localUrl; // Keep blob URL as fallback
-        }
-      })();
-
-      pendingUploadsRef.current.set(localUrl, uploadPromise);
-    }
+    await handleFiles(fileArray);
   };
 
-  const removePhoto = (index: number) => {
+  const removePhoto = async (index: number) => {
+    const url = photoUrls[index];
     setPhotoUrls(prev => prev.filter((_, i) => i !== index));
+    if (isLocalPhotoUrl(url)) {
+      await deleteStepPhoto(url);
+      pendingUploadsRef.current.delete(url);
+    }
   };
 
   // Handle files from MultiPhotoCamera
-  const handleCameraCapture = (files: File[]) => {
+  const handleCameraCapture = async (files: File[]) => {
     setShowCamera(false);
-    if (files.length === 0) return;
-
-    const localUrls = files.map(file => URL.createObjectURL(file));
-    setPhotoUrls(prev => [...prev, ...localUrls]);
-    setUploadingCount(prev => prev + files.length);
-    setIsUploading(true);
-
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      const localUrl = localUrls[i];
-
-      const uploadPromise = (async (): Promise<string | null> => {
-        try {
-          if (!navigator.onLine) {
-            setUploadingCount(prev => { const n = prev - 1; if (n <= 0) setIsUploading(false); return Math.max(0, n); });
-            return localUrl;
-          }
-          const compressed = await compressImage(file);
-          const fileName = `steps/${interventionId}/${step.id}-loop${loopIndex}-${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
-          const { error: uploadError } = await supabase.storage
-            .from("intervention-photos")
-            .upload(fileName, compressed, { contentType: 'image/jpeg' });
-          if (uploadError) throw uploadError;
-          const { data: urlData } = supabase.storage
-            .from("intervention-photos")
-            .getPublicUrl(fileName);
-          const remoteUrl = urlData.publicUrl;
-          setPhotoUrls(prev => prev.map(u => u === localUrl ? remoteUrl : u));
-          setUploadingCount(prev => { const n = prev - 1; if (n <= 0) setIsUploading(false); return Math.max(0, n); });
-          URL.revokeObjectURL(localUrl);
-          return remoteUrl;
-        } catch (error: any) {
-          console.warn("Photo upload failed, keeping local preview:", error?.message);
-          setUploadingCount(prev => { const n = prev - 1; if (n <= 0) setIsUploading(false); return Math.max(0, n); });
-          return localUrl;
-        }
-      })();
-      pendingUploadsRef.current.set(localUrl, uploadPromise);
-    }
+    await handleFiles(files);
   };
 
   // Resolve any pending uploads before saving — returns only persistable (non-blob) URLs
