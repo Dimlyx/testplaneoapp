@@ -372,6 +372,15 @@ export function useOfflineSync() {
         else errorCount++;
       }
 
+      // Retry orphaned local step photos (those still in IndexedDB)
+      try {
+        const photoCycle = await runStepPhotoRetryCycle();
+        successCount += photoCycle.succeeded;
+        errorCount += photoCycle.failed;
+      } catch (err) {
+        console.warn('step-photo retry cycle failed', err);
+      }
+
       await queryClient.invalidateQueries({ queryKey: ['technician-interventions'] });
       await queryClient.invalidateQueries({ queryKey: ['intervention'] });
       await queryClient.invalidateQueries({ queryKey: ['intervention-photos'] });
