@@ -27,6 +27,12 @@ import {
   checkNetworkNow,
 } from '@/lib/network-status';
 import { withTimeout, isTimeoutError } from '@/lib/supabase-with-timeout';
+import {
+  startStepPhotoRetryWorker,
+  runStepPhotoRetryCycle,
+  forceStepPhotoRetry,
+} from '@/lib/step-photo-retry';
+import { countPendingStepPhotos } from '@/lib/step-photo-store';
 
 interface SyncState {
   isOnline: boolean;
