@@ -71,17 +71,19 @@ export function useOfflineSync() {
     return unsub;
   }, [toast]);
 
-  // Load initial sync status
+  // Load initial sync status + start the step-photo retry worker
   useEffect(() => {
     loadSyncStatus();
+    startStepPhotoRetryWorker();
   }, []);
 
   const loadSyncStatus = useCallback(async () => {
     try {
       const status = await getSyncStatus();
+      const localPhotos = await countPendingStepPhotos();
       setSyncState(prev => ({
         ...prev,
-        pendingCount: status.pendingCount,
+        pendingCount: status.pendingCount + localPhotos,
         lastSync: status.lastSync || null,
       }));
     } catch (error) {
