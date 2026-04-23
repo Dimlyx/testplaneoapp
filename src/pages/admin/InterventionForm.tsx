@@ -655,6 +655,7 @@ const InterventionForm = () => {
                       <FormLabel>Adresse</FormLabel>
                       <FormControl>
                         <AddressAutocomplete
+                          id="intervention-address"
                           value={field.value || ""}
                           onChange={field.onChange}
                           onAddressSelect={(s) => {
