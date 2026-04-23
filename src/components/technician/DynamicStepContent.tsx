@@ -98,8 +98,10 @@ const DynamicStepContent = ({
   const draftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasMountedRef = useRef(false);
 
-  // Auto-save draft with debounce (2s after last change)
-  // Filter out blob: URLs before saving to avoid persisting temporary browser URLs
+  // Auto-save draft with debounce (2s after last change).
+  // We persist BOTH remote URLs (https://...) AND local IndexedDB references
+  // (local://...) so a photo never disappears, even if its upload failed.
+  // Only ephemeral blob: URLs are filtered out (they don't survive a refresh).
   const saveDraftNow = useCallback(() => {
     if (isLocked) return;
     const persistableUrls = photoUrls.filter(u => !u.startsWith('blob:'));
