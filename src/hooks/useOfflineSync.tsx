@@ -529,6 +529,7 @@ interface OfflineContextType {
   pendingCount: number;
   lastSync: number | null;
   syncAll: () => Promise<void>;
+  forceSync: () => Promise<void>;
   cacheInterventions: (interventions: any[]) => Promise<void>;
   queueInterventionCreate: (data: any) => Promise<string>;
   queueInterventionUpdate: (id: string, data: any) => Promise<void>;
