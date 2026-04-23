@@ -20,6 +20,8 @@ import WorkflowStep from "./WorkflowStep";
 import { MapsChooser, useMapsChooser } from "@/components/technician/MapsChooser";
 import DynamicStepContent from "./DynamicStepContent";
 import CancelInterventionDialog from "./CancelInterventionDialog";
+import PreCloseGuardDialog from "./PreCloseGuardDialog";
+import { usePendingForIntervention } from "@/hooks/usePendingForIntervention";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
