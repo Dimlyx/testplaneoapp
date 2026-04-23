@@ -61,6 +61,7 @@ export function AddressAutocomplete({
   const containerRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const inputNameRef = useRef(`ban-address-${id ?? crypto.randomUUID()}`);
   // Used to skip the next fetch right after a user picks a suggestion
   // (otherwise the controlled value change would reopen the dropdown).
   const skipNextFetchRef = useRef(false);
@@ -173,15 +174,18 @@ export function AddressAutocomplete({
           onKeyDown={onKeyDown}
           placeholder={placeholder}
           disabled={disabled}
-          autoComplete="off"
+          type="search"
+          inputMode="search"
+          autoComplete="new-password"
           autoCorrect="off"
           autoCapitalize="off"
           spellCheck={false}
-          // Chrome ignore souvent autoComplete="off" — ces valeurs non standard
-          // ("new-password", "no", name aléatoire) le forcent à désactiver l'autofill
-          // pour éviter qu'il superpose ses propres suggestions à celles de la BAN.
+          enterKeyHint="search"
+          aria-autocomplete="list"
+          // Chrome ignore souvent autoComplete="off" — ces valeurs réduisent fortement
+          // l'autofill natif pour laisser uniquement les suggestions BAN.
           {...({ "data-form-type": "other", "data-lpignore": "true" } as any)}
-          name={`address-${id ?? Math.random().toString(36).slice(2)}`}
+          name={inputNameRef.current}
         />
         {loading && (
           <Loader2 className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
