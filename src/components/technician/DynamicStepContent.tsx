@@ -191,9 +191,10 @@ const DynamicStepContent = ({
     setIsUploading(true);
 
     for (const file of files) {
+      let compressed: Blob;
       let localUrl: string;
       try {
-        const compressed = await compressImage(file);
+        compressed = await compressImage(file);
         localUrl = await saveStepPhoto({
           interventionId,
           stepId: step.id,
@@ -219,16 +220,10 @@ const DynamicStepContent = ({
             // Offline → keep local copy. Sync queue will pick it up later.
             return localUrl;
           }
-          const blob = (await (await fetch(
-            // re-read from IndexedDB-resolved URL would also work, but we already
-            // have the compressed blob in memory via the local URL
-            (await import('@/lib/step-photo-store')).resolveStepPhotoUrl(localUrl).then(u => u || ''),
-          )).blob());
-
           const fileName = `steps/${interventionId}/${step.id}-loop${loopIndex}-${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
           const { error: uploadError } = await supabase.storage
             .from('intervention-photos')
-            .upload(fileName, blob, { contentType: 'image/jpeg' });
+            .upload(fileName, compressed, { contentType: 'image/jpeg' });
           if (uploadError) throw uploadError;
 
           const { data: urlData } = supabase.storage
