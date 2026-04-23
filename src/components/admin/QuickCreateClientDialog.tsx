@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
 import { Label } from '@/components/ui/label';
 import { useCreateClient } from '@/hooks/useClients';
 import { useUserOrganization } from '@/hooks/useUserOrganization';
@@ -131,10 +132,18 @@ export function QuickCreateClientDialog({
 
           <div className="space-y-2">
             <Label htmlFor="qc-address">Adresse</Label>
-            <Input
+            <AddressAutocomplete
               id="qc-address"
               value={formData.address}
-              onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
+              onChange={(v) => setFormData(prev => ({ ...prev, address: v }))}
+              onAddressSelect={(s) =>
+                setFormData(prev => ({
+                  ...prev,
+                  address: s.street || s.label,
+                  postal_code: s.postcode,
+                  city: s.city,
+                }))
+              }
               placeholder="Adresse"
             />
           </div>
