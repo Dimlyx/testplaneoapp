@@ -704,7 +704,7 @@ export const generateInterventionPDF = async (
             }
           }
         }
-        if (photoCount > 0) yPos += (rowMaxH || 60) + 5;
+        if (photoCount > 0) yPos += (rowMaxH || 70) + 5;
       }
       
       yPos += 5;
