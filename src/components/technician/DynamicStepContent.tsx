@@ -451,10 +451,9 @@ const DynamicStepContent = ({
                   </Button>
                 )}
 
-                <PinchZoomImage
-                  src={photoUrls[lightboxIndex]}
+                <LightboxImage
+                  url={photoUrls[lightboxIndex]}
                   alt={`Photo ${lightboxIndex + 1}`}
-                  className="max-h-[85vh] max-w-[95vw] object-contain rounded-lg"
                   onTap={() => setLightboxIndex(null)}
                 />
 
