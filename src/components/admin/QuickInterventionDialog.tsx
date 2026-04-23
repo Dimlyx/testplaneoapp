@@ -504,6 +504,7 @@ export function QuickInterventionDialog({
             <div className="space-y-2">
               <Label>Adresse</Label>
               <AddressAutocomplete
+                id="quick-intervention-address"
                 value={formData.intervention_address}
                 onChange={(v) =>
                   setFormData(prev => ({ ...prev, intervention_address: v }))

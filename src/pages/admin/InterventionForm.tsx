@@ -270,7 +270,7 @@ const InterventionForm = () => {
       </div>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6" autoComplete="off">
           <div className="grid gap-6 lg:grid-cols-2">
             <Card>
               <CardHeader>

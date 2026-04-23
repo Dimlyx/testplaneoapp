@@ -220,6 +220,7 @@ export default function TechnicianCreateInterventionDialog({ open, onOpenChange 
               <div>
                 <Label>Adresse</Label>
                 <AddressAutocomplete
+                  id="technician-intervention-address"
                   value={form.intervention_address}
                   onChange={v => setForm(f => ({ ...f, intervention_address: v }))}
                   onAddressSelect={s =>
