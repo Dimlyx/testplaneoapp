@@ -16,7 +16,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, RefreshCw, Cloud, Wifi, WifiOff, X } from 'lucide-react';
+import { AlertTriangle, RefreshCw, Cloud, Wifi, WifiOff, X, ShieldCheck, Info } from 'lucide-react';
 import { useOffline } from '@/hooks/useOfflineSync';
 import type { PendingBreakdown } from '@/hooks/usePendingForIntervention';
 
@@ -45,15 +45,39 @@ const PreCloseGuardDialog = ({ open, onOpenChange, pending }: PreCloseGuardDialo
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
             <AlertTriangle className="h-5 w-5" />
-            Synchronisation requise
+            Clôture impossible pour le moment
           </DialogTitle>
           <DialogDescription>
-            Cette intervention contient des éléments qui n'ont pas encore été envoyés au serveur.
-            Pour garantir qu'aucune donnée ne soit perdue, la clôture est temporairement bloquée.
+            Certaines données de cette intervention ne sont pas encore arrivées sur le serveur.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3 py-2">
+          {/* Pédagogie : pourquoi on bloque */}
+          <div className="rounded-lg border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/30 p-3">
+            <div className="flex gap-2">
+              <Info className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+              <div className="space-y-2 text-sm">
+                <p className="font-medium text-amber-900 dark:text-amber-100">
+                  Pourquoi cette étape est bloquée&nbsp;?
+                </p>
+                <p className="text-amber-900/80 dark:text-amber-100/80 leading-relaxed">
+                  Si on clôturait maintenant, l'intervention apparaîtrait comme
+                  «&nbsp;terminée&nbsp;» côté bureau, mais certaines photos, signatures ou
+                  modifications seraient encore en train d'être envoyées — et pourraient
+                  être <strong>perdues</strong> si vous fermez l'application ou perdez le réseau.
+                </p>
+                <p className="flex items-start gap-1.5 text-amber-900 dark:text-amber-100 pt-1">
+                  <ShieldCheck className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
+                  <span>
+                    Dès que tout est synchronisé, le bouton de clôture redevient utilisable
+                    automatiquement.
+                  </span>
+                </p>
+              </div>
+            </div>
+          </div>
+
           <div className="rounded-lg border bg-muted/30 p-3 space-y-1.5">
             <div className="flex items-center gap-2 text-sm font-medium mb-1">
               <Cloud className="h-4 w-4" />
