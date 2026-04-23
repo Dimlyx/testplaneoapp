@@ -12,6 +12,12 @@ import SignaturePad from "@/components/SignaturePad";
 import { compressImage } from "@/lib/image-compression";
 import MultiPhotoCamera from "@/components/technician/MultiPhotoCamera";
 import PinchZoomImage from "@/components/technician/PinchZoomImage";
+import StepPhotoImg from "@/components/technician/StepPhotoImg";
+import {
+  saveStepPhoto,
+  deleteStepPhoto,
+  isLocalPhotoUrl,
+} from "@/lib/step-photo-store";
 
 interface DynamicStepContentProps {
   step: WorkflowStepType;
@@ -25,7 +31,9 @@ interface DynamicStepContentProps {
   loopIndex?: number;
 }
 
-// Helper to parse photo_url which can be a single URL or JSON array
+// Helper to parse photo_url which can be a single URL or JSON array.
+// We KEEP `local://` URLs (persistent IndexedDB references) and only filter
+// out ephemeral `blob:` URLs that may have leaked into the DB by mistake.
 const parsePhotoUrls = (photoUrl: string | null): string[] => {
   if (!photoUrl) return [];
   let urls: string[] = [];
@@ -33,10 +41,8 @@ const parsePhotoUrls = (photoUrl: string | null): string[] => {
     const parsed = JSON.parse(photoUrl);
     if (Array.isArray(parsed)) urls = parsed;
   } catch {
-    // Not JSON, single URL
     urls = photoUrl ? [photoUrl] : [];
   }
-  // Filter out temporary blob: URLs that were persisted by mistake
   return urls.filter(u => !u.startsWith('blob:'));
 };
 
