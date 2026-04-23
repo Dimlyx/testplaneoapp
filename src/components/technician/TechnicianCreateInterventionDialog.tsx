@@ -3,6 +3,7 @@ import { TimePicker } from '@/components/ui/time-picker';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -218,9 +219,17 @@ export default function TechnicianCreateInterventionDialog({ open, onOpenChange 
             <div className="space-y-3">
               <div>
                 <Label>Adresse</Label>
-                <Input
+                <AddressAutocomplete
                   value={form.intervention_address}
-                  onChange={e => setForm(f => ({ ...f, intervention_address: e.target.value }))}
+                  onChange={v => setForm(f => ({ ...f, intervention_address: v }))}
+                  onAddressSelect={s =>
+                    setForm(f => ({
+                      ...f,
+                      intervention_address: s.street || s.label,
+                      intervention_postal_code: s.postcode,
+                      intervention_city: s.city,
+                    }))
+                  }
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">

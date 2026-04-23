@@ -8,6 +8,7 @@ import { useUserOrganization } from "@/hooks/useUserOrganization";
 import { useInterventionTypes } from "@/hooks/useInterventionTypes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Form,
@@ -235,7 +236,16 @@ const ClientForm = () => {
                     <FormItem>
                       <FormLabel>Adresse</FormLabel>
                       <FormControl>
-                        <Input placeholder="123 rue de l'exemple" {...field} />
+                        <AddressAutocomplete
+                          value={field.value || ""}
+                          onChange={field.onChange}
+                          onAddressSelect={(s) => {
+                            field.onChange(s.street || s.label);
+                            form.setValue("postal_code", s.postcode, { shouldDirty: true });
+                            form.setValue("city", s.city, { shouldDirty: true });
+                          }}
+                          placeholder="123 rue de l'exemple"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
