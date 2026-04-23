@@ -20,6 +20,8 @@ import WorkflowStep from "./WorkflowStep";
 import { MapsChooser, useMapsChooser } from "@/components/technician/MapsChooser";
 import DynamicStepContent from "./DynamicStepContent";
 import CancelInterventionDialog from "./CancelInterventionDialog";
+import PreCloseGuardDialog from "./PreCloseGuardDialog";
+import { usePendingForIntervention } from "@/hooks/usePendingForIntervention";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
@@ -110,6 +112,8 @@ const InterventionWorkflow = ({
   const [pauseReason, setPauseReason] = useState("");
   const [showPauseHistory, setShowPauseHistory] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [showPreCloseGuard, setShowPreCloseGuard] = useState(false);
+  const { pending: pendingForIntervention } = usePendingForIntervention(intervention.id);
   const isPaused = !!activePause;
 
   // Determine completed steps based on data
@@ -1092,7 +1096,15 @@ const InterventionWorkflow = ({
                     </div>
                   </div>
                   <Button
-                    onClick={onEndIntervention}
+                    onClick={async () => {
+                      // Phase 3 guard: block close if anything is still pending
+                      // for this intervention (photos, signatures, mutations).
+                      if (pendingForIntervention.total > 0) {
+                        setShowPreCloseGuard(true);
+                        return;
+                      }
+                      await onEndIntervention();
+                    }}
                     disabled={isUpdating}
                     className="w-full"
                   >
@@ -1185,6 +1197,11 @@ const InterventionWorkflow = ({
         onClose={() => setOpenEquipmentPanel(null)}
       />
     )}
+    <PreCloseGuardDialog
+      open={showPreCloseGuard}
+      onOpenChange={setShowPreCloseGuard}
+      pending={pendingForIntervention}
+    />
     </>
   );
 };

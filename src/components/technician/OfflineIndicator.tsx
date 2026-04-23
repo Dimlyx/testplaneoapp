@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useOffline } from '@/hooks/useOfflineSync';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -8,7 +9,25 @@ import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 export function OfflineIndicator() {
-  const { isOnline, isSyncing, pendingCount, lastSync } = useOffline();
+  const { isOnline, isSyncing, pendingCount, lastSync, forceSync } = useOffline();
+  const [isForcing, setIsForcing] = useState(false);
+
+  const handleForceSync = async () => {
+    setIsForcing(true);
+    try {
+      await forceSync();
+    } finally {
+      setIsForcing(false);
+    }
+  };
+
+  const status: 'synced' | 'syncing' | 'pending' | 'offline' = !isOnline
+    ? 'offline'
+    : isSyncing || isForcing
+    ? 'syncing'
+    : pendingCount > 0
+    ? 'pending'
+    : 'synced';
 
   return (
     <Popover>
@@ -17,23 +36,24 @@ export function OfflineIndicator() {
           variant="ghost"
           size="sm"
           className={cn(
-            "relative",
-            !isOnline && "text-amber-500"
+            'relative',
+            status === 'offline' && 'text-amber-500',
+            status === 'pending' && 'text-amber-500',
           )}
         >
-          {isSyncing ? (
+          {status === 'syncing' ? (
             <RefreshCw className="h-4 w-4 animate-spin" />
-          ) : isOnline ? (
-            <Wifi className="h-4 w-4" />
-          ) : (
+          ) : status === 'offline' ? (
             <WifiOff className="h-4 w-4" />
+          ) : (
+            <Wifi className="h-4 w-4" />
           )}
           {pendingCount > 0 && (
-            <Badge 
-              variant="destructive" 
-              className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px]"
+            <Badge
+              variant={status === 'offline' || status === 'pending' ? 'destructive' : 'secondary'}
+              className="absolute -top-1 -right-1 h-4 min-w-4 px-1 flex items-center justify-center text-[10px]"
             >
-              {pendingCount > 9 ? '9+' : pendingCount}
+              {pendingCount > 99 ? '99+' : pendingCount}
             </Badge>
           )}
         </Button>
@@ -57,7 +77,7 @@ export function OfflineIndicator() {
           {pendingCount > 0 && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <CloudOff className="h-4 w-4" />
-              <span>{pendingCount} modification(s) en attente</span>
+              <span>{pendingCount} élément(s) en attente</span>
             </div>
           )}
 
@@ -70,25 +90,38 @@ export function OfflineIndicator() {
 
           {lastSync && (
             <p className="text-xs text-muted-foreground">
-              Dernière sync: {formatDistanceToNow(lastSync, { addSuffix: true, locale: fr })}
+              Dernière sync : {formatDistanceToNow(lastSync, { addSuffix: true, locale: fr })}
             </p>
           )}
 
           {!isOnline && (
-            <div className="p-2 bg-amber-50 rounded-md">
+            <div className="p-2 bg-amber-50 dark:bg-amber-950/40 rounded-md">
               <div className="flex items-start gap-2">
-                <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5" />
-                <p className="text-xs text-amber-700">
-                  Vos modifications sont enregistrées localement et seront synchronisées automatiquement au retour de la connexion.
+                <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5" />
+                <p className="text-xs text-amber-700 dark:text-amber-300">
+                  Vos modifications sont enregistrées localement et seront synchronisées au retour
+                  de la connexion.
                 </p>
               </div>
             </div>
           )}
 
-          {isOnline && pendingCount > 0 && (
+          {isOnline && pendingCount > 0 && !isSyncing && !isForcing && (
+            <Button
+              variant="default"
+              size="sm"
+              className="w-full"
+              onClick={handleForceSync}
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Forcer la synchronisation
+            </Button>
+          )}
+
+          {(isSyncing || isForcing) && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <RefreshCw className="h-4 w-4 animate-spin" />
-              <span>Synchronisation automatique en cours...</span>
+              <span>Synchronisation en cours...</span>
             </div>
           )}
         </div>
