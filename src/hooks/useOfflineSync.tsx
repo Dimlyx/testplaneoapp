@@ -27,6 +27,12 @@ import {
   checkNetworkNow,
 } from '@/lib/network-status';
 import { withTimeout, isTimeoutError } from '@/lib/supabase-with-timeout';
+import {
+  startStepPhotoRetryWorker,
+  runStepPhotoRetryCycle,
+  forceStepPhotoRetry,
+} from '@/lib/step-photo-retry';
+import { countPendingStepPhotos } from '@/lib/step-photo-store';
 
 interface SyncState {
   isOnline: boolean;
@@ -65,17 +71,19 @@ export function useOfflineSync() {
     return unsub;
   }, [toast]);
 
-  // Load initial sync status
+  // Load initial sync status + start the step-photo retry worker
   useEffect(() => {
     loadSyncStatus();
+    startStepPhotoRetryWorker();
   }, []);
 
   const loadSyncStatus = useCallback(async () => {
     try {
       const status = await getSyncStatus();
+      const localPhotos = await countPendingStepPhotos();
       setSyncState(prev => ({
         ...prev,
-        pendingCount: status.pendingCount,
+        pendingCount: status.pendingCount + localPhotos,
         lastSync: status.lastSync || null,
       }));
     } catch (error) {
@@ -364,6 +372,15 @@ export function useOfflineSync() {
         else errorCount++;
       }
 
+      // Retry orphaned local step photos (those still in IndexedDB)
+      try {
+        const photoCycle = await runStepPhotoRetryCycle();
+        successCount += photoCycle.succeeded;
+        errorCount += photoCycle.failed;
+      } catch (err) {
+        console.warn('step-photo retry cycle failed', err);
+      }
+
       await queryClient.invalidateQueries({ queryKey: ['technician-interventions'] });
       await queryClient.invalidateQueries({ queryKey: ['intervention'] });
       await queryClient.invalidateQueries({ queryKey: ['intervention-photos'] });
@@ -482,9 +499,19 @@ export function useOfflineSync() {
     }
   }, [loadSyncStatus, syncAll]);
 
+  // Manual force-sync that resets per-photo backoff so the user can
+  // retry everything immediately from a UI button.
+  const forceSync = useCallback(async () => {
+    await checkNetworkNow();
+    await forceStepPhotoRetry().catch(() => {});
+    await syncAll();
+    await loadSyncStatus();
+  }, [syncAll, loadSyncStatus]);
+
   return {
     ...syncState,
     syncAll,
+    forceSync,
     cacheInterventions,
     queueInterventionCreate,
     queueInterventionUpdate,
@@ -502,6 +529,7 @@ interface OfflineContextType {
   pendingCount: number;
   lastSync: number | null;
   syncAll: () => Promise<void>;
+  forceSync: () => Promise<void>;
   cacheInterventions: (interventions: any[]) => Promise<void>;
   queueInterventionCreate: (data: any) => Promise<string>;
   queueInterventionUpdate: (id: string, data: any) => Promise<void>;

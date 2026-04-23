@@ -140,3 +140,9 @@ export async function countPendingStepPhotos(): Promise<number> {
   const db = await getDB();
   return db.count('stepPhotos');
 }
+
+/** All locally-stored step photos (across every intervention). */
+export async function getAllPendingStepPhotos(): Promise<StoredStepPhoto[]> {
+  const db = await getDB();
+  return db.getAll('stepPhotos');
+}
