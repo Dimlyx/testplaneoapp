@@ -621,7 +621,7 @@ export const generateInterventionPDF = async (
         for (const photo of duringPhotos) {
           const base64 = await loadImageAsBase64(photo.photo_url);
           if (base64) {
-            const { w, h } = fitInBox(base64, 80, 60);
+            const { w, h } = fitInBox(base64, 90, 70);
             if (photoCount > 0 && photoCount % 2 === 0) {
               xPos = 15;
               yPos += rowMaxH + 5;
@@ -629,15 +629,15 @@ export const generateInterventionPDF = async (
               checkNewPage(h + 5);
             }
             // Vertically center within the row slot
-            const slotY = yPos + (60 - h) / 2;
+            const slotY = yPos + (70 - h) / 2;
             if (safeAddImage(doc, base64, xPos, slotY, w, h)) {
-              xPos += 90;
+              xPos += 95;
               photoCount++;
               if (h > rowMaxH) rowMaxH = h;
             }
           }
         }
-        if (photoCount > 0) yPos += (rowMaxH || 60) + 5;
+        if (photoCount > 0) yPos += (rowMaxH || 70) + 5;
       }
 
       // Technical comments / Observation
