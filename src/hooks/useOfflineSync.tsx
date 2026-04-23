@@ -499,9 +499,19 @@ export function useOfflineSync() {
     }
   }, [loadSyncStatus, syncAll]);
 
+  // Manual force-sync that resets per-photo backoff so the user can
+  // retry everything immediately from a UI button.
+  const forceSync = useCallback(async () => {
+    await checkNetworkNow();
+    await forceStepPhotoRetry().catch(() => {});
+    await syncAll();
+    await loadSyncStatus();
+  }, [syncAll, loadSyncStatus]);
+
   return {
     ...syncState,
     syncAll,
+    forceSync,
     cacheInterventions,
     queueInterventionCreate,
     queueInterventionUpdate,
