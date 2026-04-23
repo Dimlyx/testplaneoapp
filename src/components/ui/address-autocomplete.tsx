@@ -61,6 +61,7 @@ export function AddressAutocomplete({
   const containerRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const inputNameRef = useRef(`ban-address-${id ?? crypto.randomUUID()}`);
   // Used to skip the next fetch right after a user picks a suggestion
   // (otherwise the controlled value change would reopen the dropdown).
   const skipNextFetchRef = useRef(false);
