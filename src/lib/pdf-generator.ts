@@ -131,6 +131,55 @@ const imageCache = new Map<string, string | null>();
 const imageDimsCache = new Map<string, { w: number; h: number }>();
 
 /**
+ * Read the EXIF orientation tag from a JPEG blob.
+ * Returns 1 (default / no rotation) if absent or unreadable.
+ * Values 1-8 follow the EXIF specification.
+ */
+const readExifOrientation = async (blob: Blob): Promise<number> => {
+  try {
+    if (!blob.type.includes('jpeg') && !blob.type.includes('jpg')) return 1;
+    // Only the first ~64KB are needed to find the orientation tag.
+    const slice = blob.slice(0, Math.min(blob.size, 64 * 1024));
+    const buf = await slice.arrayBuffer();
+    const view = new DataView(buf);
+    if (view.getUint16(0) !== 0xffd8) return 1; // not a JPEG
+
+    let offset = 2;
+    const length = view.byteLength;
+    while (offset < length) {
+      const marker = view.getUint16(offset);
+      offset += 2;
+      if (marker === 0xffe1) {
+        // APP1 (EXIF)
+        if (view.getUint32(offset + 2) !== 0x45786966) return 1; // "Exif"
+        const tiffOffset = offset + 8;
+        const little = view.getUint16(tiffOffset) === 0x4949;
+        const get16 = (o: number) => view.getUint16(o, little);
+        const get32 = (o: number) => view.getUint32(o, little);
+        if (get16(tiffOffset + 2) !== 0x002a) return 1;
+        const firstIFD = get32(tiffOffset + 4);
+        const ifdStart = tiffOffset + firstIFD;
+        const tags = get16(ifdStart);
+        for (let i = 0; i < tags; i++) {
+          const entry = ifdStart + 2 + i * 12;
+          if (get16(entry) === 0x0112) {
+            return get16(entry + 8);
+          }
+        }
+        return 1;
+      } else if ((marker & 0xff00) !== 0xff00) {
+        return 1;
+      } else {
+        offset += view.getUint16(offset);
+      }
+    }
+    return 1;
+  } catch {
+    return 1;
+  }
+};
+
+/**
  * Compute the rendered (w, h) in mm that fits inside a `maxW × maxH` box
  * while preserving the original aspect ratio of the image.
  */
