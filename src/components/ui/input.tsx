@@ -20,9 +20,8 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
       : autoComplete ?? "off";
 
     // Nom randomisé si non fourni pour éviter le matching heuristique du navigateur
-    const resolvedName = allowAutofill
-      ? name
-      : name ?? `field-${React.useId()}`;
+    const generatedId = React.useId();
+    const resolvedName = allowAutofill ? name : name ?? `field-${generatedId}`;
 
     return (
       <input
