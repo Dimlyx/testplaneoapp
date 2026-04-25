@@ -502,6 +502,20 @@ const PublicIntervention = () => {
           {companySettings.address && <p className="opacity-80 mt-1">{[companySettings.address, companySettings.postalCode, companySettings.city].filter(Boolean).join(', ')}</p>}
         </div>
       </footer>
+
+      {/* Lightbox photo (respecte l'orientation EXIF) */}
+      <Dialog open={!!lightboxUrl} onOpenChange={(o) => !o && setLightboxUrl(null)}>
+        <DialogContent className="max-w-4xl p-2 bg-background">
+          {lightboxUrl && (
+            <img
+              src={lightboxUrl}
+              alt="Photo agrandie"
+              className="w-full h-auto max-h-[85vh] object-contain rounded"
+              style={{ imageOrientation: "from-image" }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
