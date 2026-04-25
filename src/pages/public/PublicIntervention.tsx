@@ -327,9 +327,9 @@ const PublicIntervention = () => {
             <CardContent>
               <div className="grid grid-cols-2 gap-2">
                 {photos.filter(p => !p.equipment_id).map(photo => (
-                  <a key={photo.id} href={photo.photo_url} target="_blank" rel="noopener noreferrer">
-                    <img src={photo.photo_url} alt="Photo" className="w-full aspect-video object-cover rounded-lg border" />
-                  </a>
+                  <button key={photo.id} type="button" onClick={() => setLightboxUrl(photo.photo_url)} className="block w-full">
+                    <img src={photo.photo_url} alt="Photo" className="w-full aspect-video object-cover rounded-lg border" style={{ imageOrientation: "from-image" }} />
+                  </button>
                 ))}
               </div>
             </CardContent>
