@@ -601,6 +601,37 @@ export function WeeklyPlanningCalendar({
           </div>
         </div>
       </CardContent>
+
+      {/* Floating drop-target indicator that follows the cursor while dragging */}
+      {draggedIntervention && dropTarget && dragPos && (() => {
+        const targetTech = dropTarget.techId === 'unassigned'
+          ? { full_name: 'Non assignée', email: '' }
+          : technicians.find(t => t.id === dropTarget.techId);
+        const techLabel = targetTech ? (targetTech.full_name || targetTech.email) : 'Technicien';
+        const dayLabel = format(parseISO(dropTarget.dateKey), 'EEEE d MMMM', { locale: fr });
+        const hourLabel = typeof dropTarget.hour === 'number'
+          ? `${String(dropTarget.hour).padStart(2, '0')}:00`
+          : null;
+        return (
+          <div
+            className="pointer-events-none fixed z-[100] rounded-md bg-foreground text-background shadow-lg px-3 py-2 text-xs font-medium"
+            style={{ left: dragPos.x + 16, top: dragPos.y + 16 }}
+          >
+            <div className="flex items-center gap-1.5">
+              <CalendarIcon className="h-3.5 w-3.5" />
+              <span className="capitalize">{dayLabel}</span>
+              {hourLabel && (
+                <>
+                  <span className="opacity-50">·</span>
+                  <Clock className="h-3.5 w-3.5" />
+                  <span>{hourLabel}</span>
+                </>
+              )}
+            </div>
+            <div className="mt-0.5 opacity-80 truncate max-w-[240px]">→ {techLabel}</div>
+          </div>
+        );
+      })()}
     </Card>
   );
 }
