@@ -377,6 +377,8 @@ export function WeeklyPlanningCalendar({
                   {daysInWeek.map(day => {
                     const cellInterventions = getInterventionsForCell(tech.id, day);
                     const isDragOver = draggedIntervention !== null;
+                    const dateKey = format(day, 'yyyy-MM-dd');
+                    const isCellTarget = !!dropTarget && dropTarget.techId === tech.id && dropTarget.dateKey === dateKey;
                     
                     return (
                       <div
@@ -385,9 +387,10 @@ export function WeeklyPlanningCalendar({
                           "border-r last:border-r-0 transition-colors",
                           isToday(day) && "bg-primary/5",
                           !isExpanded && "min-h-[60px] p-0.5",
-                          isDragOver && "hover:bg-primary/10"
+                          isDragOver && "hover:bg-primary/10",
+                          isCellTarget && !isExpanded && "bg-primary/15 ring-2 ring-primary ring-inset"
                         )}
-                        onDragOver={handleDragOver}
+                        onDragOver={(e) => handleDragOver(e, tech.id, day)}
                         onDrop={(e) => handleDrop(e, tech.id, day)}
                         onClick={(e) => {
                           if ((e.target as HTMLElement).closest('.intervention-card')) return;
@@ -398,17 +401,21 @@ export function WeeklyPlanningCalendar({
                           <div className="relative">
                             {/* Hour grid lines (each acts as a precise drop target) */}
                             <div className="mt-2">
-                              {hours.map(hour => (
-                                <div
-                                  key={hour}
-                                  className={cn(
-                                    "h-[28px] border-t border-border/30 first:border-t-0 transition-colors",
-                                    draggedIntervention && "hover:bg-primary/20"
-                                  )}
-                                  onDragOver={handleDragOver}
-                                  onDrop={(e) => handleDrop(e, tech.id, day, hour)}
-                                />
-                              ))}
+                              {hours.map(hour => {
+                                const isSlotTarget = isCellTarget && dropTarget?.hour === hour;
+                                return (
+                                  <div
+                                    key={hour}
+                                    className={cn(
+                                      "h-[28px] border-t border-border/30 first:border-t-0 transition-colors",
+                                      draggedIntervention && "hover:bg-primary/20",
+                                      isSlotTarget && "bg-primary/30 outline outline-2 outline-primary"
+                                    )}
+                                    onDragOver={(e) => handleDragOver(e, tech.id, day, hour)}
+                                    onDrop={(e) => handleDrop(e, tech.id, day, hour)}
+                                  />
+                                );
+                              })}
                             </div>
                             {/* Interventions positioned by time (pointer-events-none on wrapper so hour slots receive drops) */}
                             <div className="absolute inset-0 mt-2 px-0.5 pointer-events-none">
