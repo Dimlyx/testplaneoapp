@@ -1,7 +1,9 @@
 import { useParams } from "react-router-dom";
+import { useState } from "react";
 import { usePublicIntervention } from "@/hooks/useInterventions";
 import { useInterventionPhotos } from "@/hooks/useInterventionPhotos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { TypeBadge } from "@/components/ui/status-badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
