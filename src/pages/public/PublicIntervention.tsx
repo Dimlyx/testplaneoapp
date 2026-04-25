@@ -59,6 +59,7 @@ const PublicIntervention = () => {
   const { token } = useParams();
   const { data: intervention, isLoading, error } = usePublicIntervention(token || "");
   const { data: photos = [] } = useInterventionPhotos(intervention?.id || "");
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   
   const { data: stepCompletions = [] } = useQuery({
     queryKey: ["public-step-completions", intervention?.id],
