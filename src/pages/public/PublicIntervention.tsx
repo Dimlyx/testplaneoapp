@@ -472,9 +472,9 @@ const PublicIntervention = () => {
                       {stepPhotos.length > 0 && (
                         <div className="grid grid-cols-2 gap-2 ml-6">
                           {stepPhotos.map((url, photoIdx) => (
-                            <a key={photoIdx} href={url} target="_blank" rel="noopener noreferrer">
-                              <img src={url} alt={`Étape ${index + 1}`} className="w-full aspect-video object-cover rounded-lg border" />
-                            </a>
+                            <button key={photoIdx} type="button" onClick={() => setLightboxUrl(url)} className="block w-full">
+                              <img src={url} alt={`Étape ${index + 1}`} className="w-full aspect-video object-cover rounded-lg border" style={{ imageOrientation: "from-image" }} />
+                            </button>
                           ))}
                         </div>
                       )}
