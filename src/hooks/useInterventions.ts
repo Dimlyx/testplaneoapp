@@ -257,8 +257,8 @@ export function useTechnicianInterventions(technicianId: string | undefined) {
       }
     },
     enabled: !!technicianId,
-    refetchOnWindowFocus: () => navigator.onLine,
-    refetchOnReconnect: true,
+    refetchOnWindowFocus: navigator.onLine ? 'always' : false,
+    refetchOnReconnect: 'always',
   });
 }
 
@@ -299,8 +299,8 @@ export function useIntervention(id: string) {
         throw err;
       }
     },
-    refetchOnWindowFocus: () => navigator.onLine,
-    refetchOnReconnect: true,
+    refetchOnWindowFocus: navigator.onLine ? 'always' : false,
+    refetchOnReconnect: 'always',
   });
 }
 
