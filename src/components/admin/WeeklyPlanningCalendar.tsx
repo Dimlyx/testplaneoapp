@@ -47,6 +47,8 @@ export function WeeklyPlanningCalendar({
   const [draggedIntervention, setDraggedIntervention] = useState<Intervention | null>(null);
   const [startHour, setStartHour] = useState(7);
   const [endHour, setEndHour] = useState(18);
+  const [dropTarget, setDropTarget] = useState<{ techId: string; dateKey: string; hour?: number } | null>(null);
+  const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
   
   const updateIntervention = useUpdateIntervention();
   const { data: interventionTypesData = [] } = useInterventionTypes();
@@ -151,11 +153,26 @@ export function WeeklyPlanningCalendar({
     setDraggedIntervention(intervention);
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', intervention.id);
+    setDragPos({ x: e.clientX, y: e.clientY });
   };
 
-  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
+  const handleDragOver = (
+    e: DragEvent<HTMLDivElement>,
+    techId?: string,
+    date?: Date,
+    hour?: number,
+  ) => {
     e.preventDefault();
+    e.stopPropagation();
     e.dataTransfer.dropEffect = 'move';
+    setDragPos({ x: e.clientX, y: e.clientY });
+    if (techId && date) {
+      const dateKey = format(date, 'yyyy-MM-dd');
+      setDropTarget((prev) => {
+        if (prev && prev.techId === techId && prev.dateKey === dateKey && prev.hour === hour) return prev;
+        return { techId, dateKey, hour };
+      });
+    }
   };
 
   const handleDrop = (
@@ -209,10 +226,14 @@ export function WeeklyPlanningCalendar({
     }
 
     setDraggedIntervention(null);
+    setDropTarget(null);
+    setDragPos(null);
   };
 
   const handleDragEnd = () => {
     setDraggedIntervention(null);
+    setDropTarget(null);
+    setDragPos(null);
   };
 
   const getInterventionsForCell = (techId: string, date: Date): Intervention[] => {
@@ -356,6 +377,8 @@ export function WeeklyPlanningCalendar({
                   {daysInWeek.map(day => {
                     const cellInterventions = getInterventionsForCell(tech.id, day);
                     const isDragOver = draggedIntervention !== null;
+                    const dateKey = format(day, 'yyyy-MM-dd');
+                    const isCellTarget = !!dropTarget && dropTarget.techId === tech.id && dropTarget.dateKey === dateKey;
                     
                     return (
                       <div
@@ -364,9 +387,10 @@ export function WeeklyPlanningCalendar({
                           "border-r last:border-r-0 transition-colors",
                           isToday(day) && "bg-primary/5",
                           !isExpanded && "min-h-[60px] p-0.5",
-                          isDragOver && "hover:bg-primary/10"
+                          isDragOver && "hover:bg-primary/10",
+                          isCellTarget && !isExpanded && "bg-primary/15 ring-2 ring-primary ring-inset"
                         )}
-                        onDragOver={handleDragOver}
+                        onDragOver={(e) => handleDragOver(e, tech.id, day)}
                         onDrop={(e) => handleDrop(e, tech.id, day)}
                         onClick={(e) => {
                           if ((e.target as HTMLElement).closest('.intervention-card')) return;
@@ -377,17 +401,21 @@ export function WeeklyPlanningCalendar({
                           <div className="relative">
                             {/* Hour grid lines (each acts as a precise drop target) */}
                             <div className="mt-2">
-                              {hours.map(hour => (
-                                <div
-                                  key={hour}
-                                  className={cn(
-                                    "h-[28px] border-t border-border/30 first:border-t-0 transition-colors",
-                                    draggedIntervention && "hover:bg-primary/20"
-                                  )}
-                                  onDragOver={handleDragOver}
-                                  onDrop={(e) => handleDrop(e, tech.id, day, hour)}
-                                />
-                              ))}
+                              {hours.map(hour => {
+                                const isSlotTarget = isCellTarget && dropTarget?.hour === hour;
+                                return (
+                                  <div
+                                    key={hour}
+                                    className={cn(
+                                      "h-[28px] border-t border-border/30 first:border-t-0 transition-colors",
+                                      draggedIntervention && "hover:bg-primary/20",
+                                      isSlotTarget && "bg-primary/30 outline outline-2 outline-primary"
+                                    )}
+                                    onDragOver={(e) => handleDragOver(e, tech.id, day, hour)}
+                                    onDrop={(e) => handleDrop(e, tech.id, day, hour)}
+                                  />
+                                );
+                              })}
                             </div>
                             {/* Interventions positioned by time (pointer-events-none on wrapper so hour slots receive drops) */}
                             <div className="absolute inset-0 mt-2 px-0.5 pointer-events-none">
@@ -573,6 +601,37 @@ export function WeeklyPlanningCalendar({
           </div>
         </div>
       </CardContent>
+
+      {/* Floating drop-target indicator that follows the cursor while dragging */}
+      {draggedIntervention && dropTarget && dragPos && (() => {
+        const targetTech = dropTarget.techId === 'unassigned'
+          ? { full_name: 'Non assignée', email: '' }
+          : technicians.find(t => t.id === dropTarget.techId);
+        const techLabel = targetTech ? (targetTech.full_name || targetTech.email) : 'Technicien';
+        const dayLabel = format(parseISO(dropTarget.dateKey), 'EEEE d MMMM', { locale: fr });
+        const hourLabel = typeof dropTarget.hour === 'number'
+          ? `${String(dropTarget.hour).padStart(2, '0')}:00`
+          : null;
+        return (
+          <div
+            className="pointer-events-none fixed z-[100] rounded-md bg-foreground text-background shadow-lg px-3 py-2 text-xs font-medium"
+            style={{ left: dragPos.x + 16, top: dragPos.y + 16 }}
+          >
+            <div className="flex items-center gap-1.5">
+              <CalendarIcon className="h-3.5 w-3.5" />
+              <span className="capitalize">{dayLabel}</span>
+              {hourLabel && (
+                <>
+                  <span className="opacity-50">·</span>
+                  <Clock className="h-3.5 w-3.5" />
+                  <span>{hourLabel}</span>
+                </>
+              )}
+            </div>
+            <div className="mt-0.5 opacity-80 truncate max-w-[240px]">→ {techLabel}</div>
+          </div>
+        );
+      })()}
     </Card>
   );
 }
