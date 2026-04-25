@@ -47,6 +47,8 @@ export function WeeklyPlanningCalendar({
   const [draggedIntervention, setDraggedIntervention] = useState<Intervention | null>(null);
   const [startHour, setStartHour] = useState(7);
   const [endHour, setEndHour] = useState(18);
+  const [dropTarget, setDropTarget] = useState<{ techId: string; dateKey: string; hour?: number } | null>(null);
+  const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
   
   const updateIntervention = useUpdateIntervention();
   const { data: interventionTypesData = [] } = useInterventionTypes();
