@@ -1,7 +1,9 @@
 import { useParams } from "react-router-dom";
+import { useState } from "react";
 import { usePublicIntervention } from "@/hooks/useInterventions";
 import { useInterventionPhotos } from "@/hooks/useInterventionPhotos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { TypeBadge } from "@/components/ui/status-badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -57,6 +59,7 @@ const PublicIntervention = () => {
   const { token } = useParams();
   const { data: intervention, isLoading, error } = usePublicIntervention(token || "");
   const { data: photos = [] } = useInterventionPhotos(intervention?.id || "");
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   
   const { data: stepCompletions = [] } = useQuery({
     queryKey: ["public-step-completions", intervention?.id],
@@ -324,9 +327,9 @@ const PublicIntervention = () => {
             <CardContent>
               <div className="grid grid-cols-2 gap-2">
                 {photos.filter(p => !p.equipment_id).map(photo => (
-                  <a key={photo.id} href={photo.photo_url} target="_blank" rel="noopener noreferrer">
-                    <img src={photo.photo_url} alt="Photo" className="w-full aspect-video object-cover rounded-lg border" />
-                  </a>
+                  <button key={photo.id} type="button" onClick={() => setLightboxUrl(photo.photo_url)} className="block w-full">
+                    <img src={photo.photo_url} alt="Photo" className="w-full aspect-video object-cover rounded-lg border" style={{ imageOrientation: "from-image" }} />
+                  </button>
                 ))}
               </div>
             </CardContent>
@@ -410,9 +413,9 @@ const PublicIntervention = () => {
                           {stepPhotos.length > 0 && (
                             <div className="grid grid-cols-2 gap-2 ml-6">
                               {stepPhotos.map((url, photoIdx) => (
-                                <a key={photoIdx} href={url} target="_blank" rel="noopener noreferrer">
-                                  <img src={url} alt={`Étape ${index + 1}`} className="w-full aspect-video object-cover rounded-lg border" />
-                                </a>
+                                <button key={photoIdx} type="button" onClick={() => setLightboxUrl(url)} className="block w-full">
+                                  <img src={url} alt={`Étape ${index + 1}`} className="w-full aspect-video object-cover rounded-lg border" style={{ imageOrientation: "from-image" }} />
+                                </button>
                               ))}
                             </div>
                           )}
@@ -469,9 +472,9 @@ const PublicIntervention = () => {
                       {stepPhotos.length > 0 && (
                         <div className="grid grid-cols-2 gap-2 ml-6">
                           {stepPhotos.map((url, photoIdx) => (
-                            <a key={photoIdx} href={url} target="_blank" rel="noopener noreferrer">
-                              <img src={url} alt={`Étape ${index + 1}`} className="w-full aspect-video object-cover rounded-lg border" />
-                            </a>
+                            <button key={photoIdx} type="button" onClick={() => setLightboxUrl(url)} className="block w-full">
+                              <img src={url} alt={`Étape ${index + 1}`} className="w-full aspect-video object-cover rounded-lg border" style={{ imageOrientation: "from-image" }} />
+                            </button>
                           ))}
                         </div>
                       )}
@@ -499,6 +502,20 @@ const PublicIntervention = () => {
           {companySettings.address && <p className="opacity-80 mt-1">{[companySettings.address, companySettings.postalCode, companySettings.city].filter(Boolean).join(', ')}</p>}
         </div>
       </footer>
+
+      {/* Lightbox photo (respecte l'orientation EXIF) */}
+      <Dialog open={!!lightboxUrl} onOpenChange={(o) => !o && setLightboxUrl(null)}>
+        <DialogContent className="max-w-4xl p-2 bg-background">
+          {lightboxUrl && (
+            <img
+              src={lightboxUrl}
+              alt="Photo agrandie"
+              className="w-full h-auto max-h-[85vh] object-contain rounded"
+              style={{ imageOrientation: "from-image" }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
