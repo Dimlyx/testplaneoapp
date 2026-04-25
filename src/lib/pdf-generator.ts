@@ -1024,6 +1024,13 @@ export const generateInterventionPDF = async (
   // Clear cache after generation
   imageCache.clear();
 
-  // Save
-  doc.save(`intervention-${intervention.id.slice(0, 8)}.pdf`);
+  // Save - use intervention title as filename (sanitized)
+  const safeTitle = (intervention.title || 'intervention')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // remove accents
+    .replace(/[^a-zA-Z0-9-_ ]/g, '') // keep safe chars
+    .trim()
+    .replace(/\s+/g, '-')
+    .slice(0, 100) || 'intervention';
+  doc.save(`${safeTitle}.pdf`);
 };
