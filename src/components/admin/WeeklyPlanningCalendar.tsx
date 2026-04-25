@@ -153,11 +153,26 @@ export function WeeklyPlanningCalendar({
     setDraggedIntervention(intervention);
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', intervention.id);
+    setDragPos({ x: e.clientX, y: e.clientY });
   };
 
-  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
+  const handleDragOver = (
+    e: DragEvent<HTMLDivElement>,
+    techId?: string,
+    date?: Date,
+    hour?: number,
+  ) => {
     e.preventDefault();
+    e.stopPropagation();
     e.dataTransfer.dropEffect = 'move';
+    setDragPos({ x: e.clientX, y: e.clientY });
+    if (techId && date) {
+      const dateKey = format(date, 'yyyy-MM-dd');
+      setDropTarget((prev) => {
+        if (prev && prev.techId === techId && prev.dateKey === dateKey && prev.hour === hour) return prev;
+        return { techId, dateKey, hour };
+      });
+    }
   };
 
   const handleDrop = (
@@ -211,10 +226,14 @@ export function WeeklyPlanningCalendar({
     }
 
     setDraggedIntervention(null);
+    setDropTarget(null);
+    setDragPos(null);
   };
 
   const handleDragEnd = () => {
     setDraggedIntervention(null);
+    setDropTarget(null);
+    setDragPos(null);
   };
 
   const getInterventionsForCell = (techId: string, date: Date): Intervention[] => {
