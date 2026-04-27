@@ -275,19 +275,16 @@ const DynamicStepContent = ({
     await handleFiles(files);
   };
 
-  // Resolve any pending uploads before saving — returns only persistable (non-blob) URLs
-  const resolvePhotos = async (): Promise<string[]> => {
-    // Wait for all pending uploads to finish (fast if already done)
-    if (pendingUploadsRef.current.size > 0) {
-      await Promise.allSettled(Array.from(pendingUploadsRef.current.values()));
-      pendingUploadsRef.current.clear();
-    }
-    // Read the latest photoUrls from the ref (always up-to-date) and filter out any remaining blob URLs
+  // Resolve photos for save — returns persistable URLs WITHOUT waiting for uploads.
+  // Photos are already persisted in IndexedDB (local:// URLs) the moment they're
+  // captured, so it's safe to validate the step immediately. The retry worker will
+  // upload in the background and patch the row with the remote URL when done.
+  const resolvePhotos = (): string[] => {
     return photoUrlsRef.current.filter(u => !u.startsWith('blob:'));
   };
 
   const handleValidate = async () => {
-    const resolvedUrls = await resolvePhotos();
+    const resolvedUrls = resolvePhotos();
     const serializedPhotos = resolvedUrls.length > 0 ? JSON.stringify(resolvedUrls) : undefined;
     await onComplete(
       step.id,
