@@ -126,14 +126,17 @@ const DynamicStepContent = ({
     if (isLocked) return;
 
     if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
+    // Longer debounce while photos are uploading to avoid spamming saves
+    // every time a local:// URL is swapped for a remote URL.
+    const delay = isUploading ? 5000 : 2500;
     draftTimerRef.current = setTimeout(() => {
       saveDraftNow();
-    }, 2000);
+    }, delay);
 
     return () => {
       if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
     };
-  }, [comment, photoUrls, checklistState, multipleChoiceState, saveDraftNow, isLocked]);
+  }, [comment, photoUrls, checklistState, multipleChoiceState, saveDraftNow, isLocked, isUploading]);
   const hasChecklist = checklistState.length > 0;
   const hasMultipleChoice = multipleChoiceState.length > 0;
   const selectedCount = multipleChoiceState.filter(i => i.selected).length;
