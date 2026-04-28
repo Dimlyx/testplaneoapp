@@ -11,6 +11,7 @@ import { Clock, Calendar, MapPin, CalendarOff, CheckCircle2 } from "lucide-react
 import { InterventionDayGroup } from "@/components/technician/InterventionDayGroup";
 import type { Intervention } from "@/hooks/useInterventions";
 import { markInterventionAsViewed, isInterventionViewed } from "@/lib/intervention-viewed";
+import { usePrecacheInterventionPhotos } from "@/hooks/usePrecacheInterventionPhotos";
 
 function formatTimeRange(time: string, duration?: number | null): string {
   const hhmm = time.substring(0, 5);
