@@ -20,7 +20,7 @@ function formatTimeRange(time: string, duration?: number | null): string {
 }
 
 interface InterventionDayGroupProps {
-  date: string;
+  date: string | null;
   interventions: Intervention[];
   getClientName: (clientId: string) => string;
   getInterventionAddress: (intervention: Intervention) => string | null;
@@ -49,7 +49,9 @@ export const InterventionDayGroup = ({
     navigate(`/technician/interventions/${id}`);
   }, [navigate]);
 
-  const dayLabel = format(new Date(date + "T00:00:00"), "EEEE dd MMMM yyyy", { locale: fr }).toUpperCase();
+  const dayLabel = date
+    ? format(new Date(date + "T00:00:00"), "EEEE dd MMMM yyyy", { locale: fr }).toUpperCase()
+    : "SANS DATE PLANIFIÉE";
 
   return (
     <>
