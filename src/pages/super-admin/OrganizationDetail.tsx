@@ -373,9 +373,8 @@ export default function OrganizationDetail() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="password">Mot de passe *</Label>
-                      <Input
+                      <PasswordInput
                         id="password"
-                        type="password"
                         value={userFormData.password}
                         onChange={(e) => setUserFormData(prev => ({ ...prev, password: e.target.value }))}
                         required

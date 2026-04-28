@@ -234,9 +234,8 @@ export default function Auth() {
                     </DialogContent>
                   </Dialog>
                 </div>
-                <Input
+                <PasswordInput
                   id="login-password"
-                  type="password"
                   placeholder="••••••••"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
