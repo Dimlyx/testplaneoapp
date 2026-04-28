@@ -245,8 +245,8 @@ export function useSaveDraft() {
         }
       );
 
-      // 2. If offline, queue
-      if (!navigator.onLine) {
+      // 2. If offline (or boot offline / dead heartbeat), queue
+      if (!isReallyOnline()) {
         await addMutation({
           type: 'save_draft_step',
           payload: { interventionId, stepId, comment, photoUrl, loopIndex, checklistData, multipleChoiceData },
@@ -254,43 +254,55 @@ export function useSaveDraft() {
         return;
       }
 
-      // 3. Background sync
+      // 3. Background sync with hard timeout
       const syncToServer = async () => {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user } } = await withTimeout(
+          supabase.auth.getUser(),
+          STEP_SYNC_TIMEOUT_MS,
+        );
 
-        const { data: existing } = await supabase
-          .from("intervention_step_completions")
-          .select("id, completed_at")
-          .eq("intervention_id", interventionId)
-          .eq("step_id", stepId)
-          .eq("loop_index", loopIndex)
-          .maybeSingle();
+        const { data: existing } = await withTimeout(
+          supabase
+            .from("intervention_step_completions")
+            .select("id, completed_at")
+            .eq("intervention_id", interventionId)
+            .eq("step_id", stepId)
+            .eq("loop_index", loopIndex)
+            .maybeSingle(),
+          STEP_SYNC_TIMEOUT_MS,
+        );
 
         if (existing) {
-          const { error } = await supabase
-            .from("intervention_step_completions")
-            .update({
-              comment: comment || null,
-              photo_url: photoUrl || null,
-              checklist_data: checklistData || null,
-              multiple_choice_data: multipleChoiceData || null,
-            } as any)
-            .eq("id", existing.id);
+          const { error } = await withTimeout(
+            supabase
+              .from("intervention_step_completions")
+              .update({
+                comment: comment || null,
+                photo_url: photoUrl || null,
+                checklist_data: checklistData || null,
+                multiple_choice_data: multipleChoiceData || null,
+              } as any)
+              .eq("id", existing.id),
+            STEP_SYNC_TIMEOUT_MS,
+          );
           if (error) throw error;
         } else {
-          const { error } = await supabase
-            .from("intervention_step_completions")
-            .insert({
-              intervention_id: interventionId,
-              step_id: stepId,
-              completed_at: null,
-              completed_by: user?.id || null,
-              comment: comment || null,
-              photo_url: photoUrl || null,
-              loop_index: loopIndex,
-              checklist_data: checklistData || null,
-              multiple_choice_data: multipleChoiceData || null,
-            } as any);
+          const { error } = await withTimeout(
+            supabase
+              .from("intervention_step_completions")
+              .insert({
+                intervention_id: interventionId,
+                step_id: stepId,
+                completed_at: null,
+                completed_by: user?.id || null,
+                comment: comment || null,
+                photo_url: photoUrl || null,
+                loop_index: loopIndex,
+                checklist_data: checklistData || null,
+                multiple_choice_data: multipleChoiceData || null,
+              } as any),
+            STEP_SYNC_TIMEOUT_MS,
+          );
           if (error) throw error;
         }
 
