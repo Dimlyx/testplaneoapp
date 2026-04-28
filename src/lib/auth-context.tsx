@@ -101,14 +101,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
+    // Safety net: if offline at boot, never let the app stay on the loading
+    // spinner waiting for getSession() to resolve. Median WebView can stall
+    // network calls indefinitely on a dead connection, leaving a white screen.
+    // We release `loading` after a short delay so the UI (including offline
+    // pages backed by IndexedDB) can render. The auth listener above will
+    // still update state if/when Supabase eventually responds.
+    const offlineAtBoot = typeof navigator !== 'undefined' && navigator.onLine === false;
+    const bootTimeoutMs = offlineAtBoot ? 800 : 6000;
+    const bootTimeout = window.setTimeout(() => {
+      setLoading(prev => (prev ? false : prev));
+    }, bootTimeoutMs);
+
     supabase.auth.getSession().then(({ data: { session } }) => {
+      window.clearTimeout(bootTimeout);
       // If session is temporary and page was reloaded (sessionStorage cleared), sign out
       const isTempSession = sessionStorage.getItem('tempSession') === 'true';
       const rememberMe = localStorage.getItem('rememberMe') === 'true';
 
       if (session && !rememberMe && !isTempSession) {
         // Session exists but not remembered and no sessionStorage flag = new browser session
-        supabase.auth.signOut();
+        // Skip the network signOut when offline to avoid hanging — the local
+        // session will be cleared on next online boot.
+        if (navigator.onLine) {
+          supabase.auth.signOut();
+        }
         setLoading(false);
         return;
       }
@@ -121,9 +138,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         registerOneSignal(session.user.id);
       }
       setLoading(false);
+    }).catch(() => {
+      window.clearTimeout(bootTimeout);
+      setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      window.clearTimeout(bootTimeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {
