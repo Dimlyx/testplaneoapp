@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useOffline } from '@/hooks/useOfflineSync';
 import { saveInterventionOffline } from '@/lib/offline-db';
 import { useToast } from '@/hooks/use-toast';
+import { isReallyOnline } from '@/lib/network-status';
 import type { Intervention, UpdateInterventionData } from '@/hooks/useInterventions';
 
 /**
