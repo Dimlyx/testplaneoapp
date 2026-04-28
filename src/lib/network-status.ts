@@ -95,6 +95,20 @@ export function isReallyOnline(): boolean {
   return realIsOnline;
 }
 
+/**
+ * True when the app booted with no connection and we haven't yet confirmed
+ * a successful ping. Use this to short-circuit network-bound paths
+ * (e.g. NetworkFirst React Query fetches) and go straight to cache —
+ * avoids a 3–10s wait before the SW falls back to its cached response.
+ */
+export function bootedOffline_(): boolean {
+  return bootedOffline;
+}
+
+export function shouldSkipNetwork(): boolean {
+  return bootedOffline || !realIsOnline;
+}
+
 export function subscribeNetworkStatus(listener: Listener): () => void {
   listeners.add(listener);
   return () => {
