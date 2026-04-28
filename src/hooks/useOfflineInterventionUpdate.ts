@@ -46,7 +46,7 @@ export function useOfflineInterventionUpdate() {
       }
 
       // 3. If offline, queue and return immediately
-      if (!navigator.onLine) {
+      if (!isReallyOnline()) {
         queueInterventionUpdate(id, data).catch(() => {});
         toast({
           title: 'Enregistré hors-ligne',
