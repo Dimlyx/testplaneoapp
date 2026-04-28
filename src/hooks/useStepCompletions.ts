@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { addMutation } from "@/lib/offline-db";
+import { precachePhotos, extractPhotoUrls } from "@/lib/photo-precache";
 
 export interface StepCompletion {
   id: string;
@@ -28,7 +29,18 @@ export function useStepCompletions(interventionId: string) {
         .order("loop_index", { ascending: true });
 
       if (error) throw error;
-      return data as unknown as StepCompletion[];
+      const completions = data as unknown as StepCompletion[];
+
+      // Warm the Service Worker cache so step photos remain viewable
+      // if the technician later goes offline (airplane mode, dead zone).
+      try {
+        const allUrls = completions.flatMap((c) => extractPhotoUrls(c.photo_url));
+        if (allUrls.length > 0) precachePhotos(allUrls);
+      } catch {
+        /* precaching is best-effort */
+      }
+
+      return completions;
     },
     enabled: !!interventionId,
     refetchOnWindowFocus: () => navigator.onLine,
