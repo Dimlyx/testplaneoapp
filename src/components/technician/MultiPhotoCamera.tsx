@@ -166,8 +166,8 @@ const MultiPhotoCamera = ({ onCapture, onClose }: MultiPhotoCameraProps) => {
             autoPlay
             playsInline
             muted
-            className="w-full h-full object-cover"
-            style={{ transform: facingMode === "user" ? "scaleX(-1)" : undefined }}
+            className="w-full h-full object-contain"
+            style={{ transform: facingMode === "user" ? "scaleX(-1)" : undefined, background: "#000" }}
           />
         )}
         {isStarting && !error && (
