@@ -27,6 +27,7 @@ import {
   LOCAL_PHOTO_PREFIX,
   type StoredStepPhoto,
 } from '@/lib/step-photo-store';
+import { precachePhoto } from '@/lib/photo-precache';
 
 // Per-photo retry state kept in memory (resets on app reload, which is fine —
 // at startup we want to retry everything immediately anyway).
@@ -108,7 +109,11 @@ async function uploadOne(photo: StoredStepPhoto): Promise<boolean> {
   // If no completion references this local URL anymore, the user removed the
   // photo client-side — we can safely drop the orphan.
 
-  // 3. Delete local copy
+  // 3. Warm the Service Worker cache with the freshly-uploaded photo so
+  //    it stays viewable if the device goes offline right after upload.
+  try { precachePhoto(remoteUrl); } catch { /* best-effort */ }
+
+  // 4. Delete local copy
   await deleteStepPhoto(localUrl);
   retryStates.delete(photo.id);
   return true;
