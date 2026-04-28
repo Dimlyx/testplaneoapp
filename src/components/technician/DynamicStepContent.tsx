@@ -18,6 +18,10 @@ import {
   deleteStepPhoto,
   isLocalPhotoUrl,
 } from "@/lib/step-photo-store";
+import { isReallyOnline } from "@/lib/network-status";
+import { withTimeout } from "@/lib/supabase-with-timeout";
+
+const SIGNATURE_UPLOAD_TIMEOUT_MS = 4000;
 
 interface DynamicStepContentProps {
   step: WorkflowStepType;
