@@ -51,6 +51,8 @@ async function ping(): Promise<boolean> {
 function setStatus(next: boolean) {
   if (next === realIsOnline) return;
   realIsOnline = next;
+  // First confirmed online state clears the boot-offline guard.
+  if (next) bootedOffline = false;
   listeners.forEach((l) => {
     try {
       l(next);
