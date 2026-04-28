@@ -3,6 +3,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { addMutation } from "@/lib/offline-db";
 import { precachePhotos, extractPhotoUrls } from "@/lib/photo-precache";
+import { isReallyOnline } from "@/lib/network-status";
+import { withTimeout } from "@/lib/supabase-with-timeout";
+
+// Hard cap so the "Suivant" button never appears stuck on a flaky network.
+// The mutation is fire-and-forget anyway, but we still want the background
+// sync to bail quickly and queue the mutation locally.
+const STEP_SYNC_TIMEOUT_MS = 4000;
 
 export interface StepCompletion {
   id: string;
