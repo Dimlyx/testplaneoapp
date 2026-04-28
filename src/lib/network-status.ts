@@ -16,6 +16,10 @@ const HEARTBEAT_INTERVAL_OFFLINE_MS = 5_000; // poll faster when offline
 type Listener = (online: boolean) => void;
 
 let realIsOnline = navigator.onLine;
+// Boot-time offline flag: if the app starts without a connection,
+// short-circuit any network attempt until the user explicitly comes back
+// online (avoids 3-10s NetworkFirst waits before falling back to cache).
+let bootedOffline = !navigator.onLine;
 let listeners = new Set<Listener>();
 let intervalId: number | null = null;
 let inFlight = false;
