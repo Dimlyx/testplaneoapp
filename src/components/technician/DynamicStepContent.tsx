@@ -18,6 +18,10 @@ import {
   deleteStepPhoto,
   isLocalPhotoUrl,
 } from "@/lib/step-photo-store";
+import { isReallyOnline } from "@/lib/network-status";
+import { withTimeout } from "@/lib/supabase-with-timeout";
+
+const SIGNATURE_UPLOAD_TIMEOUT_MS = 4000;
 
 interface DynamicStepContentProps {
   step: WorkflowStepType;
@@ -329,18 +333,23 @@ const DynamicStepContent = ({
         blob,
       });
 
-      // Offline → complete with local URL, sync worker will handle upload
-      if (!navigator.onLine) {
+      // Offline (or boot offline / dead heartbeat) → complete with local URL,
+      // sync worker will handle upload when network comes back.
+      if (!isReallyOnline()) {
         await onComplete(step.id, sName, localUrl);
         return;
       }
 
-      // Online → try direct upload
+      // Online → try direct upload, but cap it so a flaky connection
+      // can't keep the "Suivant" button spinning indefinitely.
       try {
         const fileName = `steps/${interventionId}/${step.id}-signature-${Date.now()}.png`;
-        const { error: uploadError } = await supabase.storage
-          .from('intervention-photos')
-          .upload(fileName, blob, { contentType: 'image/png', upsert: false });
+        const { error: uploadError } = await withTimeout(
+          supabase.storage
+            .from('intervention-photos')
+            .upload(fileName, blob, { contentType: 'image/png', upsert: false }),
+          SIGNATURE_UPLOAD_TIMEOUT_MS,
+        );
         if (uploadError) throw uploadError;
         const { data: urlData } = supabase.storage
           .from('intervention-photos')
@@ -349,7 +358,7 @@ const DynamicStepContent = ({
         // Upload succeeded → free the local copy
         await deleteStepPhoto(localUrl);
       } catch (uploadErr) {
-        console.warn('Step signature upload failed, keeping local copy:', uploadErr);
+        console.warn('Step signature upload failed/timed out, keeping local copy:', uploadErr);
         // Complete the step anyway with the local URL — worker will retry
         await onComplete(step.id, sName, localUrl);
       }
