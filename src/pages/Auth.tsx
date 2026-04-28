@@ -5,6 +5,7 @@ import { useTheme } from 'next-themes';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -234,9 +235,8 @@ export default function Auth() {
                     </DialogContent>
                   </Dialog>
                 </div>
-                <Input
+                <PasswordInput
                   id="login-password"
-                  type="password"
                   placeholder="••••••••"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
