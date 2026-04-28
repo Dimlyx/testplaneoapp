@@ -172,7 +172,7 @@ export function TechnicianInterventionsByCategory({ category }: { category: Cate
           {sortedKeys.map((dateKey) => (
             <InterventionDayGroup
               key={dateKey}
-              date={dateKey === "no-date" ? today : dateKey}
+              date={dateKey === "no-date" ? null : dateKey}
               interventions={groups[dateKey]}
               getClientName={getClientName}
               getInterventionAddress={getInterventionAddress}
