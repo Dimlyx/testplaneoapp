@@ -3,6 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { isReallyOnline, shouldSkipNetwork } from "@/lib/network-status";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
 import { OrganizationProvider, useOrganizationContext } from "@/lib/organization-context";
@@ -65,8 +66,9 @@ const queryClient = new QueryClient({
       staleTime: 2 * 60 * 1000, // 2 min default
       gcTime: 10 * 60 * 1000, // 10 min garbage collection
       retry: (failureCount, error) => {
-        // Never retry when offline — serve cached data instead
-        if (!navigator.onLine) return false;
+        // Never retry when offline (or booted offline) — serve cached data instead.
+        // This avoids the 3–10s NetworkFirst wait before falling back to cache.
+        if (shouldSkipNetwork()) return false;
         return failureCount < 1;
       },
       retryDelay: 1000,

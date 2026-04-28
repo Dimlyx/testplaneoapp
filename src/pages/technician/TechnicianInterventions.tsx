@@ -11,6 +11,7 @@ import { Clock, Calendar, MapPin, CalendarOff, CheckCircle2 } from "lucide-react
 import { InterventionDayGroup } from "@/components/technician/InterventionDayGroup";
 import type { Intervention } from "@/hooks/useInterventions";
 import { markInterventionAsViewed, isInterventionViewed } from "@/lib/intervention-viewed";
+import { usePrecacheInterventionPhotos } from "@/hooks/usePrecacheInterventionPhotos";
 
 function formatTimeRange(time: string, duration?: number | null): string {
   const hhmm = time.substring(0, 5);
@@ -56,6 +57,10 @@ export function TechnicianInterventionsByCategory({ category }: { category: Cate
   useEffect(() => {
     if (interventions.length > 0) cacheInterventions(interventions);
   }, [interventions, cacheInterventions]);
+
+  // Warm the SW cache with every step photo of the visible interventions
+  // so they remain viewable later even if the technician goes offline.
+  usePrecacheInterventionPhotos(interventions.map((i) => i.id));
 
   const getClientName = (clientId: string) =>
     clients.find((c) => c.id === clientId)?.name || "Client";

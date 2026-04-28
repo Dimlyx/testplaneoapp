@@ -16,6 +16,10 @@ const HEARTBEAT_INTERVAL_OFFLINE_MS = 5_000; // poll faster when offline
 type Listener = (online: boolean) => void;
 
 let realIsOnline = navigator.onLine;
+// Boot-time offline flag: if the app starts without a connection,
+// short-circuit any network attempt until the user explicitly comes back
+// online (avoids 3-10s NetworkFirst waits before falling back to cache).
+let bootedOffline = !navigator.onLine;
 let listeners = new Set<Listener>();
 let intervalId: number | null = null;
 let inFlight = false;
@@ -47,6 +51,8 @@ async function ping(): Promise<boolean> {
 function setStatus(next: boolean) {
   if (next === realIsOnline) return;
   realIsOnline = next;
+  // First confirmed online state clears the boot-offline guard.
+  if (next) bootedOffline = false;
   listeners.forEach((l) => {
     try {
       l(next);
@@ -87,6 +93,20 @@ start();
 
 export function isReallyOnline(): boolean {
   return realIsOnline;
+}
+
+/**
+ * True when the app booted with no connection and we haven't yet confirmed
+ * a successful ping. Use this to short-circuit network-bound paths
+ * (e.g. NetworkFirst React Query fetches) and go straight to cache —
+ * avoids a 3–10s wait before the SW falls back to its cached response.
+ */
+export function bootedOffline_(): boolean {
+  return bootedOffline;
+}
+
+export function shouldSkipNetwork(): boolean {
+  return bootedOffline || !realIsOnline;
 }
 
 export function subscribeNetworkStatus(listener: Listener): () => void {
