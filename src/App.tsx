@@ -66,8 +66,9 @@ const queryClient = new QueryClient({
       staleTime: 2 * 60 * 1000, // 2 min default
       gcTime: 10 * 60 * 1000, // 10 min garbage collection
       retry: (failureCount, error) => {
-        // Never retry when offline — serve cached data instead
-        if (!navigator.onLine) return false;
+        // Never retry when offline (or booted offline) — serve cached data instead.
+        // This avoids the 3–10s NetworkFirst wait before falling back to cache.
+        if (shouldSkipNetwork()) return false;
         return failureCount < 1;
       },
       retryDelay: 1000,
