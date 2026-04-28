@@ -110,8 +110,8 @@ export function useCompleteStep() {
         }
       );
 
-      // 2. If offline, queue and return
-      if (!navigator.onLine) {
+      // 2. If offline (or boot offline / dead heartbeat), queue and return
+      if (!isReallyOnline()) {
         await addMutation({
           type: 'complete_step',
           payload: { interventionId, stepId, comment, photoUrl, loopIndex, checklistData, multipleChoiceData },
@@ -119,45 +119,58 @@ export function useCompleteStep() {
         return;
       }
 
-      // 3. Online: fire-and-forget background sync
+      // 3. Online: fire-and-forget background sync, with a hard timeout
+      //    so a flaky connection can't keep the request pending forever.
       const syncToServer = async () => {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user } } = await withTimeout(
+          supabase.auth.getUser(),
+          STEP_SYNC_TIMEOUT_MS,
+        );
 
-        const { data: existing } = await supabase
-          .from("intervention_step_completions")
-          .select("id")
-          .eq("intervention_id", interventionId)
-          .eq("step_id", stepId)
-          .eq("loop_index", loopIndex)
-          .maybeSingle();
+        const { data: existing } = await withTimeout(
+          supabase
+            .from("intervention_step_completions")
+            .select("id")
+            .eq("intervention_id", interventionId)
+            .eq("step_id", stepId)
+            .eq("loop_index", loopIndex)
+            .maybeSingle(),
+          STEP_SYNC_TIMEOUT_MS,
+        );
 
         if (existing) {
-          const { error } = await supabase
-            .from("intervention_step_completions")
-            .update({
-              completed_at: now,
-              completed_by: user?.id || null,
-              comment: comment || null,
-              photo_url: photoUrl || null,
-              checklist_data: checklistData || null,
-              multiple_choice_data: multipleChoiceData || null,
-            } as any)
-            .eq("id", existing.id);
+          const { error } = await withTimeout(
+            supabase
+              .from("intervention_step_completions")
+              .update({
+                completed_at: now,
+                completed_by: user?.id || null,
+                comment: comment || null,
+                photo_url: photoUrl || null,
+                checklist_data: checklistData || null,
+                multiple_choice_data: multipleChoiceData || null,
+              } as any)
+              .eq("id", existing.id),
+            STEP_SYNC_TIMEOUT_MS,
+          );
           if (error) throw error;
         } else {
-          const { error } = await supabase
-            .from("intervention_step_completions")
-            .insert({
-              intervention_id: interventionId,
-              step_id: stepId,
-              completed_at: now,
-              completed_by: user?.id || null,
-              comment: comment || null,
-              photo_url: photoUrl || null,
-              loop_index: loopIndex,
-              checklist_data: checklistData || null,
-              multiple_choice_data: multipleChoiceData || null,
-            } as any);
+          const { error } = await withTimeout(
+            supabase
+              .from("intervention_step_completions")
+              .insert({
+                intervention_id: interventionId,
+                step_id: stepId,
+                completed_at: now,
+                completed_by: user?.id || null,
+                comment: comment || null,
+                photo_url: photoUrl || null,
+                loop_index: loopIndex,
+                checklist_data: checklistData || null,
+                multiple_choice_data: multipleChoiceData || null,
+              } as any),
+            STEP_SYNC_TIMEOUT_MS,
+          );
           if (error) throw error;
         }
 
@@ -177,7 +190,7 @@ export function useCompleteStep() {
       toast({ title: "Étape validée" });
     },
     onError: (error: Error) => {
-      if (!navigator.onLine) {
+      if (!isReallyOnline()) {
         toast({ title: "Étape enregistrée localement", description: "Sera synchronisée au retour de la connexion" });
       } else {
         toast({ title: "Erreur", description: error.message, variant: "destructive" });
