@@ -53,9 +53,16 @@ function getDayWorkInfo(dayInterventions: Intervention[]): {
   const empty = { minutes: 0, startTime: null, endTime: null, returnStartTime: null, returnArrivalTime: null, returnTriggered: false, returnClosed: false };
   if (dayInterventions.length === 0) return empty;
 
-  const starts = dayInterventions
+  // Préférence : travel_departure_time (départ domicile). Fallback : arrival_time
+  // (le tech n'a pas déclenché le départ mais on a une heure d'arrivée client).
+  let starts = dayInterventions
     .map(i => timeToMinutes(i.travel_departure_time))
     .filter((t): t is number => t !== null);
+  if (starts.length === 0) {
+    starts = dayInterventions
+      .map(i => timeToMinutes(i.arrival_time))
+      .filter((t): t is number => t !== null);
+  }
   if (starts.length === 0) return empty;
   const dayStart = Math.min(...starts);
 
