@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Award, Car, Clock, Wrench, CheckCircle, CalendarClock, TrendingUp, Timer, ChevronLeft, ChevronRight } from "lucide-react";
+import { Award, Car, Clock, Wrench, CheckCircle, CalendarClock, TrendingUp, Timer, ChevronLeft, ChevronRight, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { format, parseISO, startOfWeek, endOfWeek, isWithinInterval, startOfMonth, endOfMonth, addWeeks, subWeeks } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -41,24 +41,43 @@ function timeToMinutes(time: string | null): number | null {
  * Uses travel_departure_time of the first intervention as start.
  * Uses travel_return_time if available, otherwise departure_time of the last intervention as end.
  */
-function getDayWorkInfo(dayInterventions: Intervention[]): { minutes: number; startTime: string | null; endTime: string | null } {
-  if (dayInterventions.length === 0) return { minutes: 0, startTime: null, endTime: null };
+function getDayWorkInfo(dayInterventions: Intervention[]): {
+  minutes: number;
+  startTime: string | null;
+  endTime: string | null;
+  returnStartTime: string | null;
+  returnArrivalTime: string | null;
+  returnTriggered: boolean;
+  returnClosed: boolean;
+} {
+  const empty = { minutes: 0, startTime: null, endTime: null, returnStartTime: null, returnArrivalTime: null, returnTriggered: false, returnClosed: false };
+  if (dayInterventions.length === 0) return empty;
 
   const starts = dayInterventions
     .map(i => timeToMinutes(i.travel_departure_time))
     .filter((t): t is number => t !== null);
-  if (starts.length === 0) return { minutes: 0, startTime: null, endTime: null };
+  if (starts.length === 0) return empty;
   const dayStart = Math.min(...starts);
 
-  // Prefer travel_return_arrival_time (actual arrival back), then travel_return_time, then departure_time
-  const returnArrivalTimes = dayInterventions
+  const returnStarts = dayInterventions
+    .map(i => timeToMinutes(i.travel_return_time))
+    .filter((t): t is number => t !== null);
+  const returnArrivals = dayInterventions
+    .map(i => timeToMinutes((i as any).travel_return_arrival_time))
+    .filter((t): t is number => t !== null);
+
+  const returnStartTime = returnStarts.length > 0 ? minutesToHM(Math.max(...returnStarts)) : null;
+  const returnArrivalTime = returnArrivals.length > 0 ? minutesToHM(Math.max(...returnArrivals)) : null;
+  const returnTriggered = returnStarts.length > 0;
+  const returnClosed = returnArrivals.length > 0;
+
+  const returnArrivalOrTrigger = dayInterventions
     .map(i => timeToMinutes((i as any).travel_return_arrival_time) ?? timeToMinutes(i.travel_return_time))
     .filter((t): t is number => t !== null);
-  const returnTimes = returnArrivalTimes;
-  
+
   let dayEnd: number | null = null;
-  if (returnTimes.length > 0) {
-    dayEnd = Math.max(...returnTimes);
+  if (returnArrivalOrTrigger.length > 0) {
+    dayEnd = Math.max(...returnArrivalOrTrigger);
   } else {
     const departureTimes = dayInterventions
       .map(i => timeToMinutes(i.departure_time))
@@ -68,12 +87,18 @@ function getDayWorkInfo(dayInterventions: Intervention[]): { minutes: number; st
     }
   }
 
-  if (dayEnd === null) return { minutes: 0, startTime: minutesToHM(dayStart), endTime: null };
+  if (dayEnd === null) {
+    return { ...empty, startTime: minutesToHM(dayStart), returnStartTime, returnArrivalTime, returnTriggered, returnClosed };
+  }
   const diff = dayEnd - dayStart;
-  return { 
-    minutes: diff > 0 ? diff : 0, 
-    startTime: minutesToHM(dayStart), 
-    endTime: minutesToHM(dayEnd) 
+  return {
+    minutes: diff > 0 ? diff : 0,
+    startTime: minutesToHM(dayStart),
+    endTime: minutesToHM(dayEnd),
+    returnStartTime,
+    returnArrivalTime,
+    returnTriggered,
+    returnClosed,
   };
 }
 
@@ -108,7 +133,7 @@ export function TechnicianStatsDialog({ open, onOpenChange, tech, rank, formatMi
   const mEnd = endOfMonth(referenceDate);
 
   const dailyHours = useMemo(() => {
-    const days: { date: string; label: string; minutes: number; count: number; startTime: string | null; endTime: string | null }[] = [];
+    const days: { date: string; label: string; minutes: number; count: number; startTime: string | null; endTime: string | null; returnStartTime: string | null; returnArrivalTime: string | null; returnTriggered: boolean; returnClosed: boolean; hasInterventions: boolean }[] = [];
     const d = new Date(weekStart);
     while (d <= weekEnd) {
       const dateStr = format(d, "yyyy-MM-dd");
@@ -121,6 +146,11 @@ export function TechnicianStatsDialog({ open, onOpenChange, tech, rank, formatMi
         count: dayInts.length,
         startTime: info.startTime,
         endTime: info.endTime,
+        returnStartTime: info.returnStartTime,
+        returnArrivalTime: info.returnArrivalTime,
+        returnTriggered: info.returnTriggered,
+        returnClosed: info.returnClosed,
+        hasInterventions: dayInts.length > 0,
       });
       d.setDate(d.getDate() + 1);
     }
@@ -260,32 +290,59 @@ export function TechnicianStatsDialog({ open, onOpenChange, tech, rank, formatMi
                     <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>
-                <div className="space-y-2">
-                  {dailyHours.map(day => (
-                    <div key={day.date} className="flex items-center gap-2">
-                      <span className={`text-xs w-14 shrink-0 capitalize ${day.date === todayStr ? 'font-bold text-primary' : 'text-muted-foreground'}`}>
-                        {day.label}
-                      </span>
-                      <span className="text-[10px] text-muted-foreground w-[90px] shrink-0 text-center">
-                        {day.startTime && day.endTime 
-                          ? `${day.startTime} → ${day.endTime}` 
-                          : day.startTime 
-                            ? `${day.startTime} → …` 
-                            : ''}
-                      </span>
-                      <div className="flex-1 h-6 bg-muted/50 rounded-full overflow-hidden">
-                        {day.minutes > 0 && (
-                          <div
-                            className="h-full bg-primary/80 rounded-full transition-all"
-                            style={{ width: `${Math.max((day.minutes / maxDailyMin) * 100, 5)}%` }}
-                          />
+                <div className="space-y-3">
+                  {dailyHours.map(day => {
+                    const returnIssue = day.hasInterventions && day.startTime && day.returnTriggered && !day.returnClosed;
+                    const noReturn = day.hasInterventions && day.startTime && !day.returnTriggered;
+                    return (
+                      <div key={day.date} className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs w-14 shrink-0 capitalize ${day.date === todayStr ? 'font-bold text-primary' : 'text-muted-foreground'}`}>
+                            {day.label}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground w-[90px] shrink-0 text-center">
+                            {day.startTime && day.endTime
+                              ? `${day.startTime} → ${day.endTime}`
+                              : day.startTime
+                                ? `${day.startTime} → …`
+                                : ''}
+                          </span>
+                          <div className="flex-1 h-6 bg-muted/50 rounded-full overflow-hidden">
+                            {day.minutes > 0 && (
+                              <div
+                                className="h-full bg-primary/80 rounded-full transition-all"
+                                style={{ width: `${Math.max((day.minutes / maxDailyMin) * 100, 5)}%` }}
+                              />
+                            )}
+                          </div>
+                          <span className={`text-xs w-14 text-right shrink-0 ${day.date === todayStr ? 'font-bold' : ''}`}>
+                            {day.minutes > 0 ? formatHM(day.minutes) : '—'}
+                          </span>
+                        </div>
+                        {day.hasInterventions && day.startTime && (
+                          <div className="flex items-center gap-2 pl-16">
+                            <Car className="h-3 w-3 text-muted-foreground shrink-0" />
+                            {day.returnTriggered ? (
+                              <span className="text-[10px] text-muted-foreground">
+                                Retour déclenché à <span className="font-medium text-foreground">{day.returnStartTime}</span>
+                                {day.returnClosed ? (
+                                  <> · clôturé à <span className="font-medium text-green-600 dark:text-green-400">{day.returnArrivalTime}</span></>
+                                ) : (
+                                  <span className="ml-1 inline-flex items-center gap-1 text-amber-600 dark:text-amber-400 font-medium">
+                                    <AlertTriangle className="h-3 w-3" /> non clôturé
+                                  </span>
+                                )}
+                              </span>
+                            ) : (
+                              <span className="text-[10px] inline-flex items-center gap-1 text-amber-600 dark:text-amber-400">
+                                <AlertTriangle className="h-3 w-3" /> Aucun retour de trajet enregistré
+                              </span>
+                            )}
+                          </div>
                         )}
                       </div>
-                      <span className={`text-xs w-14 text-right shrink-0 ${day.date === todayStr ? 'font-bold' : ''}`}>
-                        {day.minutes > 0 ? formatHM(day.minutes) : '—'}
-                      </span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 <div className="border-t pt-2 flex items-center justify-between text-sm">
                   <span className="text-muted-foreground font-medium">Total semaine</span>
