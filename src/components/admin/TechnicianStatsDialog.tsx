@@ -290,32 +290,59 @@ export function TechnicianStatsDialog({ open, onOpenChange, tech, rank, formatMi
                     <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>
-                <div className="space-y-2">
-                  {dailyHours.map(day => (
-                    <div key={day.date} className="flex items-center gap-2">
-                      <span className={`text-xs w-14 shrink-0 capitalize ${day.date === todayStr ? 'font-bold text-primary' : 'text-muted-foreground'}`}>
-                        {day.label}
-                      </span>
-                      <span className="text-[10px] text-muted-foreground w-[90px] shrink-0 text-center">
-                        {day.startTime && day.endTime 
-                          ? `${day.startTime} → ${day.endTime}` 
-                          : day.startTime 
-                            ? `${day.startTime} → …` 
-                            : ''}
-                      </span>
-                      <div className="flex-1 h-6 bg-muted/50 rounded-full overflow-hidden">
-                        {day.minutes > 0 && (
-                          <div
-                            className="h-full bg-primary/80 rounded-full transition-all"
-                            style={{ width: `${Math.max((day.minutes / maxDailyMin) * 100, 5)}%` }}
-                          />
+                <div className="space-y-3">
+                  {dailyHours.map(day => {
+                    const returnIssue = day.hasInterventions && day.startTime && day.returnTriggered && !day.returnClosed;
+                    const noReturn = day.hasInterventions && day.startTime && !day.returnTriggered;
+                    return (
+                      <div key={day.date} className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs w-14 shrink-0 capitalize ${day.date === todayStr ? 'font-bold text-primary' : 'text-muted-foreground'}`}>
+                            {day.label}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground w-[90px] shrink-0 text-center">
+                            {day.startTime && day.endTime
+                              ? `${day.startTime} → ${day.endTime}`
+                              : day.startTime
+                                ? `${day.startTime} → …`
+                                : ''}
+                          </span>
+                          <div className="flex-1 h-6 bg-muted/50 rounded-full overflow-hidden">
+                            {day.minutes > 0 && (
+                              <div
+                                className="h-full bg-primary/80 rounded-full transition-all"
+                                style={{ width: `${Math.max((day.minutes / maxDailyMin) * 100, 5)}%` }}
+                              />
+                            )}
+                          </div>
+                          <span className={`text-xs w-14 text-right shrink-0 ${day.date === todayStr ? 'font-bold' : ''}`}>
+                            {day.minutes > 0 ? formatHM(day.minutes) : '—'}
+                          </span>
+                        </div>
+                        {day.hasInterventions && day.startTime && (
+                          <div className="flex items-center gap-2 pl-16">
+                            <Car className="h-3 w-3 text-muted-foreground shrink-0" />
+                            {day.returnTriggered ? (
+                              <span className="text-[10px] text-muted-foreground">
+                                Retour déclenché à <span className="font-medium text-foreground">{day.returnStartTime}</span>
+                                {day.returnClosed ? (
+                                  <> · clôturé à <span className="font-medium text-green-600 dark:text-green-400">{day.returnArrivalTime}</span></>
+                                ) : (
+                                  <span className="ml-1 inline-flex items-center gap-1 text-amber-600 dark:text-amber-400 font-medium">
+                                    <AlertTriangle className="h-3 w-3" /> non clôturé
+                                  </span>
+                                )}
+                              </span>
+                            ) : (
+                              <span className="text-[10px] inline-flex items-center gap-1 text-amber-600 dark:text-amber-400">
+                                <AlertTriangle className="h-3 w-3" /> Aucun retour de trajet enregistré
+                              </span>
+                            )}
+                          </div>
                         )}
                       </div>
-                      <span className={`text-xs w-14 text-right shrink-0 ${day.date === todayStr ? 'font-bold' : ''}`}>
-                        {day.minutes > 0 ? formatHM(day.minutes) : '—'}
-                      </span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 <div className="border-t pt-2 flex items-center justify-between text-sm">
                   <span className="text-muted-foreground font-medium">Total semaine</span>
