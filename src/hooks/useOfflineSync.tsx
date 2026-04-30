@@ -17,6 +17,7 @@ import {
   saveSignatureOffline,
   incrementMutationAttempts,
   deleteMutation,
+  updateLastSyncTime,
   OfflineMutation,
   OfflinePhoto,
   OfflineSignature,
@@ -125,8 +126,12 @@ export function useOfflineSync() {
           break;
         }
         case 'complete_step': {
-          const { interventionId, stepId, comment, photoUrl, loopIndex = 0, checklistData, multipleChoiceData } = mutation.payload;
+          const { interventionId, stepId, comment, photoUrl, loopIndex = 0, checklistData, multipleChoiceData, completedAt } = mutation.payload;
           const { data: { user } } = await supabase.auth.getUser();
+          // Use the timestamp captured when the technician actually completed the step
+          // (offline), not the time of synchronization. Fallback to mutation.createdAt
+          // for older queued items that predate this field.
+          const completedAtIso = completedAt || new Date(mutation.createdAt).toISOString();
 
           const { data: existing } = await supabase
             .from('intervention_step_completions')
@@ -140,7 +145,7 @@ export function useOfflineSync() {
             const { error } = await supabase
               .from('intervention_step_completions')
               .update({
-                completed_at: new Date().toISOString(),
+                completed_at: completedAtIso,
                 completed_by: user?.id || null,
                 comment: comment || null,
                 photo_url: photoUrl || null,
@@ -155,7 +160,7 @@ export function useOfflineSync() {
               .insert({
                 intervention_id: interventionId,
                 step_id: stepId,
-                completed_at: new Date().toISOString(),
+                completed_at: completedAtIso,
                 completed_by: user?.id || null,
                 comment: comment || null,
                 photo_url: photoUrl || null,
@@ -385,6 +390,12 @@ export function useOfflineSync() {
       await queryClient.invalidateQueries({ queryKey: ['intervention'] });
       await queryClient.invalidateQueries({ queryKey: ['intervention-photos'] });
       await queryClient.invalidateQueries({ queryKey: ['step-completions'] });
+
+      // Mark a successful sync run only when at least one item synced and no errors,
+      // OR when there was nothing to do but the network call succeeded.
+      if (errorCount === 0) {
+        await updateLastSyncTime();
+      }
 
       await loadSyncStatus();
 

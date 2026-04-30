@@ -286,11 +286,30 @@ async function updatePendingCount(): Promise<void> {
   const mutations = await getPendingMutations();
   const photos = await getPendingPhotos();
   const signatures = await getPendingSignatures();
-  
+
+  // Preserve the existing lastSync timestamp — it must only be updated by
+  // updateLastSyncTime() after a successful syncAll, never when a mutation
+  // is queued or marked synced individually.
+  const existing = await db.get('syncStatus', 'main');
+
+  await db.put('syncStatus', {
+    key: 'main',
+    lastSync: existing?.lastSync || 0,
+    pendingCount: mutations.length + photos.length + signatures.length,
+  });
+}
+
+/**
+ * Records the timestamp of the last successful synchronization.
+ * Should be called only by syncAll() after a successful run.
+ */
+export async function updateLastSyncTime(): Promise<void> {
+  const db = await getDB();
+  const existing = await db.get('syncStatus', 'main');
   await db.put('syncStatus', {
     key: 'main',
     lastSync: Date.now(),
-    pendingCount: mutations.length + photos.length + signatures.length,
+    pendingCount: existing?.pendingCount || 0,
   });
 }
 

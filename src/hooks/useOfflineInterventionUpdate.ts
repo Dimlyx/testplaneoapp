@@ -5,6 +5,7 @@ import { useOffline } from '@/hooks/useOfflineSync';
 import { saveInterventionOffline } from '@/lib/offline-db';
 import { useToast } from '@/hooks/use-toast';
 import { isReallyOnline } from '@/lib/network-status';
+import { withTimeout, isTimeoutError } from '@/lib/supabase-with-timeout';
 import type { Intervention, UpdateInterventionData } from '@/hooks/useInterventions';
 
 /**
@@ -55,12 +56,15 @@ export function useOfflineInterventionUpdate() {
         return;
       }
 
-      // 4. Online: fire-and-forget Supabase push in background
-      Promise.resolve(
-        supabase
-          .from('interventions')
-          .update(data)
-          .eq('id', id)
+      // 4. Online: fire-and-forget Supabase push in background, with hard timeout
+      withTimeout(
+        Promise.resolve(
+          supabase
+            .from('interventions')
+            .update(data)
+            .eq('id', id)
+        ),
+        8000,
       )
         .then(({ error }) => {
           if (error) throw error;
@@ -68,7 +72,11 @@ export function useOfflineInterventionUpdate() {
           queryClient.invalidateQueries({ queryKey: ['technician-interventions'] });
         })
         .catch((err: any) => {
-          console.warn('Background sync failed, queuing offline:', err?.message);
+          if (isTimeoutError(err)) {
+            console.warn('Background sync timed out, queuing offline');
+          } else {
+            console.warn('Background sync failed, queuing offline:', err?.message);
+          }
           queueInterventionUpdate(id, data).catch(() => {});
         });
     },

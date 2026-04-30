@@ -114,7 +114,7 @@ export function useCompleteStep() {
       if (!isReallyOnline()) {
         await addMutation({
           type: 'complete_step',
-          payload: { interventionId, stepId, comment, photoUrl, loopIndex, checklistData, multipleChoiceData },
+          payload: { interventionId, stepId, comment, photoUrl, loopIndex, checklistData, multipleChoiceData, completedAt: now },
         });
         return;
       }
@@ -182,7 +182,7 @@ export function useCompleteStep() {
         console.warn("Step completion background sync failed, queuing:", err?.message);
         await addMutation({
           type: 'complete_step',
-          payload: { interventionId, stepId, comment, photoUrl, loopIndex, checklistData, multipleChoiceData },
+          payload: { interventionId, stepId, comment, photoUrl, loopIndex, checklistData, multipleChoiceData, completedAt: now },
         }).catch(() => {});
       });
     },
