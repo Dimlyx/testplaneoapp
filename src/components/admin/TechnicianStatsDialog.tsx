@@ -99,6 +99,8 @@ function getDayWorkInfo(dayInterventions: Intervention[]): {
   }
   let diff = dayEnd - dayStart;
   if (diff < 0) diff += 24 * 60; // franchissement de minuit (retour clôturé le lendemain)
+  return {
+    minutes: diff > 0 ? diff : 0,
     startTime: minutesToHM(dayStart),
     endTime: minutesToHM(dayEnd),
     returnStartTime,
