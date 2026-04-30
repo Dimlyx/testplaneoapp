@@ -5,6 +5,7 @@ import { useOffline } from '@/hooks/useOfflineSync';
 import { saveInterventionOffline } from '@/lib/offline-db';
 import { useToast } from '@/hooks/use-toast';
 import { isReallyOnline } from '@/lib/network-status';
+import { withTimeout, isTimeoutError } from '@/lib/supabase-with-timeout';
 import type { Intervention, UpdateInterventionData } from '@/hooks/useInterventions';
 
 /**
