@@ -17,6 +17,7 @@ import {
   saveSignatureOffline,
   incrementMutationAttempts,
   deleteMutation,
+  updateLastSyncTime,
   OfflineMutation,
   OfflinePhoto,
   OfflineSignature,
