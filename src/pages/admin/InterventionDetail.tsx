@@ -457,22 +457,31 @@ const InterventionDetail = () => {
                     </p>
                   </div>
                 </div>
-                {intervention.travel_return_time && (intervention as any).travel_return_arrival_time && (
-                  <div className="mt-3 pt-3 border-t border-orange-200 dark:border-orange-800 flex items-center justify-between">
-                    <p className="text-xs text-orange-600 dark:text-orange-400">Durée du retour</p>
-                    <p className="font-bold text-orange-900 dark:text-orange-100 text-lg">
-                      {(() => {
-                        const [rh, rm] = intervention.travel_return_time!.split(':').map(Number);
-                        const [ah, am] = (intervention as any).travel_return_arrival_time.split(':').map(Number);
-                        let diffMin = (ah * 60 + am) - (rh * 60 + rm);
-                        if (diffMin < 0) diffMin += 24 * 60; // franchissement de minuit
-                        const h = Math.floor(diffMin / 60);
-                        const m = diffMin % 60;
-                        return h > 0 ? `${h}h ${m}min` : `${m}min`;
-                      })()}
-                    </p>
-                  </div>
-                )}
+                {intervention.travel_return_time && (intervention as any).travel_return_arrival_time && (() => {
+                  const [rh, rm] = intervention.travel_return_time!.split(':').map(Number);
+                  const [ah, am] = (intervention as any).travel_return_arrival_time.split(':').map(Number);
+                  let diffMin = (ah * 60 + am) - (rh * 60 + rm);
+                  if (diffMin < 0) diffMin += 24 * 60; // franchissement de minuit
+                  const h = Math.floor(diffMin / 60);
+                  const m = diffMin % 60;
+                  const label = h > 0 ? `${h}h ${m}min` : `${m}min`;
+                  const suspicious = diffMin > 12 * 60; // >12h = probable oubli de clôture
+                  return (
+                    <div className="mt-3 pt-3 border-t border-orange-200 dark:border-orange-800 flex items-center justify-between">
+                      <p className="text-xs text-orange-600 dark:text-orange-400 flex items-center gap-1">
+                        Durée du retour
+                        {suspicious && (
+                          <span title="Durée anormalement longue, probablement un oubli de clôture. Corrigez les temps." className="inline-flex">
+                            <AlertTriangle className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />
+                          </span>
+                        )}
+                      </p>
+                      <p className={`font-bold text-lg ${suspicious ? 'text-red-700 dark:text-red-300' : 'text-orange-900 dark:text-orange-100'}`}>
+                        {label}
+                      </p>
+                    </div>
+                  );
+                })()}
               </div>
             )}
 
