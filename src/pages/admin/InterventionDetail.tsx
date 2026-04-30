@@ -437,28 +437,82 @@ const InterventionDetail = () => {
               </div>
             )}
 
-            {/* Résumé total */}
-            {intervention.travel_departure_time && intervention.departure_time && (
-              <div className="p-3 bg-purple-50 dark:bg-purple-950 rounded-lg">
-                <p className="text-sm font-medium text-purple-800 dark:text-purple-200 mb-2">📊 Récapitulatif total</p>
-                <div className="flex items-center justify-between">
-                  <p className="text-purple-600 dark:text-purple-400 text-sm">
-                    {intervention.travel_departure_time.substring(0, 5)} → {intervention.departure_time.substring(0, 5)}
-                  </p>
-                  <p className="font-bold text-purple-900 dark:text-purple-100 text-xl">
-                    {(() => {
-                      const [dh, dm] = intervention.travel_departure_time!.split(':').map(Number);
-                      const [eh, em] = intervention.departure_time.split(':').map(Number);
-                      const diffMin = (eh * 60 + em) - (dh * 60 + dm);
-                      if (diffMin < 0) return "—";
-                      const h = Math.floor(diffMin / 60);
-                      const m = diffMin % 60;
-                      return h > 0 ? `${h}h ${m}min` : `${m}min`;
-                    })()}
-                  </p>
+            {/* Retour de trajet */}
+            {(intervention.travel_return_time || (intervention as any).travel_return_arrival_time) && (
+              <div className="p-3 bg-orange-50 dark:bg-orange-950 rounded-lg">
+                <p className="text-sm font-medium text-orange-800 dark:text-orange-200 mb-2">🏠 Retour de trajet</p>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-orange-600 dark:text-orange-400">Départ client</p>
+                    <p className="font-bold text-orange-900 dark:text-orange-100 text-lg">
+                      {intervention.travel_return_time ? intervention.travel_return_time.substring(0, 5) : "—"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-orange-600 dark:text-orange-400">Arrivée domicile</p>
+                    <p className="font-bold text-orange-900 dark:text-orange-100 text-lg">
+                      {(intervention as any).travel_return_arrival_time
+                        ? (intervention as any).travel_return_arrival_time.substring(0, 5)
+                        : <span className="text-amber-600 dark:text-amber-400">Non clôturé</span>}
+                    </p>
+                  </div>
                 </div>
+                {intervention.travel_return_time && (intervention as any).travel_return_arrival_time && (
+                  <div className="mt-3 pt-3 border-t border-orange-200 dark:border-orange-800 flex items-center justify-between">
+                    <p className="text-xs text-orange-600 dark:text-orange-400">Durée du retour</p>
+                    <p className="font-bold text-orange-900 dark:text-orange-100 text-lg">
+                      {(() => {
+                        const [rh, rm] = intervention.travel_return_time!.split(':').map(Number);
+                        const [ah, am] = (intervention as any).travel_return_arrival_time.split(':').map(Number);
+                        const diffMin = (ah * 60 + am) - (rh * 60 + rm);
+                        if (diffMin < 0) return "—";
+                        const h = Math.floor(diffMin / 60);
+                        const m = diffMin % 60;
+                        return h > 0 ? `${h}h ${m}min` : `${m}min`;
+                      })()}
+                    </p>
+                  </div>
+                )}
               </div>
             )}
+
+            {/* Résumé total */}
+            {intervention.travel_departure_time && (intervention.departure_time || intervention.travel_return_time) && (() => {
+              const endTime = (intervention as any).travel_return_arrival_time
+                || intervention.travel_return_time
+                || intervention.departure_time;
+              const endLabel = (intervention as any).travel_return_arrival_time
+                ? "retour domicile"
+                : intervention.travel_return_time
+                  ? "départ retour"
+                  : "fin intervention";
+              return (
+                <div className="p-3 bg-purple-50 dark:bg-purple-950 rounded-lg">
+                  <p className="text-sm font-medium text-purple-800 dark:text-purple-200 mb-2">📊 Récapitulatif total</p>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-purple-600 dark:text-purple-400 text-sm">
+                        {intervention.travel_departure_time.substring(0, 5)} → {endTime.substring(0, 5)}
+                      </p>
+                      <p className="text-[10px] text-purple-500 dark:text-purple-400/80 mt-0.5">
+                        Départ domicile → {endLabel}
+                      </p>
+                    </div>
+                    <p className="font-bold text-purple-900 dark:text-purple-100 text-xl shrink-0">
+                      {(() => {
+                        const [dh, dm] = intervention.travel_departure_time!.split(':').map(Number);
+                        const [eh, em] = endTime.split(':').map(Number);
+                        const diffMin = (eh * 60 + em) - (dh * 60 + dm);
+                        if (diffMin < 0) return "—";
+                        const h = Math.floor(diffMin / 60);
+                        const m = diffMin % 60;
+                        return h > 0 ? `${h}h ${m}min` : `${m}min`;
+                      })()}
+                    </p>
+                  </div>
+                </div>
+              );
+            })()}
 
             {!intervention.travel_departure_time && !intervention.arrival_time && (
               <div className="text-center py-6 text-muted-foreground">
