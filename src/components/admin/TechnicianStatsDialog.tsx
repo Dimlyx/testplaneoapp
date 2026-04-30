@@ -146,6 +146,11 @@ export function TechnicianStatsDialog({ open, onOpenChange, tech, rank, formatMi
         count: dayInts.length,
         startTime: info.startTime,
         endTime: info.endTime,
+        returnStartTime: info.returnStartTime,
+        returnArrivalTime: info.returnArrivalTime,
+        returnTriggered: info.returnTriggered,
+        returnClosed: info.returnClosed,
+        hasInterventions: dayInts.length > 0,
       });
       d.setDate(d.getDate() + 1);
     }
