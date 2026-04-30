@@ -464,8 +464,8 @@ const InterventionDetail = () => {
                       {(() => {
                         const [rh, rm] = intervention.travel_return_time!.split(':').map(Number);
                         const [ah, am] = (intervention as any).travel_return_arrival_time.split(':').map(Number);
-                        const diffMin = (ah * 60 + am) - (rh * 60 + rm);
-                        if (diffMin < 0) return "—";
+                        let diffMin = (ah * 60 + am) - (rh * 60 + rm);
+                        if (diffMin < 0) diffMin += 24 * 60; // franchissement de minuit
                         const h = Math.floor(diffMin / 60);
                         const m = diffMin % 60;
                         return h > 0 ? `${h}h ${m}min` : `${m}min`;
@@ -502,8 +502,8 @@ const InterventionDetail = () => {
                       {(() => {
                         const [dh, dm] = intervention.travel_departure_time!.split(':').map(Number);
                         const [eh, em] = endTime.split(':').map(Number);
-                        const diffMin = (eh * 60 + em) - (dh * 60 + dm);
-                        if (diffMin < 0) return "—";
+                        let diffMin = (eh * 60 + em) - (dh * 60 + dm);
+                        if (diffMin < 0) diffMin += 24 * 60; // franchissement de minuit
                         const h = Math.floor(diffMin / 60);
                         const m = diffMin % 60;
                         return h > 0 ? `${h}h ${m}min` : `${m}min`;
