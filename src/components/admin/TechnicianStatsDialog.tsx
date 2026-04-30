@@ -97,9 +97,8 @@ function getDayWorkInfo(dayInterventions: Intervention[]): {
   if (dayEnd === null) {
     return { ...empty, startTime: minutesToHM(dayStart), returnStartTime, returnArrivalTime, returnTriggered, returnClosed };
   }
-  const diff = dayEnd - dayStart;
-  return {
-    minutes: diff > 0 ? diff : 0,
+  let diff = dayEnd - dayStart;
+  if (diff < 0) diff += 24 * 60; // franchissement de minuit (retour clôturé le lendemain)
     startTime: minutesToHM(dayStart),
     endTime: minutesToHM(dayEnd),
     returnStartTime,
