@@ -333,9 +333,24 @@ export function TechnicianStatsDialog({ open, onOpenChange, tech, rank, formatMi
                             {day.returnTriggered ? (
                               <span className="text-[10px] text-muted-foreground">
                                 Retour déclenché à <span className="font-medium text-foreground">{day.returnStartTime}</span>
-                                {day.returnClosed ? (
-                                  <> · clôturé à <span className="font-medium text-green-600 dark:text-green-400">{day.returnArrivalTime}</span></>
-                                ) : (
+                                {day.returnClosed ? (() => {
+                                  // Détection durée anormale (>12h = oubli probable)
+                                  const [rh, rm] = day.returnStartTime!.split(':').map(Number);
+                                  const [ah, am] = day.returnArrivalTime!.split(':').map(Number);
+                                  let diff = (ah * 60 + am) - (rh * 60 + rm);
+                                  if (diff < 0) diff += 24 * 60;
+                                  const suspicious = diff > 12 * 60;
+                                  return (
+                                    <>
+                                      {' '}· clôturé à <span className={`font-medium ${suspicious ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>{day.returnArrivalTime}</span>
+                                      {suspicious && (
+                                        <span title="Durée de retour anormalement longue, probable oubli de clôture. Corrigez les temps sur l'intervention." className="ml-1 inline-flex items-center text-red-600 dark:text-red-400">
+                                          <AlertTriangle className="h-3 w-3" />
+                                        </span>
+                                      )}
+                                    </>
+                                  );
+                                })() : (
                                   <span className="ml-1 inline-flex items-center gap-1 text-amber-600 dark:text-amber-400 font-medium">
                                     <AlertTriangle className="h-3 w-3" /> non clôturé
                                   </span>
