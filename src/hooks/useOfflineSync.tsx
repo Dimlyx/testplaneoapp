@@ -391,6 +391,12 @@ export function useOfflineSync() {
       await queryClient.invalidateQueries({ queryKey: ['intervention-photos'] });
       await queryClient.invalidateQueries({ queryKey: ['step-completions'] });
 
+      // Mark a successful sync run only when at least one item synced and no errors,
+      // OR when there was nothing to do but the network call succeeded.
+      if (errorCount === 0) {
+        await updateLastSyncTime();
+      }
+
       await loadSyncStatus();
 
       if (successCount > 0) {
