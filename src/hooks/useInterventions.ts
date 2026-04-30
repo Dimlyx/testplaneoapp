@@ -108,6 +108,7 @@ export interface UpdateInterventionData {
   departure_time?: string | null;
   travel_departure_time?: string | null;
   travel_return_time?: string | null;
+  travel_return_arrival_time?: string | null;
   observations?: string;
   client_signature_name?: string;
   client_signature_url?: string;
