@@ -41,24 +41,43 @@ function timeToMinutes(time: string | null): number | null {
  * Uses travel_departure_time of the first intervention as start.
  * Uses travel_return_time if available, otherwise departure_time of the last intervention as end.
  */
-function getDayWorkInfo(dayInterventions: Intervention[]): { minutes: number; startTime: string | null; endTime: string | null } {
-  if (dayInterventions.length === 0) return { minutes: 0, startTime: null, endTime: null };
+function getDayWorkInfo(dayInterventions: Intervention[]): {
+  minutes: number;
+  startTime: string | null;
+  endTime: string | null;
+  returnStartTime: string | null;
+  returnArrivalTime: string | null;
+  returnTriggered: boolean;
+  returnClosed: boolean;
+} {
+  const empty = { minutes: 0, startTime: null, endTime: null, returnStartTime: null, returnArrivalTime: null, returnTriggered: false, returnClosed: false };
+  if (dayInterventions.length === 0) return empty;
 
   const starts = dayInterventions
     .map(i => timeToMinutes(i.travel_departure_time))
     .filter((t): t is number => t !== null);
-  if (starts.length === 0) return { minutes: 0, startTime: null, endTime: null };
+  if (starts.length === 0) return empty;
   const dayStart = Math.min(...starts);
 
-  // Prefer travel_return_arrival_time (actual arrival back), then travel_return_time, then departure_time
-  const returnArrivalTimes = dayInterventions
+  const returnStarts = dayInterventions
+    .map(i => timeToMinutes(i.travel_return_time))
+    .filter((t): t is number => t !== null);
+  const returnArrivals = dayInterventions
+    .map(i => timeToMinutes((i as any).travel_return_arrival_time))
+    .filter((t): t is number => t !== null);
+
+  const returnStartTime = returnStarts.length > 0 ? minutesToHM(Math.max(...returnStarts)) : null;
+  const returnArrivalTime = returnArrivals.length > 0 ? minutesToHM(Math.max(...returnArrivals)) : null;
+  const returnTriggered = returnStarts.length > 0;
+  const returnClosed = returnArrivals.length > 0;
+
+  const returnArrivalOrTrigger = dayInterventions
     .map(i => timeToMinutes((i as any).travel_return_arrival_time) ?? timeToMinutes(i.travel_return_time))
     .filter((t): t is number => t !== null);
-  const returnTimes = returnArrivalTimes;
-  
+
   let dayEnd: number | null = null;
-  if (returnTimes.length > 0) {
-    dayEnd = Math.max(...returnTimes);
+  if (returnArrivalOrTrigger.length > 0) {
+    dayEnd = Math.max(...returnArrivalOrTrigger);
   } else {
     const departureTimes = dayInterventions
       .map(i => timeToMinutes(i.departure_time))
@@ -68,12 +87,18 @@ function getDayWorkInfo(dayInterventions: Intervention[]): { minutes: number; st
     }
   }
 
-  if (dayEnd === null) return { minutes: 0, startTime: minutesToHM(dayStart), endTime: null };
+  if (dayEnd === null) {
+    return { ...empty, startTime: minutesToHM(dayStart), returnStartTime, returnArrivalTime, returnTriggered, returnClosed };
+  }
   const diff = dayEnd - dayStart;
-  return { 
-    minutes: diff > 0 ? diff : 0, 
-    startTime: minutesToHM(dayStart), 
-    endTime: minutesToHM(dayEnd) 
+  return {
+    minutes: diff > 0 ? diff : 0,
+    startTime: minutesToHM(dayStart),
+    endTime: minutesToHM(dayEnd),
+    returnStartTime,
+    returnArrivalTime,
+    returnTriggered,
+    returnClosed,
   };
 }
 
