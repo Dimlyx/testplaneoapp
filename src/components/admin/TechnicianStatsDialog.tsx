@@ -133,7 +133,7 @@ export function TechnicianStatsDialog({ open, onOpenChange, tech, rank, formatMi
   const mEnd = endOfMonth(referenceDate);
 
   const dailyHours = useMemo(() => {
-    const days: { date: string; label: string; minutes: number; count: number; startTime: string | null; endTime: string | null }[] = [];
+    const days: { date: string; label: string; minutes: number; count: number; startTime: string | null; endTime: string | null; returnStartTime: string | null; returnArrivalTime: string | null; returnTriggered: boolean; returnClosed: boolean; hasInterventions: boolean }[] = [];
     const d = new Date(weekStart);
     while (d <= weekEnd) {
       const dateStr = format(d, "yyyy-MM-dd");
