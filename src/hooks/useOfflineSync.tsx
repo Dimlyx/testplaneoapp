@@ -125,8 +125,12 @@ export function useOfflineSync() {
           break;
         }
         case 'complete_step': {
-          const { interventionId, stepId, comment, photoUrl, loopIndex = 0, checklistData, multipleChoiceData } = mutation.payload;
+          const { interventionId, stepId, comment, photoUrl, loopIndex = 0, checklistData, multipleChoiceData, completedAt } = mutation.payload;
           const { data: { user } } = await supabase.auth.getUser();
+          // Use the timestamp captured when the technician actually completed the step
+          // (offline), not the time of synchronization. Fallback to mutation.createdAt
+          // for older queued items that predate this field.
+          const completedAtIso = completedAt || new Date(mutation.createdAt).toISOString();
 
           const { data: existing } = await supabase
             .from('intervention_step_completions')
@@ -140,7 +144,7 @@ export function useOfflineSync() {
             const { error } = await supabase
               .from('intervention_step_completions')
               .update({
-                completed_at: new Date().toISOString(),
+                completed_at: completedAtIso,
                 completed_by: user?.id || null,
                 comment: comment || null,
                 photo_url: photoUrl || null,
@@ -155,7 +159,7 @@ export function useOfflineSync() {
               .insert({
                 intervention_id: interventionId,
                 step_id: stepId,
-                completed_at: new Date().toISOString(),
+                completed_at: completedAtIso,
                 completed_by: user?.id || null,
                 comment: comment || null,
                 photo_url: photoUrl || null,
