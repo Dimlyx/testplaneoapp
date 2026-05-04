@@ -10,6 +10,7 @@ import { Intervention, useUpdateIntervention } from '@/hooks/useInterventions';
 import { useInterventionTypes } from '@/hooks/useInterventionTypes';
 import { useCustomStatuses } from '@/hooks/useCustomStatuses';
 import { Technician } from '@/hooks/useTechnicians';
+import { useTeams } from '@/hooks/useTeams';
 import { cn } from '@/lib/utils';
 import {
   Tooltip,
@@ -53,6 +54,17 @@ export function WeeklyPlanningCalendar({
   const updateIntervention = useUpdateIntervention();
   const { data: interventionTypesData = [] } = useInterventionTypes();
   const { data: customStatuses = [] } = useCustomStatuses();
+  const { data: teams = [] } = useTeams();
+
+  // Map team_id -> [user_id, ...] of all members (including leader)
+  const teamMembersMap = useMemo(() => {
+    const map = new Map<string, string[]>();
+    teams.forEach(team => {
+      const memberIds = new Set<string>([team.leader_id, ...team.members.map(m => m.user_id)]);
+      map.set(team.id, Array.from(memberIds));
+    });
+    return map;
+  }, [teams]);
 
   const getTypeColor = (typeName: string) => {
     const found = interventionTypesData.find(t => t.name === typeName);
@@ -96,19 +108,34 @@ export function WeeklyPlanningCalendar({
     
     interventions.forEach(intervention => {
       if (!intervention.scheduled_date) return;
-      
-      const techId = intervention.technician_id || 'unassigned';
+
       const dateKey = intervention.scheduled_date;
-      
-      if (!map.has(techId)) {
-        map.set(techId, new Map());
+
+      // Determine which technician rows this intervention should appear on.
+      // If the intervention is assigned to a team, show it on every team member's row.
+      // Otherwise fall back to the assigned technician (or 'unassigned').
+      let techIds: string[] = [];
+      if (intervention.team_id && teamMembersMap.has(intervention.team_id)) {
+        techIds = teamMembersMap.get(intervention.team_id)!;
+        // Also ensure the explicitly assigned technician is included if not already a member
+        if (intervention.technician_id && !techIds.includes(intervention.technician_id)) {
+          techIds.push(intervention.technician_id);
+        }
+      } else {
+        techIds = [intervention.technician_id || 'unassigned'];
       }
-      const techMap = map.get(techId)!;
-      
-      if (!techMap.has(dateKey)) {
-        techMap.set(dateKey, []);
-      }
-      techMap.get(dateKey)!.push(intervention);
+
+      techIds.forEach(techId => {
+        if (!map.has(techId)) {
+          map.set(techId, new Map());
+        }
+        const techMap = map.get(techId)!;
+
+        if (!techMap.has(dateKey)) {
+          techMap.set(dateKey, []);
+        }
+        techMap.get(dateKey)!.push(intervention);
+      });
     });
     
     // Sort interventions by time within each day
@@ -123,7 +150,7 @@ export function WeeklyPlanningCalendar({
     });
     
     return map;
-  }, [interventions]);
+  }, [interventions, teamMembersMap]);
 
   const goToPreviousWeek = () => setCurrentWeek(subWeeks(currentWeek, 1));
   const goToNextWeek = () => setCurrentWeek(addWeeks(currentWeek, 1));
