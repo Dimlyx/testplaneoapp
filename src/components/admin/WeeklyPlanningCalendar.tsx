@@ -10,6 +10,7 @@ import { Intervention, useUpdateIntervention } from '@/hooks/useInterventions';
 import { useInterventionTypes } from '@/hooks/useInterventionTypes';
 import { useCustomStatuses } from '@/hooks/useCustomStatuses';
 import { Technician } from '@/hooks/useTechnicians';
+import { useTeams } from '@/hooks/useTeams';
 import { cn } from '@/lib/utils';
 import {
   Tooltip,
