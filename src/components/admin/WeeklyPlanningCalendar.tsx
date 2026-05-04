@@ -54,6 +54,17 @@ export function WeeklyPlanningCalendar({
   const updateIntervention = useUpdateIntervention();
   const { data: interventionTypesData = [] } = useInterventionTypes();
   const { data: customStatuses = [] } = useCustomStatuses();
+  const { data: teams = [] } = useTeams();
+
+  // Map team_id -> [user_id, ...] of all members (including leader)
+  const teamMembersMap = useMemo(() => {
+    const map = new Map<string, string[]>();
+    teams.forEach(team => {
+      const memberIds = new Set<string>([team.leader_id, ...team.members.map(m => m.user_id)]);
+      map.set(team.id, Array.from(memberIds));
+    });
+    return map;
+  }, [teams]);
 
   const getTypeColor = (typeName: string) => {
     const found = interventionTypesData.find(t => t.name === typeName);
