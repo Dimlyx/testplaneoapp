@@ -150,7 +150,7 @@ export function WeeklyPlanningCalendar({
     });
     
     return map;
-  }, [interventions]);
+  }, [interventions, teamMembersMap]);
 
   const goToPreviousWeek = () => setCurrentWeek(subWeeks(currentWeek, 1));
   const goToNextWeek = () => setCurrentWeek(addWeeks(currentWeek, 1));
