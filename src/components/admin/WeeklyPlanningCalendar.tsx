@@ -108,19 +108,34 @@ export function WeeklyPlanningCalendar({
     
     interventions.forEach(intervention => {
       if (!intervention.scheduled_date) return;
-      
-      const techId = intervention.technician_id || 'unassigned';
+
       const dateKey = intervention.scheduled_date;
-      
-      if (!map.has(techId)) {
-        map.set(techId, new Map());
+
+      // Determine which technician rows this intervention should appear on.
+      // If the intervention is assigned to a team, show it on every team member's row.
+      // Otherwise fall back to the assigned technician (or 'unassigned').
+      let techIds: string[] = [];
+      if (intervention.team_id && teamMembersMap.has(intervention.team_id)) {
+        techIds = teamMembersMap.get(intervention.team_id)!;
+        // Also ensure the explicitly assigned technician is included if not already a member
+        if (intervention.technician_id && !techIds.includes(intervention.technician_id)) {
+          techIds.push(intervention.technician_id);
+        }
+      } else {
+        techIds = [intervention.technician_id || 'unassigned'];
       }
-      const techMap = map.get(techId)!;
-      
-      if (!techMap.has(dateKey)) {
-        techMap.set(dateKey, []);
-      }
-      techMap.get(dateKey)!.push(intervention);
+
+      techIds.forEach(techId => {
+        if (!map.has(techId)) {
+          map.set(techId, new Map());
+        }
+        const techMap = map.get(techId)!;
+
+        if (!techMap.has(dateKey)) {
+          techMap.set(dateKey, []);
+        }
+        techMap.get(dateKey)!.push(intervention);
+      });
     });
     
     // Sort interventions by time within each day
