@@ -50,6 +50,7 @@ const interventionSchema = z.object({
   status: z.enum(["to_plan", "planned", "in_progress", "completed", "to_invoice", "archived", "cancelled"]),
   custom_status_id: z.string().optional().nullable(),
   scheduled_date: z.string().optional(),
+  scheduled_end_date: z.string().optional(),
   scheduled_time: z.string().optional(),
   scheduled_end_time: z.string().optional(),
   report: z.string().optional(),
