@@ -44,12 +44,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setTimeout(() => {
             fetchUserRole(session.user.id);
           }, 0);
-          // Register with OneSignal via Median JS Bridge
-          registerOneSignal(session.user.id);
         } else {
           setRole(null);
-          // Unregister from OneSignal via Median JS Bridge
-          unregisterOneSignal();
         }
         setLoading(false);
 
@@ -66,11 +62,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
 
     // Safety net: if offline at boot, never let the app stay on the loading
-    // spinner waiting for getSession() to resolve. Median WebView can stall
-    // network calls indefinitely on a dead connection, leaving a white screen.
-    // We release `loading` after a short delay so the UI (including offline
-    // pages backed by IndexedDB) can render. The auth listener above will
-    // still update state if/when Supabase eventually responds.
+    // spinner waiting for getSession() to resolve. A stalled network call on a
+    // dead connection can leave a white screen. We release `loading` after a
+    // short delay so the UI (including offline pages backed by IndexedDB) can
+    // render. The auth listener above will still update state if/when Supabase
+    // eventually responds.
     const offlineAtBoot = typeof navigator !== 'undefined' && navigator.onLine === false;
     const bootTimeoutMs = offlineAtBoot ? 800 : 6000;
     const bootTimeout = window.setTimeout(() => {
@@ -99,7 +95,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       if (session?.user) {
         fetchUserRole(session.user.id);
-        registerOneSignal(session.user.id);
       }
       setLoading(false);
     }).catch(() => {
