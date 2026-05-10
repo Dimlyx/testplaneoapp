@@ -183,6 +183,7 @@ const InterventionForm = () => {
         technician_id: finalTechnicianId,
         team_id: finalTeamId,
         scheduled_date: values.scheduled_date || null,
+        scheduled_end_date: values.scheduled_end_date || null,
         scheduled_time: values.scheduled_time || null,
         scheduled_end_time: values.scheduled_end_time || null,
         estimated_duration: (values.scheduled_time && values.scheduled_end_time) 
