@@ -866,6 +866,7 @@ export type Database = {
           public_token: string | null
           report: string | null
           scheduled_date: string | null
+          scheduled_end_date: string | null
           scheduled_end_time: string | null
           scheduled_time: string | null
           status: Database["public"]["Enums"]["intervention_status"]
@@ -910,6 +911,7 @@ export type Database = {
           public_token?: string | null
           report?: string | null
           scheduled_date?: string | null
+          scheduled_end_date?: string | null
           scheduled_end_time?: string | null
           scheduled_time?: string | null
           status?: Database["public"]["Enums"]["intervention_status"]
@@ -954,6 +956,7 @@ export type Database = {
           public_token?: string | null
           report?: string | null
           scheduled_date?: string | null
+          scheduled_end_date?: string | null
           scheduled_end_time?: string | null
           scheduled_time?: string | null
           status?: Database["public"]["Enums"]["intervention_status"]

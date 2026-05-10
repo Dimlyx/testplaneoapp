@@ -50,6 +50,7 @@ const interventionSchema = z.object({
   status: z.enum(["to_plan", "planned", "in_progress", "completed", "to_invoice", "archived", "cancelled"]),
   custom_status_id: z.string().optional().nullable(),
   scheduled_date: z.string().optional(),
+  scheduled_end_date: z.string().optional(),
   scheduled_time: z.string().optional(),
   scheduled_end_time: z.string().optional(),
   report: z.string().optional(),
@@ -101,6 +102,7 @@ const InterventionForm = () => {
       status: "to_plan",
       custom_status_id: null,
       scheduled_date: "",
+      scheduled_end_date: "",
       scheduled_time: "",
       scheduled_end_time: "",
       report: "",
@@ -127,6 +129,7 @@ const InterventionForm = () => {
         status: intervention.status,
         custom_status_id: intervention.custom_status_id || null,
         scheduled_date: intervention.scheduled_date || "",
+        scheduled_end_date: (intervention as any).scheduled_end_date || "",
         scheduled_time: intervention.scheduled_time || "",
         scheduled_end_time: intervention.scheduled_end_time || "",
         report: intervention.report || "",
@@ -180,6 +183,7 @@ const InterventionForm = () => {
         technician_id: finalTechnicianId,
         team_id: finalTeamId,
         scheduled_date: values.scheduled_date || null,
+        scheduled_end_date: values.scheduled_end_date || null,
         scheduled_time: values.scheduled_time || null,
         scheduled_end_time: values.scheduled_end_time || null,
         estimated_duration: (values.scheduled_time && values.scheduled_end_time) 
@@ -528,6 +532,24 @@ const InterventionForm = () => {
                         <FormLabel>Date prévue</FormLabel>
                         <FormControl>
                           <Input type="date" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="scheduled_end_date"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Date de fin</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="date"
+                            {...field}
+                            min={form.watch('scheduled_date') || undefined}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

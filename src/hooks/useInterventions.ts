@@ -44,6 +44,7 @@ export interface Intervention {
   custom_status_id: string | null;
   estimated_duration: number | null;
   scheduled_end_time: string | null;
+  scheduled_end_date: string | null;
   team_id: string | null;
   cancellation_reason: string | null;
   cancellation_details: string | null;
@@ -84,6 +85,7 @@ export interface CreateInterventionData {
   intervention_email?: string | null;
   estimated_duration?: number | null;
   scheduled_end_time?: string | null;
+  scheduled_end_date?: string | null;
   organization_id?: string | null;
   equipment_id?: string | null;
   intervention_building?: string | null;
@@ -120,6 +122,7 @@ export interface UpdateInterventionData {
   intervention_contact_name?: string | null;
   estimated_duration?: number | null;
   scheduled_end_time?: string | null;
+  scheduled_end_date?: string | null;
   is_paused?: boolean;
   cancellation_reason?: string | null;
   cancellation_details?: string | null;
