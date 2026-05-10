@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { initOneSignal, loginOneSignal, logoutOneSignal, promptNotificationPermission } from '@/lib/onesignal';
 
 type AppRole = 'admin' | 'technician' | 'super_admin' | null;
 
@@ -30,7 +31,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .maybeSingle();
     
     if (data) {
-      setRole(data.role as AppRole);
+      const r = data.role as AppRole;
+      setRole(r);
+      // Bind the OneSignal external_id and prompt for permission only for technicians.
+      if (r === 'technician') {
+        loginOneSignal(userId);
+        // Defer slightly so the UI is mounted before the native prompt appears.
+        setTimeout(() => { promptNotificationPermission(); }, 1500);
+      }
     }
   };
 
@@ -131,6 +139,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    await logoutOneSignal();
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);

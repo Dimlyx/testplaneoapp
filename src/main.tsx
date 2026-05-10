@@ -1,6 +1,13 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+import { initOneSignal } from "./lib/onesignal";
+
+// Initialize OneSignal Web SDK (PWA push). Safely no-ops in iframes,
+// Lovable preview hosts, and offline boots.
+if (navigator.onLine) {
+  initOneSignal();
+}
 
 // Suppress the browser's PWA install banner on desktop only
 window.addEventListener('beforeinstallprompt', (e) => {
