@@ -39,7 +39,6 @@ export const initOneSignal = async (): Promise<void> => {
     serviceWorkerPath: "push/onesignal/OneSignalSDKWorker.js",
     serviceWorkerParam: { scope: "/push/onesignal/" },
     allowLocalhostAsSecureOrigin: true,
-    notifyButton: { enable: false },
     // We trigger the prompt manually after technician login.
     autoResubscribe: true,
   })

@@ -56,6 +56,9 @@ export default defineConfig(({ mode }) => ({
       workbox: {
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // 3 MB
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+        // Do not let the Workbox SW intercept OneSignal's worker scope.
+        globIgnores: ["**/push/onesignal/**"],
+        navigateFallbackDenylist: [/^\/push\/onesignal\//],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/gwqjwclvrihumhqzoikv\.supabase\.co\/rest\/v1\/.*/i,
