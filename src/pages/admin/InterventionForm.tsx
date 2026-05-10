@@ -540,6 +540,24 @@ const InterventionForm = () => {
 
                   <FormField
                     control={form.control}
+                    name="scheduled_end_date"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Date de fin</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="date"
+                            {...field}
+                            min={form.watch('scheduled_date') || undefined}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
                     name="scheduled_time"
                     render={({ field }) => (
                       <FormItem>
