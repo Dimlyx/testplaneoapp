@@ -1,0 +1,1 @@
+ALTER TABLE public.interventions ADD COLUMN IF NOT EXISTS scheduled_end_date date;
