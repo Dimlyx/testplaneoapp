@@ -129,6 +129,7 @@ const InterventionForm = () => {
         status: intervention.status,
         custom_status_id: intervention.custom_status_id || null,
         scheduled_date: intervention.scheduled_date || "",
+        scheduled_end_date: (intervention as any).scheduled_end_date || "",
         scheduled_time: intervention.scheduled_time || "",
         scheduled_end_time: intervention.scheduled_end_time || "",
         report: intervention.report || "",
