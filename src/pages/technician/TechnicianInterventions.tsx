@@ -12,6 +12,7 @@ import { InterventionDayGroup } from "@/components/technician/InterventionDayGro
 import type { Intervention } from "@/hooks/useInterventions";
 import { markInterventionAsViewed, isInterventionViewed } from "@/lib/intervention-viewed";
 import { usePrecacheInterventionPhotos } from "@/hooks/usePrecacheInterventionPhotos";
+import { usePrecacheActiveInterventions } from "@/hooks/usePrecacheActiveInterventions";
 
 function formatTimeRange(time: string, duration?: number | null): string {
   const hhmm = time.substring(0, 5);
@@ -61,6 +62,12 @@ export function TechnicianInterventionsByCategory({ category }: { category: Cate
   // Warm the SW cache with every step photo of the visible interventions
   // so they remain viewable later even if the technician goes offline.
   usePrecacheInterventionPhotos(interventions.map((i) => i.id));
+
+  // Aggressive background pre-cache of every active intervention's full
+  // detail (steps, equipment, photos, attachments) so the technician can
+  // open the app in the morning with network and keep working all day
+  // even if the connection drops.
+  usePrecacheActiveInterventions(interventions);
 
   const getClientName = (clientId: string) =>
     clients.find((c) => c.id === clientId)?.name || "Client";
