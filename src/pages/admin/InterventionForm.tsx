@@ -569,9 +569,6 @@ const InterventionForm = () => {
                       </FormItem>
                     )}
                   />
-                </div>
-
-                <div className="grid gap-4 sm:grid-cols-2 mt-2">
                   <FormField
                     control={form.control}
                     name="scheduled_end_time"
@@ -585,8 +582,10 @@ const InterventionForm = () => {
                       </FormItem>
                     )}
                   />
+                </div>
 
-                  <div className="flex items-end">
+                <div className="mt-2">
+                  <div className="w-full">
                     {hasFeature('email') ? (
                       isEditing && id ? (
                         <Button
