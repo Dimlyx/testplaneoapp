@@ -85,6 +85,7 @@ export interface CreateInterventionData {
   intervention_email?: string | null;
   estimated_duration?: number | null;
   scheduled_end_time?: string | null;
+  scheduled_end_date?: string | null;
   organization_id?: string | null;
   equipment_id?: string | null;
   intervention_building?: string | null;
