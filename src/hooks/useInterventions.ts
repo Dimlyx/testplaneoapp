@@ -122,6 +122,7 @@ export interface UpdateInterventionData {
   intervention_contact_name?: string | null;
   estimated_duration?: number | null;
   scheduled_end_time?: string | null;
+  scheduled_end_date?: string | null;
   is_paused?: boolean;
   cancellation_reason?: string | null;
   cancellation_details?: string | null;
