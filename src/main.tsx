@@ -2,7 +2,7 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 
-// Suppress the browser's PWA install banner on desktop only (keep it for Median/mobile)
+// Suppress the browser's PWA install banner on desktop only
 window.addEventListener('beforeinstallprompt', (e) => {
   const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
   if (!isMobile) {
@@ -11,9 +11,7 @@ window.addEventListener('beforeinstallprompt', (e) => {
 });
 
 // Mark the document as offline at boot so the AuthProvider / OfflineProvider
-// can short-circuit any network call that would otherwise hang the WebView
-// (Median sometimes lets the page load but kills outbound HTTP). The class
-// is also useful for CSS escape hatches if needed.
+// can short-circuit any network call that would otherwise hang.
 const markOnlineState = () => {
   document.documentElement.classList.toggle('app-offline', !navigator.onLine);
 };
