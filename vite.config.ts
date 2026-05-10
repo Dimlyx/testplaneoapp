@@ -64,7 +64,9 @@ export default defineConfig(({ mode }) => ({
               cacheName: "supabase-api-cache",
               networkTimeoutSeconds: 3,
               expiration: {
-                maxEntries: 100,
+                // Bumped to fit a full day of pre-cached active interventions
+                // (~5 endpoints per intervention × dozens of interventions).
+                maxEntries: 500,
                 maxAgeSeconds: 60 * 60 * 24, // 24 hours
               },
               cacheableResponse: {
