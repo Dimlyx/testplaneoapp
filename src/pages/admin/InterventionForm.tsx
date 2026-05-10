@@ -102,6 +102,7 @@ const InterventionForm = () => {
       status: "to_plan",
       custom_status_id: null,
       scheduled_date: "",
+      scheduled_end_date: "",
       scheduled_time: "",
       scheduled_end_time: "",
       report: "",
