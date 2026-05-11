@@ -432,7 +432,52 @@ export const generateInterventionPDF = async (
   // Clear image cache for fresh generation
   imageCache.clear();
   imageDimsCache.clear();
-  
+
+  // ============================================================
+  // PRE-LOAD ALL PHOTOS IN PARALLEL BEFORE BUILDING THE PDF.
+  // This guarantees the overlay stays visible until every image
+  // is downloaded & encoded, so the resulting PDF never misses
+  // photos because of slow network or race conditions.
+  // ============================================================
+  const allPhotoUrls = new Set<string>();
+  if (photos) {
+    for (const p of photos) {
+      if (p.photo_url) allPhotoUrls.add(p.photo_url);
+    }
+  }
+  if (stepCompletions) {
+    for (const c of stepCompletions) {
+      for (const u of parsePhotoUrls(c.photo_url)) allPhotoUrls.add(u);
+    }
+  }
+  if (pdfSettings?.company?.logoUrl) allPhotoUrls.add(pdfSettings.company.logoUrl);
+
+  const urlList = Array.from(allPhotoUrls);
+  if (urlList.length > 0) {
+    // Load with limited concurrency (6) and a single retry per failed image.
+    const CONCURRENCY = 6;
+    const loadOnce = async (url: string) => {
+      const r = await loadImageAsBase64(url);
+      if (!r) {
+        // Retry once: clear from cache so loadImageAsBase64 fetches again.
+        imageCache.delete(url);
+        return await loadImageAsBase64(url);
+      }
+      return r;
+    };
+    const queue = [...urlList];
+    const workers: Promise<void>[] = [];
+    for (let i = 0; i < Math.min(CONCURRENCY, queue.length); i++) {
+      workers.push((async () => {
+        while (queue.length) {
+          const url = queue.shift();
+          if (url) await loadOnce(url);
+        }
+      })());
+    }
+    await Promise.all(workers);
+  }
+
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
