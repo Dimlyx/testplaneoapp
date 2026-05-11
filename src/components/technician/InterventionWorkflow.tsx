@@ -1144,7 +1144,7 @@ const InterventionWorkflow = ({
                             await onTimeUpdate('travel_return_arrival_time', now);
                             toast({ title: "Trajet retour terminé à " + now.substring(0, 5) });
                           }}
-                          disabled={isUpdating}
+                          disabled={isUpdating || readOnly}
                         >
                           <MapPin className="h-4 w-4 mr-2" />
                           Arrivée - Fin du trajet retour
