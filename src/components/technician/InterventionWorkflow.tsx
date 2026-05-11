@@ -124,8 +124,10 @@ const InterventionWorkflow = ({
   const isArchived = intervention.status === 'archived';
   const isCancelled = intervention.status === 'cancelled';
   
-  const isLocked = isCompleted || isToInvoice || isArchived || isCancelled;
-  const stepsLocked = !isStarted || isPaused;
+  const isStatusLocked = isCompleted || isToInvoice || isArchived || isCancelled;
+  // When readOnly (team member, not the leader), lock everything to prevent edits.
+  const isLocked = isStatusLocked || readOnly;
+  const stepsLocked = !isStarted || isPaused || readOnly;
 
   // Separate signature steps from loopable steps
   const signatureSteps = useMemo(() => workflowSteps.filter(s => s.requires_signature), [workflowSteps]);
@@ -443,7 +445,7 @@ const InterventionWorkflow = ({
       )}
 
       {/* Locked banner for completed interventions */}
-      {isLocked && !isCancelled && (
+      {isStatusLocked && !isCancelled && (
         <Card className="mb-4 border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300">
@@ -458,7 +460,7 @@ const InterventionWorkflow = ({
       )}
 
       {/* Paused banner */}
-      {isPaused && !isLocked && (
+      {isPaused && !isStatusLocked && !readOnly && (
         <Card className="mb-4 border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -488,7 +490,7 @@ const InterventionWorkflow = ({
         </Card>
       )}
 
-      {stepsLocked && !isLocked && !isPaused && (
+      {stepsLocked && !isStatusLocked && !isPaused && !readOnly && (
         <Card className="mb-4 border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
@@ -663,7 +665,7 @@ const InterventionWorkflow = ({
               departureTime={intervention.departure_time}
               onStatusChange={onStatusChange}
               onTimeUpdate={onTimeUpdate}
-              isUpdating={isUpdating}
+              isUpdating={isUpdating || readOnly}
             />
 
             {/* Pause/Resume buttons - only shown when intervention is in progress */}
@@ -1142,7 +1144,7 @@ const InterventionWorkflow = ({
                             await onTimeUpdate('travel_return_arrival_time', now);
                             toast({ title: "Trajet retour terminé à " + now.substring(0, 5) });
                           }}
-                          disabled={isUpdating}
+                          disabled={isUpdating || readOnly}
                         >
                           <MapPin className="h-4 w-4 mr-2" />
                           Arrivée - Fin du trajet retour
@@ -1156,7 +1158,7 @@ const InterventionWorkflow = ({
                             await onTimeUpdate('travel_return_time', now);
                             toast({ title: "Trajet retour démarré à " + now.substring(0, 5) });
                           }}
-                          disabled={isUpdating}
+                          disabled={isUpdating || readOnly}
                         >
                           <Car className="h-4 w-4 mr-2" />
                           Démarrer le trajet retour
