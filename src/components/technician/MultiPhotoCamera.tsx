@@ -18,6 +18,24 @@ const MultiPhotoCamera = ({ onCapture, onClose }: MultiPhotoCameraProps) => {
   const [flashEffect, setFlashEffect] = useState(false);
   const [torchOn, setTorchOn] = useState(false);
   const [torchSupported, setTorchSupported] = useState(false);
+  const [zoomCaps, setZoomCaps] = useState<{ min: number; max: number; step: number } | null>(null);
+  const [currentZoom, setCurrentZoom] = useState<number>(1);
+
+  // Niveaux de zoom proposés (filtrés selon capacités du device)
+  const ZOOM_LEVELS = [0.5, 1, 2];
+
+  const applyZoom = useCallback(async (value: number) => {
+    const track = streamRef.current?.getVideoTracks()[0];
+    if (!track || !zoomCaps) return;
+    const clamped = Math.max(zoomCaps.min, Math.min(zoomCaps.max, value));
+    try {
+      await (track as any).applyConstraints({ advanced: [{ zoom: clamped }] });
+      setCurrentZoom(value);
+    } catch (err) {
+      console.warn("Zoom apply failed:", err);
+    }
+  }, [zoomCaps]);
+
   const startCamera = useCallback(async (facing: "environment" | "user") => {
     // Stop existing stream
     if (streamRef.current) {
@@ -34,11 +52,28 @@ const MultiPhotoCamera = ({ onCapture, onClose }: MultiPhotoCameraProps) => {
         videoRef.current.srcObject = stream;
         await videoRef.current.play();
       }
-      // Check torch support
+      // Check torch + zoom support
       const track = stream.getVideoTracks()[0];
       const capabilities = track?.getCapabilities?.() as any;
       setTorchSupported(!!capabilities?.torch);
       setTorchOn(false);
+      if (capabilities?.zoom) {
+        const caps = {
+          min: capabilities.zoom.min ?? 1,
+          max: capabilities.zoom.max ?? 1,
+          step: capabilities.zoom.step ?? 0.1,
+        };
+        setZoomCaps(caps);
+        // Forcer un zoom de base 1x (ou min si > 1) pour éviter l'effet "trop zoomé" par défaut
+        const defaultZoom = caps.min > 1 ? caps.min : 1;
+        try {
+          await (track as any).applyConstraints({ advanced: [{ zoom: defaultZoom }] });
+        } catch {}
+        setCurrentZoom(defaultZoom);
+      } else {
+        setZoomCaps(null);
+        setCurrentZoom(1);
+      }
       setError(null);
     } catch (err: any) {
       console.error("Camera error:", err);
