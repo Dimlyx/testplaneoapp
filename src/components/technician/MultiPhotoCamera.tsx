@@ -18,6 +18,24 @@ const MultiPhotoCamera = ({ onCapture, onClose }: MultiPhotoCameraProps) => {
   const [flashEffect, setFlashEffect] = useState(false);
   const [torchOn, setTorchOn] = useState(false);
   const [torchSupported, setTorchSupported] = useState(false);
+  const [zoomCaps, setZoomCaps] = useState<{ min: number; max: number; step: number } | null>(null);
+  const [currentZoom, setCurrentZoom] = useState<number>(1);
+
+  // Niveaux de zoom proposés (filtrés selon capacités du device)
+  const ZOOM_LEVELS = [0.5, 1, 2];
+
+  const applyZoom = useCallback(async (value: number) => {
+    const track = streamRef.current?.getVideoTracks()[0];
+    if (!track || !zoomCaps) return;
+    const clamped = Math.max(zoomCaps.min, Math.min(zoomCaps.max, value));
+    try {
+      await (track as any).applyConstraints({ advanced: [{ zoom: clamped }] });
+      setCurrentZoom(value);
+    } catch (err) {
+      console.warn("Zoom apply failed:", err);
+    }
+  }, [zoomCaps]);
+
   const startCamera = useCallback(async (facing: "environment" | "user") => {
     // Stop existing stream
     if (streamRef.current) {
@@ -34,11 +52,28 @@ const MultiPhotoCamera = ({ onCapture, onClose }: MultiPhotoCameraProps) => {
         videoRef.current.srcObject = stream;
         await videoRef.current.play();
       }
-      // Check torch support
+      // Check torch + zoom support
       const track = stream.getVideoTracks()[0];
       const capabilities = track?.getCapabilities?.() as any;
       setTorchSupported(!!capabilities?.torch);
       setTorchOn(false);
+      if (capabilities?.zoom) {
+        const caps = {
+          min: capabilities.zoom.min ?? 1,
+          max: capabilities.zoom.max ?? 1,
+          step: capabilities.zoom.step ?? 0.1,
+        };
+        setZoomCaps(caps);
+        // Forcer un zoom de base 1x (ou min si > 1) pour éviter l'effet "trop zoomé" par défaut
+        const defaultZoom = caps.min > 1 ? caps.min : 1;
+        try {
+          await (track as any).applyConstraints({ advanced: [{ zoom: defaultZoom }] });
+        } catch {}
+        setCurrentZoom(defaultZoom);
+      } else {
+        setZoomCaps(null);
+        setCurrentZoom(1);
+      }
       setError(null);
     } catch (err: any) {
       console.error("Camera error:", err);
@@ -177,8 +212,31 @@ const MultiPhotoCamera = ({ onCapture, onClose }: MultiPhotoCameraProps) => {
         )}
       </div>
 
-      {/* Bottom section: thumbnails + controls */}
+      {/* Bottom section: zoom + thumbnails + controls */}
       <div className="bg-black/90 px-4 pb-4 pt-2">
+        {/* Zoom selector — visible only if device supports zoom */}
+        {zoomCaps && (
+          <div className="flex justify-center mb-3">
+            <div className="inline-flex items-center gap-1 bg-black/60 rounded-full p-1 border border-white/20">
+              {ZOOM_LEVELS.filter(z => z >= zoomCaps.min && z <= zoomCaps.max).map(z => {
+                const active = Math.abs(currentZoom - z) < 0.05;
+                return (
+                  <button
+                    key={z}
+                    type="button"
+                    onClick={() => applyZoom(z)}
+                    className={`min-w-[44px] h-9 px-3 rounded-full text-xs font-semibold transition-colors ${
+                      active ? "bg-white text-black" : "text-white/80 active:bg-white/20"
+                    }`}
+                  >
+                    {z}x
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Thumbnail strip */}
         {capturedPhotos.length > 0 && (
           <div className="flex gap-2 mb-3 overflow-x-auto py-1 scrollbar-none">
