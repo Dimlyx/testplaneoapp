@@ -460,7 +460,7 @@ const InterventionWorkflow = ({
       )}
 
       {/* Paused banner */}
-      {isPaused && !isLocked && (
+      {isPaused && !isStatusLocked && !readOnly && (
         <Card className="mb-4 border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
