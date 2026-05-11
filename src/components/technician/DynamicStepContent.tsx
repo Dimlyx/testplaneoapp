@@ -296,18 +296,6 @@ const DynamicStepContent = ({
       checklistState.length > 0 ? checklistState : undefined,
       multipleChoiceState.length > 0 ? multipleChoiceState : undefined
     );
-    // Update initial data ref after save
-    initialDataRef.current = {
-      comment,
-      photoUrls: [...resolvedUrls],
-      checklist: [...checklistState],
-      multipleChoice: [...multipleChoiceState],
-    };
-    setHasChanges(false);
-  };
-
-  const handleUpdate = async () => {
-    await handleValidate();
   };
 
   // Handle signature step (offline-first):
