@@ -679,16 +679,10 @@ const DynamicStepContent = ({
                 <span className="font-medium text-sm">Étape validée</span>
               </div>
             )}
-            {isCompleted && hasChanges && (
-              <Button
-                onClick={handleUpdate}
-                disabled={isCompleting}
-                variant="outline"
-                className="w-full"
-              >
-                <Save className="h-4 w-4 mr-2" />
-                Mettre à jour
-              </Button>
+            {isCompleted && (
+              <p className="text-xs text-muted-foreground text-center">
+                Vos modifications sont enregistrées automatiquement.
+              </p>
             )}
             {!isCompleted && (
               <Button
