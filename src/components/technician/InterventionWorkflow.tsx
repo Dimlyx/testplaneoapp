@@ -124,8 +124,10 @@ const InterventionWorkflow = ({
   const isArchived = intervention.status === 'archived';
   const isCancelled = intervention.status === 'cancelled';
   
-  const isLocked = isCompleted || isToInvoice || isArchived || isCancelled;
-  const stepsLocked = !isStarted || isPaused;
+  const isStatusLocked = isCompleted || isToInvoice || isArchived || isCancelled;
+  // When readOnly (team member, not the leader), lock everything to prevent edits.
+  const isLocked = isStatusLocked || readOnly;
+  const stepsLocked = !isStarted || isPaused || readOnly;
 
   // Separate signature steps from loopable steps
   const signatureSteps = useMemo(() => workflowSteps.filter(s => s.requires_signature), [workflowSteps]);
