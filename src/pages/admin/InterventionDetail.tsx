@@ -178,6 +178,7 @@ const InterventionDetail = () => {
 
   return (
     <div className="space-y-6">
+      <PdfGenerationOverlay open={isGeneratingPdf} />
       <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
@@ -196,8 +197,8 @@ const InterventionDetail = () => {
             <CopyPlus className="h-4 w-4 mr-2" />
             {createIntervention.isPending ? "Duplication..." : "Dupliquer"}
           </Button>
-          <Button variant="outline" onClick={handleDownloadPDF}>
-            <FileText className="h-4 w-4 mr-2" />
+          <Button variant="outline" onClick={handleDownloadPDF} disabled={isGeneratingPdf}>
+            {isGeneratingPdf ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileText className="h-4 w-4 mr-2" />}
             PDF
           </Button>
           <Button onClick={() => navigate(`/admin/interventions/${id}/edit`)}>
