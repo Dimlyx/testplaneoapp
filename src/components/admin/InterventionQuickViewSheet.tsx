@@ -178,6 +178,7 @@ export function InterventionQuickViewSheet({
         side="right"
         className="w-full sm:max-w-md overflow-y-auto p-0 flex flex-col"
       >
+        <PdfGenerationOverlay open={generatingPdf} />
         <SheetHeader className="p-6 pb-4 border-b">
           <div className="flex items-start gap-2 flex-wrap pr-8">
             <TypeBadge type={intervention.intervention_type} />
