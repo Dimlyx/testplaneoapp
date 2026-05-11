@@ -25,6 +25,7 @@ import { useWorkflowSteps } from "@/hooks/useWorkflowSteps";
 import { useStepCompletions } from "@/hooks/useStepCompletions";
 import { useCompanySettings, useDocumentSettings } from "@/hooks/useAppSettings";
 import { generateInterventionPDF } from "@/lib/pdf-generator";
+import { PdfGenerationOverlay } from "@/components/PdfGenerationOverlay";
 import { toast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
 
