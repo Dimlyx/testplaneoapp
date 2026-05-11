@@ -490,7 +490,7 @@ const InterventionWorkflow = ({
         </Card>
       )}
 
-      {stepsLocked && !isLocked && !isPaused && (
+      {stepsLocked && !isStatusLocked && !isPaused && !readOnly && (
         <Card className="mb-4 border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
