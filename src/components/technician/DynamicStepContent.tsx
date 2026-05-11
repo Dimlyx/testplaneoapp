@@ -623,7 +623,8 @@ const DynamicStepContent = ({
                   <Textarea
                     placeholder="Ajouter un commentaire détaillé..."
                     value={comment}
-                    onChange={(e) => setComment(e.target.value)}
+                    onChange={(e) => { lastChangeKindRef.current = 'text'; setComment(e.target.value); }}
+                    onBlur={flushDraftNow}
                     className="w-full h-full min-h-[200px] resize-none text-base leading-relaxed"
                     disabled={isLocked}
                     autoFocus
