@@ -187,12 +187,15 @@ const TechnicianInterventionDetail = () => {
     setIsUpdating(false);
   };
 
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+
   const handleDownloadPDF = async () => {
-    if (intervention && client) {
-      toast({ title: "Génération du rapport en cours..." });
+    if (!intervention || !client) return;
+    setIsGeneratingPdf(true);
+    try {
       await generateInterventionPDF(
-        intervention, 
-        client, 
+        intervention,
+        client,
         undefined,
         intervention.profiles?.full_name || undefined,
         photos,
@@ -203,6 +206,10 @@ const TechnicianInterventionDetail = () => {
         interventionTypes
       );
       toast({ title: "Rapport téléchargé" });
+    } catch (err: any) {
+      toast({ title: "Erreur", description: err?.message || "Impossible de générer le PDF", variant: "destructive" });
+    } finally {
+      setIsGeneratingPdf(false);
     }
   };
 
