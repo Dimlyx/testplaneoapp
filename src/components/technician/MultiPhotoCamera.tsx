@@ -212,8 +212,31 @@ const MultiPhotoCamera = ({ onCapture, onClose }: MultiPhotoCameraProps) => {
         )}
       </div>
 
-      {/* Bottom section: thumbnails + controls */}
+      {/* Bottom section: zoom + thumbnails + controls */}
       <div className="bg-black/90 px-4 pb-4 pt-2">
+        {/* Zoom selector — visible only if device supports zoom */}
+        {zoomCaps && (
+          <div className="flex justify-center mb-3">
+            <div className="inline-flex items-center gap-1 bg-black/60 rounded-full p-1 border border-white/20">
+              {ZOOM_LEVELS.filter(z => z >= zoomCaps.min && z <= zoomCaps.max).map(z => {
+                const active = Math.abs(currentZoom - z) < 0.05;
+                return (
+                  <button
+                    key={z}
+                    type="button"
+                    onClick={() => applyZoom(z)}
+                    className={`min-w-[44px] h-9 px-3 rounded-full text-xs font-semibold transition-colors ${
+                      active ? "bg-white text-black" : "text-white/80 active:bg-white/20"
+                    }`}
+                  >
+                    {z}x
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Thumbnail strip */}
         {capturedPhotos.length > 0 && (
           <div className="flex gap-2 mb-3 overflow-x-auto py-1 scrollbar-none">
