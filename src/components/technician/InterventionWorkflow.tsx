@@ -1158,7 +1158,7 @@ const InterventionWorkflow = ({
                             await onTimeUpdate('travel_return_time', now);
                             toast({ title: "Trajet retour démarré à " + now.substring(0, 5) });
                           }}
-                          disabled={isUpdating}
+                          disabled={isUpdating || readOnly}
                         >
                           <Car className="h-4 w-4 mr-2" />
                           Démarrer le trajet retour
