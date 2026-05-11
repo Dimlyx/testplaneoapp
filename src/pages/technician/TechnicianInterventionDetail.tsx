@@ -28,6 +28,7 @@ import { generateInterventionPDF } from "@/lib/pdf-generator";
 import { supabase } from "@/integrations/supabase/client";
 import { useInterventionPhotos } from "@/hooks/useInterventionPhotos";
 import InterventionWorkflow from "@/components/technician/InterventionWorkflow";
+import { PdfGenerationOverlay } from "@/components/PdfGenerationOverlay";
 
 const TechnicianInterventionDetail = () => {
   const navigate = useNavigate();
