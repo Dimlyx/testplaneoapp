@@ -665,7 +665,7 @@ const InterventionWorkflow = ({
               departureTime={intervention.departure_time}
               onStatusChange={onStatusChange}
               onTimeUpdate={onTimeUpdate}
-              isUpdating={isUpdating}
+              isUpdating={isUpdating || readOnly}
             />
 
             {/* Pause/Resume buttons - only shown when intervention is in progress */}
