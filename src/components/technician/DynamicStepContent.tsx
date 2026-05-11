@@ -636,7 +636,7 @@ const DynamicStepContent = ({
                   <span className="text-xs text-muted-foreground">
                     {comment.length} caractère{comment.length > 1 ? 's' : ''}
                   </span>
-                  <Button onClick={() => setIsCommentFullscreen(false)}>
+                  <Button onClick={() => { flushDraftNow(); setIsCommentFullscreen(false); }}>
                     Enregistrer
                   </Button>
                 </div>
