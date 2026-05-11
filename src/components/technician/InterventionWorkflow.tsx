@@ -445,7 +445,7 @@ const InterventionWorkflow = ({
       )}
 
       {/* Locked banner for completed interventions */}
-      {isLocked && !isCancelled && (
+      {isStatusLocked && !isCancelled && (
         <Card className="mb-4 border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300">
