@@ -26,6 +26,7 @@ import { useStepCompletions } from "@/hooks/useStepCompletions";
 import { useCompanySettings, useDocumentSettings } from "@/hooks/useAppSettings";
 import { generateInterventionPDF } from "@/lib/pdf-generator";
 import { PdfGenerationOverlay } from "@/components/PdfGenerationOverlay";
+import { buildExtranetUrl } from "@/lib/extranet-url";
 import { toast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -84,7 +85,7 @@ export function InterventionQuickViewSheet({
       });
       return;
     }
-    window.open(`/intervention/${intervention.public_token}`, "_blank");
+    window.open(buildExtranetUrl(intervention.public_token), "_blank");
   };
 
   const handleDownloadPdf = async () => {

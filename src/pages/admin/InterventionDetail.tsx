@@ -643,7 +643,7 @@ const InterventionDetail = () => {
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    onClick={() => window.open(`/intervention/${intervention.public_token}`, '_blank')}
+                    onClick={() => window.open(buildExtranetUrl(intervention.public_token!), '_blank')}
                   >
                     <ExternalLink className="h-4 w-4 mr-2" />
                     Ouvrir
