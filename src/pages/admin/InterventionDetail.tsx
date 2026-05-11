@@ -41,6 +41,7 @@ import { toast } from "@/hooks/use-toast";
 import { generateInterventionPDF } from "@/lib/pdf-generator";
 import { supabase } from "@/integrations/supabase/client";
 import { PdfGenerationOverlay } from "@/components/PdfGenerationOverlay";
+import { buildExtranetUrl } from "@/lib/extranet-url";
 
 const parsePhotoUrls = (photoUrl: string | null): string[] => {
   if (!photoUrl) return [];
@@ -81,7 +82,7 @@ const InterventionDetail = () => {
 
   const handleCopyLink = () => {
     if (intervention?.public_token) {
-      const publicUrl = `${window.location.origin}/intervention/${intervention.public_token}`;
+      const publicUrl = buildExtranetUrl(intervention.public_token);
       navigator.clipboard.writeText(publicUrl);
       toast({ title: "Lien copié dans le presse-papiers" });
     }
