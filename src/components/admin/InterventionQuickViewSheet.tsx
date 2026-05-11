@@ -25,6 +25,7 @@ import { useWorkflowSteps } from "@/hooks/useWorkflowSteps";
 import { useStepCompletions } from "@/hooks/useStepCompletions";
 import { useCompanySettings, useDocumentSettings } from "@/hooks/useAppSettings";
 import { generateInterventionPDF } from "@/lib/pdf-generator";
+import { PdfGenerationOverlay } from "@/components/PdfGenerationOverlay";
 import { toast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -177,6 +178,7 @@ export function InterventionQuickViewSheet({
         side="right"
         className="w-full sm:max-w-md overflow-y-auto p-0 flex flex-col"
       >
+        <PdfGenerationOverlay open={generatingPdf} />
         <SheetHeader className="p-6 pb-4 border-b">
           <div className="flex items-start gap-2 flex-wrap pr-8">
             <TypeBadge type={intervention.intervention_type} />

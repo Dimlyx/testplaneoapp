@@ -28,6 +28,7 @@ import { generateInterventionPDF } from "@/lib/pdf-generator";
 import { supabase } from "@/integrations/supabase/client";
 import { useInterventionPhotos } from "@/hooks/useInterventionPhotos";
 import InterventionWorkflow from "@/components/technician/InterventionWorkflow";
+import { PdfGenerationOverlay } from "@/components/PdfGenerationOverlay";
 
 const TechnicianInterventionDetail = () => {
   const navigate = useNavigate();
@@ -186,12 +187,15 @@ const TechnicianInterventionDetail = () => {
     setIsUpdating(false);
   };
 
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+
   const handleDownloadPDF = async () => {
-    if (intervention && client) {
-      toast({ title: "Génération du rapport en cours..." });
+    if (!intervention || !client) return;
+    setIsGeneratingPdf(true);
+    try {
       await generateInterventionPDF(
-        intervention, 
-        client, 
+        intervention,
+        client,
         undefined,
         intervention.profiles?.full_name || undefined,
         photos,
@@ -202,6 +206,10 @@ const TechnicianInterventionDetail = () => {
         interventionTypes
       );
       toast({ title: "Rapport téléchargé" });
+    } catch (err: any) {
+      toast({ title: "Erreur", description: err?.message || "Impossible de générer le PDF", variant: "destructive" });
+    } finally {
+      setIsGeneratingPdf(false);
     }
   };
 
@@ -226,7 +234,7 @@ const TechnicianInterventionDetail = () => {
 
   return (
     <div className="space-y-4 pb-20">
-      {/* Header */}
+      <PdfGenerationOverlay open={isGeneratingPdf} />
       <div className="flex items-center gap-3">
         <Button
           variant="ghost"
