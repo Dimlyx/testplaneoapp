@@ -121,6 +121,9 @@ const DynamicStepContent = ({
     });
   }, [interventionId, step.id, comment, photoUrls, checklistState, multipleChoiceState, loopIndex, isLocked]);
 
+  // Track which dependency triggered the effect to choose the right delay.
+  const lastChangeKindRef = useRef<'text' | 'instant'>('instant');
+
   useEffect(() => {
     // Skip the initial mount to avoid saving unchanged data
     if (!hasMountedRef.current) {
@@ -130,9 +133,12 @@ const DynamicStepContent = ({
     if (isLocked) return;
 
     if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
-    // Longer debounce while photos are uploading to avoid spamming saves
-    // every time a local:// URL is swapped for a remote URL.
-    const delay = isUploading ? 5000 : 2500;
+    // Photos / checklist / multi-choice → save almost immediately (250ms).
+    // Text comment → short debounce (700ms) to avoid spamming saves on every keystroke.
+    // While a photo upload is still happening, wait a bit longer to avoid
+    // overwriting the row mid-swap from local:// to remote URL.
+    const baseDelay = lastChangeKindRef.current === 'text' ? 700 : 250;
+    const delay = isUploading ? Math.max(baseDelay, 1500) : baseDelay;
     draftTimerRef.current = setTimeout(() => {
       saveDraftNow();
     }, delay);
@@ -141,29 +147,19 @@ const DynamicStepContent = ({
       if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
     };
   }, [comment, photoUrls, checklistState, multipleChoiceState, saveDraftNow, isLocked, isUploading]);
+
+  // Flush the pending draft save immediately (used on blur).
+  const flushDraftNow = useCallback(() => {
+    if (draftTimerRef.current) {
+      clearTimeout(draftTimerRef.current);
+      draftTimerRef.current = null;
+    }
+    saveDraftNow();
+  }, [saveDraftNow]);
+
   const hasChecklist = checklistState.length > 0;
   const hasMultipleChoice = multipleChoiceState.length > 0;
   const selectedCount = multipleChoiceState.filter(i => i.selected).length;
-
-  // Track if data has been modified since last save/completion
-  const [hasChanges, setHasChanges] = useState(false);
-  const initialDataRef = useRef({
-    comment: completion?.comment || "",
-    photoUrls: parsePhotoUrls(completion?.photo_url || null),
-    checklist: completion?.checklist_data || [],
-    multipleChoice: completion?.multiple_choice_data || [],
-  });
-
-  // Detect changes when completed
-  useEffect(() => {
-    if (!isCompleted) return;
-    const initial = initialDataRef.current;
-    const commentChanged = comment !== initial.comment;
-    const photosChanged = JSON.stringify(photoUrls) !== JSON.stringify(initial.photoUrls);
-    const checklistChanged = JSON.stringify(checklistState) !== JSON.stringify(initial.checklist);
-    const mcChanged = JSON.stringify(multipleChoiceState) !== JSON.stringify(initial.multipleChoice);
-    setHasChanges(commentChanged || photosChanged || checklistChanged || mcChanged);
-  }, [comment, photoUrls, checklistState, multipleChoiceState, isCompleted]);
 
   const toggleChecklistItem = (itemId: string) => {
     setChecklistState(prev => prev.map(item => 
