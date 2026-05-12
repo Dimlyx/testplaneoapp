@@ -3,13 +3,15 @@ import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 
 /**
- * Détecte automatiquement quand une nouvelle version de l'app est déployée,
- * et propose à l'utilisateur de recharger la page.
+ * Détecte automatiquement quand une nouvelle version de l'app est déployée.
+ * Quand une nouvelle version est trouvée, on purge les caches (SW + Cache API)
+ * et on recharge la page sans demander à l'utilisateur (évite les Ctrl+F5).
  *
  * Désactivé en mode dev et dans les iframes de preview Lovable.
  */
 
-const CHECK_INTERVAL_MS = 5 * 60 * 1000; // 5 min
+const CHECK_INTERVAL_MS = 60 * 1000; // 1 min
+const RELOAD_FLAG = "planeo:reloaded-for-version";
 
 const isPreviewOrIframe = (): boolean => {
   if (typeof window === "undefined") return true;
@@ -31,7 +33,6 @@ async function fetchIndexFingerprint(): Promise<string | null> {
     });
     if (!res.ok) return null;
     const text = await res.text();
-    // Les fichiers Vite ont un hash dans leur nom — change à chaque build.
     const matches = text.match(/(src|href)="\/assets\/[^"]+"/g);
     return matches ? matches.sort().join("|") : text.length.toString();
   } catch {
@@ -39,9 +40,45 @@ async function fetchIndexFingerprint(): Promise<string | null> {
   }
 }
 
+async function purgeCachesAndReload() {
+  try {
+    if ("caches" in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((k) => caches.delete(k)));
+    }
+  } catch {
+    /* ignore */
+  }
+  try {
+    if ("serviceWorker" in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(
+        regs.map(async (r) => {
+          // Ne pas désinscrire OneSignal
+          if (r.scope.includes("/push/onesignal/")) return;
+          try {
+            await r.update();
+          } catch {
+            /* ignore */
+          }
+        })
+      );
+    }
+  } catch {
+    /* ignore */
+  }
+  try {
+    sessionStorage.setItem(RELOAD_FLAG, "1");
+  } catch {
+    /* ignore */
+  }
+  // Bypass cache reload
+  window.location.reload();
+}
+
 export function useVersionCheck() {
   const initialFingerprint = useRef<string | null>(null);
-  const notified = useRef(false);
+  const reloading = useRef(false);
 
   useEffect(() => {
     if (import.meta.env.DEV) return;
@@ -59,18 +96,19 @@ export function useVersionCheck() {
         return;
       }
 
-      if (current !== initialFingerprint.current && !notified.current) {
-        notified.current = true;
-        toast({
-          title: "Nouvelle version disponible",
-          description: "Rechargez la page pour profiter des dernières mises à jour.",
-          duration: Infinity,
-          action: (
-            <Button size="sm" onClick={() => window.location.reload()}>
-              Recharger
-            </Button>
-          ) as any,
-        });
+      if (current !== initialFingerprint.current && !reloading.current) {
+        reloading.current = true;
+        // Petit toast informatif puis reload auto immédiat
+        try {
+          toast({
+            title: "Mise à jour en cours…",
+            description: "Application rechargée pour appliquer la nouvelle version.",
+            duration: 3000,
+          });
+        } catch {
+          /* ignore */
+        }
+        await purgeCachesAndReload();
       }
     };
 
