@@ -2,6 +2,7 @@ import { jsPDF } from "jspdf";
 import { Intervention } from "@/hooks/useInterventions";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { getStepPhotoBlob, isLocalPhotoUrl } from "@/lib/step-photo-store";
 
 interface Client {
   id: string;
@@ -205,20 +206,35 @@ const loadImageAsBase64 = async (url: string): Promise<string | null> => {
       return imageCache.get(url)!;
     }
     
-    // Use fetch to avoid CORS canvas tainting issues
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000);
-    
-    const response = await fetch(url, { signal: controller.signal });
-    clearTimeout(timeout);
-    
-    if (!response.ok) {
-      console.warn('Failed to fetch image:', url, response.status);
-      imageCache.set(url, null);
-      return null;
+    let blob: Blob;
+
+    // Workflow photos may still be stored locally in IndexedDB when the user
+    // generates the PDF immediately after capture. Resolve them directly
+    // instead of trying to fetch the local:// URL.
+    if (isLocalPhotoUrl(url)) {
+      const localBlob = await getStepPhotoBlob(url);
+      if (!localBlob) {
+        console.warn('Local step photo not found for PDF:', url);
+        imageCache.set(url, null);
+        return null;
+      }
+      blob = localBlob;
+    } else {
+      // Use fetch to avoid CORS canvas tainting issues
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000);
+      
+      const response = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeout);
+      
+      if (!response.ok) {
+        console.warn('Failed to fetch image:', url, response.status);
+        imageCache.set(url, null);
+        return null;
+      }
+      
+      blob = await response.blob();
     }
-    
-    const blob = await response.blob();
     
     // Verify it's an actual image
     if (!blob.type.startsWith('image/')) {
