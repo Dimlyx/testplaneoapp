@@ -85,7 +85,7 @@ export default defineConfig(({ mode }) => ({
         navigateFallback: "/index.html",
         // Do not let the Workbox SW intercept OneSignal's worker scope.
         globIgnores: ["**/push/onesignal/**"],
-        navigateFallbackDenylist: [/^\/push\/onesignal\/, /^\/sw\.js$/, /^\/workbox-.*\.js$/],
+        navigateFallbackDenylist: [/^\/push\/onesignal\//, /^\/sw\.js$/, /^\/workbox-.*\.js$/],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/gwqjwclvrihumhqzoikv\.supabase\.co\/rest\/v1\/.*/i,
