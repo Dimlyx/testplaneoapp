@@ -18,6 +18,9 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
+      injectRegister: "auto",
+      strategies: "generateSW",
+      filename: "sw.js",
       includeAssets: ["favicon.png", "placeholder.svg"],
       manifest: {
         id: "tech.planeo.app",
@@ -79,9 +82,10 @@ export default defineConfig(({ mode }) => ({
       workbox: {
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // 3 MB
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+        navigateFallback: "/index.html",
         // Do not let the Workbox SW intercept OneSignal's worker scope.
         globIgnores: ["**/push/onesignal/**"],
-        navigateFallbackDenylist: [/^\/push\/onesignal\//],
+        navigateFallbackDenylist: [/^\/push\/onesignal\//, /^\/sw\.js$/, /^\/workbox-.*\.js$/],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/gwqjwclvrihumhqzoikv\.supabase\.co\/rest\/v1\/.*/i,
