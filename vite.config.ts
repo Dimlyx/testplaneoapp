@@ -20,6 +20,7 @@ export default defineConfig(({ mode }) => ({
       registerType: "autoUpdate",
       includeAssets: ["favicon.png", "placeholder.svg"],
       manifest: {
+        id: "tech.planeo.app",
         name: "PLANEO",
         short_name: "PLANEO",
         description: "Application de gestion des interventions SAV",
@@ -29,27 +30,49 @@ export default defineConfig(({ mode }) => ({
         orientation: "portrait",
         start_url: "/",
         scope: "/",
+        lang: "fr",
+        dir: "ltr",
+        categories: ["business", "productivity", "utilities"],
         icons: [
           {
             src: "/favicon.png",
             sizes: "64x64",
             type: "image/png",
+            purpose: "any",
           },
           {
             src: "/pwa-192x192.png",
             sizes: "192x192",
             type: "image/png",
+            purpose: "any",
           },
           {
             src: "/pwa-512x512.png",
             sizes: "512x512",
             type: "image/png",
+            purpose: "any",
           },
           {
             src: "/pwa-512x512.png",
             sizes: "512x512",
             type: "image/png",
             purpose: "maskable",
+          },
+        ],
+        screenshots: [
+          {
+            src: "/screenshots/screen1.png",
+            sizes: "390x844",
+            type: "image/png",
+            form_factor: "narrow",
+            label: "Écran de connexion PLANEO",
+          },
+          {
+            src: "/screenshots/screen2.png",
+            sizes: "390x844",
+            type: "image/png",
+            form_factor: "narrow",
+            label: "Liste des interventions",
           },
         ],
       },
