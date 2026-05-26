@@ -697,23 +697,68 @@ export const generateInterventionPDF = async (
   }
 
   if ((!docSettings || docSettings.showEquipmentDetails) && interventionEquipments && interventionEquipments.length > 0) {
-    for (let i = 0; i < interventionEquipments.length; i++) {
+    const totalEquipments = interventionEquipments.length;
+    for (let i = 0; i < totalEquipments; i++) {
       const eq = interventionEquipments[i];
       const eqInfo = eq.equipment;
       const eqPhotos = photos?.filter(p => p.equipment_id === eq.equipment_id) || [];
       
-      checkNewPage(80);
-      
-      // Equipment header with accent color
-      // Build equipment header - exclude "À identifier" values
+      checkNewPage(90);
+
+      // Strong visual separator between equipments
+      if (i > 0) {
+        yPos += 6;
+        doc.setDrawColor(180, 180, 180);
+        doc.setLineDashPattern([2, 2], 0);
+        doc.setLineWidth(0.4);
+        doc.line(10, yPos, pageWidth - 10, yPos);
+        doc.setLineDashPattern([], 0);
+        yPos += 8;
+        checkNewPage(80);
+      } else {
+        yPos += 2;
+      }
+
+      // Equipment header - distinct badge style with counter
       const brandDisplay = eqInfo?.brand && eqInfo.brand !== 'À identifier' ? eqInfo.brand : '';
       const modelDisplay = eqInfo?.model && eqInfo.model !== 'À identifier' ? eqInfo.model : '';
       const headerLabel = [brandDisplay, modelDisplay].filter(Boolean).join(' ') || eqInfo?.equipment_type || '';
-      
-      yPos = addSection(`ÉQUIPEMENT ${i + 1}: ${headerLabel}`, yPos, true);
+
+      const headerHeight = 12;
+      const headerY = yPos - 5;
+      // Main colored band
+      doc.setFillColor(primaryRgb[0], primaryRgb[1], primaryRgb[2]);
+      doc.rect(10, headerY, pageWidth - 20, headerHeight, 'F');
+      // Left accent bar
+      doc.setFillColor(accentRgb[0], accentRgb[1], accentRgb[2]);
+      doc.rect(10, headerY, 4, headerHeight, 'F');
+      // Counter badge (top-right)
+      const counterText = `${i + 1} / ${totalEquipments}`;
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "bold");
+      const counterWidth = doc.getTextWidth(counterText) + 6;
+      doc.setFillColor(255, 255, 255);
+      doc.rect(pageWidth - 14 - counterWidth, headerY + 2, counterWidth, headerHeight - 4, 'F');
+      doc.setTextColor(primaryRgb[0], primaryRgb[1], primaryRgb[2]);
+      doc.text(counterText, pageWidth - 14 - counterWidth + 3, headerY + headerHeight - 4);
+      // Title
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(255, 255, 255);
+      const titleText = `ÉQUIPEMENT ${i + 1}${headerLabel ? ` — ${headerLabel}` : ''}`;
+      const maxTitleWidth = pageWidth - 20 - 8 - counterWidth - 6;
+      let displayTitle = titleText;
+      while (doc.getTextWidth(displayTitle) > maxTitleWidth && displayTitle.length > 4) {
+        displayTitle = displayTitle.slice(0, -2);
+      }
+      if (displayTitle !== titleText) displayTitle = displayTitle.slice(0, -1) + '…';
+      doc.text(displayTitle, 18, headerY + headerHeight - 4);
+
+      doc.setFont("helvetica", "normal");
       doc.setTextColor(0, 0, 0);
-      
-      // Equipment details - exclude "À identifier" values
+      yPos = headerY + headerHeight + 5;
+
+      // Equipment details
       if (eqInfo) {
         yPos = addField("Type", eqInfo.equipment_type, yPos);
         if (eqInfo.brand && eqInfo.brand !== 'À identifier') {
