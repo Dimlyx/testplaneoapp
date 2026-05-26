@@ -719,40 +719,42 @@ export const generateInterventionPDF = async (
         yPos += 2;
       }
 
-      // Equipment header - distinct badge style with counter
+      // Equipment header — light, elegant style
       const brandDisplay = eqInfo?.brand && eqInfo.brand !== 'À identifier' ? eqInfo.brand : '';
       const modelDisplay = eqInfo?.model && eqInfo.model !== 'À identifier' ? eqInfo.model : '';
       const headerLabel = [brandDisplay, modelDisplay].filter(Boolean).join(' ') || eqInfo?.equipment_type || '';
 
-      const headerHeight = 12;
-      const headerY = yPos - 5;
-      // Main colored band
-      doc.setFillColor(primaryRgb[0], primaryRgb[1], primaryRgb[2]);
+      const headerHeight = 13;
+      const headerY = yPos - 4;
+      // Soft light background
+      doc.setFillColor(246, 248, 250);
       doc.rect(10, headerY, pageWidth - 20, headerHeight, 'F');
-      // Left accent bar
-      doc.setFillColor(accentRgb[0], accentRgb[1], accentRgb[2]);
-      doc.rect(10, headerY, 4, headerHeight, 'F');
-      // Counter badge (top-right)
+      // Thin colored left accent bar
+      doc.setFillColor(primaryRgb[0], primaryRgb[1], primaryRgb[2]);
+      doc.rect(10, headerY, 3, headerHeight, 'F');
+      // Subtle bottom border
+      doc.setDrawColor(225, 230, 235);
+      doc.setLineWidth(0.3);
+      doc.line(10, headerY + headerHeight, pageWidth - 10, headerY + headerHeight);
+      // Counter (right, subtle)
       const counterText = `${i + 1} / ${totalEquipments}`;
-      doc.setFontSize(9);
+      doc.setFontSize(8.5);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(140, 150, 160);
+      const counterWidth = doc.getTextWidth(counterText);
+      doc.text(counterText, pageWidth - 14 - counterWidth, headerY + headerHeight - 4.5);
+      // Title in primary color
+      doc.setFontSize(11.5);
       doc.setFont("helvetica", "bold");
-      const counterWidth = doc.getTextWidth(counterText) + 6;
-      doc.setFillColor(255, 255, 255);
-      doc.rect(pageWidth - 14 - counterWidth, headerY + 2, counterWidth, headerHeight - 4, 'F');
       doc.setTextColor(primaryRgb[0], primaryRgb[1], primaryRgb[2]);
-      doc.text(counterText, pageWidth - 14 - counterWidth + 3, headerY + headerHeight - 4);
-      // Title
-      doc.setFontSize(12);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(255, 255, 255);
-      const titleText = `ÉQUIPEMENT ${i + 1}${headerLabel ? ` — ${headerLabel}` : ''}`;
-      const maxTitleWidth = pageWidth - 20 - 8 - counterWidth - 6;
+      const titleText = `ÉQUIPEMENT ${i + 1}${headerLabel ? `  ·  ${headerLabel}` : ''}`;
+      const maxTitleWidth = pageWidth - 20 - 10 - counterWidth - 8;
       let displayTitle = titleText;
       while (doc.getTextWidth(displayTitle) > maxTitleWidth && displayTitle.length > 4) {
         displayTitle = displayTitle.slice(0, -2);
       }
       if (displayTitle !== titleText) displayTitle = displayTitle.slice(0, -1) + '…';
-      doc.text(displayTitle, 18, headerY + headerHeight - 4);
+      doc.text(displayTitle, 17, headerY + headerHeight - 4.5);
 
       doc.setFont("helvetica", "normal");
       doc.setTextColor(0, 0, 0);
@@ -1066,40 +1068,37 @@ export const generateInterventionPDF = async (
 
     // Render loopable steps per iteration
     for (let loopIdx = 0; loopIdx < totalLoops; loopIdx++) {
-      // Add loop separator label if multiple loops — strong visual block
+      // Add loop separator label if multiple loops — light elegant style
       if (totalLoops > 1) {
-        checkNewPage(30);
-        // Spacing + dashed separator before each equipment loop
+        checkNewPage(28);
         if (loopIdx > 0) {
           yPos += 4;
-          doc.setDrawColor(180, 180, 180);
-          doc.setLineWidth(0.4);
-          doc.setLineDashPattern([2, 2], 0);
+          doc.setDrawColor(225, 230, 235);
+          doc.setLineWidth(0.3);
           doc.line(15, yPos, pageWidth - 15, yPos);
-          doc.setLineDashPattern([], 0);
           yPos += 6;
         }
-        // Colored band header
-        const bandH = 11;
+        const bandH = 12;
+        const bandY = yPos;
+        // Soft light background
+        doc.setFillColor(246, 248, 250);
+        doc.rect(15, bandY, pageWidth - 30, bandH, 'F');
+        // Thin colored left accent bar
         doc.setFillColor(primaryRgb[0], primaryRgb[1], primaryRgb[2]);
-        doc.rect(15, yPos, pageWidth - 30, bandH, 'F');
-        // Left accent bar
-        doc.setFillColor(34, 197, 94);
-        doc.rect(15, yPos, 2.5, bandH, 'F');
-        // Counter badge right
+        doc.rect(15, bandY, 3, bandH, 'F');
+        // Counter (right, subtle)
         const counterText = `${loopIdx + 1} / ${totalLoops}`;
-        doc.setFontSize(9);
-        doc.setFont("helvetica", "bold");
-        doc.setTextColor(255, 255, 255);
-        const cw = doc.getTextWidth(counterText) + 6;
-        doc.setFillColor(0, 0, 0);
-        doc.rect(pageWidth - 15 - cw - 2, yPos + 2, cw, bandH - 4, 'F');
-        doc.text(counterText, pageWidth - 15 - cw / 2 - 2, yPos + bandH / 2 + 1.5, { align: 'center' });
-        // Title
+        doc.setFontSize(8.5);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(140, 150, 160);
+        const cw = doc.getTextWidth(counterText);
+        doc.text(counterText, pageWidth - 19 - cw, bandY + bandH - 4.5);
+        // Title in primary color
         doc.setFontSize(11);
-        doc.setTextColor(255, 255, 255);
-        doc.text(`ÉQUIPEMENT ${loopIdx + 1}`, 22, yPos + bandH / 2 + 1.5);
-        yPos += bandH + 5;
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(primaryRgb[0], primaryRgb[1], primaryRgb[2]);
+        doc.text(`ÉQUIPEMENT ${loopIdx + 1}`, 22, bandY + bandH - 4.5);
+        yPos = bandY + bandH + 5;
         doc.setTextColor(0, 0, 0);
         doc.setFont("helvetica", "normal");
       }
