@@ -1066,16 +1066,42 @@ export const generateInterventionPDF = async (
 
     // Render loopable steps per iteration
     for (let loopIdx = 0; loopIdx < totalLoops; loopIdx++) {
-      // Add loop separator label if multiple loops
+      // Add loop separator label if multiple loops — strong visual block
       if (totalLoops > 1) {
-        checkNewPage(15);
+        checkNewPage(30);
+        // Spacing + dashed separator before each equipment loop
+        if (loopIdx > 0) {
+          yPos += 4;
+          doc.setDrawColor(180, 180, 180);
+          doc.setLineWidth(0.4);
+          doc.setLineDashPattern([2, 2], 0);
+          doc.line(15, yPos, pageWidth - 15, yPos);
+          doc.setLineDashPattern([], 0);
+          yPos += 6;
+        }
+        // Colored band header
+        const bandH = 11;
+        doc.setFillColor(primaryRgb[0], primaryRgb[1], primaryRgb[2]);
+        doc.rect(15, yPos, pageWidth - 30, bandH, 'F');
+        // Left accent bar
+        doc.setFillColor(34, 197, 94);
+        doc.rect(15, yPos, 2.5, bandH, 'F');
+        // Counter badge right
+        const counterText = `${loopIdx + 1} / ${totalLoops}`;
         doc.setFontSize(9);
         doc.setFont("helvetica", "bold");
-        doc.setTextColor(100, 100, 100);
-        doc.text(`— Équipement ${loopIdx + 1} —`, pageWidth / 2, yPos, { align: 'center' });
+        doc.setTextColor(255, 255, 255);
+        const cw = doc.getTextWidth(counterText) + 6;
+        doc.setFillColor(0, 0, 0);
+        doc.rect(pageWidth - 15 - cw - 2, yPos + 2, cw, bandH - 4, 'F');
+        doc.text(counterText, pageWidth - 15 - cw / 2 - 2, yPos + bandH / 2 + 1.5, { align: 'center' });
+        // Title
+        doc.setFontSize(11);
+        doc.setTextColor(255, 255, 255);
+        doc.text(`ÉQUIPEMENT ${loopIdx + 1}`, 22, yPos + bandH / 2 + 1.5);
+        yPos += bandH + 5;
         doc.setTextColor(0, 0, 0);
         doc.setFont("helvetica", "normal");
-        yPos += 8;
       }
 
       for (const step of loopableSteps) {
