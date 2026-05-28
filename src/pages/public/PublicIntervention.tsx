@@ -174,7 +174,8 @@ const PublicIntervention = () => {
         <div className="container max-w-2xl mx-auto px-4">
           <div className="flex items-center gap-3 mb-2">
             {companySettings.logoUrl ? (
-              <img src={companySettings.logoUrl} alt="Logo" className="h-10 w-auto object-contain bg-white rounded p-1" />
+              <img src={companySettings.logoUrl} alt="Logo" className="h-10 w-auto object-contain" />
+
             ) : (
               <Wrench className="h-6 w-6" />
             )}
