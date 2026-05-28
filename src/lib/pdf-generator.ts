@@ -589,10 +589,7 @@ export const generateInterventionPDF = async (
           ? img.naturalWidth / img.naturalHeight 
           : 1.2;
         logoWidth = logoHeight * aspectRatio;
-        // Draw white background behind logo (like extranet bg-white rounded p-1)
-        const logoPad = 2;
-        doc.setFillColor(255, 255, 255);
-        doc.roundedRect(logoMargin - logoPad, 10 - logoPad, logoWidth + logoPad * 2, logoHeight + logoPad * 2, 2, 2, 'F');
+        // No white background — match extranet (logo direct on header)
         safeAddImage(doc, logoBase64, logoMargin, 10, logoWidth, logoHeight);
         logoWidth += 10; // Add spacing after logo
       }
