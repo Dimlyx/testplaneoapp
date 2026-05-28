@@ -172,18 +172,32 @@ const PublicIntervention = () => {
       {/* Header */}
       <header className="py-6" style={{ backgroundColor: effectivePrimaryColor, color: headerTextColor }}>
         <div className="container max-w-2xl mx-auto px-4">
-          <div className="flex items-center gap-3 mb-2">
-            {companySettings.logoUrl ? (
-              <img src={companySettings.logoUrl} alt="Logo" className="h-10 w-auto object-contain" />
-
-            ) : (
-              <Wrench className="h-6 w-6" />
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-3 min-w-0">
+              {companySettings.logoUrl ? (
+                <img src={companySettings.logoUrl} alt="Logo" className="h-12 w-auto object-contain shrink-0" />
+              ) : (
+                <Wrench className="h-6 w-6 shrink-0 mt-1" />
+              )}
+              <div className="min-w-0">
+                {companySettings.name && (
+                  <div className="text-sm font-semibold uppercase tracking-wide opacity-90">{companySettings.name}</div>
+                )}
+                <h1 className="text-xl font-bold leading-tight">Rapport d'intervention</h1>
+                {client?.name && (
+                  <div className="text-sm opacity-90 mt-0.5">{client.name}</div>
+                )}
+              </div>
+            </div>
+            {(companySettings.phone || companySettings.email) && (
+              <div className="text-xs opacity-90 text-right shrink-0 hidden sm:block">
+                {[companySettings.phone, companySettings.email].filter(Boolean).join(' | ')}
+              </div>
             )}
-            <span className="font-semibold">{companySettings.name || "Service Intervention"}</span>
           </div>
-          <h1 className="text-xl font-bold">Rapport d'intervention</h1>
         </div>
       </header>
+
 
       <main className="container max-w-2xl mx-auto px-4 py-6 space-y-4">
         {/* Type d'intervention */}
