@@ -45,6 +45,58 @@ function getBackoff(attempts: number): number {
   return BACKOFF_MS[Math.min(attempts, BACKOFF_MS.length - 1)];
 }
 
+/**
+ * Rewrite the completion row so a `local://` URL becomes the freshly-uploaded
+ * `https://` URL. Returns:
+ *  - 'updated'  : row found and successfully rewritten
+ *  - 'not-found': no completion row references this localUrl (draft not saved
+ *                 yet OR user removed the photo). Caller should NOT delete the
+ *                 IDB blob in the first case; the periodic worker will retry.
+ *  - throws     : on transient DB error (caller treats as failure)
+ */
+export async function swapLocalUrlInCompletion(params: {
+  interventionId: string;
+  stepId: string;
+  loopIndex: number;
+  localUrl: string;
+  remoteUrl: string;
+}): Promise<'updated' | 'not-found'> {
+  const { interventionId, stepId, loopIndex, localUrl, remoteUrl } = params;
+  const { data: completion, error: fetchErr } = await withTimeout(
+    supabase
+      .from('intervention_step_completions')
+      .select('id, photo_url')
+      .eq('intervention_id', interventionId)
+      .eq('step_id', stepId)
+      .eq('loop_index', loopIndex)
+      .maybeSingle(),
+    8000,
+  );
+  if (fetchErr) throw fetchErr;
+  if (!completion || !completion.photo_url) return 'not-found';
+
+  let urls: string[];
+  try {
+    const parsed = JSON.parse(completion.photo_url);
+    urls = Array.isArray(parsed) ? parsed : [completion.photo_url];
+  } catch {
+    urls = [completion.photo_url];
+  }
+  if (!urls.includes(localUrl)) return 'not-found';
+
+  const updated = urls.map(u => (u === localUrl ? remoteUrl : u));
+  const serialized = updated.length === 1 ? updated[0] : JSON.stringify(updated);
+  const { error: updErr } = await withTimeout(
+    supabase
+      .from('intervention_step_completions')
+      .update({ photo_url: serialized })
+      .eq('id', completion.id),
+    8000,
+  );
+  if (updErr) throw updErr;
+  return 'updated';
+}
+
 /** Upload one stored photo, then update the DB and delete the local copy. */
 async function uploadOne(photo: StoredStepPhoto): Promise<boolean> {
   const localUrl = `${LOCAL_PHOTO_PREFIX}${photo.id}`;
@@ -61,7 +113,6 @@ async function uploadOne(photo: StoredStepPhoto): Promise<boolean> {
     30_000,
   );
   if (uploadError) {
-    // If file already exists (rare race), we can still resolve to its public URL
     if (!String(uploadError.message || '').toLowerCase().includes('exists')) {
       throw uploadError;
     }
@@ -72,45 +123,18 @@ async function uploadOne(photo: StoredStepPhoto): Promise<boolean> {
     .getPublicUrl(fileName);
   const remoteUrl = urlData.publicUrl;
 
-  // 2. Find the completion row referencing this local URL and rewrite it
-  const { data: completion, error: fetchErr } = await withTimeout(
-    supabase
-      .from('intervention_step_completions')
-      .select('id, photo_url')
-      .eq('intervention_id', photo.interventionId)
-      .eq('step_id', photo.stepId)
-      .eq('loop_index', photo.loopIndex)
-      .maybeSingle(),
-    8000,
-  );
-  if (fetchErr) throw fetchErr;
-
-  if (completion && completion.photo_url) {
-    let urls: string[];
-    try {
-      const parsed = JSON.parse(completion.photo_url);
-      urls = Array.isArray(parsed) ? parsed : [completion.photo_url];
-    } catch {
-      urls = [completion.photo_url];
-    }
-    if (urls.includes(localUrl)) {
-      const updated = urls.map(u => (u === localUrl ? remoteUrl : u));
-      const serialized = updated.length === 1 ? updated[0] : JSON.stringify(updated);
-      const { error: updErr } = await withTimeout(
-        supabase
-          .from('intervention_step_completions')
-          .update({ photo_url: serialized })
-          .eq('id', completion.id),
-        8000,
-      );
-      if (updErr) throw updErr;
-    }
-  }
+  // 2. Rewrite the completion row so future loads use the remote URL
+  await swapLocalUrlInCompletion({
+    interventionId: photo.interventionId,
+    stepId: photo.stepId,
+    loopIndex: photo.loopIndex,
+    localUrl,
+    remoteUrl,
+  });
   // If no completion references this local URL anymore, the user removed the
   // photo client-side — we can safely drop the orphan.
 
-  // 3. Warm the Service Worker cache with the freshly-uploaded photo so
-  //    it stays viewable if the device goes offline right after upload.
+  // 3. Warm the Service Worker cache.
   try { precachePhoto(remoteUrl); } catch { /* best-effort */ }
 
   // 4. Delete local copy
