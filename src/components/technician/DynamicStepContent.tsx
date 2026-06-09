@@ -20,6 +20,7 @@ import {
 } from "@/lib/step-photo-store";
 import { isReallyOnline } from "@/lib/network-status";
 import { withTimeout } from "@/lib/supabase-with-timeout";
+import { swapLocalUrlInCompletion } from "@/lib/step-photo-retry";
 
 const SIGNATURE_UPLOAD_TIMEOUT_MS = 4000;
 
@@ -220,7 +221,6 @@ const DynamicStepContent = ({
       const uploadPromise = (async (): Promise<string | null> => {
         try {
           if (!navigator.onLine) {
-            // Offline → keep local copy. Sync queue will pick it up later.
             return localUrl;
           }
           const fileName = `steps/${interventionId}/${step.id}-loop${loopIndex}-${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
@@ -234,13 +234,30 @@ const DynamicStepContent = ({
             .getPublicUrl(fileName);
           const remoteUrl = urlData.publicUrl;
 
-          // Swap local:// for remote and free the IndexedDB slot
+          // Update in-component state for instant UI swap
           setPhotoUrls(prev => prev.map(u => u === localUrl ? remoteUrl : u));
-          await deleteStepPhoto(localUrl);
+
+          // Persist the swap directly in the DB before deleting the local
+          // blob. This prevents data loss if the technician navigates away
+          // before the debounced draft save fires. If no draft row exists
+          // yet, keep the IDB blob — the periodic retry worker reconciles.
+          try {
+            const result = await swapLocalUrlInCompletion({
+              interventionId,
+              stepId: step.id,
+              loopIndex,
+              localUrl,
+              remoteUrl,
+            });
+            if (result === 'updated') {
+              await deleteStepPhoto(localUrl);
+            }
+          } catch (dbErr) {
+            console.warn('Failed to persist remote URL, keeping local blob as safety net:', dbErr);
+          }
           return remoteUrl;
         } catch (error: any) {
           console.warn('Photo upload failed, keeping local copy in IndexedDB:', error?.message);
-          // IMPORTANT: do not delete — local:// URL stays, photo is safe.
           return localUrl;
         } finally {
           setUploadingCount(prev => {
