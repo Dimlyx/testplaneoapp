@@ -182,20 +182,24 @@ export function useOfflineSync() {
           const { interventionId, stepId, comment, photoUrl, loopIndex = 0, checklistData, multipleChoiceData } = mutation.payload;
           const { data: { user } } = await supabase.auth.getUser();
 
+          const resolvedPhotoUrl = await resolveLocalPhotoUrlsForSync(photoUrl, interventionId);
+
           const { data: existing } = await supabase
             .from('intervention_step_completions')
-            .select('id')
+            .select('id, photo_url')
             .eq('intervention_id', interventionId)
             .eq('step_id', stepId)
             .eq('loop_index', loopIndex)
             .maybeSingle();
+
+          const finalPhotoUrl = mergePreferRemote((existing as any)?.photo_url, resolvedPhotoUrl);
 
           if (existing) {
             const { error } = await supabase
               .from('intervention_step_completions')
               .update({
                 comment: comment || null,
-                photo_url: photoUrl || null,
+                photo_url: finalPhotoUrl,
                 checklist_data: checklistData || null,
                 multiple_choice_data: multipleChoiceData || null,
               } as any)
@@ -210,7 +214,7 @@ export function useOfflineSync() {
                 completed_at: null,
                 completed_by: user?.id || null,
                 comment: comment || null,
-                photo_url: photoUrl || null,
+                photo_url: finalPhotoUrl,
                 loop_index: loopIndex,
                 checklist_data: checklistData || null,
                 multiple_choice_data: multipleChoiceData || null,
