@@ -32,6 +32,7 @@ import {
   startStepPhotoRetryWorker,
   runStepPhotoRetryCycle,
   forceStepPhotoRetry,
+  resolveLocalPhotoUrlsForSync,
 } from '@/lib/step-photo-retry';
 import { countPendingStepPhotos } from '@/lib/step-photo-store';
 
