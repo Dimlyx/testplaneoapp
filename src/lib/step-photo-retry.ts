@@ -36,19 +36,56 @@ import { precachePhoto } from '@/lib/photo-precache';
  * value (single URL or JSON array) and return the same shape with every
  * local reference replaced by its remote https:// URL.
  *
- * - If a local blob is missing from IndexedDB, the original local:// URL is kept.
- * - If upload fails, the local:// URL is kept so the retry worker can retry.
- * - Successfully uploaded blobs are deleted from IndexedDB.
+ * - If a local blob is missing from IndexedDB, we also look for an already
+ *   uploaded orphan in Storage (previous sync may have uploaded before the DB write).
+ * - If upload/recovery fails, the local:// URL is kept so sync can retry.
+ * - Local blobs are deleted only after the database write succeeds.
  *
  * Used at sync-replay time so queued `complete_step` / `save_draft_step`
  * mutations never overwrite an already-resolved remote URL with a stale
  * `local://` reference.
  */
+export interface ResolvedLocalPhotoUrls {
+  photoUrl: string | null;
+  resolvedLocalUrls: string[];
+  unresolvedLocalUrls: string[];
+}
+
+async function findPreviouslyUploadedStepPhoto(
+  interventionId: string,
+  localUrl: string,
+): Promise<string | null> {
+  if (!isLocalPhotoUrl(localUrl)) return null;
+  const id = localUrl.slice(LOCAL_PHOTO_PREFIX.length);
+
+  try {
+    const { data, error } = await withTimeout(
+      supabase.storage
+        .from('intervention-photos')
+        .list(`steps/${interventionId}`, { limit: 20, search: id }),
+      8000,
+    );
+
+    if (error || !data?.length) return null;
+    const match = data.find((item: any) => item?.name?.includes(id));
+    if (!match?.name) return null;
+
+    const { data: urlData } = supabase.storage
+      .from('intervention-photos')
+      .getPublicUrl(`steps/${interventionId}/${match.name}`);
+    return urlData.publicUrl;
+  } catch {
+    return null;
+  }
+}
+
 export async function resolveLocalPhotoUrlsForSync(
   photoUrl: string | null | undefined,
   interventionId: string,
-): Promise<string | null> {
-  if (!photoUrl) return photoUrl ?? null;
+): Promise<ResolvedLocalPhotoUrls> {
+  if (!photoUrl) {
+    return { photoUrl: photoUrl ?? null, resolvedLocalUrls: [], unresolvedLocalUrls: [] };
+  }
 
   let urls: string[];
   let wasArray = false;
@@ -61,13 +98,25 @@ export async function resolveLocalPhotoUrlsForSync(
   }
 
   const resolved: string[] = [];
+  const resolvedLocalUrls: string[] = [];
+  const unresolvedLocalUrls: string[] = [];
   for (const u of urls) {
     if (!isLocalPhotoUrl(u)) { resolved.push(u); continue; }
     const id = u.slice(LOCAL_PHOTO_PREFIX.length);
     try {
       const blob = await getStepPhotoBlob(u);
-      if (!blob) { resolved.push(u); continue; }
-      const fileName = `steps/${interventionId}/sync-${Date.now()}-${id}.jpg`;
+      if (!blob) {
+        const recovered = await findPreviouslyUploadedStepPhoto(interventionId, u);
+        if (recovered) {
+          resolved.push(recovered);
+          resolvedLocalUrls.push(u);
+        } else {
+          unresolvedLocalUrls.push(u);
+          resolved.push(u);
+        }
+        continue;
+      }
+      const fileName = `steps/${interventionId}/sync-${id}.jpg`;
       const { error: uploadError } = await withTimeout(
         supabase.storage
           .from('intervention-photos')
@@ -75,7 +124,14 @@ export async function resolveLocalPhotoUrlsForSync(
         30_000,
       );
       if (uploadError && !String(uploadError.message || '').toLowerCase().includes('exists')) {
-        resolved.push(u);
+        const recovered = await findPreviouslyUploadedStepPhoto(interventionId, u);
+        if (recovered) {
+          resolved.push(recovered);
+          resolvedLocalUrls.push(u);
+        } else {
+          unresolvedLocalUrls.push(u);
+          resolved.push(u);
+        }
         continue;
       }
       const { data: urlData } = supabase.storage
@@ -83,16 +139,20 @@ export async function resolveLocalPhotoUrlsForSync(
         .getPublicUrl(fileName);
       const remoteUrl = urlData.publicUrl;
       try { precachePhoto(remoteUrl); } catch { /* best-effort */ }
-      await deleteStepPhoto(u).catch(() => {});
+      resolvedLocalUrls.push(u);
       resolved.push(remoteUrl);
     } catch (err) {
       console.warn('[resolveLocalPhotoUrlsForSync] failed for', u, err);
+      unresolvedLocalUrls.push(u);
       resolved.push(u);
     }
   }
 
-  if (wasArray) return JSON.stringify(resolved);
-  return resolved[0] ?? null;
+  return {
+    photoUrl: wasArray ? JSON.stringify(resolved) : (resolved[0] ?? null),
+    resolvedLocalUrls,
+    unresolvedLocalUrls,
+  };
 }
 
 // Per-photo retry state kept in memory (resets on app reload, which is fine —
@@ -189,16 +249,19 @@ async function uploadOne(photo: StoredStepPhoto): Promise<boolean> {
     .getPublicUrl(fileName);
   const remoteUrl = urlData.publicUrl;
 
-  // 2. Rewrite the completion row so future loads use the remote URL
-  await swapLocalUrlInCompletion({
+  // 2. Rewrite the completion row so future loads use the remote URL.
+  // If the row is not present yet, keep the local blob: the queued step
+  // mutation still needs it to rewrite local:// before its own DB write.
+  const swapResult = await swapLocalUrlInCompletion({
     interventionId: photo.interventionId,
     stepId: photo.stepId,
     loopIndex: photo.loopIndex,
     localUrl,
     remoteUrl,
   });
-  // If no completion references this local URL anymore, the user removed the
-  // photo client-side — we can safely drop the orphan.
+  if (swapResult === 'not-found') {
+    return false;
+  }
 
   // 3. Warm the Service Worker cache.
   try { precachePhoto(remoteUrl); } catch { /* best-effort */ }
@@ -241,8 +304,8 @@ export async function runStepPhotoRetryCycle(): Promise<{
 
       attempted++;
       try {
-        await uploadOne(photo);
-        succeeded++;
+        const updated = await uploadOne(photo);
+        if (updated) succeeded++;
       } catch (err: any) {
         failed++;
         const attempts = state.attempts + 1;
