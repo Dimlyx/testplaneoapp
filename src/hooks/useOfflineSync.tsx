@@ -406,6 +406,16 @@ export function useOfflineSync() {
     let errorCount = 0;
 
     try {
+      // 1. Upload pending local step photos FIRST so queued mutations that
+      //    reference them can be rewritten to remote URLs before the DB write.
+      try {
+        const photoCycle = await runStepPhotoRetryCycle();
+        successCount += photoCycle.succeeded;
+        errorCount += photoCycle.failed;
+      } catch (err) {
+        console.warn('step-photo retry cycle failed', err);
+      }
+
       const mutations = await getPendingMutations();
       for (const mutation of mutations) {
         if (!isReallyOnline()) break;
@@ -430,13 +440,14 @@ export function useOfflineSync() {
         else errorCount++;
       }
 
-      // Retry orphaned local step photos (those still in IndexedDB)
+      // 2. Final retry pass to catch any photos uploaded as side-effect of the
+      //    mutation replay (and to surface remaining failures).
       try {
-        const photoCycle = await runStepPhotoRetryCycle();
-        successCount += photoCycle.succeeded;
-        errorCount += photoCycle.failed;
+        const photoCycle2 = await runStepPhotoRetryCycle();
+        successCount += photoCycle2.succeeded;
+        errorCount += photoCycle2.failed;
       } catch (err) {
-        console.warn('step-photo retry cycle failed', err);
+        console.warn('step-photo retry cycle (final) failed', err);
       }
 
       await queryClient.invalidateQueries({ queryKey: ['technician-interventions'] });
