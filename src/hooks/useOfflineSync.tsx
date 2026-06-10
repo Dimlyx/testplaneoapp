@@ -129,18 +129,23 @@ export function useOfflineSync() {
         case 'complete_step': {
           const { interventionId, stepId, comment, photoUrl, loopIndex = 0, checklistData, multipleChoiceData, completedAt } = mutation.payload;
           const { data: { user } } = await supabase.auth.getUser();
-          // Use the timestamp captured when the technician actually completed the step
-          // (offline), not the time of synchronization. Fallback to mutation.createdAt
-          // for older queued items that predate this field.
           const completedAtIso = completedAt || new Date(mutation.createdAt).toISOString();
+
+          // Resolve any local:// photo references to remote URLs (uploads pending blobs)
+          // BEFORE writing the row, so we never overwrite an already-uploaded URL.
+          const resolvedPhotoUrl = await resolveLocalPhotoUrlsForSync(photoUrl, interventionId);
 
           const { data: existing } = await supabase
             .from('intervention_step_completions')
-            .select('id')
+            .select('id, photo_url')
             .eq('intervention_id', interventionId)
             .eq('step_id', stepId)
             .eq('loop_index', loopIndex)
             .maybeSingle();
+
+          // Merge: if DB already holds a remote URL where the queued mutation still
+          // has a local:// (upload failed this round), keep the DB value.
+          const finalPhotoUrl = mergePreferRemote((existing as any)?.photo_url, resolvedPhotoUrl);
 
           if (existing) {
             const { error } = await supabase
@@ -149,7 +154,7 @@ export function useOfflineSync() {
                 completed_at: completedAtIso,
                 completed_by: user?.id || null,
                 comment: comment || null,
-                photo_url: photoUrl || null,
+                photo_url: finalPhotoUrl,
                 checklist_data: checklistData || null,
                 multiple_choice_data: multipleChoiceData || null,
               } as any)
@@ -164,7 +169,7 @@ export function useOfflineSync() {
                 completed_at: completedAtIso,
                 completed_by: user?.id || null,
                 comment: comment || null,
-                photo_url: photoUrl || null,
+                photo_url: finalPhotoUrl,
                 loop_index: loopIndex,
                 checklist_data: checklistData || null,
                 multiple_choice_data: multipleChoiceData || null,
