@@ -36,6 +36,49 @@ import {
 } from '@/lib/step-photo-retry';
 import { countPendingStepPhotos } from '@/lib/step-photo-store';
 
+import { isLocalPhotoUrl } from '@/lib/step-photo-store';
+
+/**
+ * Merge a queued photo_url against what's currently in the DB.
+ * If a slot in the DB already holds a remote https:// URL but the queued
+ * mutation still carries a local:// reference, the DB value wins (an earlier
+ * retry has already uploaded that photo — don't clobber it).
+ */
+function mergePreferRemote(dbValue: string | null | undefined, queued: string | null | undefined): string | null {
+  if (!dbValue) return queued ?? null;
+  if (!queued) return dbValue ?? null;
+
+  const parse = (v: string): { arr: string[]; wasArray: boolean } => {
+    try {
+      const p = JSON.parse(v);
+      if (Array.isArray(p)) return { arr: p, wasArray: true };
+    } catch { /* not JSON */ }
+    return { arr: [v], wasArray: false };
+  };
+
+  const db = parse(dbValue);
+  const q = parse(queued);
+
+  // Single-value case
+  if (!db.wasArray && !q.wasArray) {
+    if (isLocalPhotoUrl(q.arr[0]) && !isLocalPhotoUrl(db.arr[0])) return dbValue;
+    return queued;
+  }
+
+  // Array case (or mixed) — align by index, prefer remote
+  const len = Math.max(db.arr.length, q.arr.length);
+  const merged: string[] = [];
+  for (let i = 0; i < len; i++) {
+    const d = db.arr[i];
+    const x = q.arr[i];
+    if (x === undefined) { if (d !== undefined) merged.push(d); continue; }
+    if (d === undefined) { merged.push(x); continue; }
+    if (isLocalPhotoUrl(x) && !isLocalPhotoUrl(d)) merged.push(d);
+    else merged.push(x);
+  }
+  return merged.length === 1 ? merged[0] : JSON.stringify(merged);
+}
+
 interface SyncState {
   isOnline: boolean;
   isSyncing: boolean;
