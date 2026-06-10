@@ -5,6 +5,8 @@ import { addMutation } from "@/lib/offline-db";
 import { precachePhotos, extractPhotoUrls } from "@/lib/photo-precache";
 import { isReallyOnline } from "@/lib/network-status";
 import { withTimeout } from "@/lib/supabase-with-timeout";
+import { resolveLocalPhotoUrlsForSync } from "@/lib/step-photo-retry";
+import { deleteStepPhoto, isLocalPhotoUrl } from "@/lib/step-photo-store";
 
 // Hard cap so the "Suivant" button never appears stuck on a flaky network.
 // The mutation is fire-and-forget anyway, but we still want the background
@@ -36,7 +38,32 @@ export function useStepCompletions(interventionId: string) {
         .order("loop_index", { ascending: true });
 
       if (error) throw error;
-      const completions = data as unknown as StepCompletion[];
+      let completions = data as unknown as StepCompletion[];
+
+      // Recovery pass: if a previous sync uploaded step photos but crashed
+      // before replacing local:// URLs in the row, resolve them from Storage
+      // as soon as the intervention is opened again.
+      if (isReallyOnline()) {
+        const recovered = await Promise.all(completions.map(async (completion) => {
+          const urls = extractPhotoUrls(completion.photo_url);
+          if (!urls.some(isLocalPhotoUrl)) return completion;
+
+          const resolved = await resolveLocalPhotoUrlsForSync(completion.photo_url, interventionId);
+          if (resolved.photoUrl === completion.photo_url || resolved.unresolvedLocalUrls.length > 0) {
+            return completion;
+          }
+
+          const { error: updateError } = await supabase
+            .from("intervention_step_completions")
+            .update({ photo_url: resolved.photoUrl } as any)
+            .eq("id", completion.id);
+          if (updateError) return completion;
+
+          await Promise.all(resolved.resolvedLocalUrls.map(url => deleteStepPhoto(url).catch(() => {})));
+          return { ...completion, photo_url: resolved.photoUrl };
+        }));
+        completions = recovered;
+      }
 
       // Warm the Service Worker cache so step photos remain viewable
       // if the technician later goes offline (airplane mode, dead zone).
