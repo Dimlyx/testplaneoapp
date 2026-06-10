@@ -34,7 +34,7 @@ import {
   forceStepPhotoRetry,
   resolveLocalPhotoUrlsForSync,
 } from '@/lib/step-photo-retry';
-import { countPendingStepPhotos } from '@/lib/step-photo-store';
+import { countPendingStepPhotos, deleteStepPhoto } from '@/lib/step-photo-store';
 
 import { isLocalPhotoUrl } from '@/lib/step-photo-store';
 
@@ -176,7 +176,7 @@ export function useOfflineSync() {
 
           // Resolve any local:// photo references to remote URLs (uploads pending blobs)
           // BEFORE writing the row, so we never overwrite an already-uploaded URL.
-          const resolvedPhotoUrl = await resolveLocalPhotoUrlsForSync(photoUrl, interventionId);
+          const resolvedPhoto = await resolveLocalPhotoUrlsForSync(photoUrl, interventionId);
 
           const { data: existing } = await supabase
             .from('intervention_step_completions')
@@ -188,7 +188,7 @@ export function useOfflineSync() {
 
           // Merge: if DB already holds a remote URL where the queued mutation still
           // has a local:// (upload failed this round), keep the DB value.
-          const finalPhotoUrl = mergePreferRemote((existing as any)?.photo_url, resolvedPhotoUrl);
+          const finalPhotoUrl = mergePreferRemote((existing as any)?.photo_url, resolvedPhoto.photoUrl);
 
           if (existing) {
             const { error } = await supabase
@@ -219,13 +219,14 @@ export function useOfflineSync() {
               } as any);
             if (error) throw error;
           }
+          await Promise.all(resolvedPhoto.resolvedLocalUrls.map(url => deleteStepPhoto(url).catch(() => {})));
           break;
         }
         case 'save_draft_step': {
           const { interventionId, stepId, comment, photoUrl, loopIndex = 0, checklistData, multipleChoiceData } = mutation.payload;
           const { data: { user } } = await supabase.auth.getUser();
 
-          const resolvedPhotoUrl = await resolveLocalPhotoUrlsForSync(photoUrl, interventionId);
+          const resolvedPhoto = await resolveLocalPhotoUrlsForSync(photoUrl, interventionId);
 
           const { data: existing } = await supabase
             .from('intervention_step_completions')
@@ -235,7 +236,7 @@ export function useOfflineSync() {
             .eq('loop_index', loopIndex)
             .maybeSingle();
 
-          const finalPhotoUrl = mergePreferRemote((existing as any)?.photo_url, resolvedPhotoUrl);
+          const finalPhotoUrl = mergePreferRemote((existing as any)?.photo_url, resolvedPhoto.photoUrl);
 
           if (existing) {
             const { error } = await supabase
@@ -264,6 +265,7 @@ export function useOfflineSync() {
               } as any);
             if (error) throw error;
           }
+          await Promise.all(resolvedPhoto.resolvedLocalUrls.map(url => deleteStepPhoto(url).catch(() => {})));
           break;
         }
         case 'uncomplete_step': {
