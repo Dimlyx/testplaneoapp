@@ -249,16 +249,19 @@ async function uploadOne(photo: StoredStepPhoto): Promise<boolean> {
     .getPublicUrl(fileName);
   const remoteUrl = urlData.publicUrl;
 
-  // 2. Rewrite the completion row so future loads use the remote URL
-  await swapLocalUrlInCompletion({
+  // 2. Rewrite the completion row so future loads use the remote URL.
+  // If the row is not present yet, keep the local blob: the queued step
+  // mutation still needs it to rewrite local:// before its own DB write.
+  const swapResult = await swapLocalUrlInCompletion({
     interventionId: photo.interventionId,
     stepId: photo.stepId,
     loopIndex: photo.loopIndex,
     localUrl,
     remoteUrl,
   });
-  // If no completion references this local URL anymore, the user removed the
-  // photo client-side — we can safely drop the orphan.
+  if (swapResult === 'not-found') {
+    return false;
+  }
 
   // 3. Warm the Service Worker cache.
   try { precachePhoto(remoteUrl); } catch { /* best-effort */ }
@@ -301,8 +304,8 @@ export async function runStepPhotoRetryCycle(): Promise<{
 
       attempted++;
       try {
-        await uploadOne(photo);
-        succeeded++;
+        const updated = await uploadOne(photo);
+        if (updated) succeeded++;
       } catch (err: any) {
         failed++;
         const attempts = state.attempts + 1;
