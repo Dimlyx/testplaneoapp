@@ -24,10 +24,76 @@ import { withTimeout } from '@/lib/supabase-with-timeout';
 import {
   getAllPendingStepPhotos,
   deleteStepPhoto,
+  getStepPhotoBlob,
+  isLocalPhotoUrl,
   LOCAL_PHOTO_PREFIX,
   type StoredStepPhoto,
 } from '@/lib/step-photo-store';
 import { precachePhoto } from '@/lib/photo-precache';
+
+/**
+ * Upload (if needed) any `local://` URL contained in a serialized photo_url
+ * value (single URL or JSON array) and return the same shape with every
+ * local reference replaced by its remote https:// URL.
+ *
+ * - If a local blob is missing from IndexedDB, the original local:// URL is kept.
+ * - If upload fails, the local:// URL is kept so the retry worker can retry.
+ * - Successfully uploaded blobs are deleted from IndexedDB.
+ *
+ * Used at sync-replay time so queued `complete_step` / `save_draft_step`
+ * mutations never overwrite an already-resolved remote URL with a stale
+ * `local://` reference.
+ */
+export async function resolveLocalPhotoUrlsForSync(
+  photoUrl: string | null | undefined,
+  interventionId: string,
+): Promise<string | null> {
+  if (!photoUrl) return photoUrl ?? null;
+
+  let urls: string[];
+  let wasArray = false;
+  try {
+    const parsed = JSON.parse(photoUrl);
+    if (Array.isArray(parsed)) { urls = parsed; wasArray = true; }
+    else urls = [photoUrl];
+  } catch {
+    urls = [photoUrl];
+  }
+
+  const resolved: string[] = [];
+  for (const u of urls) {
+    if (!isLocalPhotoUrl(u)) { resolved.push(u); continue; }
+    const id = u.slice(LOCAL_PHOTO_PREFIX.length);
+    try {
+      const blob = await getStepPhotoBlob(u);
+      if (!blob) { resolved.push(u); continue; }
+      const fileName = `steps/${interventionId}/sync-${Date.now()}-${id}.jpg`;
+      const { error: uploadError } = await withTimeout(
+        supabase.storage
+          .from('intervention-photos')
+          .upload(fileName, blob, { contentType: 'image/jpeg', cacheControl: '3600' }),
+        30_000,
+      );
+      if (uploadError && !String(uploadError.message || '').toLowerCase().includes('exists')) {
+        resolved.push(u);
+        continue;
+      }
+      const { data: urlData } = supabase.storage
+        .from('intervention-photos')
+        .getPublicUrl(fileName);
+      const remoteUrl = urlData.publicUrl;
+      try { precachePhoto(remoteUrl); } catch { /* best-effort */ }
+      await deleteStepPhoto(u).catch(() => {});
+      resolved.push(remoteUrl);
+    } catch (err) {
+      console.warn('[resolveLocalPhotoUrlsForSync] failed for', u, err);
+      resolved.push(u);
+    }
+  }
+
+  if (wasArray) return JSON.stringify(resolved);
+  return resolved[0] ?? null;
+}
 
 // Per-photo retry state kept in memory (resets on app reload, which is fine —
 // at startup we want to retry everything immediately anyway).
