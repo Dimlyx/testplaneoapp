@@ -49,7 +49,7 @@ export function useStepCompletions(interventionId: string) {
           if (!urls.some(isLocalPhotoUrl)) return completion;
 
           const resolved = await resolveLocalPhotoUrlsForSync(completion.photo_url, interventionId);
-          if (resolved.photoUrl === completion.photo_url || resolved.unresolvedLocalUrls.length > 0) {
+          if (resolved.photoUrl === completion.photo_url) {
             return completion;
           }
 
