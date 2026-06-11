@@ -618,7 +618,7 @@ const DynamicStepContent = ({
               value={comment}
               onChange={(e) => { lastChangeKindRef.current = 'text'; setComment(e.target.value); }}
               onBlur={flushDraftNow}
-              className="min-h-[80px]"
+              className="min-h-[160px]"
               disabled={isLocked}
             />
 
