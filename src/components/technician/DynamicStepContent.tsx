@@ -682,7 +682,7 @@ const DynamicStepContent = ({
                   onCheckedChange={() => toggleChecklistItem(item.id)}
                   disabled={isLocked}
                 />
-                <span className={`text-sm ${item.checked ? "text-muted-foreground line-through" : "text-foreground"}`}>
+                <span className={`text-sm ${item.checked ? "text-muted-foreground" : "text-foreground"}`}>
                   {item.label}
                 </span>
               </label>
