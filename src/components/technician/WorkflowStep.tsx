@@ -25,15 +25,8 @@ const WorkflowStep = ({
 }: WorkflowStepProps) => {
   return (
     <div className="relative">
-      {/* Connector line */}
-      {!isLast && (
-        <div 
-          className={cn(
-            "absolute left-6 top-12 w-0.5 h-full -translate-x-1/2",
-            isCompleted ? "bg-primary" : "bg-border"
-          )}
-        />
-      )}
+      {/* Connector line removed for better visibility */}
+
       
       {/* Step content */}
       <div 
