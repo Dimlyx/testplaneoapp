@@ -30,6 +30,57 @@ import {
   type StoredStepPhoto,
 } from '@/lib/step-photo-store';
 import { precachePhoto } from '@/lib/photo-precache';
+import { getPendingMutations } from '@/lib/offline-db';
+
+/**
+ * Decide if a locally-stored step photo is now an orphan that can be safely
+ * deleted from IndexedDB:
+ *  - The completion row exists and its photo_url no longer references our
+ *    local:// URL  → the photo was already handled by another sync path
+ *    (typically resolveLocalPhotoUrlsForSync running inside the queued
+ *    complete_step / save_draft_step mutation). Safe to drop.
+ *  - No completion row AND no pending mutation references this localUrl
+ *    → the user removed the photo or the step was reset. Safe to drop.
+ */
+async function isStepPhotoOrphan(
+  photo: StoredStepPhoto,
+  localUrl: string,
+): Promise<boolean> {
+  try {
+    const { data: completion } = await withTimeout(
+      supabase
+        .from('intervention_step_completions')
+        .select('photo_url')
+        .eq('intervention_id', photo.interventionId)
+        .eq('step_id', photo.stepId)
+        .eq('loop_index', photo.loopIndex)
+        .maybeSingle(),
+      8000,
+    );
+
+    if (completion?.photo_url) {
+      // Row exists. If its photo_url does NOT contain our localUrl, the photo
+      // has been replaced by a remote URL → safe to delete the local blob.
+      return !String(completion.photo_url).includes(localUrl);
+    }
+
+    // No completion row → check pending mutations.
+    const mutations = await getPendingMutations();
+    const referenced = mutations.some(m => {
+      if (m.type !== 'complete_step' && m.type !== 'save_draft_step') return false;
+      const p: any = m.payload || {};
+      if (p.interventionId !== photo.interventionId) return false;
+      if (p.stepId !== photo.stepId) return false;
+      if ((p.loopIndex ?? 0) !== photo.loopIndex) return false;
+      return typeof p.photoUrl === 'string' && p.photoUrl.includes(localUrl);
+    });
+    return !referenced;
+  } catch (err) {
+    console.warn('[step-photo-retry] orphan check failed', err);
+    // On error, don't risk losing data — keep the blob.
+    return false;
+  }
+}
 
 /**
  * Upload (if needed) any `local://` URL contained in a serialized photo_url
@@ -260,6 +311,13 @@ async function uploadOne(photo: StoredStepPhoto): Promise<boolean> {
     remoteUrl,
   });
   if (swapResult === 'not-found') {
+    // The completion row no longer references our local:// URL (or doesn't
+    // exist and no queued mutation needs it). If it's a true orphan, drop
+    // the IDB blob so it stops counting as "pending sync" forever.
+    if (await isStepPhotoOrphan(photo, localUrl)) {
+      await deleteStepPhoto(localUrl);
+      retryStates.delete(photo.id);
+    }
     return false;
   }
 
