@@ -78,7 +78,7 @@ const WorkflowStep = ({
       
       {/* Expanded content */}
       {isActive && !isDisabled && children && (
-        <div className="ml-[60px] mt-2 mb-4 space-y-4">
+        <div className="mt-2 mb-4 space-y-4">
           {children}
         </div>
       )}
