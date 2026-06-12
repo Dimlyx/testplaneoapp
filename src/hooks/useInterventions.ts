@@ -358,6 +358,13 @@ export function useCreateIntervention(organizationId?: string | null) {
         });
       }
 
+      // Google Calendar sync (best effort)
+      if (result?.id) {
+        supabase.functions.invoke('google-calendar-sync', {
+          body: { interventionId: result.id, action: 'upsert' },
+        }).catch(() => {});
+      }
+
       return result;
     },
     onSuccess: () => {
