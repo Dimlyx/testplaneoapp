@@ -5,39 +5,63 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+async function hmacSign(secret: string, message: string): Promise<string> {
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    'raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+  );
+  const sig = await crypto.subtle.sign('HMAC', key, enc.encode(message));
+  return btoa(String.fromCharCode(...new Uint8Array(sig)))
+    .replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
+}
+
+function b64urlDecode(s: string): string {
+  const pad = s.length % 4 === 0 ? '' : '='.repeat(4 - (s.length % 4));
+  return atob(s.replace(/-/g, '+').replace(/_/g, '/') + pad);
+}
+
+const STATE_MAX_AGE_MS = 30 * 60 * 1000;
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_ANON_KEY')!,
-      { global: { headers: { Authorization: authHeader } } }
-    );
     const admin = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: claims, error: claimsError } = await supabase.auth.getClaims(token);
-    if (claimsError || !claims?.claims) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    const { code, redirectUri, state } = await req.json();
+    if (!code || !redirectUri || !state) {
+      return new Response(JSON.stringify({ error: 'Missing code, redirectUri or state' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-    const userId = claims.claims.sub;
 
-    const { code, redirectUri } = await req.json();
-    if (!code || !redirectUri) {
-      return new Response(JSON.stringify({ error: 'Missing code or redirectUri' }), {
+    // Verify signed state
+    const [payloadB64, sig] = String(state).split('.');
+    if (!payloadB64 || !sig) {
+      return new Response(JSON.stringify({ error: 'Invalid state' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const expected = await hmacSign(Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, payloadB64);
+    if (expected !== sig) {
+      return new Response(JSON.stringify({ error: 'Invalid state signature' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    let userId: string;
+    try {
+      const decoded = b64urlDecode(payloadB64);
+      const [uid, _origin, issuedAtStr] = decoded.split('|');
+      const issuedAt = Number(issuedAtStr);
+      if (!uid || !issuedAt || Date.now() - issuedAt > STATE_MAX_AGE_MS) {
+        throw new Error('expired');
+      }
+      userId = uid;
+    } catch {
+      return new Response(JSON.stringify({ error: 'Invalid or expired state' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -60,7 +84,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get user email from id_token or userinfo
     let email = 'unknown';
     try {
       const ui = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
