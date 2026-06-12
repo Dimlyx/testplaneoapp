@@ -298,16 +298,23 @@ export default function MaintenanceAlerts() {
             <Bell className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold">Alertes Maintenance</h1>
-            <p className="text-sm text-muted-foreground">Planification et suivi de la maintenance préventive</p>
+            <h1 className="text-2xl font-bold">Alertes maintenance</h1>
+            <p className="text-sm text-muted-foreground">
+              Planification et suivi · {alerts.length} alerte{alerts.length > 1 ? 's' : ''}
+            </p>
           </div>
         </div>
 
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => handleOpenDialog()} size="default">
-              <Plus className="h-4 w-4 mr-2" />
-              Nouvelle alerte
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={handleExport}>
+            <Download className="h-4 w-4 mr-2" />
+            Exporter
+          </Button>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={() => handleOpenDialog()} size="default">
+                <Plus className="h-4 w-4 mr-2" />
+                Nouvelle alerte
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[500px]">
