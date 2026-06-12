@@ -55,11 +55,19 @@ function buildEvent(intervention: any, client: any) {
     intervention.intervention_city || client?.city,
   ].filter(Boolean);
 
+  // Normalize a time string to HH:MM:SS (Google requires full RFC3339)
+  const normTime = (t: string | null) => {
+    if (!t) return null;
+    const parts = t.split(':');
+    if (parts.length === 2) return `${t}:00`;
+    return t;
+  };
+
   // Build start/end
   const date = intervention.scheduled_date;
-  const startTime = intervention.scheduled_time;
+  const startTime = normTime(intervention.scheduled_time);
   const endDate = intervention.scheduled_end_date || date;
-  const endTime = intervention.scheduled_end_time;
+  const endTime = normTime(intervention.scheduled_end_time);
 
   let start: any, end: any;
   if (date && startTime) {
