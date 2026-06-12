@@ -211,8 +211,10 @@ const AppRoutes = () => {
         <Route path="planning" element={<TechnicianPlanning />} />
         <Route path="terminees" element={<TechnicianInterventionsByCategory category="terminees" />} />
         <Route path="interventions/:id" element={<TechnicianInterventionDetail />} />
+        <Route path="parametres" element={<TechnicianSettings />} />
       </Route>
 
+      <Route path="/google-calendar/callback" element={<GoogleCalendarCallback />} />
       <Route path="/intervention/:token" element={<PublicIntervention />} />
       
       <Route path="*" element={<NotFound />} />
