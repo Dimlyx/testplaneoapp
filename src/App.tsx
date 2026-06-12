@@ -40,6 +40,8 @@ const Technicians = lazy(() => import("@/pages/admin/Technicians"));
 const TechnicianInterventionsByCategory = lazy(() => import("@/pages/technician/TechnicianInterventions").then(m => ({ default: m.TechnicianInterventionsByCategory })));
 const TechnicianInterventionDetail = lazy(() => import("@/pages/technician/TechnicianInterventionDetail"));
 const TechnicianPlanning = lazy(() => import("@/pages/technician/TechnicianPlanning"));
+const TechnicianSettings = lazy(() => import("@/pages/technician/TechnicianSettings"));
+const GoogleCalendarCallback = lazy(() => import("@/pages/GoogleCalendarCallback"));
 const PublicIntervention = lazy(() => import("@/pages/public/PublicIntervention"));
 
 // Super Admin pages - lazy loaded
