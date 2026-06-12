@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Bell, Plus, Edit, Trash2, Calendar, RefreshCw, CheckCircle, Clock, XCircle, AlertTriangle, CalendarDays, Search, X, ClipboardList, Filter, ArrowRight } from 'lucide-react';
+import { Bell, Plus, Edit, Trash2, Calendar, RefreshCw, CheckCircle, Clock, XCircle, AlertTriangle, CalendarDays, Search, X, ClipboardList, Filter, ArrowRight, Download, Info, CalendarClock } from 'lucide-react';
 import { format, parseISO, isPast, isToday, isFuture, addDays, differenceInDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
@@ -78,6 +78,7 @@ export default function MaintenanceAlerts() {
   const [filterClient, setFilterClient] = useState<string>('all');
   const [showCreateClient, setShowCreateClient] = useState(false);
   const [filterRecurrence, setFilterRecurrence] = useState<string>('all');
+  const [quickFilter, setQuickFilter] = useState<'all' | 'overdue' | 'today' | 'week' | 'once' | 'recurring'>('all');
   const [formData, setFormData] = useState<AlertFormData>({
     title: '',
     description: '',
@@ -211,9 +212,18 @@ export default function MaintenanceAlerts() {
       if (filterClient !== 'all' && a.client_id !== filterClient) return false;
       if (filterRecurrence === 'once' && a.recurrence_months !== 0) return false;
       if (filterRecurrence === 'recurring' && a.recurrence_months === 0) return false;
+      if (quickFilter !== 'all') {
+        const u = getAlertUrgency(a.alert_date);
+        const active = a.status === 'pending' || a.status === 'acknowledged';
+        if (quickFilter === 'overdue' && !(active && u === 'overdue')) return false;
+        if (quickFilter === 'today' && !(active && u === 'today')) return false;
+        if (quickFilter === 'week' && !(active && (u === 'today' || u === 'upcoming'))) return false;
+        if (quickFilter === 'once' && a.recurrence_months !== 0) return false;
+        if (quickFilter === 'recurring' && a.recurrence_months === 0) return false;
+      }
       return true;
     });
-  }, [alerts, searchQuery, filterClient, filterRecurrence]);
+  }, [alerts, searchQuery, filterClient, filterRecurrence, quickFilter]);
 
   const pendingAlerts = filteredAlerts.filter(a => a.status === 'pending');
   const acknowledgedAlerts = filteredAlerts.filter(a => a.status === 'acknowledged');
@@ -226,13 +236,48 @@ export default function MaintenanceAlerts() {
   const overdueCount = alerts.filter(a => a.status === 'pending' && getAlertUrgency(a.alert_date) === 'overdue').length;
   const todayCount = alerts.filter(a => (a.status === 'pending' || a.status === 'acknowledged') && getAlertUrgency(a.alert_date) === 'today').length;
   const upcomingCount = alerts.filter(a => (a.status === 'pending' || a.status === 'acknowledged') && getAlertUrgency(a.alert_date) === 'upcoming').length;
+  const completedThisMonthCount = alerts.filter(a => {
+    if (a.status !== 'completed') return false;
+    const d = parseISO(a.updated_at || a.alert_date);
+    const now = new Date();
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  }).length;
+  const nextDue = useMemo(() => {
+    const today = new Date();
+    return [...alerts]
+      .filter(a => (a.status === 'pending' || a.status === 'acknowledged') && parseISO(a.alert_date) >= today)
+      .sort((a, b) => new Date(a.alert_date).getTime() - new Date(b.alert_date).getTime())[0];
+  }, [alerts]);
 
-  const hasFilters = searchQuery.trim() !== '' || filterClient !== 'all' || filterRecurrence !== 'all';
+  const hasFilters = searchQuery.trim() !== '' || filterClient !== 'all' || filterRecurrence !== 'all' || quickFilter !== 'all';
 
   const clearFilters = () => {
     setSearchQuery('');
     setFilterClient('all');
     setFilterRecurrence('all');
+    setQuickFilter('all');
+  };
+
+  const handleExport = () => {
+    const rows = [
+      ['Titre', 'Client', 'Date', 'Récurrence', 'Statut', 'Description'],
+      ...filteredAlerts.map(a => [
+        a.title,
+        a.clients?.name || '',
+        a.alert_date,
+        getRecurrenceLabel(a),
+        statusLabels[a.status],
+        (a.description || '').replace(/\n/g, ' '),
+      ]),
+    ];
+    const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `alertes-maintenance-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
   if (isLoading) {
@@ -253,16 +298,23 @@ export default function MaintenanceAlerts() {
             <Bell className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold">Alertes Maintenance</h1>
-            <p className="text-sm text-muted-foreground">Planification et suivi de la maintenance préventive</p>
+            <h1 className="text-2xl font-bold">Alertes maintenance</h1>
+            <p className="text-sm text-muted-foreground">
+              Planification et suivi · {alerts.length} alerte{alerts.length > 1 ? 's' : ''}
+            </p>
           </div>
         </div>
 
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => handleOpenDialog()} size="default">
-              <Plus className="h-4 w-4 mr-2" />
-              Nouvelle alerte
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={handleExport}>
+            <Download className="h-4 w-4 mr-2" />
+            Exporter
+          </Button>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={() => handleOpenDialog()} size="default">
+                <Plus className="h-4 w-4 mr-2" />
+                Nouvelle alerte
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[500px]">
@@ -359,71 +411,108 @@ export default function MaintenanceAlerts() {
               </DialogFooter>
             </form>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       </div>
 
-      {/* KPI Cards - Modern design */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card className={cn("border-l-4 border-l-destructive", overdueCount > 0 && "bg-destructive/5")}>
-          <CardContent className="pt-5 pb-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">En retard</p>
-                <p className={cn("text-3xl font-bold mt-1", overdueCount > 0 ? "text-destructive" : "text-foreground")}>
-                  {overdueCount}
-                </p>
-              </div>
-              <div className={cn("p-3 rounded-xl", overdueCount > 0 ? "bg-destructive/10" : "bg-muted")}>
-                <AlertTriangle className={cn("h-5 w-5", overdueCount > 0 ? "text-destructive" : "text-muted-foreground")} />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* KPI Cards */}
+      <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+        <button
+          type="button"
+          onClick={() => setQuickFilter(quickFilter === 'overdue' ? 'all' : 'overdue')}
+          className={cn(
+            "text-left rounded-xl border bg-card p-4 transition-colors",
+            "border-l-4 border-l-destructive",
+            quickFilter === 'overdue' && "ring-2 ring-destructive/40",
+            overdueCount > 0 && "bg-destructive/5"
+          )}
+        >
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">En retard</p>
+          <p className={cn("text-3xl font-bold mt-1", overdueCount > 0 ? "text-destructive" : "text-foreground")}>
+            {overdueCount}
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {overdueCount > 0 ? 'Action requise' : 'Tout est à jour'}
+          </p>
+        </button>
 
-        <Card className="border-l-4 border-l-amber-500">
-          <CardContent className="pt-5 pb-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Aujourd'hui</p>
-                <p className="text-3xl font-bold mt-1">{todayCount}</p>
-              </div>
-              <div className="p-3 rounded-xl bg-amber-500/10">
-                <Clock className="h-5 w-5 text-amber-500" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <button
+          type="button"
+          onClick={() => setQuickFilter(quickFilter === 'today' ? 'all' : 'today')}
+          className={cn(
+            "text-left rounded-xl border bg-card p-4 transition-colors",
+            "border-l-4 border-l-amber-500",
+            quickFilter === 'today' && "ring-2 ring-amber-500/40"
+          )}
+        >
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">À faire aujourd'hui</p>
+          <p className="text-3xl font-bold mt-1">{todayCount}</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {todayCount === 0 ? 'Rien de prévu' : `${todayCount} à traiter`}
+          </p>
+        </button>
 
-        <Card className="border-l-4 border-l-blue-500">
-          <CardContent className="pt-5 pb-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Cette semaine</p>
-                <p className="text-3xl font-bold mt-1">{upcomingCount}</p>
-              </div>
-              <div className="p-3 rounded-xl bg-blue-500/10">
-                <CalendarDays className="h-5 w-5 text-blue-500" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <button
+          type="button"
+          onClick={() => setQuickFilter(quickFilter === 'week' ? 'all' : 'week')}
+          className={cn(
+            "text-left rounded-xl border bg-card p-4 transition-colors",
+            "border-l-4 border-l-blue-500",
+            quickFilter === 'week' && "ring-2 ring-blue-500/40"
+          )}
+        >
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Cette semaine</p>
+          <p className="text-3xl font-bold mt-1">{todayCount + upcomingCount}</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            dont {todayCount} aujourd'hui
+          </p>
+        </button>
 
-        <Card className="border-l-4 border-l-green-500">
-          <CardContent className="pt-5 pb-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Terminées</p>
-                <p className="text-3xl font-bold mt-1">
-                  {alerts.filter(a => a.status === 'completed').length}
-                </p>
-              </div>
-              <div className="p-3 rounded-xl bg-green-500/10">
-                <CheckCircle className="h-5 w-5 text-green-500" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="rounded-xl border bg-card p-4 border-l-4 border-l-green-500">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Terminées (mois)</p>
+          <p className="text-3xl font-bold mt-1 text-green-600 dark:text-green-500">{completedThisMonthCount}</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            sur {alerts.filter(a => a.status === 'completed').length} au total
+          </p>
+        </div>
+
+        <div className="rounded-xl border bg-card p-4 border-l-4 border-l-primary col-span-2 md:col-span-3 lg:col-span-1">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Proch. échéance</p>
+          {nextDue ? (
+            <>
+              <p className="text-2xl font-bold mt-1">
+                {format(parseISO(nextDue.alert_date), 'dd MMM', { locale: fr })}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1 truncate">
+                {nextDue.clients?.name ? `${nextDue.clients.name} · ` : ''}{nextDue.title}
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-2xl font-bold mt-1 text-muted-foreground">—</p>
+              <p className="text-xs text-muted-foreground mt-1">Aucune à venir</p>
+            </>
+          )}
+        </div>
       </div>
+
+      {/* Overdue info banner */}
+      {overdueCount > 0 && (
+        <div className="flex items-center gap-3 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm">
+          <Info className="h-4 w-4 text-primary shrink-0" />
+          <p className="flex-1">
+            <span className="font-semibold">{overdueCount} maintenance{overdueCount > 1 ? 's' : ''} en retard</span> à traiter.
+          </p>
+          <Button
+            variant="link"
+            size="sm"
+            className="h-auto p-0 text-primary"
+            onClick={() => setQuickFilter('overdue')}
+          >
+            Voir les alertes concernées →
+          </Button>
+        </div>
+      )}
 
       {/* Search & Filters */}
       <Card>
@@ -518,8 +607,11 @@ export default function MaintenanceAlerts() {
                 const cfg = statusConfig[alert.status];
                 return (
                   <Card key={alert.id} className={cn(
-                    "transition-all hover:shadow-md",
-                    urgency === 'overdue' && alert.status === 'pending' && "border-destructive/50"
+                    "relative overflow-hidden transition-all hover:shadow-md border-l-4",
+                    urgency === 'overdue' && alert.status === 'pending' && "border-l-destructive",
+                    urgency === 'today' && "border-l-amber-500",
+                    urgency === 'upcoming' && "border-l-blue-500",
+                    urgency === 'future' && "border-l-border",
                   )}>
                     <CardContent className="p-4">
                       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
@@ -528,28 +620,27 @@ export default function MaintenanceAlerts() {
                           <div className="flex items-center gap-2 flex-wrap mb-1">
                             <h3 className="font-semibold text-base truncate">{alert.title}</h3>
                             {getUrgencyBadge(alert.alert_date, alert.status)}
+                            {(alert.recurrence_months > 0 || alert.recurrence !== 'once') && (
+                              <Badge variant="outline" className="text-[10px] font-normal gap-1 py-0 h-5">
+                                <RefreshCw className="h-2.5 w-2.5" />
+                                {getRecurrenceLabel(alert)}
+                              </Badge>
+                            )}
                           </div>
                           {alert.description && (
                             <p className="text-sm text-muted-foreground line-clamp-1 mb-2">{alert.description}</p>
                           )}
                           <div className="flex items-center gap-3 flex-wrap text-sm text-muted-foreground">
                             {alert.clients?.name && (
-                              <span className="flex items-center gap-1">
-                                <span className="font-medium text-foreground">{alert.clients.name}</span>
-                              </span>
+                              <span className="font-medium text-foreground">{alert.clients.name}</span>
                             )}
-                            <span className="flex items-center gap-1">
-                              <Calendar className="h-3.5 w-3.5" />
+                            <span className="flex items-center gap-1.5">
+                              <CalendarClock className="h-3.5 w-3.5" />
                               {format(parseISO(alert.alert_date), 'dd MMM yyyy', { locale: fr })}
                             </span>
-                            {(alert.recurrence_months > 0 || alert.recurrence !== 'once') && (
-                              <span className="flex items-center gap-1">
-                                <RefreshCw className="h-3.5 w-3.5" />
-                                {getRecurrenceLabel(alert)}
-                              </span>
-                            )}
                           </div>
                         </div>
+
 
                         {/* Right: Actions */}
                         <div className="flex items-center gap-2 shrink-0">
