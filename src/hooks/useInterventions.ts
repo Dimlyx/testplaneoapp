@@ -452,6 +452,13 @@ export function useDeleteIntervention() {
 
   return useMutation({
     mutationFn: async (id: string) => {
+      // Google Calendar sync delete (best effort) BEFORE deleting the row
+      try {
+        await supabase.functions.invoke('google-calendar-sync', {
+          body: { interventionId: id, action: 'delete' },
+        });
+      } catch (_) {}
+
       const { error } = await supabase
         .from('interventions')
         .delete()
