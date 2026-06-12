@@ -418,9 +418,14 @@ export function useUpdateIntervention() {
         });
       }
 
+      // Google Calendar sync (best effort) on any update
+      if (result?.id) {
+        supabase.functions.invoke('google-calendar-sync', {
+          body: { interventionId: result.id, action: 'upsert' },
+        }).catch(() => {});
+      }
+
       return result;
-    },
-    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['interventions'] });
       queryClient.invalidateQueries({ queryKey: ['technician-interventions'] });
       queryClient.invalidateQueries({ queryKey: ['intervention', result.id] });
