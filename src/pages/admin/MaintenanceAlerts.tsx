@@ -415,68 +415,104 @@ export default function MaintenanceAlerts() {
         </div>
       </div>
 
-      {/* KPI Cards - Modern design */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card className={cn("border-l-4 border-l-destructive", overdueCount > 0 && "bg-destructive/5")}>
-          <CardContent className="pt-5 pb-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">En retard</p>
-                <p className={cn("text-3xl font-bold mt-1", overdueCount > 0 ? "text-destructive" : "text-foreground")}>
-                  {overdueCount}
-                </p>
-              </div>
-              <div className={cn("p-3 rounded-xl", overdueCount > 0 ? "bg-destructive/10" : "bg-muted")}>
-                <AlertTriangle className={cn("h-5 w-5", overdueCount > 0 ? "text-destructive" : "text-muted-foreground")} />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* KPI Cards */}
+      <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+        <button
+          type="button"
+          onClick={() => setQuickFilter(quickFilter === 'overdue' ? 'all' : 'overdue')}
+          className={cn(
+            "text-left rounded-xl border bg-card p-4 transition-colors",
+            "border-l-4 border-l-destructive",
+            quickFilter === 'overdue' && "ring-2 ring-destructive/40",
+            overdueCount > 0 && "bg-destructive/5"
+          )}
+        >
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">En retard</p>
+          <p className={cn("text-3xl font-bold mt-1", overdueCount > 0 ? "text-destructive" : "text-foreground")}>
+            {overdueCount}
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {overdueCount > 0 ? 'Action requise' : 'Tout est à jour'}
+          </p>
+        </button>
 
-        <Card className="border-l-4 border-l-amber-500">
-          <CardContent className="pt-5 pb-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Aujourd'hui</p>
-                <p className="text-3xl font-bold mt-1">{todayCount}</p>
-              </div>
-              <div className="p-3 rounded-xl bg-amber-500/10">
-                <Clock className="h-5 w-5 text-amber-500" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <button
+          type="button"
+          onClick={() => setQuickFilter(quickFilter === 'today' ? 'all' : 'today')}
+          className={cn(
+            "text-left rounded-xl border bg-card p-4 transition-colors",
+            "border-l-4 border-l-amber-500",
+            quickFilter === 'today' && "ring-2 ring-amber-500/40"
+          )}
+        >
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">À faire aujourd'hui</p>
+          <p className="text-3xl font-bold mt-1">{todayCount}</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {todayCount === 0 ? 'Rien de prévu' : `${todayCount} à traiter`}
+          </p>
+        </button>
 
-        <Card className="border-l-4 border-l-blue-500">
-          <CardContent className="pt-5 pb-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Cette semaine</p>
-                <p className="text-3xl font-bold mt-1">{upcomingCount}</p>
-              </div>
-              <div className="p-3 rounded-xl bg-blue-500/10">
-                <CalendarDays className="h-5 w-5 text-blue-500" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <button
+          type="button"
+          onClick={() => setQuickFilter(quickFilter === 'week' ? 'all' : 'week')}
+          className={cn(
+            "text-left rounded-xl border bg-card p-4 transition-colors",
+            "border-l-4 border-l-blue-500",
+            quickFilter === 'week' && "ring-2 ring-blue-500/40"
+          )}
+        >
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Cette semaine</p>
+          <p className="text-3xl font-bold mt-1">{todayCount + upcomingCount}</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            dont {todayCount} aujourd'hui
+          </p>
+        </button>
 
-        <Card className="border-l-4 border-l-green-500">
-          <CardContent className="pt-5 pb-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Terminées</p>
-                <p className="text-3xl font-bold mt-1">
-                  {alerts.filter(a => a.status === 'completed').length}
-                </p>
-              </div>
-              <div className="p-3 rounded-xl bg-green-500/10">
-                <CheckCircle className="h-5 w-5 text-green-500" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="rounded-xl border bg-card p-4 border-l-4 border-l-green-500">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Terminées (mois)</p>
+          <p className="text-3xl font-bold mt-1 text-green-600 dark:text-green-500">{completedThisMonthCount}</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            sur {alerts.filter(a => a.status === 'completed').length} au total
+          </p>
+        </div>
+
+        <div className="rounded-xl border bg-card p-4 border-l-4 border-l-primary col-span-2 md:col-span-3 lg:col-span-1">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Proch. échéance</p>
+          {nextDue ? (
+            <>
+              <p className="text-2xl font-bold mt-1">
+                {format(parseISO(nextDue.alert_date), 'dd MMM', { locale: fr })}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1 truncate">
+                {nextDue.clients?.name ? `${nextDue.clients.name} · ` : ''}{nextDue.title}
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-2xl font-bold mt-1 text-muted-foreground">—</p>
+              <p className="text-xs text-muted-foreground mt-1">Aucune à venir</p>
+            </>
+          )}
+        </div>
       </div>
+
+      {/* Overdue info banner */}
+      {overdueCount > 0 && (
+        <div className="flex items-center gap-3 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm">
+          <Info className="h-4 w-4 text-primary shrink-0" />
+          <p className="flex-1">
+            <span className="font-semibold">{overdueCount} maintenance{overdueCount > 1 ? 's' : ''} en retard</span> à traiter.
+          </p>
+          <Button
+            variant="link"
+            size="sm"
+            className="h-auto p-0 text-primary"
+            onClick={() => setQuickFilter('overdue')}
+          >
+            Voir les alertes concernées →
+          </Button>
+        </div>
+      )}
 
       {/* Search & Filters */}
       <Card>
