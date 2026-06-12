@@ -411,7 +411,8 @@ export default function MaintenanceAlerts() {
               </DialogFooter>
             </form>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       </div>
 
       {/* KPI Cards - Modern design */}
