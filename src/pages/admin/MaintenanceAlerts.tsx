@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Bell, Plus, Edit, Trash2, Calendar, RefreshCw, CheckCircle, Clock, XCircle, AlertTriangle, CalendarDays, Search, X, ClipboardList, Filter, ArrowRight } from 'lucide-react';
+import { Bell, Plus, Edit, Trash2, Calendar, RefreshCw, CheckCircle, Clock, XCircle, AlertTriangle, CalendarDays, Search, X, ClipboardList, Filter, ArrowRight, Download, Info, CalendarClock } from 'lucide-react';
 import { format, parseISO, isPast, isToday, isFuture, addDays, differenceInDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
