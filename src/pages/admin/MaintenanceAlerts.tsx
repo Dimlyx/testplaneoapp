@@ -212,9 +212,18 @@ export default function MaintenanceAlerts() {
       if (filterClient !== 'all' && a.client_id !== filterClient) return false;
       if (filterRecurrence === 'once' && a.recurrence_months !== 0) return false;
       if (filterRecurrence === 'recurring' && a.recurrence_months === 0) return false;
+      if (quickFilter !== 'all') {
+        const u = getAlertUrgency(a.alert_date);
+        const active = a.status === 'pending' || a.status === 'acknowledged';
+        if (quickFilter === 'overdue' && !(active && u === 'overdue')) return false;
+        if (quickFilter === 'today' && !(active && u === 'today')) return false;
+        if (quickFilter === 'week' && !(active && (u === 'today' || u === 'upcoming'))) return false;
+        if (quickFilter === 'once' && a.recurrence_months !== 0) return false;
+        if (quickFilter === 'recurring' && a.recurrence_months === 0) return false;
+      }
       return true;
     });
-  }, [alerts, searchQuery, filterClient, filterRecurrence]);
+  }, [alerts, searchQuery, filterClient, filterRecurrence, quickFilter]);
 
   const pendingAlerts = filteredAlerts.filter(a => a.status === 'pending');
   const acknowledgedAlerts = filteredAlerts.filter(a => a.status === 'acknowledged');
