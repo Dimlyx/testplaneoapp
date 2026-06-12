@@ -49,6 +49,8 @@ export interface Intervention {
   cancellation_reason: string | null;
   cancellation_details: string | null;
   cancellation_photos: string[] | null;
+  google_event_id: string | null;
+  google_event_user_id: string | null;
   created_at: string;
   updated_at: string;
   clients?: {

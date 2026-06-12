@@ -472,6 +472,57 @@ export type Database = {
           },
         ]
       }
+      google_sync_logs: {
+        Row: {
+          action: string
+          created_at: string
+          error_message: string | null
+          google_event_id: string | null
+          id: string
+          intervention_id: string | null
+          organization_id: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          error_message?: string | null
+          google_event_id?: string | null
+          id?: string
+          intervention_id?: string | null
+          organization_id?: string | null
+          status: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          error_message?: string | null
+          google_event_id?: string | null
+          id?: string
+          intervention_id?: string | null
+          organization_id?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "google_sync_logs_intervention_id_fkey"
+            columns: ["intervention_id"]
+            isOneToOne: false
+            referencedRelation: "interventions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "google_sync_logs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       intervention_attachments: {
         Row: {
           created_at: string
@@ -850,6 +901,8 @@ export type Database = {
           equipment_functional: boolean | null
           equipment_id: string | null
           estimated_duration: number | null
+          google_event_id: string | null
+          google_event_user_id: string | null
           id: string
           intervention_address: string | null
           intervention_building: string | null
@@ -895,6 +948,8 @@ export type Database = {
           equipment_functional?: boolean | null
           equipment_id?: string | null
           estimated_duration?: number | null
+          google_event_id?: string | null
+          google_event_user_id?: string | null
           id?: string
           intervention_address?: string | null
           intervention_building?: string | null
@@ -940,6 +995,8 @@ export type Database = {
           equipment_functional?: boolean | null
           equipment_id?: string | null
           estimated_duration?: number | null
+          google_event_id?: string | null
+          google_event_user_id?: string | null
           id?: string
           intervention_address?: string | null
           intervention_building?: string | null
@@ -1431,6 +1488,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_google_tokens: {
+        Row: {
+          access_token: string
+          calendar_id: string
+          created_at: string
+          expires_at: string
+          google_email: string
+          id: string
+          refresh_token: string
+          scope: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          calendar_id?: string
+          created_at?: string
+          expires_at: string
+          google_email: string
+          id?: string
+          refresh_token: string
+          scope?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          calendar_id?: string
+          created_at?: string
+          expires_at?: string
+          google_email?: string
+          id?: string
+          refresh_token?: string
+          scope?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
