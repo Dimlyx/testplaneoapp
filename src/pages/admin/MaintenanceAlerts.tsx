@@ -607,8 +607,11 @@ export default function MaintenanceAlerts() {
                 const cfg = statusConfig[alert.status];
                 return (
                   <Card key={alert.id} className={cn(
-                    "transition-all hover:shadow-md",
-                    urgency === 'overdue' && alert.status === 'pending' && "border-destructive/50"
+                    "relative overflow-hidden transition-all hover:shadow-md border-l-4",
+                    urgency === 'overdue' && alert.status === 'pending' && "border-l-destructive",
+                    urgency === 'today' && "border-l-amber-500",
+                    urgency === 'upcoming' && "border-l-blue-500",
+                    urgency === 'future' && "border-l-border",
                   )}>
                     <CardContent className="p-4">
                       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
@@ -617,28 +620,27 @@ export default function MaintenanceAlerts() {
                           <div className="flex items-center gap-2 flex-wrap mb-1">
                             <h3 className="font-semibold text-base truncate">{alert.title}</h3>
                             {getUrgencyBadge(alert.alert_date, alert.status)}
+                            {(alert.recurrence_months > 0 || alert.recurrence !== 'once') && (
+                              <Badge variant="outline" className="text-[10px] font-normal gap-1 py-0 h-5">
+                                <RefreshCw className="h-2.5 w-2.5" />
+                                {getRecurrenceLabel(alert)}
+                              </Badge>
+                            )}
                           </div>
                           {alert.description && (
                             <p className="text-sm text-muted-foreground line-clamp-1 mb-2">{alert.description}</p>
                           )}
                           <div className="flex items-center gap-3 flex-wrap text-sm text-muted-foreground">
                             {alert.clients?.name && (
-                              <span className="flex items-center gap-1">
-                                <span className="font-medium text-foreground">{alert.clients.name}</span>
-                              </span>
+                              <span className="font-medium text-foreground">{alert.clients.name}</span>
                             )}
-                            <span className="flex items-center gap-1">
-                              <Calendar className="h-3.5 w-3.5" />
+                            <span className="flex items-center gap-1.5">
+                              <CalendarClock className="h-3.5 w-3.5" />
                               {format(parseISO(alert.alert_date), 'dd MMM yyyy', { locale: fr })}
                             </span>
-                            {(alert.recurrence_months > 0 || alert.recurrence !== 'once') && (
-                              <span className="flex items-center gap-1">
-                                <RefreshCw className="h-3.5 w-3.5" />
-                                {getRecurrenceLabel(alert)}
-                              </span>
-                            )}
                           </div>
                         </div>
+
 
                         {/* Right: Actions */}
                         <div className="flex items-center gap-2 shrink-0">
