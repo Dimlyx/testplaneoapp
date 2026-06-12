@@ -426,6 +426,8 @@ export function useUpdateIntervention() {
       }
 
       return result;
+    },
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['interventions'] });
       queryClient.invalidateQueries({ queryKey: ['technician-interventions'] });
       queryClient.invalidateQueries({ queryKey: ['intervention', result.id] });
