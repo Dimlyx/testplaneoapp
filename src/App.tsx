@@ -40,6 +40,8 @@ const Technicians = lazy(() => import("@/pages/admin/Technicians"));
 const TechnicianInterventionsByCategory = lazy(() => import("@/pages/technician/TechnicianInterventions").then(m => ({ default: m.TechnicianInterventionsByCategory })));
 const TechnicianInterventionDetail = lazy(() => import("@/pages/technician/TechnicianInterventionDetail"));
 const TechnicianPlanning = lazy(() => import("@/pages/technician/TechnicianPlanning"));
+const TechnicianSettings = lazy(() => import("@/pages/technician/TechnicianSettings"));
+const GoogleCalendarCallback = lazy(() => import("@/pages/GoogleCalendarCallback"));
 const PublicIntervention = lazy(() => import("@/pages/public/PublicIntervention"));
 
 // Super Admin pages - lazy loaded
@@ -209,8 +211,10 @@ const AppRoutes = () => {
         <Route path="planning" element={<TechnicianPlanning />} />
         <Route path="terminees" element={<TechnicianInterventionsByCategory category="terminees" />} />
         <Route path="interventions/:id" element={<TechnicianInterventionDetail />} />
+        <Route path="parametres" element={<TechnicianSettings />} />
       </Route>
 
+      <Route path="/google-calendar/callback" element={<GoogleCalendarCallback />} />
       <Route path="/intervention/:token" element={<PublicIntervention />} />
       
       <Route path="*" element={<NotFound />} />

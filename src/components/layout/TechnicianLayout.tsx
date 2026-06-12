@@ -15,6 +15,7 @@ import {
   CheckCircle2,
   CalendarDays as CalendarIcon,
   Plus,
+  Settings as SettingsIcon,
 } from 'lucide-react';
 import planeoLogoWhite from '@/assets/planeo-logo-white.png';
 import planeoLogoDark from '@/assets/planeo-logo-dark.png';
@@ -31,6 +32,7 @@ const navigation = [
   { name: 'À planifier', href: '/technician/non-planifie', icon: CalendarOff },
   { name: 'Planning', href: '/technician/planning', icon: CalendarIcon },
   { name: 'Terminées', href: '/technician/terminees', icon: CheckCircle2 },
+  { name: 'Paramètres', href: '/technician/parametres', icon: SettingsIcon },
 ];
 
 export default function TechnicianLayout() {

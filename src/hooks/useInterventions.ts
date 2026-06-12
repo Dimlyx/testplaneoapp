@@ -358,6 +358,13 @@ export function useCreateIntervention(organizationId?: string | null) {
         });
       }
 
+      // Google Calendar sync (best effort)
+      if (result?.id) {
+        supabase.functions.invoke('google-calendar-sync', {
+          body: { interventionId: result.id, action: 'upsert' },
+        }).catch(() => {});
+      }
+
       return result;
     },
     onSuccess: () => {
@@ -411,6 +418,13 @@ export function useUpdateIntervention() {
         });
       }
 
+      // Google Calendar sync (best effort) on any update
+      if (result?.id) {
+        supabase.functions.invoke('google-calendar-sync', {
+          body: { interventionId: result.id, action: 'upsert' },
+        }).catch(() => {});
+      }
+
       return result;
     },
     onSuccess: (result) => {
@@ -438,6 +452,13 @@ export function useDeleteIntervention() {
 
   return useMutation({
     mutationFn: async (id: string) => {
+      // Google Calendar sync delete (best effort) BEFORE deleting the row
+      try {
+        await supabase.functions.invoke('google-calendar-sync', {
+          body: { interventionId: id, action: 'delete' },
+        });
+      } catch (_) {}
+
       const { error } = await supabase
         .from('interventions')
         .delete()
