@@ -78,6 +78,7 @@ export default function MaintenanceAlerts() {
   const [filterClient, setFilterClient] = useState<string>('all');
   const [showCreateClient, setShowCreateClient] = useState(false);
   const [filterRecurrence, setFilterRecurrence] = useState<string>('all');
+  const [quickFilter, setQuickFilter] = useState<'all' | 'overdue' | 'today' | 'week' | 'once' | 'recurring'>('all');
   const [formData, setFormData] = useState<AlertFormData>({
     title: '',
     description: '',
