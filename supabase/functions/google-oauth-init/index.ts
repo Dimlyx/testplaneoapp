@@ -5,6 +5,16 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+async function hmacSign(secret: string, message: string): Promise<string> {
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    'raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+  );
+  const sig = await crypto.subtle.sign('HMAC', key, enc.encode(message));
+  const b = btoa(String.fromCharCode(...new Uint8Array(sig)));
+  return b.replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
@@ -41,8 +51,14 @@ Deno.serve(async (req) => {
       });
     }
 
-    // State = base64(userId|origin) to retrieve them at callback
-    const state = btoa(`${userId}|${origin}`);
+    // Signed state so the callback doesn't need an authenticated session
+    // (the OAuth redirect may land in a different browser/webview without it).
+    const issuedAt = Date.now();
+    const payload = `${userId}|${origin}|${issuedAt}`;
+    const payloadB64 = btoa(payload).replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
+    const sig = await hmacSign(Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, payloadB64);
+    const state = `${payloadB64}.${sig}`;
+
     const redirectUri = `${origin}/google-calendar/callback`;
 
     const params = new URLSearchParams({

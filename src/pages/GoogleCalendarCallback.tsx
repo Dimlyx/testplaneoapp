@@ -16,6 +16,7 @@ export default function GoogleCalendarCallback() {
     ran.current = true;
 
     const code = params.get('code');
+    const state = params.get('state');
     const error = params.get('error');
 
     if (error) {
@@ -23,20 +24,28 @@ export default function GoogleCalendarCallback() {
       setMessage(error);
       return;
     }
-    if (!code) {
+    if (!code || !state) {
       setStatus('error');
-      setMessage('Code OAuth manquant');
+      setMessage('Paramètres OAuth manquants');
       return;
     }
 
     (async () => {
       try {
         const redirectUri = `${window.location.origin}/google-calendar/callback`;
-        const { data, error } = await supabase.functions.invoke('google-oauth-callback', {
-          body: { code, redirectUri },
-        });
-        if (error) throw error;
-        if (data?.error) throw new Error(data.error);
+        const res = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-oauth-callback`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            },
+            body: JSON.stringify({ code, redirectUri, state }),
+          }
+        );
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || data?.error) throw new Error(data?.error || `HTTP ${res.status}`);
         setStatus('success');
         setMessage(data?.email || '');
       } catch (e: any) {
