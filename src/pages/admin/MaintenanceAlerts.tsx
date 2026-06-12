@@ -236,13 +236,48 @@ export default function MaintenanceAlerts() {
   const overdueCount = alerts.filter(a => a.status === 'pending' && getAlertUrgency(a.alert_date) === 'overdue').length;
   const todayCount = alerts.filter(a => (a.status === 'pending' || a.status === 'acknowledged') && getAlertUrgency(a.alert_date) === 'today').length;
   const upcomingCount = alerts.filter(a => (a.status === 'pending' || a.status === 'acknowledged') && getAlertUrgency(a.alert_date) === 'upcoming').length;
+  const completedThisMonthCount = alerts.filter(a => {
+    if (a.status !== 'completed') return false;
+    const d = parseISO(a.updated_at || a.alert_date);
+    const now = new Date();
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  }).length;
+  const nextDue = useMemo(() => {
+    const today = new Date();
+    return [...alerts]
+      .filter(a => (a.status === 'pending' || a.status === 'acknowledged') && parseISO(a.alert_date) >= today)
+      .sort((a, b) => new Date(a.alert_date).getTime() - new Date(b.alert_date).getTime())[0];
+  }, [alerts]);
 
-  const hasFilters = searchQuery.trim() !== '' || filterClient !== 'all' || filterRecurrence !== 'all';
+  const hasFilters = searchQuery.trim() !== '' || filterClient !== 'all' || filterRecurrence !== 'all' || quickFilter !== 'all';
 
   const clearFilters = () => {
     setSearchQuery('');
     setFilterClient('all');
     setFilterRecurrence('all');
+    setQuickFilter('all');
+  };
+
+  const handleExport = () => {
+    const rows = [
+      ['Titre', 'Client', 'Date', 'Récurrence', 'Statut', 'Description'],
+      ...filteredAlerts.map(a => [
+        a.title,
+        a.clients?.name || '',
+        a.alert_date,
+        getRecurrenceLabel(a),
+        statusLabels[a.status],
+        (a.description || '').replace(/\n/g, ' '),
+      ]),
+    ];
+    const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `alertes-maintenance-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
   if (isLoading) {
