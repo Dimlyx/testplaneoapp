@@ -82,10 +82,7 @@ function setGeocodeCache(cache: Record<string, { lat: number; lng: number }>) {
   } catch {}
 }
 
-async function geocodeAddress(address: string): Promise<{ lat: number; lng: number } | null> {
-  const cache = getGeocodeCache();
-  if (cache[address]) return cache[address];
-
+async function geocodeAddressNetwork(address: string): Promise<{ lat: number; lng: number } | null> {
   try {
     const res = await fetch(
       `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`,
@@ -93,10 +90,7 @@ async function geocodeAddress(address: string): Promise<{ lat: number; lng: numb
     );
     const data = await res.json();
     if (data && data.length > 0) {
-      const result = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-      cache[address] = result;
-      setGeocodeCache(cache);
-      return result;
+      return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
     }
   } catch {}
   return null;
@@ -113,72 +107,101 @@ export default function InterventionsMap({ interventions, clients, technicians }
     return clients.find(c => c.id === clientId)?.name || "Client inconnu";
   };
 
-  const getClientAddress = (clientId: string) => {
-    const client = clients.find(c => c.id === clientId) as any;
-    if (!client) return null;
-    const parts = [client.address, client.postal_code, client.city].filter(Boolean);
-    return parts.length > 0 ? parts.join(", ") : null;
-  };
-
   const getTechnicianName = (techId: string | null) => {
     if (!techId) return "Non assigné";
     const tech = technicians.find(t => t.id === techId);
     return tech?.full_name || tech?.email || "Inconnu";
   };
 
-  // Geocode all interventions with addresses
+  // Build the list of items to geocode (recomputed only when inputs change)
+  const itemsToGeocode = useMemo(() => {
+    const clientMap = new Map<string, any>();
+    clients.forEach(c => clientMap.set(c.id, c));
+
+    return interventions.map(intervention => {
+      const interventionAddr = [
+        intervention.intervention_address,
+        intervention.intervention_postal_code,
+        intervention.intervention_city,
+      ].filter(Boolean).join(", ");
+
+      let clientAddr: string | null = null;
+      const client = clientMap.get(intervention.client_id);
+      if (client) {
+        const parts = [client.address, client.postal_code, client.city].filter(Boolean);
+        clientAddr = parts.length > 0 ? parts.join(", ") : null;
+      }
+
+      const address = interventionAddr || clientAddr;
+      return {
+        intervention,
+        address,
+        fullAddress: address ? address + ", France" : null,
+      };
+    }).filter(it => it.fullAddress) as Array<{ intervention: any; address: string; fullAddress: string }>;
+  }, [interventions, clients]);
+
+  // Geocode: render cached markers instantly, then fetch missing ones in background
   useEffect(() => {
     let cancelled = false;
+    const cache = getGeocodeCache();
 
-    async function geocodeAll() {
-      setLoading(true);
-      const results: GeocodedIntervention[] = [];
+    const buildResult = (intervention: any, address: string, coords: { lat: number; lng: number }): GeocodedIntervention => ({
+      id: intervention.id,
+      title: intervention.title,
+      status: intervention.status,
+      intervention_type: intervention.intervention_type,
+      technician_id: intervention.technician_id,
+      client_name: getClientName(intervention.client_id),
+      scheduled_date: intervention.scheduled_date,
+      lat: coords.lat,
+      lng: coords.lng,
+      address,
+    });
 
-      for (const intervention of interventions) {
-        if (cancelled) break;
-
-        // Try intervention address first, then fall back to client address
-        const interventionAddr = [
-          intervention.intervention_address,
-          intervention.intervention_postal_code,
-          intervention.intervention_city,
-        ].filter(Boolean).join(", ");
-
-        const clientAddr = getClientAddress(intervention.client_id);
-        const addressToGeocode = interventionAddr || clientAddr;
-
-        if (!addressToGeocode) continue;
-
-        const fullAddress = addressToGeocode + ", France";
-        const coords = await geocodeAddress(fullAddress);
-        if (coords) {
-          results.push({
-            id: intervention.id,
-            title: intervention.title,
-            status: intervention.status,
-            intervention_type: intervention.intervention_type,
-            technician_id: intervention.technician_id,
-            client_name: getClientName(intervention.client_id),
-            scheduled_date: intervention.scheduled_date,
-            lat: coords.lat,
-            lng: coords.lng,
-            address: addressToGeocode,
-          });
-        }
-
-        // Small delay to respect Nominatim rate limits
-        await new Promise(r => setTimeout(r, 150));
-      }
-
-      if (!cancelled) {
-        setGeocoded(results);
-        setLoading(false);
+    const cachedResults: GeocodedIntervention[] = [];
+    const missing: typeof itemsToGeocode = [];
+    for (const it of itemsToGeocode) {
+      const coords = cache[it.fullAddress];
+      if (coords) {
+        cachedResults.push(buildResult(it.intervention, it.address, coords));
+      } else {
+        missing.push(it);
       }
     }
+    setGeocoded(cachedResults);
+    setLoading(missing.length > 0);
 
-    geocodeAll();
+    if (missing.length === 0) return;
+
+    // Deduplicate addresses before hitting the network
+    const uniqueAddrs = Array.from(new Set(missing.map(m => m.fullAddress)));
+
+    (async () => {
+      for (const addr of uniqueAddrs) {
+        if (cancelled) return;
+        const coords = await geocodeAddressNetwork(addr);
+        if (coords) {
+          cache[addr] = coords;
+          setGeocodeCache(cache);
+          // Stream this address's results immediately
+          const newOnes: GeocodedIntervention[] = [];
+          for (const it of missing) {
+            if (it.fullAddress === addr) {
+              newOnes.push(buildResult(it.intervention, it.address, coords));
+            }
+          }
+          if (newOnes.length > 0) {
+            setGeocoded(prev => [...prev, ...newOnes]);
+          }
+        }
+        await new Promise(r => setTimeout(r, 150));
+      }
+      if (!cancelled) setLoading(false);
+    })();
+
     return () => { cancelled = true; };
-  }, [interventions, clients]);
+  }, [itemsToGeocode]);
 
   const interventionTypes = useMemo(() => {
     const types = new Set(interventions.map(i => i.intervention_type));
