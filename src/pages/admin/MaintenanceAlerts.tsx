@@ -684,6 +684,19 @@ export default function MaintenanceAlerts() {
                             )}
                             {c.city && <span>{c.city}</span>}
                           </div>
+                          {c.contract_notes && (
+                            <div className="text-sm text-muted-foreground mt-1">
+                              <span className="line-clamp-1">{c.contract_notes}</span>
+                              {c.contract_notes.length > 100 && (
+                                <button
+                                  onClick={() => navigate(`/admin/clients/${c.id}/edit`)}
+                                  className="text-primary hover:underline text-xs mt-0.5"
+                                >
+                                  Lire la suite...
+                                </button>
+                              )}
+                            </div>
+                          )}
                         </div>
 
                         <div className="flex items-center gap-2 shrink-0">
