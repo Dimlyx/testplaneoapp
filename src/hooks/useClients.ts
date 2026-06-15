@@ -18,18 +18,28 @@ export interface Client {
   organization_id: string | null;
   created_at: string;
   updated_at: string;
+  has_maintenance_contract: boolean;
+  contract_start_date: string | null;
+  contract_end_date: string | null;
+  contract_type: string | null;
+  contract_visits_per_year: number | null;
 }
 
 export interface CreateClientData {
   name: string;
   client_type: ClientType;
-  address?: string;
-  city?: string;
-  postal_code?: string;
-  email?: string;
-  phone?: string;
-  notes?: string;
+  address?: string | null;
+  city?: string | null;
+  postal_code?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  notes?: string | null;
   organization_id?: string | null;
+  has_maintenance_contract?: boolean;
+  contract_start_date?: string | null;
+  contract_end_date?: string | null;
+  contract_type?: string | null;
+  contract_visits_per_year?: number | null;
 }
 
 export interface UpdateClientData extends Partial<CreateClientData> {
