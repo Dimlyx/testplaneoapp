@@ -274,6 +274,8 @@ export type Database = {
           city: string | null
           client_type: Database["public"]["Enums"]["client_type"]
           contract_end_date: string | null
+          contract_file_name: string | null
+          contract_file_url: string | null
           contract_start_date: string | null
           contract_type: string | null
           contract_visits_per_year: number | null
@@ -293,6 +295,8 @@ export type Database = {
           city?: string | null
           client_type?: Database["public"]["Enums"]["client_type"]
           contract_end_date?: string | null
+          contract_file_name?: string | null
+          contract_file_url?: string | null
           contract_start_date?: string | null
           contract_type?: string | null
           contract_visits_per_year?: number | null
@@ -312,6 +316,8 @@ export type Database = {
           city?: string | null
           client_type?: Database["public"]["Enums"]["client_type"]
           contract_end_date?: string | null
+          contract_file_name?: string | null
+          contract_file_url?: string | null
           contract_start_date?: string | null
           contract_type?: string | null
           contract_visits_per_year?: number | null
