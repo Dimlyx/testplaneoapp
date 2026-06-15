@@ -686,6 +686,28 @@ export default function MaintenanceAlerts() {
                             variant="outline"
                             size="sm"
                             onClick={() => {
+                              resetForm();
+                              setFormData({
+                                title: c.contract_type ? `Maintenance ${c.contract_type}` : 'Maintenance contractuelle',
+                                description: '',
+                                client_id: c.id,
+                                alert_date: format(new Date(), 'yyyy-MM-dd'),
+                                recurrence: 'monthly',
+                                recurrence_months: c.contract_visits_per_year && c.contract_visits_per_year > 0
+                                  ? Math.max(1, Math.round(12 / c.contract_visits_per_year))
+                                  : 12,
+                              });
+                              setIsDialogOpen(true);
+                            }}
+                            className="text-xs gap-1.5"
+                          >
+                            <Bell className="h-3.5 w-3.5" />
+                            <span className="hidden lg:inline">Alerte</span>
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
                               const params = new URLSearchParams();
                               params.set('client_id', c.id);
                               params.set('title', 'Maintenance contractuelle');
