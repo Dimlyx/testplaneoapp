@@ -417,6 +417,25 @@ const ClientForm = () => {
               )}
 
               {hasContract && (
+                <FormField
+                  control={form.control}
+                  name="contract_notes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Notes du contrat</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Détails du contrat, conditions particulières..."
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+
+              {hasContract && (
                 <ContractFileUpload
                   clientId={id}
                   fileUrl={client?.contract_file_url ?? null}
