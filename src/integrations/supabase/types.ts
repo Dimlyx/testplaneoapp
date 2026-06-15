@@ -276,6 +276,7 @@ export type Database = {
           contract_end_date: string | null
           contract_file_name: string | null
           contract_file_url: string | null
+          contract_notes: string | null
           contract_start_date: string | null
           contract_type: string | null
           contract_visits_per_year: number | null
@@ -297,6 +298,7 @@ export type Database = {
           contract_end_date?: string | null
           contract_file_name?: string | null
           contract_file_url?: string | null
+          contract_notes?: string | null
           contract_start_date?: string | null
           contract_type?: string | null
           contract_visits_per_year?: number | null
@@ -318,6 +320,7 @@ export type Database = {
           contract_end_date?: string | null
           contract_file_name?: string | null
           contract_file_url?: string | null
+          contract_notes?: string | null
           contract_start_date?: string | null
           contract_type?: string | null
           contract_visits_per_year?: number | null

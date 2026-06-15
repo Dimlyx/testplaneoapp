@@ -46,6 +46,7 @@ const clientSchema = z.object({
   contract_end_date: z.string().optional(),
   contract_type: z.string().optional(),
   contract_visits_per_year: z.string().optional(),
+  contract_notes: z.string().optional(),
 });
 
 type ClientFormValues = z.infer<typeof clientSchema>;
@@ -78,6 +79,7 @@ const ClientForm = () => {
       contract_end_date: "",
       contract_type: "",
       contract_visits_per_year: "",
+      contract_notes: "",
     },
   });
 
@@ -99,6 +101,7 @@ const ClientForm = () => {
         contract_end_date: client.contract_end_date || "",
         contract_type: client.contract_type || "",
         contract_visits_per_year: client.contract_visits_per_year != null ? String(client.contract_visits_per_year) : "",
+        contract_notes: client.contract_notes || "",
       });
     }
   }, [client, isEditing, form]);
@@ -120,6 +123,7 @@ const ClientForm = () => {
         contract_end_date: values.has_maintenance_contract && values.contract_end_date ? values.contract_end_date : null,
         contract_type: values.has_maintenance_contract && values.contract_type ? values.contract_type : null,
         contract_visits_per_year: values.has_maintenance_contract && visits && !isNaN(visits) ? visits : null,
+        contract_notes: values.has_maintenance_contract && values.contract_notes ? values.contract_notes : null,
       };
 
       if (isEditing && id) {
@@ -410,6 +414,25 @@ const ClientForm = () => {
                     )}
                   />
                 </div>
+              )}
+
+              {hasContract && (
+                <FormField
+                  control={form.control}
+                  name="contract_notes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Notes du contrat</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Détails du contrat, conditions particulières..."
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               )}
 
               {hasContract && (
