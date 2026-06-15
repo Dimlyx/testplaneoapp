@@ -603,6 +603,119 @@ export default function MaintenanceAlerts() {
           />
         </TabsContent>
 
+        <TabsContent value="contracts">
+          {contractClients.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="p-4 rounded-full bg-muted mb-4">
+                  <FileCheck className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <h3 className="font-semibold text-lg mb-1">Aucun client sous contrat</h3>
+                <p className="text-muted-foreground text-sm max-w-sm">
+                  Activez l'option « Contrat de maintenance » sur la fiche d'un client pour le retrouver ici.
+                </p>
+                <Button variant="outline" className="mt-4" onClick={() => navigate('/admin/clients')}>
+                  Voir mes clients
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {contractClients.map((c) => {
+                const status = getContractStatus(c.contract_end_date);
+                const Icon = c.client_type === 'professional' ? Building2 : User;
+                return (
+                  <Card
+                    key={c.id}
+                    className={cn(
+                      "transition-all border-l-4",
+                      status?.variant === 'destructive' && "border-l-destructive",
+                      status?.variant === 'warning' && "border-l-amber-500",
+                      (!status || status.variant === 'secondary' || status.variant === 'outline') && "border-l-primary/40",
+                    )}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap mb-1">
+                            <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
+                            <h3 className="font-semibold text-base truncate">{c.name}</h3>
+                            {c.contract_type && (
+                              <Badge variant="outline" className="text-[10px] font-normal py-0 h-5">
+                                {c.contract_type}
+                              </Badge>
+                            )}
+                            {status && (
+                              <Badge
+                                className={cn(
+                                  "text-[10px] py-0 h-5",
+                                  status.variant === 'destructive' && "bg-destructive text-destructive-foreground",
+                                  status.variant === 'warning' && "bg-amber-500 text-white",
+                                )}
+                                variant={status.variant === 'destructive' || status.variant === 'warning' ? 'default' : status.variant}
+                              >
+                                {status.label}
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-4 flex-wrap text-sm text-muted-foreground">
+                            {c.contract_start_date && (
+                              <span className="flex items-center gap-1.5">
+                                <CalendarClock className="h-3.5 w-3.5" />
+                                Début : {format(parseISO(c.contract_start_date), 'dd MMM yyyy', { locale: fr })}
+                              </span>
+                            )}
+                            {c.contract_end_date && (
+                              <span className="flex items-center gap-1.5">
+                                <CalendarClock className="h-3.5 w-3.5" />
+                                Fin : {format(parseISO(c.contract_end_date), 'dd MMM yyyy', { locale: fr })}
+                              </span>
+                            )}
+                            {c.contract_visits_per_year != null && (
+                              <span className="flex items-center gap-1.5">
+                                <RefreshCw className="h-3.5 w-3.5" />
+                                {c.contract_visits_per_year} visite{c.contract_visits_per_year > 1 ? 's' : ''} / an
+                              </span>
+                            )}
+                            {c.city && <span>{c.city}</span>}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const params = new URLSearchParams();
+                              params.set('client_id', c.id);
+                              params.set('title', 'Maintenance contractuelle');
+                              navigate(`/admin/interventions/new?${params.toString()}`);
+                            }}
+                            className="text-xs gap-1.5"
+                          >
+                            <ClipboardList className="h-3.5 w-3.5" />
+                            <span className="hidden lg:inline">Intervention</span>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => navigate(`/admin/clients/${c.id}/edit`)}
+                            className="text-xs"
+                          >
+                            <Edit className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </TabsContent>
+
+
+
         <TabsContent value="active">
           {activeAlerts.length === 0 ? (
             <Card>
