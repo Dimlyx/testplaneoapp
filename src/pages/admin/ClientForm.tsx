@@ -30,6 +30,7 @@ import { ArrowLeft, Save, AlertTriangle, FileCheck } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Switch } from "@/components/ui/switch";
+import { ContractFileUpload } from "@/components/admin/ContractFileUpload";
 
 const clientSchema = z.object({
   name: z.string().min(1, "Le nom est requis"),
@@ -409,6 +410,14 @@ const ClientForm = () => {
                     )}
                   />
                 </div>
+              )}
+
+              {hasContract && (
+                <ContractFileUpload
+                  clientId={id}
+                  fileUrl={client?.contract_file_url ?? null}
+                  fileName={client?.contract_file_name ?? null}
+                />
               )}
             </CardContent>
           </Card>
