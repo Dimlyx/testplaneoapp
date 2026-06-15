@@ -183,15 +183,20 @@ Deno.serve(async (req) => {
       organization_id: orgId,
     })
 
-    // 5. Create demo clients
+    // 5. Create demo clients (some with active maintenance contracts to showcase the feature)
+    const todayStr = new Date().toISOString().split('T')[0]
+    const inOneYear = (() => { const d = new Date(); d.setFullYear(d.getFullYear() + 1); return d.toISOString().split('T')[0] })()
+    const sixMonthsAgo = (() => { const d = new Date(); d.setMonth(d.getMonth() - 6); return d.toISOString().split('T')[0] })()
+    const inSixMonths = (() => { const d = new Date(); d.setMonth(d.getMonth() + 6); return d.toISOString().split('T')[0] })()
+
     const { data: clients, error: clientsError } = await supabaseAdmin
       .from('clients')
       .insert([
         { name: 'Martin Pierre', client_type: 'individual', address: '5 Avenue Victor Hugo', city: 'Lyon', postal_code: '69001', email: 'p.martin@email.fr', phone: '06 12 34 56 78', organization_id: orgId },
-        { name: 'SCI Les Fontaines', client_type: 'professional', address: '28 Rue du Commerce', city: 'Marseille', postal_code: '13001', email: 'contact@lesfontaines.fr', phone: '04 91 23 45 67', organization_id: orgId },
+        { name: 'SCI Les Fontaines', client_type: 'professional', address: '28 Rue du Commerce', city: 'Marseille', postal_code: '13001', email: 'contact@lesfontaines.fr', phone: '04 91 23 45 67', organization_id: orgId, has_maintenance_contract: true, contract_start_date: sixMonthsAgo, contract_end_date: inSixMonths, contract_type: 'Contrat Premium climatisation', contract_visits_per_year: 4 },
         { name: 'Durand Famille', client_type: 'individual', address: '14 Chemin des Lilas', city: 'Bordeaux', postal_code: '33000', email: 'famille.durand@email.fr', phone: '05 56 78 90 12', organization_id: orgId },
-        { name: 'Restaurant Le Gourmet', client_type: 'professional', address: '8 Place Bellecour', city: 'Lyon', postal_code: '69002', email: 'contact@legourmet.fr', phone: '04 72 11 22 33', organization_id: orgId },
-        { name: 'Lefebvre Jacques', client_type: 'individual', address: '22 Rue des Roses', city: 'Toulouse', postal_code: '31000', email: 'j.lefebvre@email.fr', phone: '06 98 76 54 32', organization_id: orgId },
+        { name: 'Restaurant Le Gourmet', client_type: 'professional', address: '8 Place Bellecour', city: 'Lyon', postal_code: '69002', email: 'contact@legourmet.fr', phone: '04 72 11 22 33', organization_id: orgId, has_maintenance_contract: true, contract_start_date: todayStr, contract_end_date: inOneYear, contract_type: 'Contrat Standard CVC', contract_visits_per_year: 2 },
+        { name: 'Lefebvre Jacques', client_type: 'individual', address: '22 Rue des Roses', city: 'Toulouse', postal_code: '31000', email: 'j.lefebvre@email.fr', phone: '06 98 76 54 32', organization_id: orgId, has_maintenance_contract: true, contract_start_date: sixMonthsAgo, contract_end_date: inOneYear, contract_type: 'Contrat annuel chaudière', contract_visits_per_year: 1 },
       ])
       .select()
 
