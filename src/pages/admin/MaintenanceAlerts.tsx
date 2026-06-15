@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Bell, Plus, Edit, Trash2, Calendar, RefreshCw, CheckCircle, Clock, XCircle, AlertTriangle, CalendarDays, Search, X, ClipboardList, Filter, ArrowRight, Download, Info, CalendarClock } from 'lucide-react';
+import { Bell, Plus, Edit, Trash2, Calendar, RefreshCw, CheckCircle, Clock, XCircle, AlertTriangle, CalendarDays, Search, X, ClipboardList, Filter, ArrowRight, Download, Info, CalendarClock, FileCheck, User, Building2 } from 'lucide-react';
 import { format, parseISO, isPast, isToday, isFuture, addDays, differenceInDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
@@ -248,6 +248,24 @@ export default function MaintenanceAlerts() {
       .filter(a => (a.status === 'pending' || a.status === 'acknowledged') && parseISO(a.alert_date) >= today)
       .sort((a, b) => new Date(a.alert_date).getTime() - new Date(b.alert_date).getTime())[0];
   }, [alerts]);
+
+  // Clients under maintenance contract
+  const contractClients = useMemo(() => {
+    return clients
+      .filter((c) => c.has_maintenance_contract)
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [clients]);
+
+  const today = new Date();
+  const getContractStatus = (endDate: string | null) => {
+    if (!endDate) return null;
+    const end = parseISO(endDate);
+    const days = differenceInDays(end, today);
+    if (days < 0) return { label: 'Expiré', variant: 'destructive' as const, days };
+    if (days <= 30) return { label: `${days} j restants`, variant: 'warning' as const, days };
+    if (days <= 90) return { label: `${days} j restants`, variant: 'secondary' as const, days };
+    return { label: `${days} j restants`, variant: 'outline' as const, days };
+  };
 
   const hasFilters = searchQuery.trim() !== '' || filterClient !== 'all' || filterRecurrence !== 'all' || quickFilter !== 'all';
 
@@ -568,6 +586,10 @@ export default function MaintenanceAlerts() {
           <TabsTrigger value="calendar" className="flex items-center gap-1">
             <CalendarDays className="h-4 w-4" />
             Calendrier
+          </TabsTrigger>
+          <TabsTrigger value="contracts" className="flex items-center gap-1">
+            <FileCheck className="h-4 w-4" />
+            Contrats ({contractClients.length})
           </TabsTrigger>
           <TabsTrigger value="completed">
             Historique ({completedAlerts.length})
