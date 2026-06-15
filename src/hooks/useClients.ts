@@ -138,8 +138,11 @@ export function useUpdateClient() {
       if (error) throw error;
       return result;
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
+      if (result?.id) {
+        queryClient.invalidateQueries({ queryKey: ['client', result.id] });
+      }
       toast({
         title: 'Client mis à jour',
         description: 'Le client a été mis à jour avec succès.',
