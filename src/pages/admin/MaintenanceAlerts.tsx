@@ -639,7 +639,12 @@ export default function MaintenanceAlerts() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap mb-1">
                             <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
-                            <h3 className="font-semibold text-base truncate">{c.name}</h3>
+                            <button
+                              onClick={() => navigate(`/admin/clients/${c.id}/edit`)}
+                              className="font-semibold text-base truncate text-left hover:underline"
+                            >
+                              {c.name}
+                            </button>
                             {c.contract_type && (
                               <Badge variant="outline" className="text-[10px] font-normal py-0 h-5">
                                 {c.contract_type}
