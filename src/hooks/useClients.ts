@@ -23,6 +23,8 @@ export interface Client {
   contract_end_date: string | null;
   contract_type: string | null;
   contract_visits_per_year: number | null;
+  contract_file_url: string | null;
+  contract_file_name: string | null;
 }
 
 export interface CreateClientData {
@@ -40,6 +42,8 @@ export interface CreateClientData {
   contract_end_date?: string | null;
   contract_type?: string | null;
   contract_visits_per_year?: number | null;
+  contract_file_url?: string | null;
+  contract_file_name?: string | null;
 }
 
 export interface UpdateClientData extends Partial<CreateClientData> {
