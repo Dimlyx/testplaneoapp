@@ -234,7 +234,7 @@ img {
   }
 
   .nav-link-inactive {
-    @apply text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground;
+    @apply text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground;
   }
 
   /* Table styles */
