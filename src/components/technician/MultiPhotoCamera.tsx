@@ -233,6 +233,17 @@ const MultiPhotoCamera = ({ onCapture, onClose }: MultiPhotoCameraProps) => {
       {/* Hidden canvas for capturing */}
       <canvas ref={canvasRef} className="hidden" />
 
+      {/* Hidden native camera input (fallback Android) */}
+      <input
+        ref={nativeInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        multiple
+        className="hidden"
+        onChange={handleNativeCapture}
+      />
+
       {/* Flash overlay */}
       {flashEffect && <div className="absolute inset-0 z-50 bg-white pointer-events-none animate-flash" />}
 
