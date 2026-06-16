@@ -263,9 +263,18 @@ const MultiPhotoCamera = ({ onCapture, onClose }: MultiPhotoCameraProps) => {
             <div className="max-w-md">
               <Camera className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p className="text-sm whitespace-pre-line mb-4">{error}</p>
-              <Button onClick={() => startCamera(facingMode)} variant="secondary" size="sm">
-                Réessayer
-              </Button>
+              <div className="flex flex-col gap-2 items-center">
+                <Button
+                  onClick={() => nativeInputRef.current?.click()}
+                  size="sm"
+                  className="bg-primary text-primary-foreground"
+                >
+                  Ouvrir l'app Caméra du téléphone
+                </Button>
+                <Button onClick={() => startCamera(facingMode)} variant="secondary" size="sm">
+                  Réessayer la caméra intégrée
+                </Button>
+              </div>
             </div>
           </div>
         ) : (
