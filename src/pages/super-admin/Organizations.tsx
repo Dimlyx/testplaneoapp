@@ -340,6 +340,7 @@ export default function Organizations() {
                   <TableHead>Entreprise</TableHead>
                   <TableHead>Contact</TableHead>
                   <TableHead>Statut</TableHead>
+                  <TableHead>Période d'essai</TableHead>
                   <TableHead>Créée le</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
