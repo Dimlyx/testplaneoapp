@@ -220,7 +220,7 @@ export default function AdminLayout() {
                                   "flex items-center rounded-md px-3 py-1.5 text-sm",
                                   isSubActive
                                     ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                                    : "text-sidebar-foreground/70 hover:text-sidebar-foreground"
+                                    : "text-sidebar-foreground hover:text-sidebar-foreground"
                                 )}
                               >
                                 <span>{sub.label}</span>
