@@ -23,6 +23,7 @@ import { fr } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useOrganizationContext } from '@/lib/organization-context';
+import OrganizationNotes from '@/components/super-admin/OrganizationNotes';
 
 interface UserFormData {
   email: string;
