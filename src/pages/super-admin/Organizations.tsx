@@ -73,39 +73,12 @@ export default function Organizations() {
       if (error) throw error;
 
       const orgId = newOrg.id;
-
-      // 2. Create a default intervention type
-      const { data: newType, error: typeError } = await supabase.from('intervention_types').insert({
-        name: 'maintenance',
-        label: 'Maintenance',
-        color: 'blue',
-        organization_id: orgId,
-        track_journey: true,
-        allow_loop: false,
-      }).select('id').single();
-      if (typeError) throw typeError;
-
-      // 3. Create default workflow steps
-      const defaultSteps = [
-        { name: 'diagnostic', label: 'Diagnostic', step_order: 1, is_mandatory: true, requires_comment: true, requires_photo: false, requires_signature: false },
-        { name: 'intervention', label: 'Intervention', step_order: 2, is_mandatory: true, requires_comment: true, requires_photo: true, requires_signature: false },
-        { name: 'verification', label: 'Vérification', step_order: 3, is_mandatory: true, requires_comment: false, requires_photo: true, requires_signature: false },
-        { name: 'signature_client', label: 'Signature client', step_order: 4, is_mandatory: true, requires_comment: false, requires_photo: false, requires_signature: true },
-      ];
-
-      const { error: stepsError } = await supabase.from('intervention_workflow_steps').insert(
-        defaultSteps.map(step => ({
-          ...step,
-          intervention_type_id: newType.id,
-          organization_id: orgId,
-        }))
-      );
-      if (stepsError) throw stepsError;
+      return orgId;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['organizations'] });
       queryClient.invalidateQueries({ queryKey: ['super-admin-stats'] });
-      toast.success('Entreprise créée avec un type d\'intervention par défaut');
+      toast.success('Entreprise créée');
       setIsDialogOpen(false);
       setFormData(initialFormData);
     },
