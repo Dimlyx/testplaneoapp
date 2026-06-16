@@ -407,13 +407,25 @@ export default function OrganizationDetail() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="password">Mot de passe *</Label>
-                      <PasswordInput
-                        id="password"
-                        value={userFormData.password}
-                        onChange={(e) => setUserFormData(prev => ({ ...prev, password: e.target.value }))}
-                        required
-                        minLength={8}
-                      />
+                      <div className="relative">
+                        <Input
+                          id="password"
+                          type={showPassword ? 'text' : 'password'}
+                          value={userFormData.password}
+                          onChange={(e) => setUserFormData(prev => ({ ...prev, password: e.target.value }))}
+                          required
+                          minLength={8}
+                          className="pr-10"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(v => !v)}
+                          tabIndex={-1}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
                       <Button
                         type="button"
                         variant="outline"
@@ -421,6 +433,7 @@ export default function OrganizationDetail() {
                         onClick={() => {
                           const pwd = generateStrongPassword(14);
                           setUserFormData(prev => ({ ...prev, password: pwd }));
+                          setShowPassword(true);
                           navigator.clipboard.writeText(pwd).catch(() => {});
                           toast.success('Mot de passe généré et copié');
                         }}
