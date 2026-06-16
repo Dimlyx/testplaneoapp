@@ -8,9 +8,9 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Building2, Trash2, Edit, Users, Eye } from 'lucide-react';
+import { Plus, Search, Building2, Trash2, Edit, Users, Eye, CalendarClock } from 'lucide-react';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { format, differenceInDays, isPast } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Link } from 'react-router-dom';
@@ -340,6 +340,7 @@ export default function Organizations() {
                   <TableHead>Entreprise</TableHead>
                   <TableHead>Contact</TableHead>
                   <TableHead>Statut</TableHead>
+                  <TableHead>Période d'essai</TableHead>
                   <TableHead>Créée le</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -373,6 +374,35 @@ export default function Organizations() {
                       <Badge variant={org.status === 'active' ? 'default' : 'secondary'}>
                         {org.status === 'active' ? 'Actif' : org.status}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {(() => {
+                        const subStatus = org.subscription_status || 'trial';
+                        const trialEnd = org.trial_ends_at ? new Date(org.trial_ends_at) : null;
+                        const isTrialExpired = trialEnd ? isPast(trialEnd) : false;
+                        const daysLeft = trialEnd ? differenceInDays(trialEnd, new Date()) : 0;
+
+                        if (subStatus === 'trial' && trialEnd) {
+                          return (
+                            <Badge variant={isTrialExpired ? 'destructive' : 'outline'} className="flex items-center gap-1">
+                              <CalendarClock className="h-3 w-3" />
+                              {isTrialExpired
+                                ? 'Expiré'
+                                : `${daysLeft}j restant${daysLeft > 1 ? 's' : ''}`
+                              }
+                            </Badge>
+                          );
+                        }
+                        if (subStatus === 'active') {
+                          return <Badge className="bg-green-600">Abonné</Badge>;
+                        }
+                        const statusLabels: Record<string, string> = {
+                          past_due: 'En retard',
+                          canceled: 'Annulé',
+                          unpaid: 'Impayé',
+                        };
+                        return <Badge variant="destructive">{statusLabels[subStatus] || subStatus}</Badge>;
+                      })()}
                     </TableCell>
                     <TableCell>
                       {format(new Date(org.created_at), 'dd MMM yyyy', { locale: fr })}
