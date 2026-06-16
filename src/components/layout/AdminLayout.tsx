@@ -16,7 +16,6 @@ import {
   ChevronRight,
   ChevronDown,
   CalendarDays,
-  LayoutGrid,
   BarChart3,
   Settings,
   Bell,
@@ -169,31 +168,29 @@ export default function AdminLayout() {
                           : <ChevronRight className="ml-auto h-4 w-4" />}
                       </button>
                       {calendarMenuOpen && (
-                        <div className="mt-1 ml-7 space-y-1 border-l border-sidebar-border pl-3">
+                        <div className="mt-1 space-y-1 pl-7">
                           <Link
                             to="/admin/calendar"
                             onClick={() => setSidebarOpen(false)}
                             className={cn(
-                              "flex items-center gap-2 rounded-md px-3 py-1.5 text-sm",
+                              "flex items-center rounded-md px-3 py-1.5 text-sm",
                               isCalendarView
                                 ? "bg-sidebar-accent text-sidebar-accent-foreground"
                                 : "text-sidebar-foreground/70 hover:text-sidebar-foreground"
                             )}
                           >
-                            <CalendarDays className="h-4 w-4" />
                             <span>Calendrier</span>
                           </Link>
                           <Link
                             to="/admin/calendar?view=planning"
                             onClick={() => setSidebarOpen(false)}
                             className={cn(
-                              "flex items-center gap-2 rounded-md px-3 py-1.5 text-sm",
+                              "flex items-center rounded-md px-3 py-1.5 text-sm",
                               isPlanningView
                                 ? "bg-sidebar-accent text-sidebar-accent-foreground"
                                 : "text-sidebar-foreground/70 hover:text-sidebar-foreground"
                             )}
                           >
-                            <LayoutGrid className="h-4 w-4" />
                             <span>Planning</span>
                           </Link>
                         </div>
