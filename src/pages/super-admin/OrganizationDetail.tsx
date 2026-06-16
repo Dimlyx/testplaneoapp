@@ -45,6 +45,7 @@ export default function OrganizationDetail() {
   const { setViewAsOrgId } = useOrganizationContext();
   const [isAddUserDialogOpen, setIsAddUserDialogOpen] = useState(false);
   const [userFormData, setUserFormData] = useState<UserFormData>(initialUserFormData);
+  const [showPassword, setShowPassword] = useState(false);
 
   const { data: organization, isLoading: isLoadingOrg } = useQuery({
     queryKey: ['organization', id],
