@@ -9,7 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { Loader2, Trash2, Eye, EyeOff, KeyRound, Mail, UserCircle } from 'lucide-react';
+import { Loader2, Trash2, Eye, EyeOff, KeyRound, Mail, UserCircle, Wand2, Copy } from 'lucide-react';
+import { generateStrongPassword } from '@/lib/password-generator';
 
 interface UserWithRole {
   id: string;
@@ -237,20 +238,52 @@ export function EditUserDialog({ user, open, onOpenChange }: EditUserDialogProps
                       value={newPassword}
                       onChange={e => setNewPassword(e.target.value)}
                       placeholder="Laisser vide pour ne pas modifier"
-                      className="pr-10"
+                      className="pr-20"
                     />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-0 top-0 h-full w-10"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </Button>
+                    <div className="absolute right-0 top-0 h-full flex items-center">
+                      {newPassword && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-full w-10"
+                          onClick={() => {
+                            navigator.clipboard.writeText(newPassword);
+                            toast.success('Mot de passe copié');
+                          }}
+                          title="Copier"
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      )}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-full w-10"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                    </div>
                   </div>
-                  {newPassword && newPassword.length < 6 && (
-                    <p className="text-xs text-destructive">Minimum 6 caractères</p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const pwd = generateStrongPassword(14);
+                      setNewPassword(pwd);
+                      setShowPassword(true);
+                      navigator.clipboard.writeText(pwd).catch(() => {});
+                      toast.success('Mot de passe généré et copié');
+                    }}
+                  >
+                    <Wand2 className="h-4 w-4 mr-2" />
+                    Générer un mot de passe sécurisé
+                  </Button>
+                  {newPassword && newPassword.length < 8 && (
+                    <p className="text-xs text-destructive">Minimum 8 caractères</p>
                   )}
                 </div>
               </div>
