@@ -46,7 +46,15 @@ export default function AdminLayout() {
   const { user, role, signOut } = useAuth();
   const { viewAsOrgId, clearViewAsOrg } = useOrganizationContext();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [calendarMenuOpen, setCalendarMenuOpen] = useState(location.pathname.startsWith('/admin/calendar'));
+  const [openMenu, setOpenMenu] = useState<string | null>(() => {
+    const p = location.pathname;
+    if (p.startsWith('/admin/calendar')) return '/admin/calendar';
+    if (p.startsWith('/admin/maintenance-alerts')) return '/admin/maintenance-alerts';
+    if (p.startsWith('/admin/statistics')) return '/admin/statistics';
+    if (p.startsWith('/admin/technicians')) return '/admin/technicians';
+    if (p.startsWith('/admin/settings')) return '/admin/settings';
+    return null;
+  });
   const { hasFeature, isSubscriptionBlocked, subscriptionStatus } = useOrganizationPlan();
 
   const isSuperAdminViewing = role === 'super_admin' && viewAsOrgId;
