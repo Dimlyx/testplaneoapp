@@ -37,6 +37,15 @@ import {
 export default function Settings() {
   const { toast } = useToast();
   const { hasFeature } = useOrganizationPlan();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialView = searchParams.get('view');
+  const [settingsOpenSections, setSettingsOpenSections] = useState<string[]>(initialView ? [initialView] : []);
+  useEffect(() => {
+    const v = searchParams.get('view');
+    setSettingsOpenSections(v ? [v] : []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams.toString()]);
+
   
   const { data: dbCompanySettings, isLoading: loadingCompany } = useCompanySettings();
   const { data: dbInterfaceSettings, isLoading: loadingInterface } = useInterfaceSettings();
