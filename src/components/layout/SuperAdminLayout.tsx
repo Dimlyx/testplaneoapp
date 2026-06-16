@@ -158,5 +158,6 @@ export default function SuperAdminLayout() {
         </main>
       </div>
     </div>
+    <ChatBot />
   );
 }

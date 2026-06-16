@@ -164,6 +164,7 @@ export default function TechnicianLayout() {
           <TechnicianCreateInterventionDialog open={createOpen} onOpenChange={setCreateOpen} />
         </Suspense>
       )}
+      {!createOpen && <ChatBot />}
     </div>
   );
 }
