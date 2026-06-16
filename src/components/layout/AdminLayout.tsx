@@ -136,18 +136,18 @@ export default function AdminLayout() {
                 
                 if (isLocked) {
                   return (
-                    <div
-                      key={item.name}
-                      className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground/30 cursor-not-allowed"
-                      title="Disponible avec le pack Business"
-                    >
-                      <item.icon className="h-5 w-5" />
-                      <span>{item.name}</span>
-                      <Badge variant="outline" className="ml-auto text-[10px] px-1.5 py-0 border-sidebar-foreground/20 text-sidebar-foreground/30">
-                        <Lock className="h-3 w-3 mr-1" />
-                        Business
-                      </Badge>
-                    </div>
+                      <div
+                        key={item.name}
+                        className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground/50 cursor-not-allowed"
+                        title="Disponible avec le pack Business"
+                      >
+                        <item.icon className="h-5 w-5" />
+                        <span>{item.name}</span>
+                        <Badge variant="outline" className="ml-auto text-[10px] px-1.5 py-0 border-sidebar-foreground/30 text-sidebar-foreground/50">
+                          <Lock className="h-3 w-3 mr-1" />
+                          Business
+                        </Badge>
+                      </div>
                   );
                 }
 
@@ -220,7 +220,7 @@ export default function AdminLayout() {
                                   "flex items-center rounded-md px-3 py-1.5 text-sm",
                                   isSubActive
                                     ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                                    : "text-sidebar-foreground/70 hover:text-sidebar-foreground"
+                                    : "text-sidebar-foreground hover:text-sidebar-foreground"
                                 )}
                               >
                                 <span>{sub.label}</span>
@@ -265,7 +265,7 @@ export default function AdminLayout() {
                 <p className="text-sm font-medium text-sidebar-foreground truncate">
                   Admin
                 </p>
-                <p className="text-xs text-sidebar-foreground/60 truncate">
+                <p className="text-xs text-sidebar-foreground truncate">
                   {user?.email}
                 </p>
               </div>
@@ -274,7 +274,7 @@ export default function AdminLayout() {
               variant="ghost"
               size="sm"
               onClick={handleSignOut}
-              className="w-full justify-start text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+              className="w-full justify-start text-sidebar-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent"
             >
               <LogOut className="mr-2 h-4 w-4" />
               Déconnexion
