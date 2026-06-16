@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Building2, Plus, UserPlus, Trash2, Users, UserCog, Activity, ClipboardList, Eye, Crown, CalendarClock, Pencil, Wand2 } from 'lucide-react';
+import { ArrowLeft, Building2, Plus, UserPlus, Trash2, Users, UserCog, Activity, ClipboardList, Eye, EyeOff, Crown, CalendarClock, Pencil, Wand2 } from 'lucide-react';
 import { generateStrongPassword } from '@/lib/password-generator';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
