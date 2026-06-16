@@ -18,7 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { CalendarDays, Clock, MapPin, User, LayoutGrid, List } from "lucide-react";
 import { format, isSameDay, parseISO, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { WeeklyPlanningCalendar } from "@/components/admin/WeeklyPlanningCalendar";
 import { QuickInterventionDialog } from "@/components/admin/QuickInterventionDialog";
@@ -34,7 +34,14 @@ const AdminCalendar = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
   const [technicianFilter, setTechnicianFilter] = useState<string>("all");
-  const [viewMode, setViewMode] = useState<string>("calendar");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const viewMode = searchParams.get("view") === "planning" ? "planning" : "calendar";
+  const setViewMode = (v: string) => {
+    const next = new URLSearchParams(searchParams);
+    if (v === "planning") next.set("view", "planning");
+    else next.delete("view");
+    setSearchParams(next, { replace: true });
+  };
   
   // Quick intervention dialog state
   const [quickDialogOpen, setQuickDialogOpen] = useState(false);
