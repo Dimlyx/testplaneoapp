@@ -353,7 +353,12 @@ export default function Organizations() {
                           <Building2 className="h-5 w-5 text-primary" />
                         </div>
                         <div>
-                          <p className="font-medium">{org.name}</p>
+                          <Link
+                            to={`/super-admin/organizations/${org.id}`}
+                            className="font-medium hover:underline"
+                          >
+                            {org.name}
+                          </Link>
                           <p className="text-sm text-muted-foreground">{org.slug}</p>
                         </div>
                       </div>
