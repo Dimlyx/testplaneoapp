@@ -46,27 +46,33 @@ export interface UpdateMaintenanceAlertData {
 }
 
 export function useMaintenanceAlerts() {
+  const { data: organizationId } = useUserOrganization();
   return useQuery({
-    queryKey: ['maintenance-alerts'],
+    queryKey: ['maintenance-alerts', organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
       const { data, error } = await supabase
         .from('maintenance_alerts')
         .select(`
           *,
           clients (id, name)
         `)
+        .eq('organization_id', organizationId)
         .order('alert_date', { ascending: true });
 
       if (error) throw error;
       return data as MaintenanceAlert[];
     },
+    enabled: !!organizationId,
   });
 }
 
 export function usePendingAlerts() {
+  const { data: organizationId } = useUserOrganization();
   return useQuery({
-    queryKey: ['pending-alerts'],
+    queryKey: ['pending-alerts', organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
       const today = new Date().toISOString().split('T')[0];
       const { data, error } = await supabase
         .from('maintenance_alerts')
@@ -74,6 +80,7 @@ export function usePendingAlerts() {
           *,
           clients (id, name)
         `)
+        .eq('organization_id', organizationId)
         .eq('status', 'pending')
         .lte('alert_date', today)
         .order('alert_date', { ascending: true });
@@ -81,13 +88,16 @@ export function usePendingAlerts() {
       if (error) throw error;
       return data as MaintenanceAlert[];
     },
+    enabled: !!organizationId,
   });
 }
 
 export function useUpcomingAlerts(days: number = 30) {
+  const { data: organizationId } = useUserOrganization();
   return useQuery({
-    queryKey: ['upcoming-alerts', days],
+    queryKey: ['upcoming-alerts', days, organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
       const today = new Date();
       const futureDate = new Date();
       futureDate.setDate(today.getDate() + days);
@@ -98,6 +108,7 @@ export function useUpcomingAlerts(days: number = 30) {
           *,
           clients (id, name)
         `)
+        .eq('organization_id', organizationId)
         .in('status', ['pending', 'acknowledged'])
         .gte('alert_date', today.toISOString().split('T')[0])
         .lte('alert_date', futureDate.toISOString().split('T')[0])
@@ -106,6 +117,7 @@ export function useUpcomingAlerts(days: number = 30) {
       if (error) throw error;
       return data as MaintenanceAlert[];
     },
+    enabled: !!organizationId,
   });
 }
 

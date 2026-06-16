@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useUserOrganization } from '@/hooks/useUserOrganization';
 
 export interface CustomStatus {
   id: string;
@@ -14,16 +15,20 @@ export interface CustomStatus {
 }
 
 export function useCustomStatuses() {
+  const { data: organizationId } = useUserOrganization();
   return useQuery({
-    queryKey: ['custom-intervention-statuses'],
+    queryKey: ['custom-intervention-statuses', organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
       const { data, error } = await supabase
         .from('custom_intervention_statuses')
         .select('*')
+        .eq('organization_id', organizationId)
         .order('status_order', { ascending: true });
       if (error) throw error;
       return (data || []) as CustomStatus[];
     },
+    enabled: !!organizationId,
     staleTime: 5 * 60 * 1000, // 5 min
   });
 }
