@@ -14,7 +14,9 @@ import {
   Wrench,
   HardHat,
   ChevronRight,
+  ChevronDown,
   CalendarDays,
+  LayoutGrid,
   BarChart3,
   Settings,
   Bell,
@@ -45,6 +47,7 @@ export default function AdminLayout() {
   const { user, role, signOut } = useAuth();
   const { viewAsOrgId, clearViewAsOrg } = useOrganizationContext();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [calendarMenuOpen, setCalendarMenuOpen] = useState(location.pathname.startsWith('/admin/calendar'));
   const { hasFeature, isSubscriptionBlocked, subscriptionStatus } = useOrganizationPlan();
 
   const isSuperAdminViewing = role === 'super_admin' && viewAsOrgId;
@@ -137,6 +140,64 @@ export default function AdminLayout() {
                         <Lock className="h-3 w-3 mr-1" />
                         Business
                       </Badge>
+                    </div>
+                  );
+                }
+
+                if (item.href === '/admin/calendar') {
+                  const onCalendar = location.pathname === '/admin/calendar';
+                  const isPlanningView = onCalendar && new URLSearchParams(location.search).get('view') === 'planning';
+                  const isCalendarView = onCalendar && !isPlanningView;
+                  return (
+                    <div key={item.name}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCalendarMenuOpen((v) => !v);
+                          navigate('/admin/calendar');
+                          setSidebarOpen(false);
+                        }}
+                        className={cn(
+                          "nav-link w-full",
+                          onCalendar ? "nav-link-active" : "nav-link-inactive"
+                        )}
+                      >
+                        <item.icon className="h-5 w-5" />
+                        <span>{item.name}</span>
+                        {calendarMenuOpen
+                          ? <ChevronDown className="ml-auto h-4 w-4" />
+                          : <ChevronRight className="ml-auto h-4 w-4" />}
+                      </button>
+                      {calendarMenuOpen && (
+                        <div className="mt-1 ml-7 space-y-1 border-l border-sidebar-border pl-3">
+                          <Link
+                            to="/admin/calendar"
+                            onClick={() => setSidebarOpen(false)}
+                            className={cn(
+                              "flex items-center gap-2 rounded-md px-3 py-1.5 text-sm",
+                              isCalendarView
+                                ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                                : "text-sidebar-foreground/70 hover:text-sidebar-foreground"
+                            )}
+                          >
+                            <CalendarDays className="h-4 w-4" />
+                            <span>Calendrier</span>
+                          </Link>
+                          <Link
+                            to="/admin/calendar?view=planning"
+                            onClick={() => setSidebarOpen(false)}
+                            className={cn(
+                              "flex items-center gap-2 rounded-md px-3 py-1.5 text-sm",
+                              isPlanningView
+                                ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                                : "text-sidebar-foreground/70 hover:text-sidebar-foreground"
+                            )}
+                          >
+                            <LayoutGrid className="h-4 w-4" />
+                            <span>Planning</span>
+                          </Link>
+                        </div>
+                      )}
                     </div>
                   );
                 }
