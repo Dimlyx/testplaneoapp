@@ -274,7 +274,7 @@ export default function AdminLayout() {
               variant="ghost"
               size="sm"
               onClick={handleSignOut}
-              className="w-full justify-start text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+              className="w-full justify-start text-sidebar-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent"
             >
               <LogOut className="mr-2 h-4 w-4" />
               Déconnexion
