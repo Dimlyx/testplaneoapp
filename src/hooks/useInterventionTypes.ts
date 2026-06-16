@@ -14,17 +14,28 @@ export interface InterventionType {
 }
 
 export function useInterventionTypes() {
+  const { data: organizationId } = useUserOrganization();
+
   return useQuery({
-    queryKey: ["intervention-types"],
+    queryKey: ["intervention-types", organizationId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("intervention_types")
         .select("*")
         .order("label", { ascending: true });
 
+      // Explicitly scope to current (or impersonated) org so super_admin
+      // impersonation doesn't leak types from other organizations via RLS.
+      if (organizationId) {
+        query = query.eq("organization_id", organizationId);
+      }
+
+      const { data, error } = await query;
+
       if (error) throw error;
       return data as InterventionType[];
     },
+    enabled: !!organizationId,
     staleTime: 5 * 60 * 1000, // 5 min
   });
 }
