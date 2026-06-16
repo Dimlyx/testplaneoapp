@@ -179,8 +179,12 @@ export default function SuperAdminDashboard() {
         </p>
       </div>
 
+      {/* Rappels & alertes */}
+      <ReminderAlertsWidget />
+
       {/* KPI Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+
         {statCards.map((stat) => (
           <Card key={stat.title}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
