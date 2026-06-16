@@ -36,6 +36,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useSearchParams } from "react-router-dom";
 import { PerformanceCharts } from "@/components/admin/PerformanceCharts";
 import { Badge } from "@/components/ui/badge";
 
@@ -51,6 +52,8 @@ interface TechnicianStats {
 
 export default function Statistics() {
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const statsView = searchParams.get('view') || 'overview';
   const { data: interventions = [], isLoading: loadingInterventions } = useInterventions();
   const { data: clients = [] } = useClients();
   const { data: technicians = [] } = useTechnicians();
