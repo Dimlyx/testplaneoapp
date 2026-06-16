@@ -151,61 +151,88 @@ export default function AdminLayout() {
                   );
                 }
 
-                if (item.href === '/admin/calendar') {
-                  const onCalendar = location.pathname === '/admin/calendar';
-                  const isPlanningView = onCalendar && new URLSearchParams(location.search).get('view') === 'planning';
-                  const isCalendarView = onCalendar && !isPlanningView;
+                const submenus: Record<string, { label: string; view?: string }[]> = {
+                  '/admin/calendar': [
+                    { label: 'Calendrier' },
+                    { label: 'Planning', view: 'planning' },
+                  ],
+                  '/admin/maintenance-alerts': [
+                    { label: 'Actives' },
+                    { label: 'Calendrier', view: 'calendar' },
+                    { label: 'Contrats', view: 'contracts' },
+                    { label: 'Historique', view: 'completed' },
+                  ],
+                  '/admin/statistics': [
+                    { label: "Vue d'ensemble" },
+                    { label: 'Performance techniciens', view: 'technicians' },
+                    { label: 'Maintenance', view: 'maintenance' },
+                  ],
+                  '/admin/technicians': [
+                    { label: 'Tous' },
+                    { label: 'Internes', view: 'internal' },
+                    { label: 'Sous-traitants', view: 'subcontractor' },
+                  ],
+                  '/admin/settings': [
+                    { label: 'Société', view: 'company' },
+                    { label: 'Interface', view: 'interface' },
+                    { label: "Modèles d'intervention", view: 'workflow' },
+                    { label: 'Documents', view: 'documents' },
+                    { label: 'Export des données', view: 'export' },
+                    { label: 'À propos', view: 'about' },
+                  ],
+                };
+
+                if (submenus[item.href]) {
+                  const onPage = location.pathname === item.href;
+                  const currentView = new URLSearchParams(location.search).get('view');
+                  const isOpen = openMenu === item.href;
                   return (
                     <div key={item.name}>
                       <button
                         type="button"
                         onClick={() => {
-                          setCalendarMenuOpen((v) => !v);
-                          navigate('/admin/calendar');
+                          setOpenMenu((v) => (v === item.href ? null : item.href));
+                          navigate(item.href);
                           setSidebarOpen(false);
                         }}
                         className={cn(
                           "nav-link w-full",
-                          onCalendar ? "nav-link-active" : "nav-link-inactive"
+                          onPage ? "nav-link-active" : "nav-link-inactive"
                         )}
                       >
                         <item.icon className="h-5 w-5" />
                         <span>{item.name}</span>
-                        {calendarMenuOpen
+                        {isOpen
                           ? <ChevronDown className="ml-auto h-4 w-4" />
                           : <ChevronRight className="ml-auto h-4 w-4" />}
                       </button>
-                      {calendarMenuOpen && (
+                      {isOpen && (
                         <div className="mt-1 space-y-1 pl-7">
-                          <Link
-                            to="/admin/calendar"
-                            onClick={() => setSidebarOpen(false)}
-                            className={cn(
-                              "flex items-center rounded-md px-3 py-1.5 text-sm",
-                              isCalendarView
-                                ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                                : "text-sidebar-foreground/70 hover:text-sidebar-foreground"
-                            )}
-                          >
-                            <span>Calendrier</span>
-                          </Link>
-                          <Link
-                            to="/admin/calendar?view=planning"
-                            onClick={() => setSidebarOpen(false)}
-                            className={cn(
-                              "flex items-center rounded-md px-3 py-1.5 text-sm",
-                              isPlanningView
-                                ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                                : "text-sidebar-foreground/70 hover:text-sidebar-foreground"
-                            )}
-                          >
-                            <span>Planning</span>
-                          </Link>
+                          {submenus[item.href].map((sub) => {
+                            const isSubActive = onPage && (currentView || undefined) === sub.view;
+                            const to = sub.view ? `${item.href}?view=${sub.view}` : item.href;
+                            return (
+                              <Link
+                                key={sub.label}
+                                to={to}
+                                onClick={() => setSidebarOpen(false)}
+                                className={cn(
+                                  "flex items-center rounded-md px-3 py-1.5 text-sm",
+                                  isSubActive
+                                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                                    : "text-sidebar-foreground/70 hover:text-sidebar-foreground"
+                                )}
+                              >
+                                <span>{sub.label}</span>
+                              </Link>
+                            );
+                          })}
                         </div>
                       )}
                     </div>
                   );
                 }
+
 
                 return (
                   <Link
