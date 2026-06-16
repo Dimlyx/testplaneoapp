@@ -20,6 +20,7 @@ import {
 import planeoLogoWhite from '@/assets/planeo-logo-white.png';
 import planeoLogoDark from '@/assets/planeo-logo-dark.png';
 import { cn } from '@/lib/utils';
+import { ChatBot } from '@/components/ChatBot';
 import { OfflineIndicator } from '@/components/technician/OfflineIndicator';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useTechnicianPermissions } from '@/hooks/useTechnicianPermissions';
@@ -163,6 +164,7 @@ export default function TechnicianLayout() {
           <TechnicianCreateInterventionDialog open={createOpen} onOpenChange={setCreateOpen} />
         </Suspense>
       )}
+      {!createOpen && <ChatBot />}
     </div>
   );
 }

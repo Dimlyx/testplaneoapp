@@ -332,7 +332,7 @@ export default function AdminLayout() {
           <Outlet />
         </main>
       </div>
-      {location.pathname === '/admin' && <ChatBot />}
+      {location.pathname !== '/admin/interventions/new' && <ChatBot />}
     </div>
   );
 }
