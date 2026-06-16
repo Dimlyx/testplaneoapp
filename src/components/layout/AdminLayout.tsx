@@ -15,8 +15,6 @@ import {
   HardHat,
   ChevronRight,
   ChevronDown,
-  CalendarDays,
-  LayoutGrid,
   BarChart3,
   Settings,
   Bell,
