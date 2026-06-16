@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Building2, Plus, UserPlus, Trash2, Users, UserCog, Activity, ClipboardList, Eye, Crown, CalendarClock } from 'lucide-react';
+import { ArrowLeft, Building2, Plus, UserPlus, Trash2, Users, UserCog, Activity, ClipboardList, Eye, Crown, CalendarClock, Pencil } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { PLAN_LABELS, FEATURE_LABELS, type PlanType } from '@/hooks/useOrganizationPlan';
@@ -169,6 +169,37 @@ export default function OrganizationDetail() {
     e.preventDefault();
     createUserMutation.mutate(userFormData);
   };
+
+  const [isEditingInfo, setIsEditingInfo] = useState(false);
+  const [infoFormData, setInfoFormData] = useState({
+    name: '',
+    slug: '',
+    email: '',
+    phone: '',
+    address: '',
+    city: '',
+    postal_code: '',
+    siret: '',
+    tva_number: '',
+  });
+
+  const updateOrgMutation = useMutation({
+    mutationFn: async (data: typeof infoFormData) => {
+      const { error } = await supabase
+        .from('organizations')
+        .update(data)
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['organization', id] });
+      toast.success('Informations mises à jour');
+      setIsEditingInfo(false);
+    },
+    onError: (error: Error) => {
+      toast.error(`Erreur: ${error.message}`);
+    },
+  });
 
   if (isLoadingOrg) {
     return (
@@ -591,48 +622,139 @@ export default function OrganizationDetail() {
           </Card>
 
           <Card>
-            <CardHeader>
-              <CardTitle>Informations de l'entreprise</CardTitle>
-              <CardDescription>Détails et coordonnées</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Informations de l'entreprise</CardTitle>
+                <CardDescription>Détails et coordonnées</CardDescription>
+              </div>
+              {!isEditingInfo ? (
+                <Button variant="outline" size="sm" onClick={() => {
+                  setInfoFormData({
+                    name: organization.name || '',
+                    slug: organization.slug || '',
+                    email: organization.email || '',
+                    phone: organization.phone || '',
+                    address: organization.address || '',
+                    city: organization.city || '',
+                    postal_code: organization.postal_code || '',
+                    siret: organization.siret || '',
+                    tva_number: organization.tva_number || '',
+                  });
+                  setIsEditingInfo(true);
+                }}>
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Modifier
+                </Button>
+              ) : (
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setIsEditingInfo(false)}>
+                    Annuler
+                  </Button>
+                  <Button size="sm" onClick={() => updateOrgMutation.mutate(infoFormData)} disabled={updateOrgMutation.isPending}>
+                    Enregistrer
+                  </Button>
+                </div>
+              )}
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-muted-foreground">Email</Label>
-                  <p className="font-medium">{organization.email || '-'}</p>
+              {!isEditingInfo ? (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-muted-foreground">Nom</Label>
+                      <p className="font-medium">{organization.name || '-'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">Slug</Label>
+                      <p className="font-medium">{organization.slug || '-'}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-muted-foreground">Email</Label>
+                      <p className="font-medium">{organization.email || '-'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">Téléphone</Label>
+                      <p className="font-medium">{organization.phone || '-'}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground">Adresse</Label>
+                    <p className="font-medium">
+                      {organization.address ? (
+                        <>
+                          {organization.address}<br />
+                          {organization.postal_code} {organization.city}
+                        </>
+                      ) : '-'}
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-muted-foreground">SIRET</Label>
+                      <p className="font-medium">{organization.siret || '-'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">N° TVA</Label>
+                      <p className="font-medium">{organization.tva_number || '-'}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground">Créée le</Label>
+                    <p className="font-medium">
+                      {format(new Date(organization.created_at), 'dd MMMM yyyy à HH:mm', { locale: fr })}
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <div className="grid gap-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Nom</Label>
+                      <Input id="name" value={infoFormData.name} onChange={(e) => setInfoFormData(prev => ({ ...prev, name: e.target.value }))} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="slug">Slug</Label>
+                      <Input id="slug" value={infoFormData.slug} onChange={(e) => setInfoFormData(prev => ({ ...prev, slug: e.target.value }))} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email</Label>
+                      <Input id="email" type="email" value={infoFormData.email} onChange={(e) => setInfoFormData(prev => ({ ...prev, email: e.target.value }))} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">Téléphone</Label>
+                      <Input id="phone" value={infoFormData.phone} onChange={(e) => setInfoFormData(prev => ({ ...prev, phone: e.target.value }))} />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="address">Adresse</Label>
+                    <Input id="address" value={infoFormData.address} onChange={(e) => setInfoFormData(prev => ({ ...prev, address: e.target.value }))} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="postal_code">Code postal</Label>
+                      <Input id="postal_code" value={infoFormData.postal_code} onChange={(e) => setInfoFormData(prev => ({ ...prev, postal_code: e.target.value }))} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="city">Ville</Label>
+                      <Input id="city" value={infoFormData.city} onChange={(e) => setInfoFormData(prev => ({ ...prev, city: e.target.value }))} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="siret">SIRET</Label>
+                      <Input id="siret" value={infoFormData.siret} onChange={(e) => setInfoFormData(prev => ({ ...prev, siret: e.target.value }))} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="tva_number">N° TVA</Label>
+                      <Input id="tva_number" value={infoFormData.tva_number} onChange={(e) => setInfoFormData(prev => ({ ...prev, tva_number: e.target.value }))} />
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <Label className="text-muted-foreground">Téléphone</Label>
-                  <p className="font-medium">{organization.phone || '-'}</p>
-                </div>
-              </div>
-              <div>
-                <Label className="text-muted-foreground">Adresse</Label>
-                <p className="font-medium">
-                  {organization.address ? (
-                    <>
-                      {organization.address}<br />
-                      {organization.postal_code} {organization.city}
-                    </>
-                  ) : '-'}
-                </p>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-muted-foreground">SIRET</Label>
-                  <p className="font-medium">{organization.siret || '-'}</p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">N° TVA</Label>
-                  <p className="font-medium">{organization.tva_number || '-'}</p>
-                </div>
-              </div>
-              <div>
-                <Label className="text-muted-foreground">Créée le</Label>
-                <p className="font-medium">
-                  {format(new Date(organization.created_at), 'dd MMMM yyyy à HH:mm', { locale: fr })}
-                </p>
-              </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
