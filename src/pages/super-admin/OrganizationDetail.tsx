@@ -23,6 +23,7 @@ import { fr } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useOrganizationContext } from '@/lib/organization-context';
+import OrganizationNotes from '@/components/super-admin/OrganizationNotes';
 
 interface UserFormData {
   email: string;
@@ -364,8 +365,13 @@ export default function OrganizationDetail() {
       <Tabs defaultValue="users" className="space-y-4">
         <TabsList>
           <TabsTrigger value="users">Utilisateurs</TabsTrigger>
+          <TabsTrigger value="notes">Notes & Historique</TabsTrigger>
           <TabsTrigger value="info">Informations</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="notes" className="space-y-4">
+          {id && <OrganizationNotes organizationId={id} />}
+        </TabsContent>
 
         <TabsContent value="users" className="space-y-4">
           <div className="flex justify-between items-center">
