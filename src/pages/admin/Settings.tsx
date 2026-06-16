@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Settings as SettingsIcon, FileText, Palette, Save, Upload, X, Image, Eye, EyeOff, Building2, RotateCcw, ListChecks, Download, Lock, Info, ExternalLink, Shield, FileCheck, HeadphonesIcon, Tags } from "lucide-react";
 import { useOrganizationPlan } from "@/hooks/useOrganizationPlan";
 import { Badge } from "@/components/ui/badge";
@@ -164,7 +165,7 @@ export default function Settings() {
         </div>
       </div>
 
-      <Accordion type="multiple" defaultValue={[]} className="space-y-4">
+      <Accordion type="multiple" value={settingsOpenSections} onValueChange={(v) => { setSettingsOpenSections(v); const p = new URLSearchParams(searchParams); if (v.length === 1) p.set('view', v[0]); else p.delete('view'); setSearchParams(p, { replace: true }); }} className="space-y-4">
         {/* Section: Société */}
         <AccordionItem value="company" className="border rounded-lg px-4">
           <AccordionTrigger className="hover:no-underline">
