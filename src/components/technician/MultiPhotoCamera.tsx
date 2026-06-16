@@ -9,6 +9,17 @@ interface MultiPhotoCameraProps {
 
 const MultiPhotoCamera = ({ onCapture, onClose }: MultiPhotoCameraProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const nativeInputRef = useRef<HTMLInputElement>(null);
+
+  const handleNativeCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    if (files.length > 0) {
+      streamRef.current?.getTracks().forEach(t => t.stop());
+      onCapture(files);
+    }
+  };
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [capturedPhotos, setCapturedPhotos] = useState<{ blob: Blob; url: string }[]>([]);
