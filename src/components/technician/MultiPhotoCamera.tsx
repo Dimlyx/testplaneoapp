@@ -237,9 +237,12 @@ const MultiPhotoCamera = ({ onCapture, onClose }: MultiPhotoCameraProps) => {
       <div className="flex-1 relative overflow-hidden">
         {error ? (
           <div className="flex items-center justify-center h-full text-white text-center p-6">
-            <div>
+            <div className="max-w-md">
               <Camera className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>{error}</p>
+              <p className="text-sm whitespace-pre-line mb-4">{error}</p>
+              <Button onClick={() => startCamera(facingMode)} variant="secondary" size="sm">
+                Réessayer
+              </Button>
             </div>
           </div>
         ) : (
