@@ -11,6 +11,7 @@ import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useMemo } from 'react';
 import { ChartClickInfo } from '@/components/charts/ChartClickInfo';
+import ReminderAlertsWidget from '@/components/super-admin/ReminderAlertsWidget';
 
 export default function SuperAdminDashboard() {
   const [barClickInfo, setBarClickInfo] = useState<{ label: string; value: number } | null>(null);
