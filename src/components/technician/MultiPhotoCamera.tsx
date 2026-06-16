@@ -45,52 +45,64 @@ const MultiPhotoCamera = ({ onCapture, onClose }: MultiPhotoCameraProps) => {
     setIsStarting(true);
     setError(null);
 
-    // Pré-checks (utiles surtout sur Android Chrome / WebView)
-    if (!window.isSecureContext) {
-      setError("La caméra nécessite une connexion sécurisée (HTTPS). Ouvrez l'app via https://app.planeo.tech.");
-      setIsStarting(false);
-      return;
-    }
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       setError("Votre navigateur ne supporte pas l'accès caméra. Essayez Chrome à jour.");
       setIsStarting(false);
       return;
     }
 
-    // Tentative avec contraintes idéales, puis fallback sans contraintes
-    const attempts: MediaStreamConstraints[] = [
-      { video: { facingMode: { ideal: facing }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false },
-      { video: { facingMode: facing }, audio: false },
-      { video: true, audio: false },
-    ];
-
+    // Un seul appel getUserMedia avec contraintes simples — laisse Android Chrome
+    // afficher son prompt natif. Un nouvel appel après refus ne ré-affiche pas le prompt.
     let stream: MediaStream | null = null;
     let lastErr: any = null;
-    for (const constraints of attempts) {
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: facing } },
+        audio: false,
+      });
+    } catch (err) {
+      lastErr = err;
+      // Fallback unique sans facingMode au cas où le device n'a qu'une caméra
       try {
-        stream = await navigator.mediaDevices.getUserMedia(constraints);
-        break;
-      } catch (err) {
-        lastErr = err;
-        console.warn("getUserMedia attempt failed:", constraints, err);
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        lastErr = null;
+      } catch (err2) {
+        lastErr = err2;
       }
     }
 
     if (!stream) {
       const name = lastErr?.name || "";
       const msg = lastErr?.message || "";
-      console.error("Camera error (final):", name, msg, lastErr);
+      console.error("Camera error:", name, msg, lastErr);
+
+      // Vérifie l'état réel de la permission pour distinguer "jamais demandé" vs "refusé"
+      let permState: string | null = null;
+      try {
+        // @ts-ignore - camera permission name
+        const p = await navigator.permissions?.query?.({ name: "camera" as PermissionName });
+        permState = p?.state ?? null;
+      } catch {}
+
       let userMsg = "Impossible d'accéder à la caméra.";
       if (name === "NotAllowedError" || name === "PermissionDeniedError") {
-        userMsg = "Autorisation caméra refusée. Sur Android : appuyez sur le cadenas dans la barre d'adresse de Chrome → Autorisations du site → Caméra → Autoriser, puis rechargez la page. (L'autorisation système Android ne suffit pas, il faut aussi l'autoriser pour ce site.)";
+        if (permState === "denied") {
+          userMsg =
+            "Autorisation caméra refusée pour cette application.\n\n" +
+            "• Si vous utilisez PLANEO installé sur l'écran d'accueil : appui long sur l'icône PLANEO → Infos appli → Autorisations → Caméra → Autoriser.\n" +
+            "• Si vous utilisez Chrome : appuyez sur le cadenas/⋮ dans la barre d'adresse → Autorisations → Caméra → Autoriser, puis rechargez.";
+        } else {
+          userMsg =
+            "Autorisation caméra refusée. Touchez « Réessayer » et acceptez la demande d'accès caméra qui apparaît.";
+        }
       } else if (name === "NotFoundError" || name === "DevicesNotFoundError") {
         userMsg = "Aucune caméra détectée sur l'appareil.";
       } else if (name === "NotReadableError" || name === "TrackStartError") {
-        userMsg = "La caméra est déjà utilisée par une autre application ou un autre onglet. Fermez-les puis réessayez.";
+        userMsg = "La caméra est déjà utilisée par une autre application. Fermez-la puis réessayez.";
       } else if (name === "OverconstrainedError" || name === "ConstraintNotSatisfiedError") {
         userMsg = "La caméra demandée n'est pas disponible sur ce téléphone.";
-      } else if (name === "SecurityError") {
-        userMsg = "Accès caméra bloqué pour des raisons de sécurité (HTTPS requis).";
+      } else if (name === "SecurityError" || !window.isSecureContext) {
+        userMsg = "Accès caméra bloqué : connexion non sécurisée (HTTPS requis).";
       } else if (msg) {
         userMsg = `Impossible d'accéder à la caméra : ${msg}`;
       }
