@@ -11,6 +11,7 @@ import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useMemo } from 'react';
 import { ChartClickInfo } from '@/components/charts/ChartClickInfo';
+import ReminderAlertsWidget from '@/components/super-admin/ReminderAlertsWidget';
 
 export default function SuperAdminDashboard() {
   const [barClickInfo, setBarClickInfo] = useState<{ label: string; value: number } | null>(null);
@@ -178,8 +179,12 @@ export default function SuperAdminDashboard() {
         </p>
       </div>
 
+      {/* Rappels & alertes */}
+      <ReminderAlertsWidget />
+
       {/* KPI Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+
         {statCards.map((stat) => (
           <Card key={stat.title}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">

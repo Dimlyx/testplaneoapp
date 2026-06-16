@@ -1209,6 +1209,8 @@ export type Database = {
           created_at: string
           id: string
           organization_id: string
+          reminder_at: string | null
+          reminder_done: boolean
           updated_at: string
         }
         Insert: {
@@ -1219,6 +1221,8 @@ export type Database = {
           created_at?: string
           id?: string
           organization_id: string
+          reminder_at?: string | null
+          reminder_done?: boolean
           updated_at?: string
         }
         Update: {
@@ -1229,6 +1233,8 @@ export type Database = {
           created_at?: string
           id?: string
           organization_id?: string
+          reminder_at?: string | null
+          reminder_done?: boolean
           updated_at?: string
         }
         Relationships: [
