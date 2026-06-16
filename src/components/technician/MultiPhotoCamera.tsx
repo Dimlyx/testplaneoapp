@@ -9,6 +9,17 @@ interface MultiPhotoCameraProps {
 
 const MultiPhotoCamera = ({ onCapture, onClose }: MultiPhotoCameraProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const nativeInputRef = useRef<HTMLInputElement>(null);
+
+  const handleNativeCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    if (files.length > 0) {
+      streamRef.current?.getTracks().forEach(t => t.stop());
+      onCapture(files);
+    }
+  };
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [capturedPhotos, setCapturedPhotos] = useState<{ blob: Blob; url: string }[]>([]);
@@ -222,6 +233,17 @@ const MultiPhotoCamera = ({ onCapture, onClose }: MultiPhotoCameraProps) => {
       {/* Hidden canvas for capturing */}
       <canvas ref={canvasRef} className="hidden" />
 
+      {/* Hidden native camera input (fallback Android) */}
+      <input
+        ref={nativeInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        multiple
+        className="hidden"
+        onChange={handleNativeCapture}
+      />
+
       {/* Flash overlay */}
       {flashEffect && <div className="absolute inset-0 z-50 bg-white pointer-events-none animate-flash" />}
 
@@ -252,9 +274,18 @@ const MultiPhotoCamera = ({ onCapture, onClose }: MultiPhotoCameraProps) => {
             <div className="max-w-md">
               <Camera className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p className="text-sm whitespace-pre-line mb-4">{error}</p>
-              <Button onClick={() => startCamera(facingMode)} variant="secondary" size="sm">
-                Réessayer
-              </Button>
+              <div className="flex flex-col gap-2 items-center">
+                <Button
+                  onClick={() => nativeInputRef.current?.click()}
+                  size="sm"
+                  className="bg-primary text-primary-foreground"
+                >
+                  Ouvrir l'app Caméra du téléphone
+                </Button>
+                <Button onClick={() => startCamera(facingMode)} variant="secondary" size="sm">
+                  Réessayer la caméra intégrée
+                </Button>
+              </div>
             </div>
           </div>
         ) : (
