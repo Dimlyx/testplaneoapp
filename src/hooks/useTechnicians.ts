@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useUserOrganization } from '@/hooks/useUserOrganization';
 
 export interface Technician {
   id: string;
@@ -8,28 +9,27 @@ export interface Technician {
 }
 
 export function useTechnicians(organizationId?: string | null) {
+  const { data: currentOrgId } = useUserOrganization();
+  // Always scope to an organization — falls back to the current (or impersonated)
+  // org so super_admin impersonation doesn't leak technicians from other orgs.
+  const effectiveOrgId = organizationId ?? currentOrgId ?? null;
+
   return useQuery({
-    queryKey: ['technicians', organizationId],
+    queryKey: ['technicians', effectiveOrgId],
     queryFn: async () => {
-      // First get technician user_ids for this organization
-      let query = supabase
+      if (!effectiveOrgId) return [];
+
+      const { data: roles, error: rolesError } = await supabase
         .from('user_roles')
         .select('user_id')
-        .eq('role', 'technician');
-      
-      // Filter by organization if provided
-      if (organizationId) {
-        query = query.eq('organization_id', organizationId);
-      }
-
-      const { data: roles, error: rolesError } = await query;
+        .eq('role', 'technician')
+        .eq('organization_id', effectiveOrgId);
 
       if (rolesError) throw rolesError;
       if (!roles || roles.length === 0) return [];
 
       const technicianIds = roles.map(r => r.user_id);
 
-      // Then get their profiles
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, full_name, email')
@@ -39,5 +39,6 @@ export function useTechnicians(organizationId?: string | null) {
 
       return (profiles || []) as Technician[];
     },
+    enabled: !!effectiveOrgId,
   });
 }
