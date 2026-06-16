@@ -40,19 +40,71 @@ const MultiPhotoCamera = ({ onCapture, onClose }: MultiPhotoCameraProps) => {
     // Stop existing stream
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(t => t.stop());
+      streamRef.current = null;
     }
     setIsStarting(true);
+    setError(null);
+
+    // Pré-checks (utiles surtout sur Android Chrome / WebView)
+    if (!window.isSecureContext) {
+      setError("La caméra nécessite une connexion sécurisée (HTTPS). Ouvrez l'app via https://app.planeo.tech.");
+      setIsStarting(false);
+      return;
+    }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setError("Votre navigateur ne supporte pas l'accès caméra. Essayez Chrome à jour.");
+      setIsStarting(false);
+      return;
+    }
+
+    // Tentative avec contraintes idéales, puis fallback sans contraintes
+    const attempts: MediaStreamConstraints[] = [
+      { video: { facingMode: { ideal: facing }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false },
+      { video: { facingMode: facing }, audio: false },
+      { video: true, audio: false },
+    ];
+
+    let stream: MediaStream | null = null;
+    let lastErr: any = null;
+    for (const constraints of attempts) {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+        break;
+      } catch (err) {
+        lastErr = err;
+        console.warn("getUserMedia attempt failed:", constraints, err);
+      }
+    }
+
+    if (!stream) {
+      const name = lastErr?.name || "";
+      const msg = lastErr?.message || "";
+      console.error("Camera error (final):", name, msg, lastErr);
+      let userMsg = "Impossible d'accéder à la caméra.";
+      if (name === "NotAllowedError" || name === "PermissionDeniedError") {
+        userMsg = "Autorisation caméra refusée. Sur Android : appuyez sur le cadenas dans la barre d'adresse de Chrome → Autorisations du site → Caméra → Autoriser, puis rechargez la page. (L'autorisation système Android ne suffit pas, il faut aussi l'autoriser pour ce site.)";
+      } else if (name === "NotFoundError" || name === "DevicesNotFoundError") {
+        userMsg = "Aucune caméra détectée sur l'appareil.";
+      } else if (name === "NotReadableError" || name === "TrackStartError") {
+        userMsg = "La caméra est déjà utilisée par une autre application ou un autre onglet. Fermez-les puis réessayez.";
+      } else if (name === "OverconstrainedError" || name === "ConstraintNotSatisfiedError") {
+        userMsg = "La caméra demandée n'est pas disponible sur ce téléphone.";
+      } else if (name === "SecurityError") {
+        userMsg = "Accès caméra bloqué pour des raisons de sécurité (HTTPS requis).";
+      } else if (msg) {
+        userMsg = `Impossible d'accéder à la caméra : ${msg}`;
+      }
+      setError(userMsg);
+      setIsStarting(false);
+      return;
+    }
+
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: facing, width: { ideal: 1920 }, height: { ideal: 1080 } },
-        audio: false,
-      });
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        await videoRef.current.play();
+        await videoRef.current.play().catch(() => {});
       }
-      // Check torch + zoom support
       const track = stream.getVideoTracks()[0];
       const capabilities = track?.getCapabilities?.() as any;
       setTorchSupported(!!capabilities?.torch);
@@ -64,7 +116,6 @@ const MultiPhotoCamera = ({ onCapture, onClose }: MultiPhotoCameraProps) => {
           step: capabilities.zoom.step ?? 0.1,
         };
         setZoomCaps(caps);
-        // Forcer un zoom de base 1x (ou min si > 1) pour éviter l'effet "trop zoomé" par défaut
         const defaultZoom = caps.min > 1 ? caps.min : 1;
         try {
           await (track as any).applyConstraints({ advanced: [{ zoom: defaultZoom }] });
@@ -74,10 +125,6 @@ const MultiPhotoCamera = ({ onCapture, onClose }: MultiPhotoCameraProps) => {
         setZoomCaps(null);
         setCurrentZoom(1);
       }
-      setError(null);
-    } catch (err: any) {
-      console.error("Camera error:", err);
-      setError("Impossible d'accéder à la caméra. Vérifiez les permissions.");
     } finally {
       setIsStarting(false);
     }
