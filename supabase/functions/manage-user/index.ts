@@ -85,7 +85,15 @@ Deno.serve(async (req) => {
           })
         }
         const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, { password })
-        if (error) throw error
+        if (error) {
+          const code = (error as { code?: string }).code
+          if (code === 'weak_password') {
+            return new Response(JSON.stringify({ error: 'Ce mot de passe est trop faible ou a été compromis dans une fuite de données. Choisissez-en un autre (mélangez majuscules, minuscules, chiffres et symboles, et évitez les mots de passe courants comme "Demo2024!" ou "Password123").' }), {
+              status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            })
+          }
+          throw error
+        }
         return new Response(JSON.stringify({ success: true }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
