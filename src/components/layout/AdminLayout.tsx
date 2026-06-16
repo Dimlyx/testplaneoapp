@@ -136,18 +136,18 @@ export default function AdminLayout() {
                 
                 if (isLocked) {
                   return (
-                    <div
-                      key={item.name}
-                      className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground/30 cursor-not-allowed"
-                      title="Disponible avec le pack Business"
-                    >
-                      <item.icon className="h-5 w-5" />
-                      <span>{item.name}</span>
-                      <Badge variant="outline" className="ml-auto text-[10px] px-1.5 py-0 border-sidebar-foreground/20 text-sidebar-foreground/30">
-                        <Lock className="h-3 w-3 mr-1" />
-                        Business
-                      </Badge>
-                    </div>
+                      <div
+                        key={item.name}
+                        className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground/50 cursor-not-allowed"
+                        title="Disponible avec le pack Business"
+                      >
+                        <item.icon className="h-5 w-5" />
+                        <span>{item.name}</span>
+                        <Badge variant="outline" className="ml-auto text-[10px] px-1.5 py-0 border-sidebar-foreground/30 text-sidebar-foreground/50">
+                          <Lock className="h-3 w-3 mr-1" />
+                          Business
+                        </Badge>
+                      </div>
                   );
                 }
 
