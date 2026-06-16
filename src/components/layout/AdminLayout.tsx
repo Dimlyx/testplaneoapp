@@ -265,7 +265,7 @@ export default function AdminLayout() {
                 <p className="text-sm font-medium text-sidebar-foreground truncate">
                   Admin
                 </p>
-                <p className="text-xs text-sidebar-foreground/60 truncate">
+                <p className="text-xs text-sidebar-foreground truncate">
                   {user?.email}
                 </p>
               </div>
