@@ -12,7 +12,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Building2, Plus, UserPlus, Trash2, Users, UserCog, Activity, ClipboardList, Eye, Crown, CalendarClock, Pencil } from 'lucide-react';
+import { ArrowLeft, Building2, Plus, UserPlus, Trash2, Users, UserCog, Activity, ClipboardList, Eye, Crown, CalendarClock, Pencil, Wand2 } from 'lucide-react';
+import { generateStrongPassword } from '@/lib/password-generator';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { PLAN_LABELS, FEATURE_LABELS, type PlanType } from '@/hooks/useOrganizationPlan';
@@ -410,8 +411,22 @@ export default function OrganizationDetail() {
                         value={userFormData.password}
                         onChange={(e) => setUserFormData(prev => ({ ...prev, password: e.target.value }))}
                         required
-                        minLength={6}
+                        minLength={8}
                       />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const pwd = generateStrongPassword(14);
+                          setUserFormData(prev => ({ ...prev, password: pwd }));
+                          navigator.clipboard.writeText(pwd).catch(() => {});
+                          toast.success('Mot de passe généré et copié');
+                        }}
+                      >
+                        <Wand2 className="h-4 w-4 mr-2" />
+                        Générer un mot de passe sécurisé
+                      </Button>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="role">Rôle *</Label>
