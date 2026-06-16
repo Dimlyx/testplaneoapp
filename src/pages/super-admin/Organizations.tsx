@@ -376,6 +376,35 @@ export default function Organizations() {
                       </Badge>
                     </TableCell>
                     <TableCell>
+                      {(() => {
+                        const subStatus = org.subscription_status || 'trial';
+                        const trialEnd = org.trial_ends_at ? new Date(org.trial_ends_at) : null;
+                        const isTrialExpired = trialEnd ? isPast(trialEnd) : false;
+                        const daysLeft = trialEnd ? differenceInDays(trialEnd, new Date()) : 0;
+
+                        if (subStatus === 'trial' && trialEnd) {
+                          return (
+                            <Badge variant={isTrialExpired ? 'destructive' : 'outline'} className="flex items-center gap-1">
+                              <CalendarClock className="h-3 w-3" />
+                              {isTrialExpired
+                                ? 'Expiré'
+                                : `${daysLeft}j restant${daysLeft > 1 ? 's' : ''}`
+                              }
+                            </Badge>
+                          );
+                        }
+                        if (subStatus === 'active') {
+                          return <Badge className="bg-green-600">Abonné</Badge>;
+                        }
+                        const statusLabels: Record<string, string> = {
+                          past_due: 'En retard',
+                          canceled: 'Annulé',
+                          unpaid: 'Impayé',
+                        };
+                        return <Badge variant="destructive">{statusLabels[subStatus] || subStatus}</Badge>;
+                      })()}
+                    </TableCell>
+                    <TableCell>
                       {format(new Date(org.created_at), 'dd MMM yyyy', { locale: fr })}
                     </TableCell>
                     <TableCell className="text-right">
