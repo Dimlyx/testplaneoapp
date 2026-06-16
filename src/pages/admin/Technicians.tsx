@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,7 +18,9 @@ type TabFilter = 'all' | 'internal' | 'subcontractor';
 export default function Technicians() {
   const { data: technicians = [], isLoading, upsertDetails, uploadDocument, deleteDocument } = useTechnicianDetails();
   const [search, setSearch] = useState('');
-  const [tab, setTab] = useState<TabFilter>('all');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab = (searchParams.get('view') as TabFilter) || 'all';
+  const setTab = (v: TabFilter) => { const p = new URLSearchParams(searchParams); if (v === 'all') p.delete('view'); else p.set('view', v); setSearchParams(p, { replace: true }); };
   const [editingTech, setEditingTech] = useState<TechnicianWithDetails | null>(null);
 
   const filtered = technicians.filter(t => {

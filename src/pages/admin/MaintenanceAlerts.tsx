@@ -19,7 +19,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MaintenanceCalendar } from '@/components/admin/MaintenanceCalendar';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
 const recurrenceLabels: Record<AlertRecurrence, string> = {
@@ -66,6 +66,8 @@ interface AlertFormData {
 export default function MaintenanceAlerts() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const alertsView = searchParams.get('view') || 'active';
   const { data: alerts = [], isLoading } = useMaintenanceAlerts();
   const { data: clients = [] } = useClients();
   const createAlert = useCreateMaintenanceAlert();
@@ -578,7 +580,7 @@ export default function MaintenanceAlerts() {
       </Card>
 
       {/* Tabs */}
-      <Tabs defaultValue="active" className="space-y-4">
+      <Tabs value={alertsView} onValueChange={(v) => { const p = new URLSearchParams(searchParams); if (v === 'active') p.delete('view'); else p.set('view', v); setSearchParams(p, { replace: true }); }} className="space-y-4">
         <TabsList>
           <TabsTrigger value="active">
             Actives ({activeAlerts.length})
