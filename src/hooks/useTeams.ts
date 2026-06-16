@@ -28,20 +28,29 @@ export function useTeams() {
   return useQuery({
     queryKey: ['teams', organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
+
       const { data: teams, error } = await supabase
         .from('teams')
         .select('*')
+        .eq('organization_id', organizationId)
         .order('name');
       if (error) throw error;
 
-      const { data: members, error: membersError } = await supabase
-        .from('team_members')
-        .select('*');
-      if (membersError) throw membersError;
+      const teamIds = (teams || []).map((t: Team) => t.id);
+      let members: TeamMember[] = [];
+      if (teamIds.length > 0) {
+        const { data: m, error: membersError } = await supabase
+          .from('team_members')
+          .select('*')
+          .in('team_id', teamIds);
+        if (membersError) throw membersError;
+        members = (m || []) as TeamMember[];
+      }
 
       return (teams || []).map((team: Team) => ({
         ...team,
-        members: (members || []).filter((m: TeamMember) => m.team_id === team.id),
+        members: members.filter((m: TeamMember) => m.team_id === team.id),
       })) as TeamWithMembers[];
     },
     enabled: !!organizationId,
