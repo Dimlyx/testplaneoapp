@@ -366,7 +366,7 @@ export default function Statistics() {
         </Select>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-6">
+      <Tabs value={statsView} onValueChange={(v) => { const p = new URLSearchParams(searchParams); if (v === 'overview') p.delete('view'); else p.set('view', v); setSearchParams(p, { replace: true }); }} className="space-y-6">
         <TabsList>
           <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
           <TabsTrigger value="technicians">Performance techniciens</TabsTrigger>
