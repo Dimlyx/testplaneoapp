@@ -361,12 +361,240 @@ export default function OrganizationDetail() {
         </Card>
       </div>
 
+      {/* Informations de l'entreprise */}
+      <div className="space-y-4">
+        {/* Trial / Subscription Management */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CalendarClock className="h-5 w-5" />
+              Abonnement & Période d'essai
+            </CardTitle>
+            <CardDescription>Gérez le statut d'abonnement et la période d'essai</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Statut d'abonnement</Label>
+                <Select
+                  value={organization.subscription_status || 'trial'}
+                  onValueChange={async (value: string) => {
+                    const { error } = await supabase
+                      .from('organizations')
+                      .update({ subscription_status: value })
+                      .eq('id', id);
+                    if (error) {
+                      toast.error('Erreur lors de la mise à jour');
+                    } else {
+                      toast.success('Statut mis à jour');
+                      queryClient.invalidateQueries({ queryKey: ['organization', id] });
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="trial">Période d'essai</SelectItem>
+                    <SelectItem value="active">Abonnement actif</SelectItem>
+                    <SelectItem value="past_due">En retard de paiement</SelectItem>
+                    <SelectItem value="canceled">Annulé</SelectItem>
+                    <SelectItem value="unpaid">Impayé</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Fin de la période d'essai</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-start text-left font-normal">
+                      <CalendarClock className="mr-2 h-4 w-4" />
+                      {organization.trial_ends_at
+                        ? format(new Date(organization.trial_ends_at), 'dd MMMM yyyy', { locale: fr })
+                        : 'Non définie'
+                      }
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={organization.trial_ends_at ? new Date(organization.trial_ends_at) : undefined}
+                      onSelect={async (date) => {
+                        const { error } = await supabase
+                          .from('organizations')
+                          .update({ trial_ends_at: date ? date.toISOString() : null })
+                          .eq('id', id);
+                        if (error) {
+                          toast.error('Erreur lors de la mise à jour');
+                        } else {
+                          toast.success('Date d\'essai mise à jour');
+                          queryClient.invalidateQueries({ queryKey: ['organization', id] });
+                        }
+                      }}
+                      className="p-3 pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+            {organization.trial_ends_at && organization.subscription_status === 'trial' && (
+              <div className={`p-3 rounded-lg text-sm ${
+                isPast(new Date(organization.trial_ends_at))
+                  ? 'bg-destructive/10 text-destructive'
+                  : 'bg-primary/10 text-primary'
+              }`}>
+                {isPast(new Date(organization.trial_ends_at))
+                  ? `⚠️ La période d'essai a expiré le ${format(new Date(organization.trial_ends_at), 'dd MMMM yyyy', { locale: fr })}`
+                  : `✓ Période d'essai active — ${differenceInDays(new Date(organization.trial_ends_at), new Date())} jour(s) restant(s)`
+                }
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle>Informations de l'entreprise</CardTitle>
+              <CardDescription>Détails et coordonnées</CardDescription>
+            </div>
+            {!isEditingInfo ? (
+              <Button variant="outline" size="sm" onClick={() => {
+                setInfoFormData({
+                  name: organization.name || '',
+                  slug: organization.slug || '',
+                  email: organization.email || '',
+                  phone: organization.phone || '',
+                  address: organization.address || '',
+                  city: organization.city || '',
+                  postal_code: organization.postal_code || '',
+                  siret: organization.siret || '',
+                  tva_number: organization.tva_number || '',
+                });
+                setIsEditingInfo(true);
+              }}>
+                <Pencil className="mr-2 h-4 w-4" />
+                Modifier
+              </Button>
+            ) : (
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => setIsEditingInfo(false)}>
+                  Annuler
+                </Button>
+                <Button size="sm" onClick={() => updateOrgMutation.mutate(infoFormData)} disabled={updateOrgMutation.isPending}>
+                  Enregistrer
+                </Button>
+              </div>
+            )}
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {!isEditingInfo ? (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-muted-foreground">Nom</Label>
+                    <p className="font-medium">{organization.name || '-'}</p>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground">Slug</Label>
+                    <p className="font-medium">{organization.slug || '-'}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-muted-foreground">Email</Label>
+                    <p className="font-medium">{organization.email || '-'}</p>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground">Téléphone</Label>
+                    <p className="font-medium">{organization.phone || '-'}</p>
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Adresse</Label>
+                  <p className="font-medium">
+                    {organization.address ? (
+                      <>
+                        {organization.address}<br />
+                        {organization.postal_code} {organization.city}
+                      </>
+                    ) : '-'}
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-muted-foreground">SIRET</Label>
+                    <p className="font-medium">{organization.siret || '-'}</p>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground">N° TVA</Label>
+                    <p className="font-medium">{organization.tva_number || '-'}</p>
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Créée le</Label>
+                  <p className="font-medium">
+                    {format(new Date(organization.created_at), 'dd MMMM yyyy à HH:mm', { locale: fr })}
+                  </p>
+                </div>
+              </>
+            ) : (
+              <div className="grid gap-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Nom</Label>
+                    <Input id="name" value={infoFormData.name} onChange={(e) => setInfoFormData(prev => ({ ...prev, name: e.target.value }))} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="slug">Slug</Label>
+                    <Input id="slug" value={infoFormData.slug} onChange={(e) => setInfoFormData(prev => ({ ...prev, slug: e.target.value }))} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input id="email" type="email" value={infoFormData.email} onChange={(e) => setInfoFormData(prev => ({ ...prev, email: e.target.value }))} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Téléphone</Label>
+                    <Input id="phone" value={infoFormData.phone} onChange={(e) => setInfoFormData(prev => ({ ...prev, phone: e.target.value }))} />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="address">Adresse</Label>
+                  <Input id="address" value={infoFormData.address} onChange={(e) => setInfoFormData(prev => ({ ...prev, address: e.target.value }))} />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="postal_code">Code postal</Label>
+                    <Input id="postal_code" value={infoFormData.postal_code} onChange={(e) => setInfoFormData(prev => ({ ...prev, postal_code: e.target.value }))} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="city">Ville</Label>
+                    <Input id="city" value={infoFormData.city} onChange={(e) => setInfoFormData(prev => ({ ...prev, city: e.target.value }))} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="siret">SIRET</Label>
+                    <Input id="siret" value={infoFormData.siret} onChange={(e) => setInfoFormData(prev => ({ ...prev, siret: e.target.value }))} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="tva_number">N° TVA</Label>
+                    <Input id="tva_number" value={infoFormData.tva_number} onChange={(e) => setInfoFormData(prev => ({ ...prev, tva_number: e.target.value }))} />
+                  </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Tabs */}
       <Tabs defaultValue="users" className="space-y-4">
         <TabsList>
           <TabsTrigger value="users">Utilisateurs</TabsTrigger>
           <TabsTrigger value="notes">Notes & Historique</TabsTrigger>
-          <TabsTrigger value="info">Informations</TabsTrigger>
         </TabsList>
 
         <TabsContent value="notes" className="space-y-4">
@@ -566,233 +794,6 @@ export default function OrganizationDetail() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="info" className="space-y-4">
-          {/* Trial / Subscription Management */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CalendarClock className="h-5 w-5" />
-                Abonnement & Période d'essai
-              </CardTitle>
-              <CardDescription>Gérez le statut d'abonnement et la période d'essai</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Statut d'abonnement</Label>
-                  <Select
-                    value={organization.subscription_status || 'trial'}
-                    onValueChange={async (value: string) => {
-                      const { error } = await supabase
-                        .from('organizations')
-                        .update({ subscription_status: value })
-                        .eq('id', id);
-                      if (error) {
-                        toast.error('Erreur lors de la mise à jour');
-                      } else {
-                        toast.success('Statut mis à jour');
-                        queryClient.invalidateQueries({ queryKey: ['organization', id] });
-                      }
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="trial">Période d'essai</SelectItem>
-                      <SelectItem value="active">Abonnement actif</SelectItem>
-                      <SelectItem value="past_due">En retard de paiement</SelectItem>
-                      <SelectItem value="canceled">Annulé</SelectItem>
-                      <SelectItem value="unpaid">Impayé</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Fin de la période d'essai</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className="w-full justify-start text-left font-normal">
-                        <CalendarClock className="mr-2 h-4 w-4" />
-                        {organization.trial_ends_at
-                          ? format(new Date(organization.trial_ends_at), 'dd MMMM yyyy', { locale: fr })
-                          : 'Non définie'
-                        }
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={organization.trial_ends_at ? new Date(organization.trial_ends_at) : undefined}
-                        onSelect={async (date) => {
-                          const { error } = await supabase
-                            .from('organizations')
-                            .update({ trial_ends_at: date ? date.toISOString() : null })
-                            .eq('id', id);
-                          if (error) {
-                            toast.error('Erreur lors de la mise à jour');
-                          } else {
-                            toast.success('Date d\'essai mise à jour');
-                            queryClient.invalidateQueries({ queryKey: ['organization', id] });
-                          }
-                        }}
-                        className="p-3 pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </div>
-              {organization.trial_ends_at && organization.subscription_status === 'trial' && (
-                <div className={`p-3 rounded-lg text-sm ${
-                  isPast(new Date(organization.trial_ends_at))
-                    ? 'bg-destructive/10 text-destructive'
-                    : 'bg-primary/10 text-primary'
-                }`}>
-                  {isPast(new Date(organization.trial_ends_at))
-                    ? `⚠️ La période d'essai a expiré le ${format(new Date(organization.trial_ends_at), 'dd MMMM yyyy', { locale: fr })}`
-                    : `✓ Période d'essai active — ${differenceInDays(new Date(organization.trial_ends_at), new Date())} jour(s) restant(s)`
-                  }
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>Informations de l'entreprise</CardTitle>
-                <CardDescription>Détails et coordonnées</CardDescription>
-              </div>
-              {!isEditingInfo ? (
-                <Button variant="outline" size="sm" onClick={() => {
-                  setInfoFormData({
-                    name: organization.name || '',
-                    slug: organization.slug || '',
-                    email: organization.email || '',
-                    phone: organization.phone || '',
-                    address: organization.address || '',
-                    city: organization.city || '',
-                    postal_code: organization.postal_code || '',
-                    siret: organization.siret || '',
-                    tva_number: organization.tva_number || '',
-                  });
-                  setIsEditingInfo(true);
-                }}>
-                  <Pencil className="mr-2 h-4 w-4" />
-                  Modifier
-                </Button>
-              ) : (
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={() => setIsEditingInfo(false)}>
-                    Annuler
-                  </Button>
-                  <Button size="sm" onClick={() => updateOrgMutation.mutate(infoFormData)} disabled={updateOrgMutation.isPending}>
-                    Enregistrer
-                  </Button>
-                </div>
-              )}
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {!isEditingInfo ? (
-                <>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-muted-foreground">Nom</Label>
-                      <p className="font-medium">{organization.name || '-'}</p>
-                    </div>
-                    <div>
-                      <Label className="text-muted-foreground">Slug</Label>
-                      <p className="font-medium">{organization.slug || '-'}</p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-muted-foreground">Email</Label>
-                      <p className="font-medium">{organization.email || '-'}</p>
-                    </div>
-                    <div>
-                      <Label className="text-muted-foreground">Téléphone</Label>
-                      <p className="font-medium">{organization.phone || '-'}</p>
-                    </div>
-                  </div>
-                  <div>
-                    <Label className="text-muted-foreground">Adresse</Label>
-                    <p className="font-medium">
-                      {organization.address ? (
-                        <>
-                          {organization.address}<br />
-                          {organization.postal_code} {organization.city}
-                        </>
-                      ) : '-'}
-                    </p>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-muted-foreground">SIRET</Label>
-                      <p className="font-medium">{organization.siret || '-'}</p>
-                    </div>
-                    <div>
-                      <Label className="text-muted-foreground">N° TVA</Label>
-                      <p className="font-medium">{organization.tva_number || '-'}</p>
-                    </div>
-                  </div>
-                  <div>
-                    <Label className="text-muted-foreground">Créée le</Label>
-                    <p className="font-medium">
-                      {format(new Date(organization.created_at), 'dd MMMM yyyy à HH:mm', { locale: fr })}
-                    </p>
-                  </div>
-                </>
-              ) : (
-                <div className="grid gap-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Nom</Label>
-                      <Input id="name" value={infoFormData.name} onChange={(e) => setInfoFormData(prev => ({ ...prev, name: e.target.value }))} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="slug">Slug</Label>
-                      <Input id="slug" value={infoFormData.slug} onChange={(e) => setInfoFormData(prev => ({ ...prev, slug: e.target.value }))} />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
-                      <Input id="email" type="email" value={infoFormData.email} onChange={(e) => setInfoFormData(prev => ({ ...prev, email: e.target.value }))} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">Téléphone</Label>
-                      <Input id="phone" value={infoFormData.phone} onChange={(e) => setInfoFormData(prev => ({ ...prev, phone: e.target.value }))} />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="address">Adresse</Label>
-                    <Input id="address" value={infoFormData.address} onChange={(e) => setInfoFormData(prev => ({ ...prev, address: e.target.value }))} />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="postal_code">Code postal</Label>
-                      <Input id="postal_code" value={infoFormData.postal_code} onChange={(e) => setInfoFormData(prev => ({ ...prev, postal_code: e.target.value }))} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="city">Ville</Label>
-                      <Input id="city" value={infoFormData.city} onChange={(e) => setInfoFormData(prev => ({ ...prev, city: e.target.value }))} />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="siret">SIRET</Label>
-                      <Input id="siret" value={infoFormData.siret} onChange={(e) => setInfoFormData(prev => ({ ...prev, siret: e.target.value }))} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="tva_number">N° TVA</Label>
-                      <Input id="tva_number" value={infoFormData.tva_number} onChange={(e) => setInfoFormData(prev => ({ ...prev, tva_number: e.target.value }))} />
-                    </div>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
     </div>
   );
