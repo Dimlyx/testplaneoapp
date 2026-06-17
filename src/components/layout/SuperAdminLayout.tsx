@@ -20,7 +20,7 @@ import {
   FlaskConical
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { ChatBot } from '@/components/ChatBot';
+
 
 const navigation = [
   { name: 'Tableau de bord', href: '/super-admin', icon: LayoutDashboard },
@@ -157,7 +157,7 @@ export default function SuperAdminLayout() {
           <Outlet />
         </main>
       </div>
-      <ChatBot />
+      
     </div>
   );
 }
