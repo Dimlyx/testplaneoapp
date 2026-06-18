@@ -162,7 +162,7 @@ export default function AllUsers() {
                 <Skeleton key={i} className="h-16 w-full" />
               ))}
             </div>
-          ) : usersWithRoles && usersWithRoles.length > 0 ? (
+          ) : filteredUsers && filteredUsers.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -174,7 +174,7 @@ export default function AllUsers() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {usersWithRoles.map((user) => {
+                {filteredUsers.map((user) => {
                   const RoleIcon = getRoleIcon(user.role);
                   return (
                     <TableRow key={user.id}>
