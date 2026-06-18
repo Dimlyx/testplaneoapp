@@ -211,6 +211,31 @@ const InterventionWorkflow = ({
     return skipped;
   };
 
+  // Same logic for pre-loop conditional branches (e.g. "Anomalie avant installation")
+  const skippedPreLoopIds = useMemo((): Set<string> => {
+    const skipped = new Set<string>();
+    const conditionalBranches = preLoopSteps.filter(s => s.is_loop_trigger);
+    for (const branch of conditionalBranches) {
+      const branchCompletion = stepCompletions.find(
+        c => c.step_id === branch.id && (c.loop_index ?? 0) === 0 && c.completed_at
+      );
+      if (branchCompletion?.comment?.includes("Non") && branch.loop_no_step_id) {
+        const branchIdx = preLoopSteps.findIndex(s => s.id === branch.id);
+        const noIdx = preLoopSteps.findIndex(s => s.id === branch.loop_no_step_id);
+        if (branchIdx !== -1) {
+          // If loop_no_step_id is in preLoopSteps, skip everything in between.
+          // If it points outside (e.g. into the loop), skip everything after the branch.
+          const end = noIdx > branchIdx ? noIdx : preLoopSteps.length;
+          for (let i = branchIdx + 1; i < end; i++) {
+            skipped.add(preLoopSteps[i].id);
+          }
+        }
+      }
+    }
+    return skipped;
+  }, [preLoopSteps, stepCompletions]);
+
+
   // Check if all loopable steps are completed for a given loop index (excluding skipped steps)
   const isLoopComplete = (loopIdx: number) => {
     const skipped = getSkippedStepIdsForLoop(loopIdx);
