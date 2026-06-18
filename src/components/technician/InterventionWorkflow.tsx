@@ -748,7 +748,7 @@ const InterventionWorkflow = ({
       </WorkflowStep>
 
       {/* Pre-loop steps (run once, not repeated in loops) */}
-      {preLoopSteps.map((step) => {
+      {preLoopSteps.filter(s => !skippedPreLoopIds.has(s.id)).map((step) => {
         const completion = stepCompletions.find(
           c => c.step_id === step.id && (c.loop_index ?? 0) === 0
         );
