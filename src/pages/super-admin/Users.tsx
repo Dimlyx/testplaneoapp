@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
@@ -29,7 +29,7 @@ export default function AllUsers() {
   const [editingUser, setEditingUser] = useState<UserWithRole | null>(null);
 
   const { data: usersWithRoles, isLoading } = useQuery({
-    queryKey: ['all-users', searchQuery, roleFilter],
+    queryKey: ['all-users', roleFilter],
     queryFn: async () => {
       // Get all user roles with organization info
       let rolesQuery = supabase
@@ -55,16 +55,11 @@ export default function AllUsers() {
 
       const userIds = roles.map(r => r.user_id);
       
-      let profilesQuery = supabase
+      const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('*')
         .in('id', userIds);
 
-      if (searchQuery) {
-        profilesQuery = profilesQuery.or(`email.ilike.%${searchQuery}%,full_name.ilike.%${searchQuery}%`);
-      }
-
-      const { data: profiles, error: profilesError } = await profilesQuery;
       if (profilesError) throw profilesError;
 
       return profiles?.map(profile => {
@@ -77,6 +72,16 @@ export default function AllUsers() {
       }).filter(Boolean) || [];
     },
   });
+
+  const filteredUsers = useMemo(() => {
+    if (!searchQuery.trim()) return usersWithRoles || [];
+    const q = searchQuery.trim().toLowerCase();
+    return (usersWithRoles || []).filter(user =>
+      user.email.toLowerCase().includes(q) ||
+      (user.full_name?.toLowerCase().includes(q) ?? false) ||
+      (user.organization?.name.toLowerCase().includes(q) ?? false)
+    );
+  }, [usersWithRoles, searchQuery]);
 
   const getRoleIcon = (role: string) => {
     switch (role) {
@@ -127,7 +132,7 @@ export default function AllUsers() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Rechercher par nom ou email..."
+                placeholder="Rechercher par nom, email ou entreprise..."
                 className="pl-10"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -157,7 +162,7 @@ export default function AllUsers() {
                 <Skeleton key={i} className="h-16 w-full" />
               ))}
             </div>
-          ) : usersWithRoles && usersWithRoles.length > 0 ? (
+          ) : filteredUsers && filteredUsers.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -169,7 +174,7 @@ export default function AllUsers() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {usersWithRoles.map((user) => {
+                {filteredUsers.map((user) => {
                   const RoleIcon = getRoleIcon(user.role);
                   return (
                     <TableRow key={user.id}>
