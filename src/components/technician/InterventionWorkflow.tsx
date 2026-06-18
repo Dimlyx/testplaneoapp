@@ -312,7 +312,7 @@ const InterventionWorkflow = ({
     
     // Check pre-loop steps first
     const firstIncompletePreLoop = preLoopSteps.find(
-      step => !stepCompletions.some(c => c.step_id === step.id && c.loop_index === 0 && c.completed_at)
+      step => !skippedPreLoopIds.has(step.id) && !stepCompletions.some(c => c.step_id === step.id && c.loop_index === 0 && c.completed_at)
     );
     if (firstIncompletePreLoop) {
       setActiveStep(`step-${firstIncompletePreLoop.id}-loop-0`);
