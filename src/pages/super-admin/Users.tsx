@@ -29,7 +29,7 @@ export default function AllUsers() {
   const [editingUser, setEditingUser] = useState<UserWithRole | null>(null);
 
   const { data: usersWithRoles, isLoading } = useQuery({
-    queryKey: ['all-users', searchQuery, roleFilter],
+    queryKey: ['all-users', roleFilter],
     queryFn: async () => {
       // Get all user roles with organization info
       let rolesQuery = supabase
@@ -55,16 +55,11 @@ export default function AllUsers() {
 
       const userIds = roles.map(r => r.user_id);
       
-      let profilesQuery = supabase
+      const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('*')
         .in('id', userIds);
 
-      if (searchQuery) {
-        profilesQuery = profilesQuery.or(`email.ilike.%${searchQuery}%,full_name.ilike.%${searchQuery}%`);
-      }
-
-      const { data: profiles, error: profilesError } = await profilesQuery;
       if (profilesError) throw profilesError;
 
       return profiles?.map(profile => {
@@ -77,6 +72,16 @@ export default function AllUsers() {
       }).filter(Boolean) || [];
     },
   });
+
+  const filteredUsers = useMemo(() => {
+    if (!searchQuery.trim()) return usersWithRoles || [];
+    const q = searchQuery.trim().toLowerCase();
+    return (usersWithRoles || []).filter(user =>
+      user.email.toLowerCase().includes(q) ||
+      (user.full_name?.toLowerCase().includes(q) ?? false) ||
+      (user.organization?.name.toLowerCase().includes(q) ?? false)
+    );
+  }, [usersWithRoles, searchQuery]);
 
   const getRoleIcon = (role: string) => {
     switch (role) {
