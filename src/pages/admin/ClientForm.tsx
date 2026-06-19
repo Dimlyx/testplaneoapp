@@ -338,117 +338,130 @@ const ClientForm = () => {
           </div>
 
           {/* Contrat de maintenance */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileCheck className="h-5 w-5 text-primary" />
-                Contrat de maintenance
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <FormField
-                control={form.control}
-                name="has_maintenance_contract"
-                render={({ field }) => (
-                  <FormItem className="flex items-center justify-between rounded-lg border p-4">
-                    <div className="space-y-0.5">
-                      <FormLabel className="text-base">Ce client est sous contrat</FormLabel>
-                      <p className="text-sm text-muted-foreground">
-                        Active le suivi du contrat dans les alertes de maintenance.
-                      </p>
-                    </div>
-                    <FormControl>
-                      <Switch checked={field.value} onCheckedChange={field.onChange} />
-                    </FormControl>
-                  </FormItem>
+          <div className={!canUseMaintenance ? "opacity-50 pointer-events-none select-none" : undefined}>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileCheck className="h-5 w-5 text-primary" />
+                  Contrat de maintenance
+                  {!canUseMaintenance && (
+                    <Badge variant="outline" className="ml-2 text-xs flex items-center gap-1">
+                      <Lock className="h-3 w-3" />
+                      Business
+                    </Badge>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {!canUseMaintenance && (
+                  <p className="text-sm text-muted-foreground">
+                    Cette fonctionnalité est disponible uniquement avec le pack Business.
+                  </p>
                 )}
-              />
-
-              {hasContract && (
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <FormField
-                    control={form.control}
-                    name="contract_start_date"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Date de début</FormLabel>
-                        <FormControl>
-                          <Input type="date" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="contract_end_date"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Date de fin</FormLabel>
-                        <FormControl>
-                          <Input type="date" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="contract_type"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Type de contrat</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Ex: Standard, Premium..." {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="contract_visits_per_year"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Visites par an</FormLabel>
-                        <FormControl>
-                          <Input type="number" min={0} placeholder="Ex: 2" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              )}
-
-              {hasContract && (
                 <FormField
                   control={form.control}
-                  name="contract_notes"
+                  name="has_maintenance_contract"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Notes du contrat</FormLabel>
+                    <FormItem className="flex items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base">Ce client est sous contrat</FormLabel>
+                        <p className="text-sm text-muted-foreground">
+                          Active le suivi du contrat dans les alertes de maintenance.
+                        </p>
+                      </div>
                       <FormControl>
-                        <Textarea
-                          placeholder="Détails du contrat, conditions particulières..."
-                          {...field}
-                        />
+                        <Switch checked={field.value} onCheckedChange={field.onChange} disabled={!canUseMaintenance} />
                       </FormControl>
-                      <FormMessage />
                     </FormItem>
                   )}
                 />
-              )}
 
-              {hasContract && (
-                <ContractFileUpload
-                  clientId={id}
-                  fileUrl={client?.contract_file_url ?? null}
-                  fileName={client?.contract_file_name ?? null}
-                />
-              )}
-            </CardContent>
-          </Card>
+                {hasContract && canUseMaintenance && (
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <FormField
+                      control={form.control}
+                      name="contract_start_date"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Date de début</FormLabel>
+                          <FormControl>
+                            <Input type="date" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="contract_end_date"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Date de fin</FormLabel>
+                          <FormControl>
+                            <Input type="date" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="contract_type"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Type de contrat</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Ex: Standard, Premium..." {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="contract_visits_per_year"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Visites par an</FormLabel>
+                          <FormControl>
+                            <Input type="number" min={0} placeholder="Ex: 2" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                )}
+
+                {hasContract && canUseMaintenance && (
+                  <FormField
+                    control={form.control}
+                    name="contract_notes"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Notes du contrat</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Détails du contrat, conditions particulières..."
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                {hasContract && canUseMaintenance && (
+                  <ContractFileUpload
+                    clientId={id}
+                    fileUrl={client?.contract_file_url ?? null}
+                    fileName={client?.contract_file_name ?? null}
+                  />
+                )}
+              </CardContent>
+            </Card>
+          </div>
 
           <div className="flex justify-end gap-4">
             <Button type="button" variant="outline" onClick={() => navigate(-1)}>
