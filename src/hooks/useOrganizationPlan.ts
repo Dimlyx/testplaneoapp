@@ -19,6 +19,7 @@ const PLAN_FEATURES: Record<PlanType, Set<string>> = {
     'workflow',
     'statistics',
     'maintenance_alerts',
+    'maintenance_contract',
     'csv_import',
     'equipment_loop',
     'journey_tracking',
