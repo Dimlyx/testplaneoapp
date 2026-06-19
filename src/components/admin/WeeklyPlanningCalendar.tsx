@@ -391,6 +391,81 @@ export function WeeklyPlanningCalendar({
             ))}
           </div>
 
+          {/* Maintenance row (Business plan only — alimentée par les alertes programmées) */}
+          {showMaintenanceRow && (
+            <div className="border-b border-t-2 border-t-primary/40">
+              <div className="grid grid-cols-[150px_repeat(7,1fr)]">
+                <div className="p-2 border-r bg-primary/10">
+                  <div className="flex items-center gap-2">
+                    <Bell className="h-4 w-4 text-primary" />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-sm text-primary">Maintenance</div>
+                      <div className="text-xs text-muted-foreground">
+                        {weekMaintenanceAlerts.length} alerte{weekMaintenanceAlerts.length > 1 ? 's' : ''}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {daysInWeek.map(day => {
+                  const dayAlerts = getAlertsForDay(day);
+                  const today = new Date(); today.setHours(0, 0, 0, 0);
+                  return (
+                    <div
+                      key={day.toISOString()}
+                      className={cn(
+                        "border-r last:border-r-0 p-1 min-h-[60px] bg-primary/5",
+                        isToday(day) && "bg-primary/10"
+                      )}
+                    >
+                      <div className="space-y-1">
+                        <TooltipProvider>
+                          {dayAlerts.map(alert => {
+                            const isOverdue = isBefore(parseISO(alert.alert_date), today);
+                            return (
+                              <Tooltip key={alert.id}>
+                                <TooltipTrigger asChild>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onMaintenanceAlertClick?.(alert);
+                                    }}
+                                    className={cn(
+                                      "w-full text-left text-xs p-1.5 rounded text-white truncate transition-opacity",
+                                      isOverdue ? "bg-destructive" : "bg-primary"
+                                    )}
+                                  >
+                                    <div className="flex items-center gap-1">
+                                      {isOverdue && <AlertTriangle className="h-3 w-3 shrink-0" />}
+                                      <span className="font-medium truncate">{alert.title}</span>
+                                    </div>
+                                    {alert.clients?.name && (
+                                      <div className="text-[10px] opacity-90 truncate">{alert.clients.name}</div>
+                                    )}
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent side="right" className="max-w-[250px]">
+                                  <div className="space-y-1">
+                                    <p className="font-medium">{alert.title}</p>
+                                    {alert.clients?.name && <p className="text-sm">Client : {alert.clients.name}</p>}
+                                    <p className="text-sm">
+                                      Date : {format(parseISO(alert.alert_date), 'dd MMM yyyy', { locale: fr })}
+                                    </p>
+                                    {isOverdue && <p className="text-xs text-destructive">⚠️ En retard</p>}
+                                  </div>
+                                </TooltipContent>
+                              </Tooltip>
+                            );
+                          })}
+                        </TooltipProvider>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Technician rows */}
           {technicians.map(tech => {
             const isExpanded = expandedTechnicians.has(tech.id);
