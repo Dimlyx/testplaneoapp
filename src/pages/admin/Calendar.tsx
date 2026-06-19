@@ -23,6 +23,11 @@ import { cn } from "@/lib/utils";
 import { WeeklyPlanningCalendar } from "@/components/admin/WeeklyPlanningCalendar";
 import { QuickInterventionDialog } from "@/components/admin/QuickInterventionDialog";
 import { InterventionQuickViewSheet } from "@/components/admin/InterventionQuickViewSheet";
+import { useMaintenanceAlerts, MaintenanceAlert } from "@/hooks/useMaintenanceAlerts";
+import { useOrganizationPlan } from "@/hooks/useOrganizationPlan";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Bell, AlertTriangle, ArrowRight } from "lucide-react";
 
 const AdminCalendar = () => {
   const { data: interventions = [], isLoading: loadingInterventions } = useInterventions();
