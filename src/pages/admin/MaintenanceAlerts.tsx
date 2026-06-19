@@ -32,10 +32,11 @@ const recurrenceLabels: Record<AlertRecurrence, string> = {
 
 const getRecurrenceLabel = (alert: MaintenanceAlert) => {
   const months = alert.recurrence_months;
+  const day = alert.day_of_month;
   if (months !== undefined && months !== null) {
     if (months === 0) return 'Une fois';
-    if (months === 1) return 'Tous les mois';
-    return `Tous les ${months} mois`;
+    const base = months === 1 ? 'Tous les mois' : `Tous les ${months} mois`;
+    return day ? `${base} (le ${day})` : base;
   }
   return recurrenceLabels[alert.recurrence];
 };
