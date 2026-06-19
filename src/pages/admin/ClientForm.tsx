@@ -426,10 +426,29 @@ const ClientForm = () => {
                       name="contract_visits_per_year"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Visites par an</FormLabel>
-                          <FormControl>
-                            <Input type="number" min={0} placeholder="Ex: 2" {...field} />
-                          </FormControl>
+                          <FormLabel>Nombre de visites</FormLabel>
+                          <div className="flex gap-2">
+                            <FormControl>
+                              <Input type="number" min={0} placeholder="Ex: 2" {...field} className="flex-1" />
+                            </FormControl>
+                            <FormField
+                              control={form.control}
+                              name="contract_visits_period"
+                              render={({ field: pf }) => (
+                                <Select value={pf.value} onValueChange={pf.onChange}>
+                                  <SelectTrigger className="w-[140px]">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="day">par jour</SelectItem>
+                                    <SelectItem value="week">par semaine</SelectItem>
+                                    <SelectItem value="month">par mois</SelectItem>
+                                    <SelectItem value="year">par an</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              )}
+                            />
+                          </div>
                           <FormMessage />
                         </FormItem>
                       )}
