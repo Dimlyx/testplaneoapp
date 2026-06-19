@@ -23,6 +23,7 @@ export interface Client {
   contract_end_date: string | null;
   contract_type: string | null;
   contract_visits_per_year: number | null;
+  contract_visits_period: 'day' | 'week' | 'month' | 'year';
   contract_file_url: string | null;
   contract_file_name: string | null;
   contract_notes: string | null;
@@ -43,6 +44,7 @@ export interface CreateClientData {
   contract_end_date?: string | null;
   contract_type?: string | null;
   contract_visits_per_year?: number | null;
+  contract_visits_period?: 'day' | 'week' | 'month' | 'year';
   contract_file_url?: string | null;
   contract_file_name?: string | null;
   contract_notes?: string | null;
