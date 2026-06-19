@@ -721,6 +721,7 @@ export default function MaintenanceAlerts() {
                                 recurrence_months: c.contract_visits_per_year && c.contract_visits_per_year > 0
                                   ? Math.max(1, Math.round(12 / c.contract_visits_per_year))
                                   : 12,
+                                day_of_month: null,
                               });
                               setIsDialogOpen(true);
                             }}
