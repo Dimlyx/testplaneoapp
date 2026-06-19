@@ -23,6 +23,11 @@ import { cn } from "@/lib/utils";
 import { WeeklyPlanningCalendar } from "@/components/admin/WeeklyPlanningCalendar";
 import { QuickInterventionDialog } from "@/components/admin/QuickInterventionDialog";
 import { InterventionQuickViewSheet } from "@/components/admin/InterventionQuickViewSheet";
+import { useMaintenanceAlerts, MaintenanceAlert } from "@/hooks/useMaintenanceAlerts";
+import { useOrganizationPlan } from "@/hooks/useOrganizationPlan";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Bell, AlertTriangle, ArrowRight } from "lucide-react";
 
 const AdminCalendar = () => {
   const { data: interventions = [], isLoading: loadingInterventions } = useInterventions();
@@ -51,6 +56,25 @@ const AdminCalendar = () => {
   // Quick view side panel state
   const [quickViewIntervention, setQuickViewIntervention] = useState<Intervention | null>(null);
   const [quickViewOpen, setQuickViewOpen] = useState(false);
+
+  // Maintenance alert quick view
+  const { data: maintenanceAlerts = [] } = useMaintenanceAlerts();
+  const { hasFeature } = useOrganizationPlan();
+  const canShowMaintenanceRow = hasFeature('maintenance_alerts');
+  const [selectedAlert, setSelectedAlert] = useState<MaintenanceAlert | null>(null);
+
+  const handleMaintenanceAlertClick = (alert: MaintenanceAlert) => {
+    setSelectedAlert(alert);
+  };
+
+  const handleCreateInterventionFromAlert = (alert: MaintenanceAlert) => {
+    const params = new URLSearchParams();
+    if (alert.client_id) params.set('client_id', alert.client_id);
+    params.set('title', `Maintenance: ${alert.title}`);
+    if (alert.description) params.set('description', alert.description);
+    setSelectedAlert(null);
+    navigate(`/admin/interventions/new?${params.toString()}`);
+  };
 
   // Filter interventions by technician
   const filteredInterventions = useMemo(() => {
@@ -165,6 +189,8 @@ const AdminCalendar = () => {
           technicians={technicians}
           onCellClick={handleCellClick}
           onInterventionClick={handleInterventionClick}
+          maintenanceAlerts={canShowMaintenanceRow ? maintenanceAlerts : undefined}
+          onMaintenanceAlertClick={handleMaintenanceAlertClick}
         />
       ) : (
         <>
@@ -352,6 +378,41 @@ const AdminCalendar = () => {
         onOpenChange={setQuickViewOpen}
         technicians={technicians}
       />
+
+      {/* Maintenance alert detail dialog */}
+      <Dialog open={!!selectedAlert} onOpenChange={(o) => !o && setSelectedAlert(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Bell className="h-5 w-5 text-primary" />
+              {selectedAlert?.title}
+            </DialogTitle>
+          </DialogHeader>
+          {selectedAlert && (
+            <div className="space-y-3 text-sm">
+              {selectedAlert.clients?.name && (
+                <p><span className="text-muted-foreground">Client :</span> <span className="font-medium">{selectedAlert.clients.name}</span></p>
+              )}
+              <p>
+                <span className="text-muted-foreground">Date prévue :</span>{' '}
+                <span className="font-medium">{format(parseISO(selectedAlert.alert_date), "EEEE d MMMM yyyy", { locale: fr })}</span>
+              </p>
+              {selectedAlert.description && (
+                <p className="text-muted-foreground whitespace-pre-wrap">{selectedAlert.description}</p>
+              )}
+            </div>
+          )}
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" onClick={() => { setSelectedAlert(null); navigate('/admin/maintenance-alerts'); }}>
+              Voir toutes les alertes
+            </Button>
+            <Button onClick={() => selectedAlert && handleCreateInterventionFromAlert(selectedAlert)}>
+              Créer une intervention
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

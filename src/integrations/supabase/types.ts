@@ -280,6 +280,7 @@ export type Database = {
           contract_start_date: string | null
           contract_type: string | null
           contract_visits_per_year: number | null
+          contract_visits_period: string
           created_at: string
           email: string | null
           has_maintenance_contract: boolean
@@ -302,6 +303,7 @@ export type Database = {
           contract_start_date?: string | null
           contract_type?: string | null
           contract_visits_per_year?: number | null
+          contract_visits_period?: string
           created_at?: string
           email?: string | null
           has_maintenance_contract?: boolean
@@ -324,6 +326,7 @@ export type Database = {
           contract_start_date?: string | null
           contract_type?: string | null
           contract_visits_per_year?: number | null
+          contract_visits_period?: string
           created_at?: string
           email?: string | null
           has_maintenance_contract?: boolean
@@ -1094,6 +1097,7 @@ export type Database = {
           alert_date: string
           client_id: string | null
           created_at: string
+          day_of_month: number | null
           description: string | null
           equipment_id: string | null
           id: string
@@ -1109,6 +1113,7 @@ export type Database = {
           alert_date: string
           client_id?: string | null
           created_at?: string
+          day_of_month?: number | null
           description?: string | null
           equipment_id?: string | null
           id?: string
@@ -1124,6 +1129,7 @@ export type Database = {
           alert_date?: string
           client_id?: string | null
           created_at?: string
+          day_of_month?: number | null
           description?: string | null
           equipment_id?: string | null
           id?: string

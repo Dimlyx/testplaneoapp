@@ -3,8 +3,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ChevronLeft, ChevronRight, Plus, Minus, Calendar as CalendarIcon, Clock } from 'lucide-react';
-import { format, startOfWeek, endOfWeek, eachDayOfInterval, addWeeks, subWeeks, isSameDay, parseISO, isToday, addDays } from 'date-fns';
+import { ChevronLeft, ChevronRight, Plus, Minus, Calendar as CalendarIcon, Clock, Bell, AlertTriangle } from 'lucide-react';
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, addWeeks, subWeeks, isSameDay, parseISO, isToday, addDays, isBefore } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Intervention, useUpdateIntervention } from '@/hooks/useInterventions';
 import { useInterventionTypes } from '@/hooks/useInterventionTypes';
@@ -18,12 +18,15 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import type { MaintenanceAlert } from '@/hooks/useMaintenanceAlerts';
 
 interface WeeklyPlanningCalendarProps {
   interventions: Intervention[];
   technicians: Technician[];
   onCellClick?: (technicianId: string, date: Date) => void;
   onInterventionClick?: (intervention: Intervention) => void;
+  maintenanceAlerts?: MaintenanceAlert[];
+  onMaintenanceAlertClick?: (alert: MaintenanceAlert) => void;
 }
 
 const defaultTypeColors: Record<string, string> = {
@@ -41,7 +44,9 @@ export function WeeklyPlanningCalendar({
   interventions, 
   technicians, 
   onCellClick,
-  onInterventionClick 
+  onInterventionClick,
+  maintenanceAlerts,
+  onMaintenanceAlertClick,
 }: WeeklyPlanningCalendarProps) {
   const [currentWeek, setCurrentWeek] = useState(new Date());
   const [expandedTechnicians, setExpandedTechnicians] = useState<Set<string>>(new Set());
@@ -272,6 +277,33 @@ export function WeeklyPlanningCalendar({
   const hours = Array.from({ length: endHour - startHour + 1 }, (_, i) => i + startHour);
   const allHourOptions = Array.from({ length: 24 }, (_, i) => i);
 
+  // Filter maintenance alerts: active alerts within current displayed week + overdue active alerts
+  const weekMaintenanceAlerts = useMemo(() => {
+    if (!maintenanceAlerts || maintenanceAlerts.length === 0) return [];
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    return maintenanceAlerts.filter(a => {
+      if (a.status === 'completed' || a.status === 'dismissed') return false;
+      const d = parseISO(a.alert_date);
+      const inWeek = d >= weekStart && d <= weekEnd;
+      const overdue = isBefore(d, today);
+      return inWeek || overdue;
+    });
+  }, [maintenanceAlerts, weekStart, weekEnd]);
+
+  const getAlertsForDay = (day: Date) => {
+    const dateKey = format(day, 'yyyy-MM-dd');
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const isCurrentDay = isSameDay(day, today);
+    return weekMaintenanceAlerts.filter(a => {
+      if (a.alert_date === dateKey) return true;
+      // Display overdue alerts on today's column
+      if (isCurrentDay && isBefore(parseISO(a.alert_date), today)) return true;
+      return false;
+    });
+  };
+
+  const showMaintenanceRow = weekMaintenanceAlerts.length > 0;
+
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -358,6 +390,81 @@ export function WeeklyPlanningCalendar({
               </div>
             ))}
           </div>
+
+          {/* Maintenance row (Business plan only — alimentée par les alertes programmées) */}
+          {showMaintenanceRow && (
+            <div className="border-b border-t-2 border-t-primary/40">
+              <div className="grid grid-cols-[150px_repeat(7,1fr)]">
+                <div className="p-2 border-r bg-primary/10">
+                  <div className="flex items-center gap-2">
+                    <Bell className="h-4 w-4 text-primary" />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-sm text-primary">Maintenance</div>
+                      <div className="text-xs text-muted-foreground">
+                        {weekMaintenanceAlerts.length} alerte{weekMaintenanceAlerts.length > 1 ? 's' : ''}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {daysInWeek.map(day => {
+                  const dayAlerts = getAlertsForDay(day);
+                  const today = new Date(); today.setHours(0, 0, 0, 0);
+                  return (
+                    <div
+                      key={day.toISOString()}
+                      className={cn(
+                        "border-r last:border-r-0 p-1 min-h-[60px] bg-primary/5",
+                        isToday(day) && "bg-primary/10"
+                      )}
+                    >
+                      <div className="space-y-1">
+                        <TooltipProvider>
+                          {dayAlerts.map(alert => {
+                            const isOverdue = isBefore(parseISO(alert.alert_date), today);
+                            return (
+                              <Tooltip key={alert.id}>
+                                <TooltipTrigger asChild>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onMaintenanceAlertClick?.(alert);
+                                    }}
+                                    className={cn(
+                                      "w-full text-left text-xs p-1.5 rounded text-white truncate transition-opacity",
+                                      isOverdue ? "bg-destructive" : "bg-primary"
+                                    )}
+                                  >
+                                    <div className="flex items-center gap-1">
+                                      {isOverdue && <AlertTriangle className="h-3 w-3 shrink-0" />}
+                                      <span className="font-medium truncate">{alert.title}</span>
+                                    </div>
+                                    {alert.clients?.name && (
+                                      <div className="text-[10px] opacity-90 truncate">{alert.clients.name}</div>
+                                    )}
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent side="right" className="max-w-[250px]">
+                                  <div className="space-y-1">
+                                    <p className="font-medium">{alert.title}</p>
+                                    {alert.clients?.name && <p className="text-sm">Client : {alert.clients.name}</p>}
+                                    <p className="text-sm">
+                                      Date : {format(parseISO(alert.alert_date), 'dd MMM yyyy', { locale: fr })}
+                                    </p>
+                                    {isOverdue && <p className="text-xs text-destructive">⚠️ En retard</p>}
+                                  </div>
+                                </TooltipContent>
+                              </Tooltip>
+                            );
+                          })}
+                        </TooltipProvider>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Technician rows */}
           {technicians.map(tech => {

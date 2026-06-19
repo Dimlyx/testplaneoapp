@@ -32,10 +32,11 @@ const recurrenceLabels: Record<AlertRecurrence, string> = {
 
 const getRecurrenceLabel = (alert: MaintenanceAlert) => {
   const months = alert.recurrence_months;
+  const day = alert.day_of_month;
   if (months !== undefined && months !== null) {
     if (months === 0) return 'Une fois';
-    if (months === 1) return 'Tous les mois';
-    return `Tous les ${months} mois`;
+    const base = months === 1 ? 'Tous les mois' : `Tous les ${months} mois`;
+    return day ? `${base} (le ${day})` : base;
   }
   return recurrenceLabels[alert.recurrence];
 };
@@ -61,6 +62,7 @@ interface AlertFormData {
   alert_date: string;
   recurrence: AlertRecurrence;
   recurrence_months: number;
+  day_of_month: number | null;
 }
 
 export default function MaintenanceAlerts() {
@@ -88,6 +90,7 @@ export default function MaintenanceAlerts() {
     alert_date: format(new Date(), 'yyyy-MM-dd'),
     recurrence: 'monthly',
     recurrence_months: 0,
+    day_of_month: null,
   });
 
   // Realtime subscription
@@ -118,6 +121,7 @@ export default function MaintenanceAlerts() {
       alert_date: format(new Date(), 'yyyy-MM-dd'),
       recurrence: 'monthly',
       recurrence_months: 0,
+      day_of_month: null,
     });
     setEditingAlert(null);
   };
@@ -132,6 +136,7 @@ export default function MaintenanceAlerts() {
         alert_date: alert.alert_date,
         recurrence: alert.recurrence,
         recurrence_months: alert.recurrence_months ?? 0,
+        day_of_month: alert.day_of_month ?? null,
       });
     } else {
       resetForm();
@@ -149,6 +154,7 @@ export default function MaintenanceAlerts() {
       alert_date: formData.alert_date,
       recurrence: formData.recurrence_months === 0 ? 'once' as AlertRecurrence : 'monthly' as AlertRecurrence,
       recurrence_months: formData.recurrence_months,
+      day_of_month: formData.recurrence_months > 0 ? formData.day_of_month : null,
     };
 
     if (editingAlert) {
@@ -421,6 +427,30 @@ export default function MaintenanceAlerts() {
                 </div>
               </div>
 
+              {formData.recurrence_months > 0 && (
+                <div className="space-y-2">
+                  <Label htmlFor="day_of_month">Jour du mois (optionnel)</Label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground whitespace-nowrap">Tous les</span>
+                    <Input
+                      id="day_of_month"
+                      type="number"
+                      min={1}
+                      max={31}
+                      placeholder="ex: 10"
+                      value={formData.day_of_month ?? ''}
+                      onChange={(e) => {
+                        const v = e.target.value === '' ? null : Math.min(31, Math.max(1, parseInt(e.target.value) || 1));
+                        setFormData({ ...formData, day_of_month: v });
+                      }}
+                      className="w-24"
+                    />
+                    <span className="text-sm text-muted-foreground whitespace-nowrap">du mois</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Laissez vide pour conserver la date d'alerte initiale.</p>
+                </div>
+              )}
+
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Annuler
@@ -681,7 +711,7 @@ export default function MaintenanceAlerts() {
                             {c.contract_visits_per_year != null && (
                               <span className="flex items-center gap-1.5">
                                 <RefreshCw className="h-3.5 w-3.5" />
-                                {c.contract_visits_per_year} visite{c.contract_visits_per_year > 1 ? 's' : ''} / an
+                                {c.contract_visits_per_year} visite{c.contract_visits_per_year > 1 ? 's' : ''} / {({ day: 'jour', week: 'semaine', month: 'mois', year: 'an' } as Record<string,string>)[c.contract_visits_period || 'year']}
                               </span>
                             )}
                             {c.city && <span>{c.city}</span>}
@@ -716,6 +746,7 @@ export default function MaintenanceAlerts() {
                                 recurrence_months: c.contract_visits_per_year && c.contract_visits_per_year > 0
                                   ? Math.max(1, Math.round(12 / c.contract_visits_per_year))
                                   : 12,
+                                day_of_month: null,
                               });
                               setIsDialogOpen(true);
                             }}
