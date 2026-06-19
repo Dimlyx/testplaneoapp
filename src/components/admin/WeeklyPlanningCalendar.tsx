@@ -277,6 +277,33 @@ export function WeeklyPlanningCalendar({
   const hours = Array.from({ length: endHour - startHour + 1 }, (_, i) => i + startHour);
   const allHourOptions = Array.from({ length: 24 }, (_, i) => i);
 
+  // Filter maintenance alerts: active alerts within current displayed week + overdue active alerts
+  const weekMaintenanceAlerts = useMemo(() => {
+    if (!maintenanceAlerts || maintenanceAlerts.length === 0) return [];
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    return maintenanceAlerts.filter(a => {
+      if (a.status === 'completed' || a.status === 'dismissed') return false;
+      const d = parseISO(a.alert_date);
+      const inWeek = d >= weekStart && d <= weekEnd;
+      const overdue = isBefore(d, today);
+      return inWeek || overdue;
+    });
+  }, [maintenanceAlerts, weekStart, weekEnd]);
+
+  const getAlertsForDay = (day: Date) => {
+    const dateKey = format(day, 'yyyy-MM-dd');
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const isCurrentDay = isSameDay(day, today);
+    return weekMaintenanceAlerts.filter(a => {
+      if (a.alert_date === dateKey) return true;
+      // Display overdue alerts on today's column
+      if (isCurrentDay && isBefore(parseISO(a.alert_date), today)) return true;
+      return false;
+    });
+  };
+
+  const showMaintenanceRow = weekMaintenanceAlerts.length > 0;
+
   return (
     <Card>
       <CardHeader className="pb-3">
