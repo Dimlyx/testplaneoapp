@@ -113,6 +113,7 @@ const ClientForm = () => {
   const onSubmit = async (values: ClientFormValues) => {
     try {
       const visits = values.contract_visits_per_year ? parseInt(values.contract_visits_per_year, 10) : null;
+      const hasMaintenanceContract = canUseMaintenance && values.has_maintenance_contract;
       const data = {
         name: values.name,
         client_type: values.client_type,
@@ -122,12 +123,12 @@ const ClientForm = () => {
         postal_code: values.postal_code || null,
         city: values.city || null,
         notes: values.notes || null,
-        has_maintenance_contract: values.has_maintenance_contract,
-        contract_start_date: values.has_maintenance_contract && values.contract_start_date ? values.contract_start_date : null,
-        contract_end_date: values.has_maintenance_contract && values.contract_end_date ? values.contract_end_date : null,
-        contract_type: values.has_maintenance_contract && values.contract_type ? values.contract_type : null,
-        contract_visits_per_year: values.has_maintenance_contract && visits && !isNaN(visits) ? visits : null,
-        contract_notes: values.has_maintenance_contract && values.contract_notes ? values.contract_notes : null,
+        has_maintenance_contract: hasMaintenanceContract,
+        contract_start_date: hasMaintenanceContract && values.contract_start_date ? values.contract_start_date : null,
+        contract_end_date: hasMaintenanceContract && values.contract_end_date ? values.contract_end_date : null,
+        contract_type: hasMaintenanceContract && values.contract_type ? values.contract_type : null,
+        contract_visits_per_year: hasMaintenanceContract && visits && !isNaN(visits) ? visits : null,
+        contract_notes: hasMaintenanceContract && values.contract_notes ? values.contract_notes : null,
       };
 
       if (isEditing && id) {
