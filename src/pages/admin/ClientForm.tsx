@@ -64,6 +64,8 @@ const ClientForm = () => {
   const { data: client, isLoading } = useClient(id || "");
   const createClient = useCreateClient(organizationId);
   const updateClient = useUpdateClient();
+  const { hasFeature } = useOrganizationPlan();
+  const canUseMaintenance = hasFeature('maintenance_contract');
 
   const form = useForm<ClientFormValues>({
     resolver: zodResolver(clientSchema),
