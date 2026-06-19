@@ -48,6 +48,7 @@ const clientSchema = z.object({
   contract_end_date: z.string().optional(),
   contract_type: z.string().optional(),
   contract_visits_per_year: z.string().optional(),
+  contract_visits_period: z.enum(["day", "week", "month", "year"]).default("year"),
   contract_notes: z.string().optional(),
 });
 
@@ -83,6 +84,7 @@ const ClientForm = () => {
       contract_end_date: "",
       contract_type: "",
       contract_visits_per_year: "",
+      contract_visits_period: "year",
       contract_notes: "",
     },
   });
@@ -105,6 +107,7 @@ const ClientForm = () => {
         contract_end_date: client.contract_end_date || "",
         contract_type: client.contract_type || "",
         contract_visits_per_year: client.contract_visits_per_year != null ? String(client.contract_visits_per_year) : "",
+        contract_visits_period: (client.contract_visits_period as any) || "year",
         contract_notes: client.contract_notes || "",
       });
     }
@@ -128,6 +131,7 @@ const ClientForm = () => {
         contract_end_date: hasMaintenanceContract && values.contract_end_date ? values.contract_end_date : null,
         contract_type: hasMaintenanceContract && values.contract_type ? values.contract_type : null,
         contract_visits_per_year: hasMaintenanceContract && visits && !isNaN(visits) ? visits : null,
+        contract_visits_period: hasMaintenanceContract ? values.contract_visits_period : 'year',
         contract_notes: hasMaintenanceContract && values.contract_notes ? values.contract_notes : null,
       };
 
