@@ -61,6 +61,7 @@ interface AlertFormData {
   alert_date: string;
   recurrence: AlertRecurrence;
   recurrence_months: number;
+  day_of_month: number | null;
 }
 
 export default function MaintenanceAlerts() {
@@ -88,6 +89,7 @@ export default function MaintenanceAlerts() {
     alert_date: format(new Date(), 'yyyy-MM-dd'),
     recurrence: 'monthly',
     recurrence_months: 0,
+    day_of_month: null,
   });
 
   // Realtime subscription
@@ -118,6 +120,7 @@ export default function MaintenanceAlerts() {
       alert_date: format(new Date(), 'yyyy-MM-dd'),
       recurrence: 'monthly',
       recurrence_months: 0,
+      day_of_month: null,
     });
     setEditingAlert(null);
   };
@@ -132,6 +135,7 @@ export default function MaintenanceAlerts() {
         alert_date: alert.alert_date,
         recurrence: alert.recurrence,
         recurrence_months: alert.recurrence_months ?? 0,
+        day_of_month: alert.day_of_month ?? null,
       });
     } else {
       resetForm();
@@ -149,6 +153,7 @@ export default function MaintenanceAlerts() {
       alert_date: formData.alert_date,
       recurrence: formData.recurrence_months === 0 ? 'once' as AlertRecurrence : 'monthly' as AlertRecurrence,
       recurrence_months: formData.recurrence_months,
+      day_of_month: formData.recurrence_months > 0 ? formData.day_of_month : null,
     };
 
     if (editingAlert) {
