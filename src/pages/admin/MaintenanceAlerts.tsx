@@ -710,7 +710,7 @@ export default function MaintenanceAlerts() {
                             {c.contract_visits_per_year != null && (
                               <span className="flex items-center gap-1.5">
                                 <RefreshCw className="h-3.5 w-3.5" />
-                                {c.contract_visits_per_year} visite{c.contract_visits_per_year > 1 ? 's' : ''} / an
+                                {c.contract_visits_per_year} visite{c.contract_visits_per_year > 1 ? 's' : ''} / {({ day: 'jour', week: 'semaine', month: 'mois', year: 'an' } as Record<string,string>)[c.contract_visits_period || 'year']}
                               </span>
                             )}
                             {c.city && <span>{c.city}</span>}
