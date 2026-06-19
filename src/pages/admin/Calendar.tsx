@@ -57,6 +57,25 @@ const AdminCalendar = () => {
   const [quickViewIntervention, setQuickViewIntervention] = useState<Intervention | null>(null);
   const [quickViewOpen, setQuickViewOpen] = useState(false);
 
+  // Maintenance alert quick view
+  const { data: maintenanceAlerts = [] } = useMaintenanceAlerts();
+  const { hasFeature } = useOrganizationPlan();
+  const canShowMaintenanceRow = hasFeature('maintenance_alerts');
+  const [selectedAlert, setSelectedAlert] = useState<MaintenanceAlert | null>(null);
+
+  const handleMaintenanceAlertClick = (alert: MaintenanceAlert) => {
+    setSelectedAlert(alert);
+  };
+
+  const handleCreateInterventionFromAlert = (alert: MaintenanceAlert) => {
+    const params = new URLSearchParams();
+    if (alert.client_id) params.set('client_id', alert.client_id);
+    params.set('title', `Maintenance: ${alert.title}`);
+    if (alert.description) params.set('description', alert.description);
+    setSelectedAlert(null);
+    navigate(`/admin/interventions/new?${params.toString()}`);
+  };
+
   // Filter interventions by technician
   const filteredInterventions = useMemo(() => {
     return interventions.filter((intervention) => {
