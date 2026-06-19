@@ -378,6 +378,41 @@ const AdminCalendar = () => {
         onOpenChange={setQuickViewOpen}
         technicians={technicians}
       />
+
+      {/* Maintenance alert detail dialog */}
+      <Dialog open={!!selectedAlert} onOpenChange={(o) => !o && setSelectedAlert(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Bell className="h-5 w-5 text-primary" />
+              {selectedAlert?.title}
+            </DialogTitle>
+          </DialogHeader>
+          {selectedAlert && (
+            <div className="space-y-3 text-sm">
+              {selectedAlert.clients?.name && (
+                <p><span className="text-muted-foreground">Client :</span> <span className="font-medium">{selectedAlert.clients.name}</span></p>
+              )}
+              <p>
+                <span className="text-muted-foreground">Date prévue :</span>{' '}
+                <span className="font-medium">{format(parseISO(selectedAlert.alert_date), "EEEE d MMMM yyyy", { locale: fr })}</span>
+              </p>
+              {selectedAlert.description && (
+                <p className="text-muted-foreground whitespace-pre-wrap">{selectedAlert.description}</p>
+              )}
+            </div>
+          )}
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" onClick={() => { setSelectedAlert(null); navigate('/admin/maintenance-alerts'); }}>
+              Voir toutes les alertes
+            </Button>
+            <Button onClick={() => selectedAlert && handleCreateInterventionFromAlert(selectedAlert)}>
+              Créer une intervention
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
