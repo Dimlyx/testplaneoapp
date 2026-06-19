@@ -426,6 +426,30 @@ export default function MaintenanceAlerts() {
                 </div>
               </div>
 
+              {formData.recurrence_months > 0 && (
+                <div className="space-y-2">
+                  <Label htmlFor="day_of_month">Jour du mois (optionnel)</Label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground whitespace-nowrap">Tous les</span>
+                    <Input
+                      id="day_of_month"
+                      type="number"
+                      min={1}
+                      max={31}
+                      placeholder="ex: 10"
+                      value={formData.day_of_month ?? ''}
+                      onChange={(e) => {
+                        const v = e.target.value === '' ? null : Math.min(31, Math.max(1, parseInt(e.target.value) || 1));
+                        setFormData({ ...formData, day_of_month: v });
+                      }}
+                      className="w-24"
+                    />
+                    <span className="text-sm text-muted-foreground whitespace-nowrap">du mois</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Laissez vide pour conserver la date d'alerte initiale.</p>
+                </div>
+              )}
+
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Annuler
