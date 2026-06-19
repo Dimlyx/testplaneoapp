@@ -6,8 +6,10 @@ import { z } from "zod";
 import { useClient, useCreateClient, useUpdateClient } from "@/hooks/useClients";
 import { useUserOrganization } from "@/hooks/useUserOrganization";
 import { useInterventionTypes } from "@/hooks/useInterventionTypes";
+import { useOrganizationPlan } from "@/hooks/useOrganizationPlan";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { Textarea } from "@/components/ui/textarea";
 import {
