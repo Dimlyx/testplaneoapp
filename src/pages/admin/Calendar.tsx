@@ -189,6 +189,8 @@ const AdminCalendar = () => {
           technicians={technicians}
           onCellClick={handleCellClick}
           onInterventionClick={handleInterventionClick}
+          maintenanceAlerts={canShowMaintenanceRow ? maintenanceAlerts : undefined}
+          onMaintenanceAlertClick={handleMaintenanceAlertClick}
         />
       ) : (
         <>
