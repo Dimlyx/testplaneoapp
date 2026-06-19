@@ -3,8 +3,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ChevronLeft, ChevronRight, Plus, Minus, Calendar as CalendarIcon, Clock } from 'lucide-react';
-import { format, startOfWeek, endOfWeek, eachDayOfInterval, addWeeks, subWeeks, isSameDay, parseISO, isToday, addDays } from 'date-fns';
+import { ChevronLeft, ChevronRight, Plus, Minus, Calendar as CalendarIcon, Clock, Bell, AlertTriangle } from 'lucide-react';
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, addWeeks, subWeeks, isSameDay, parseISO, isToday, addDays, isBefore } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Intervention, useUpdateIntervention } from '@/hooks/useInterventions';
 import { useInterventionTypes } from '@/hooks/useInterventionTypes';
@@ -18,12 +18,15 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import type { MaintenanceAlert } from '@/hooks/useMaintenanceAlerts';
 
 interface WeeklyPlanningCalendarProps {
   interventions: Intervention[];
   technicians: Technician[];
   onCellClick?: (technicianId: string, date: Date) => void;
   onInterventionClick?: (intervention: Intervention) => void;
+  maintenanceAlerts?: MaintenanceAlert[];
+  onMaintenanceAlertClick?: (alert: MaintenanceAlert) => void;
 }
 
 const defaultTypeColors: Record<string, string> = {
@@ -41,7 +44,9 @@ export function WeeklyPlanningCalendar({
   interventions, 
   technicians, 
   onCellClick,
-  onInterventionClick 
+  onInterventionClick,
+  maintenanceAlerts,
+  onMaintenanceAlertClick,
 }: WeeklyPlanningCalendarProps) {
   const [currentWeek, setCurrentWeek] = useState(new Date());
   const [expandedTechnicians, setExpandedTechnicians] = useState<Set<string>>(new Set());
