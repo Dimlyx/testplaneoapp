@@ -101,8 +101,13 @@ export function TechnicianInterventionsByCategory({ category }: { category: Cate
         );
       case "planning":
         return interventions
-          .filter((i) => i.status === "planned" && i.scheduled_date)
-          .sort((a, b) => a.scheduled_date!.localeCompare(b.scheduled_date!));
+          .filter((i) => {
+            if (i.status === "planned" && i.scheduled_date) return true;
+            if (i.status === "in_progress") return true;
+            if (i.status === "completed" && i.travel_return_time && !i.travel_return_arrival_time) return true;
+            return false;
+          })
+          .sort((a, b) => (a.scheduled_date || "9999-12-31").localeCompare(b.scheduled_date || "9999-12-31"));
       case "non-planifie":
         return interventions.filter((i) => i.status === "to_plan");
       case "terminees":
