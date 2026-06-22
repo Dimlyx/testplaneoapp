@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { MapsChooser, useMapsChooser } from "@/components/technician/MapsChooser";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 import { ChevronDown, ChevronUp, Calendar, Clock, MapPin } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { TypeBadge } from "@/components/ui/status-badge";
