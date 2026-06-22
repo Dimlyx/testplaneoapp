@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { MapsChooser, useMapsChooser } from "@/components/technician/MapsChooser";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 import { ChevronDown, ChevronUp, Calendar, Clock, MapPin } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { TypeBadge } from "@/components/ui/status-badge";
@@ -80,8 +81,8 @@ export const InterventionDayGroup = ({
             >
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
-                  <div className="p-2 bg-primary/10 rounded-lg mt-0.5">
-                    <Calendar className="h-4 w-4 text-primary dark:text-foreground" />
+                  <div className={cn("p-2 rounded-lg mt-0.5", intervention.status === "in_progress" ? "bg-warning/20" : "bg-primary/10")}>
+                    <Calendar className={cn("h-4 w-4", intervention.status === "in_progress" ? "text-warning" : "text-primary dark:text-foreground")} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
