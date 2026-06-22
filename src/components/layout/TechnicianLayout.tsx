@@ -28,7 +28,6 @@ const TechnicianCreateInterventionDialog = lazy(() => import('@/components/techn
 
 const navigation = [
   { name: 'Planifiées', href: '/technician/planifie', icon: Calendar },
-  { name: 'En cours', href: '/technician/en-cours', icon: Clock },
   { name: 'À planifier', href: '/technician/non-planifie', icon: CalendarOff },
   { name: 'Planning', href: '/technician/planning', icon: CalendarIcon },
   { name: 'Terminées', href: '/technician/terminees', icon: CheckCircle2 },
