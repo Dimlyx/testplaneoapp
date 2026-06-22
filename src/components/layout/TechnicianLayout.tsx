@@ -9,7 +9,6 @@ import {
   X,
   ChevronRight,
   User,
-  Clock,
   Calendar,
   CalendarOff,
   CheckCircle2,
