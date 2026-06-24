@@ -343,12 +343,6 @@ const MultiPhotoCamera = ({ onCapture, onClose }: MultiPhotoCameraProps) => {
                   alt={`Photo ${index + 1}`}
                   className="h-14 w-14 object-cover rounded-lg border border-white/30"
                 />
-                <button
-                  onClick={() => removePhoto(index)}
-                  className="absolute -top-1.5 -right-1.5 bg-destructive text-destructive-foreground rounded-full h-5 w-5 flex items-center justify-center"
-                >
-                  <X className="h-3 w-3" />
-                </button>
               </div>
             ))}
           </div>
