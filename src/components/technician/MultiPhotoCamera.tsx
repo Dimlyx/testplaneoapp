@@ -199,18 +199,23 @@ const MultiPhotoCamera = ({ onCapture, onClose }: MultiPhotoCameraProps) => {
         if (!blob) return;
         const url = URL.createObjectURL(blob);
         setCapturedPhotos(prev => [...prev, { blob, url }]);
+        // IMPORTANT: persist each photo immediately so it survives the
+        // technician quitting/backgrounding the app before tapping OK.
+        const file = new File(
+          [blob],
+          `photo-${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`,
+          { type: "image/jpeg", lastModified: Date.now() },
+        );
+        try {
+          onCapture([file]);
+        } catch (err) {
+          console.warn("Immediate photo persist failed:", err);
+        }
       },
       "image/jpeg",
       0.85
     );
-  }, []);
-
-  const removePhoto = (index: number) => {
-    setCapturedPhotos(prev => {
-      URL.revokeObjectURL(prev[index].url);
-      return prev.filter((_, i) => i !== index);
-    });
-  };
+  }, [onCapture]);
 
   const handleConfirm = () => {
     const files = capturedPhotos.map((p, i) =>
