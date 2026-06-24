@@ -199,30 +199,33 @@ const MultiPhotoCamera = ({ onCapture, onClose }: MultiPhotoCameraProps) => {
         if (!blob) return;
         const url = URL.createObjectURL(blob);
         setCapturedPhotos(prev => [...prev, { blob, url }]);
+        // IMPORTANT: persist each photo immediately so it survives the
+        // technician quitting/backgrounding the app before tapping OK.
+        const file = new File(
+          [blob],
+          `photo-${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`,
+          { type: "image/jpeg", lastModified: Date.now() },
+        );
+        try {
+          onCapture([file]);
+        } catch (err) {
+          console.warn("Immediate photo persist failed:", err);
+        }
       },
       "image/jpeg",
       0.85
     );
-  }, []);
-
-  const removePhoto = (index: number) => {
-    setCapturedPhotos(prev => {
-      URL.revokeObjectURL(prev[index].url);
-      return prev.filter((_, i) => i !== index);
-    });
-  };
+  }, [onCapture]);
 
   const handleConfirm = () => {
-    const files = capturedPhotos.map((p, i) =>
-      new File([p.blob], `photo-${Date.now()}-${i}.jpg`, { type: "image/jpeg", lastModified: Date.now() })
-    );
-    // Clean up
+    // Photos are already persisted at capture time. Just close.
     streamRef.current?.getTracks().forEach(t => t.stop());
     capturedPhotos.forEach(p => URL.revokeObjectURL(p.url));
-    onCapture(files);
+    onClose();
   };
 
   const handleCancel = () => {
+    // Photos are already persisted at capture time. Closing does not discard.
     streamRef.current?.getTracks().forEach(t => t.stop());
     capturedPhotos.forEach(p => URL.revokeObjectURL(p.url));
     onClose();
@@ -340,12 +343,6 @@ const MultiPhotoCamera = ({ onCapture, onClose }: MultiPhotoCameraProps) => {
                   alt={`Photo ${index + 1}`}
                   className="h-14 w-14 object-cover rounded-lg border border-white/30"
                 />
-                <button
-                  onClick={() => removePhoto(index)}
-                  className="absolute -top-1.5 -right-1.5 bg-destructive text-destructive-foreground rounded-full h-5 w-5 flex items-center justify-center"
-                >
-                  <X className="h-3 w-3" />
-                </button>
               </div>
             ))}
           </div>

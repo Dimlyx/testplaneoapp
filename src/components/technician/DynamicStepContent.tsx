@@ -289,9 +289,11 @@ const DynamicStepContent = ({
     }
   };
 
-  // Handle files from MultiPhotoCamera
+  // Handle files from MultiPhotoCamera — called once per photo immediately
+  // after capture so the photo is persisted in IndexedDB even if the
+  // technician quits the app without tapping OK. The camera overlay stays
+  // open until the user explicitly closes it.
   const handleCameraCapture = async (files: File[]) => {
-    setShowCamera(false);
     await handleFiles(files);
   };
 
