@@ -218,16 +218,14 @@ const MultiPhotoCamera = ({ onCapture, onClose }: MultiPhotoCameraProps) => {
   }, [onCapture]);
 
   const handleConfirm = () => {
-    const files = capturedPhotos.map((p, i) =>
-      new File([p.blob], `photo-${Date.now()}-${i}.jpg`, { type: "image/jpeg", lastModified: Date.now() })
-    );
-    // Clean up
+    // Photos are already persisted at capture time. Just close.
     streamRef.current?.getTracks().forEach(t => t.stop());
     capturedPhotos.forEach(p => URL.revokeObjectURL(p.url));
-    onCapture(files);
+    onClose();
   };
 
   const handleCancel = () => {
+    // Photos are already persisted at capture time. Closing does not discard.
     streamRef.current?.getTracks().forEach(t => t.stop());
     capturedPhotos.forEach(p => URL.revokeObjectURL(p.url));
     onClose();
