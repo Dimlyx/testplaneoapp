@@ -24,11 +24,13 @@ interface PreCloseGuardDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   pending: PendingBreakdown;
+  onForceClose?: () => void | Promise<void>;
 }
 
-const PreCloseGuardDialog = ({ open, onOpenChange, pending }: PreCloseGuardDialogProps) => {
+const PreCloseGuardDialog = ({ open, onOpenChange, pending, onForceClose }: PreCloseGuardDialogProps) => {
   const { isOnline, isSyncing, forceSync } = useOffline();
   const [isForcing, setIsForcing] = useState(false);
+  const [isClosingAnyway, setIsClosingAnyway] = useState(false);
 
   const handleForceSync = async () => {
     setIsForcing(true);
@@ -71,7 +73,8 @@ const PreCloseGuardDialog = ({ open, onOpenChange, pending }: PreCloseGuardDialo
                   <ShieldCheck className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
                   <span>
                     Dès que tout est synchronisé, le bouton de clôture redevient utilisable
-                    automatiquement.
+                    automatiquement. Vous pouvez aussi clôturer maintenant&nbsp;: les éléments
+                    en attente continueront de se synchroniser en arrière-plan.
                   </span>
                 </p>
               </div>
@@ -131,6 +134,25 @@ const PreCloseGuardDialog = ({ open, onOpenChange, pending }: PreCloseGuardDialo
             <RefreshCw className={`h-4 w-4 mr-2 ${isForcing || isSyncing ? 'animate-spin' : ''}`} />
             {isForcing || isSyncing ? 'Synchronisation en cours...' : 'Synchroniser maintenant'}
           </Button>
+          {onForceClose && (
+            <Button
+              variant="secondary"
+              onClick={async () => {
+                setIsClosingAnyway(true);
+                try {
+                  await onForceClose();
+                  onOpenChange(false);
+                } finally {
+                  setIsClosingAnyway(false);
+                }
+              }}
+              disabled={isClosingAnyway}
+              className="w-full"
+            >
+              <AlertTriangle className="h-4 w-4 mr-2" />
+              {isClosingAnyway ? 'Clôture...' : 'Clôturer quand même'}
+            </Button>
+          )}
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
