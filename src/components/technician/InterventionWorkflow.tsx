@@ -1230,6 +1230,17 @@ const InterventionWorkflow = ({
       pending={pendingForIntervention}
       onForceClose={async () => {
         await onEndIntervention();
+        // Pour ne pas fausser les stats : si le trajet retour est suivi
+        // et n'a pas été démarré, on l'amorce automatiquement à la clôture forcée.
+        if (matchingType?.track_journey && !intervention.travel_return_time) {
+          const now = format(new Date(), 'HH:mm:ss');
+          try {
+            await onTimeUpdate('travel_return_time', now);
+            toast({ title: "Trajet retour démarré à " + now.substring(0, 5) });
+          } catch (e) {
+            console.error('Auto-start return trip failed:', e);
+          }
+        }
       }}
     />
     </>
