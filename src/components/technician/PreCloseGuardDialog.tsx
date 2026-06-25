@@ -150,7 +150,7 @@ const PreCloseGuardDialog = ({ open, onOpenChange, pending, onForceClose }: PreC
               className="w-full"
             >
               <AlertTriangle className="h-4 w-4 mr-2" />
-              {isClosingAnyway ? 'Clôture...' : 'Clôturer quand même'}
+              {isClosingAnyway ? 'Clôture...' : 'Clôturer'}
             </Button>
           )}
           <Button
