@@ -552,7 +552,7 @@ export const generateInterventionPDF = async (
   };
 
   // Marge basse réservée pour le pied de page (texte + adresse + mentions légales)
-  const FOOTER_RESERVED_HEIGHT = 32;
+  const FOOTER_RESERVED_HEIGHT = 38;
   const checkNewPage = (neededHeight: number) => {
     if (yPos + neededHeight > pageHeight - FOOTER_RESERVED_HEIGHT) {
       doc.addPage();
@@ -814,10 +814,14 @@ export const generateInterventionPDF = async (
               xPos = 15;
               yPos += rowMaxH + 5;
               rowMaxH = 0;
-              checkNewPage(h + 5);
             }
             // Vertically center within the row slot
             const slotY = yPos + (70 - h) / 2;
+            const needed = (70 - h) / 2 + h + 5;
+            if (checkNewPage(needed)) {
+              xPos = 15;
+              rowMaxH = 0;
+            }
             if (safeAddImage(doc, base64, xPos, slotY, w, h)) {
               xPos += 95;
               photoCount++;
@@ -882,9 +886,13 @@ export const generateInterventionPDF = async (
               xPos = 15;
               yPos += rowMaxH + 5;
               rowMaxH = 0;
-              checkNewPage(h + 5);
             }
             const slotY = yPos + (70 - h) / 2;
+            const needed = (70 - h) / 2 + h + 5;
+            if (checkNewPage(needed)) {
+              xPos = 15;
+              rowMaxH = 0;
+            }
             if (safeAddImage(doc, base64, xPos, slotY, w, h)) {
               xPos += 95;
               photoCount++;
@@ -940,9 +948,13 @@ export const generateInterventionPDF = async (
               xPos = 15;
               yPos += rowMaxH + 5;
               rowMaxH = 0;
-              checkNewPage(h + 10);
             }
             const slotY = yPos + (photoHeight - h) / 2;
+            const needed = (photoHeight - h) / 2 + h + 10;
+            if (checkNewPage(needed)) {
+              xPos = 15;
+              rowMaxH = 0;
+            }
 
             if (!safeAddImage(doc, base64, xPos, slotY, w, h)) {
               doc.setDrawColor(200, 200, 200);
@@ -1047,9 +1059,13 @@ export const generateInterventionPDF = async (
               xPos = 20;
               yPos += rowMaxH + 5;
               rowMaxH = 0;
-              checkNewPage(h + 5);
             }
             const slotY = yPos + (65 - h) / 2;
+            const needed = (65 - h) / 2 + h + 5;
+            if (checkNewPage(needed)) {
+              xPos = 20;
+              rowMaxH = 0;
+            }
             if (safeAddImage(doc, base64, xPos, slotY, w, h)) {
               xPos += 90;
               photoCount++;
