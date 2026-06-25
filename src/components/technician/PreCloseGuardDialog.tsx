@@ -24,11 +24,13 @@ interface PreCloseGuardDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   pending: PendingBreakdown;
+  onForceClose?: () => void | Promise<void>;
 }
 
-const PreCloseGuardDialog = ({ open, onOpenChange, pending }: PreCloseGuardDialogProps) => {
+const PreCloseGuardDialog = ({ open, onOpenChange, pending, onForceClose }: PreCloseGuardDialogProps) => {
   const { isOnline, isSyncing, forceSync } = useOffline();
   const [isForcing, setIsForcing] = useState(false);
+  const [isClosingAnyway, setIsClosingAnyway] = useState(false);
 
   const handleForceSync = async () => {
     setIsForcing(true);
