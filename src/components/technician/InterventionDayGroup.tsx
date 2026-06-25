@@ -35,8 +35,22 @@ export const InterventionDayGroup = ({
   getInterventionAddress,
   defaultOpen = false,
 }: InterventionDayGroupProps) => {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
-  const mapsChooser = useMapsChooser();
+  const storageKey = `planeo_day_group_open_${date ?? "no-date"}`;
+  const [isOpen, setIsOpen] = useState<boolean>(() => {
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (raw === "1") return true;
+      if (raw === "0") return false;
+    } catch {}
+    return defaultOpen;
+  });
+  const toggleOpen = () => {
+    setIsOpen((prev) => {
+      const next = !prev;
+      try { localStorage.setItem(storageKey, next ? "1" : "0"); } catch {}
+      return next;
+    });
+  };
   const [viewedIds, setViewedIds] = useState<Set<string>>(() => {
     const set = new Set<string>();
     interventions.forEach((i) => { if (isInterventionViewed(i.id)) set.add(i.id); });
