@@ -57,6 +57,7 @@ export const InterventionDayGroup = ({
     return set;
   });
   const navigate = useNavigate();
+  const mapsChooser = useMapsChooser();
 
   const handleClick = useCallback((id: string) => {
     markInterventionAsViewed(id);
