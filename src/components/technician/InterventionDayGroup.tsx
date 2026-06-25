@@ -35,14 +35,29 @@ export const InterventionDayGroup = ({
   getInterventionAddress,
   defaultOpen = false,
 }: InterventionDayGroupProps) => {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
-  const mapsChooser = useMapsChooser();
+  const storageKey = `planeo_day_group_open_${date ?? "no-date"}`;
+  const [isOpen, setIsOpen] = useState<boolean>(() => {
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (raw === "1") return true;
+      if (raw === "0") return false;
+    } catch {}
+    return defaultOpen;
+  });
+  const toggleOpen = () => {
+    setIsOpen((prev) => {
+      const next = !prev;
+      try { localStorage.setItem(storageKey, next ? "1" : "0"); } catch {}
+      return next;
+    });
+  };
   const [viewedIds, setViewedIds] = useState<Set<string>>(() => {
     const set = new Set<string>();
     interventions.forEach((i) => { if (isInterventionViewed(i.id)) set.add(i.id); });
     return set;
   });
   const navigate = useNavigate();
+  const mapsChooser = useMapsChooser();
 
   const handleClick = useCallback((id: string) => {
     markInterventionAsViewed(id);
@@ -58,7 +73,7 @@ export const InterventionDayGroup = ({
     <>
     <div>
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={toggleOpen}
         className="w-full flex items-center justify-between py-3 px-2 hover:bg-muted/50 rounded-lg transition-colors"
       >
         <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
