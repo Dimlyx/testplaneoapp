@@ -96,7 +96,7 @@ export const InterventionDayGroup = ({
             >
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
-                  <div className={cn("p-2 rounded-lg mt-0.5", intervention.status === "in_progress" ? "bg-warning/20" : "bg-primary/10")}>
+                  <div className={cn("p-2 rounded-lg mt-0.5 shrink-0", intervention.status === "in_progress" ? "bg-warning/20" : "bg-primary/10")}>
                     <Calendar className={cn("h-4 w-4", intervention.status === "in_progress" ? "text-warning" : "text-primary dark:text-foreground")} />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -111,28 +111,28 @@ export const InterventionDayGroup = ({
                         <div className="w-2.5 h-2.5 rounded-full mt-1.5 shrink-0 bg-primary dark:bg-info" />
                       )}
                     </div>
-                    <div className="mt-2 space-y-1">
-                      {intervention.scheduled_time && (
-                        <div className="flex items-center gap-2 text-xs text-primary dark:text-foreground font-medium">
-                          <Clock className="h-3.5 w-3.5" />
-                          {formatTimeRange(intervention.scheduled_time, intervention.estimated_duration)}
-                        </div>
-                      )}
-                      <div className="flex items-center gap-2">
-                        <TypeBadge type={intervention.intervention_type} />
-                      </div>
-                      {getInterventionAddress(intervention) && (
-                        <button
-                          type="button"
-                          className="flex items-start gap-1.5 text-xs text-primary dark:text-foreground hover:underline"
-                          onClick={(e) => { e.stopPropagation(); mapsChooser.openMaps(getInterventionAddress(intervention)!); }}
-                        >
-                          <MapPin className="h-3 w-3" />
-                          <span className="break-words text-left">{getInterventionAddress(intervention)}</span>
-                        </button>
-                      )}
-                    </div>
                   </div>
+                </div>
+                <div className="mt-2 space-y-1">
+                  {intervention.scheduled_time && (
+                    <div className="flex items-center gap-2 text-xs text-primary dark:text-foreground font-medium">
+                      <Clock className="h-3.5 w-3.5" />
+                      {formatTimeRange(intervention.scheduled_time, intervention.estimated_duration)}
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <TypeBadge type={intervention.intervention_type} />
+                  </div>
+                  {getInterventionAddress(intervention) && (
+                    <button
+                      type="button"
+                      className="flex items-start gap-1.5 text-xs text-primary dark:text-foreground hover:underline"
+                      onClick={(e) => { e.stopPropagation(); mapsChooser.openMaps(getInterventionAddress(intervention)!); }}
+                    >
+                      <MapPin className="h-3 w-3" />
+                      <span className="break-words text-left">{getInterventionAddress(intervention)}</span>
+                    </button>
+                  )}
                 </div>
               </CardContent>
             </Card>
