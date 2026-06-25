@@ -34,7 +34,7 @@ import {
   forceStepPhotoRetry,
   resolveLocalPhotoUrlsForSync,
 } from '@/lib/step-photo-retry';
-import { countPendingStepPhotos, deleteStepPhoto } from '@/lib/step-photo-store';
+import { countPendingStepPhotos, deleteStepPhoto, getPendingStepPhotosForIntervention } from '@/lib/step-photo-store';
 
 import { isLocalPhotoUrl } from '@/lib/step-photo-store';
 
