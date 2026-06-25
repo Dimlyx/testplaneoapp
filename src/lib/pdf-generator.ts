@@ -814,9 +814,13 @@ export const generateInterventionPDF = async (
               xPos = 15;
               yPos += rowMaxH + 5;
               rowMaxH = 0;
-              checkNewPage(h + 5);
             }
             // Vertically center within the row slot
+            const needed = (70 - h) / 2 + h + 5;
+            if (checkNewPage(needed)) {
+              xPos = 15;
+              rowMaxH = 0;
+            }
             const slotY = yPos + (70 - h) / 2;
             if (safeAddImage(doc, base64, xPos, slotY, w, h)) {
               xPos += 95;
@@ -882,7 +886,11 @@ export const generateInterventionPDF = async (
               xPos = 15;
               yPos += rowMaxH + 5;
               rowMaxH = 0;
-              checkNewPage(h + 5);
+            }
+            const needed = (70 - h) / 2 + h + 5;
+            if (checkNewPage(needed)) {
+              xPos = 15;
+              rowMaxH = 0;
             }
             const slotY = yPos + (70 - h) / 2;
             if (safeAddImage(doc, base64, xPos, slotY, w, h)) {
@@ -940,7 +948,11 @@ export const generateInterventionPDF = async (
               xPos = 15;
               yPos += rowMaxH + 5;
               rowMaxH = 0;
-              checkNewPage(h + 10);
+            }
+            const needed = (photoHeight - h) / 2 + h + 10;
+            if (checkNewPage(needed)) {
+              xPos = 15;
+              rowMaxH = 0;
             }
             const slotY = yPos + (photoHeight - h) / 2;
 
@@ -1047,7 +1059,11 @@ export const generateInterventionPDF = async (
               xPos = 20;
               yPos += rowMaxH + 5;
               rowMaxH = 0;
-              checkNewPage(h + 5);
+            }
+            const needed = (65 - h) / 2 + h + 5;
+            if (checkNewPage(needed)) {
+              xPos = 20;
+              rowMaxH = 0;
             }
             const slotY = yPos + (65 - h) / 2;
             if (safeAddImage(doc, base64, xPos, slotY, w, h)) {
