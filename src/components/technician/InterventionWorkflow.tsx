@@ -1228,6 +1228,9 @@ const InterventionWorkflow = ({
       open={showPreCloseGuard}
       onOpenChange={setShowPreCloseGuard}
       pending={pendingForIntervention}
+      onForceClose={async () => {
+        await onEndIntervention();
+      }}
     />
     </>
   );
