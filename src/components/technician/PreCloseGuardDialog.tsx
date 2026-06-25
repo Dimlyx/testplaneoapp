@@ -133,6 +133,25 @@ const PreCloseGuardDialog = ({ open, onOpenChange, pending, onForceClose }: PreC
             <RefreshCw className={`h-4 w-4 mr-2 ${isForcing || isSyncing ? 'animate-spin' : ''}`} />
             {isForcing || isSyncing ? 'Synchronisation en cours...' : 'Synchroniser maintenant'}
           </Button>
+          {onForceClose && (
+            <Button
+              variant="secondary"
+              onClick={async () => {
+                setIsClosingAnyway(true);
+                try {
+                  await onForceClose();
+                  onOpenChange(false);
+                } finally {
+                  setIsClosingAnyway(false);
+                }
+              }}
+              disabled={isClosingAnyway}
+              className="w-full"
+            >
+              <AlertTriangle className="h-4 w-4 mr-2" />
+              {isClosingAnyway ? 'Clôture...' : 'Clôturer quand même'}
+            </Button>
+          )}
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
