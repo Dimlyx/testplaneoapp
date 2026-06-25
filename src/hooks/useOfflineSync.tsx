@@ -34,7 +34,7 @@ import {
   forceStepPhotoRetry,
   resolveLocalPhotoUrlsForSync,
 } from '@/lib/step-photo-retry';
-import { countPendingStepPhotos, deleteStepPhoto, getPendingStepPhotosForIntervention } from '@/lib/step-photo-store';
+import { countPendingStepPhotos, deleteStepPhoto, getAllPendingStepPhotos, getPendingStepPhotosForIntervention } from '@/lib/step-photo-store';
 
 import { isLocalPhotoUrl } from '@/lib/step-photo-store';
 
@@ -89,10 +89,11 @@ function mergePreferRemote(dbValue: string | null | undefined, queued: string | 
 const CLOSED_STATUSES = new Set(['completed', 'to_invoice', 'archived', 'cancelled']);
 
 async function pruneStaleForClosedInterventions(): Promise<number> {
-  const [mutations, photos, signatures] = await Promise.all([
+  const [mutations, photos, signatures, stepPhotos] = await Promise.all([
     getPendingMutations(),
     getPendingPhotos(),
     getPendingSignatures(),
+    getAllPendingStepPhotos(),
   ]);
 
   const ids = new Set<string>();
@@ -102,6 +103,7 @@ async function pruneStaleForClosedInterventions(): Promise<number> {
   }
   for (const p of photos) if (p.interventionId) ids.add(p.interventionId);
   for (const s of signatures) if (s.interventionId) ids.add(s.interventionId);
+  for (const sp of stepPhotos) if (sp.interventionId) ids.add(sp.interventionId);
 
   if (ids.size === 0) return 0;
 
