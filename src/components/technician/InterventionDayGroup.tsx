@@ -73,7 +73,7 @@ export const InterventionDayGroup = ({
     <>
     <div>
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={toggleOpen}
         className="w-full flex items-center justify-between py-3 px-2 hover:bg-muted/50 rounded-lg transition-colors"
       >
         <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
