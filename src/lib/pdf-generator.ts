@@ -552,7 +552,7 @@ export const generateInterventionPDF = async (
   };
 
   // Marge basse réservée pour le pied de page (texte + adresse + mentions légales)
-  const FOOTER_RESERVED_HEIGHT = 38;
+  const FOOTER_RESERVED_HEIGHT = 32;
   const checkNewPage = (neededHeight: number) => {
     if (yPos + neededHeight > pageHeight - FOOTER_RESERVED_HEIGHT) {
       doc.addPage();
