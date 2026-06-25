@@ -949,12 +949,12 @@ export const generateInterventionPDF = async (
               yPos += rowMaxH + 5;
               rowMaxH = 0;
             }
-            const slotY = yPos + (photoHeight - h) / 2;
             const needed = (photoHeight - h) / 2 + h + 10;
             if (checkNewPage(needed)) {
               xPos = 15;
               rowMaxH = 0;
             }
+            const slotY = yPos + (photoHeight - h) / 2;
 
             if (!safeAddImage(doc, base64, xPos, slotY, w, h)) {
               doc.setDrawColor(200, 200, 200);
