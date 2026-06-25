@@ -408,6 +408,22 @@ export function useOfflineSync() {
     let errorCount = 0;
 
     try {
+      // 0. Prune "phantom" pending items for interventions that the server
+      //    already considers closed (completed/to_invoice/archived/cancelled).
+      //    These can survive locally when the network drops between server
+      //    success and the client receiving the response — the data is safely
+      //    on the server, but the local queue keeps re-trying and confusing
+      //    the technician with a never-empty pending counter.
+      try {
+        const prunedCount = await pruneStaleForClosedInterventions();
+        if (prunedCount > 0) {
+          successCount += prunedCount;
+          console.info(`[sync] Pruned ${prunedCount} phantom pending item(s) for closed interventions`);
+        }
+      } catch (err) {
+        console.warn('phantom prune failed', err);
+      }
+
       // 1. Upload pending local step photos FIRST so queued mutations that
       //    reference them can be rewritten to remote URLs before the DB write.
       try {
@@ -417,6 +433,7 @@ export function useOfflineSync() {
       } catch (err) {
         console.warn('step-photo retry cycle failed', err);
       }
+
 
       const mutations = await getPendingMutations();
       for (const mutation of mutations) {
