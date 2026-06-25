@@ -73,7 +73,8 @@ const PreCloseGuardDialog = ({ open, onOpenChange, pending, onForceClose }: PreC
                   <ShieldCheck className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
                   <span>
                     Dès que tout est synchronisé, le bouton de clôture redevient utilisable
-                    automatiquement.
+                    automatiquement. Vous pouvez aussi clôturer maintenant&nbsp;: les éléments
+                    en attente continueront de se synchroniser en arrière-plan.
                   </span>
                 </p>
               </div>
