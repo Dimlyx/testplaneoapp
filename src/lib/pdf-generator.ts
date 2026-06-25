@@ -1060,12 +1060,12 @@ export const generateInterventionPDF = async (
               yPos += rowMaxH + 5;
               rowMaxH = 0;
             }
-            const slotY = yPos + (65 - h) / 2;
             const needed = (65 - h) / 2 + h + 5;
             if (checkNewPage(needed)) {
               xPos = 20;
               rowMaxH = 0;
             }
+            const slotY = yPos + (65 - h) / 2;
             if (safeAddImage(doc, base64, xPos, slotY, w, h)) {
               xPos += 90;
               photoCount++;
