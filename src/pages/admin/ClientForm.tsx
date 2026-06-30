@@ -31,7 +31,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Save, AlertTriangle, FileCheck, Lock } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Switch } from "@/components/ui/switch";
+
 import { MaintenanceContractsManager } from "@/components/admin/MaintenanceContractsManager";
 
 const clientSchema = z.object({
