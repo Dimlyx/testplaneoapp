@@ -650,15 +650,15 @@ export default function MaintenanceAlerts() {
         </TabsContent>
 
         <TabsContent value="contracts">
-          {contractClients.length === 0 ? (
+          {sortedContracts.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12 text-center">
                 <div className="p-4 rounded-full bg-muted mb-4">
                   <FileCheck className="h-8 w-8 text-muted-foreground" />
                 </div>
-                <h3 className="font-semibold text-lg mb-1">Aucun client sous contrat</h3>
+                <h3 className="font-semibold text-lg mb-1">Aucun contrat</h3>
                 <p className="text-muted-foreground text-sm max-w-sm">
-                  Activez l'option « Contrat de maintenance » sur la fiche d'un client pour le retrouver ici.
+                  Ajoutez des contrats de maintenance dans la fiche client pour les retrouver ici.
                 </p>
                 <Button variant="outline" className="mt-4" onClick={() => navigate('/admin/clients')}>
                   Voir mes clients
@@ -667,9 +667,10 @@ export default function MaintenanceAlerts() {
             </Card>
           ) : (
             <div className="space-y-3">
-              {contractClients.map((c) => {
-                const status = getContractStatus(c.contract_end_date);
-                const Icon = c.client_type === 'professional' ? Building2 : User;
+              {sortedContracts.map((c) => {
+                const status = getContractStatus(c.end_date);
+                const Icon = c.clients?.client_type === 'professional' ? Building2 : User;
+                const periodLabel = ({ day: 'jour', week: 'semaine', month: 'mois', year: 'an' } as Record<string,string>)[c.visits_period || 'year'];
                 return (
                   <Card
                     key={c.id}
@@ -686,11 +687,14 @@ export default function MaintenanceAlerts() {
                           <div className="flex items-center gap-2 flex-wrap mb-1">
                             <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
                             <button
-                              onClick={() => navigate(`/admin/clients/${c.id}/edit`)}
+                              onClick={() => navigate(`/admin/clients/${c.client_id}/edit`)}
                               className="font-semibold text-base truncate text-left hover:underline"
                             >
-                              {c.name}
+                              {c.clients?.name}
                             </button>
+                            <Badge variant="secondary" className="text-[10px] py-0 h-5">
+                              {c.name}
+                            </Badge>
                             {c.contract_type && (
                               <Badge variant="outline" className="text-[10px] font-normal py-0 h-5">
                                 {c.contract_type}
@@ -710,37 +714,29 @@ export default function MaintenanceAlerts() {
                             )}
                           </div>
                           <div className="flex items-center gap-4 flex-wrap text-sm text-muted-foreground">
-                            {c.contract_start_date && (
+                            {c.start_date && (
                               <span className="flex items-center gap-1.5">
                                 <CalendarClock className="h-3.5 w-3.5" />
-                                Début : {format(parseISO(c.contract_start_date), 'dd MMM yyyy', { locale: fr })}
+                                Début : {format(parseISO(c.start_date), 'dd MMM yyyy', { locale: fr })}
                               </span>
                             )}
-                            {c.contract_end_date && (
+                            {c.end_date && (
                               <span className="flex items-center gap-1.5">
                                 <CalendarClock className="h-3.5 w-3.5" />
-                                Fin : {format(parseISO(c.contract_end_date), 'dd MMM yyyy', { locale: fr })}
+                                Fin : {format(parseISO(c.end_date), 'dd MMM yyyy', { locale: fr })}
                               </span>
                             )}
-                            {c.contract_visits_per_year != null && (
+                            {c.visits_per_period != null && (
                               <span className="flex items-center gap-1.5">
                                 <RefreshCw className="h-3.5 w-3.5" />
-                                {c.contract_visits_per_year} visite{c.contract_visits_per_year > 1 ? 's' : ''} / {({ day: 'jour', week: 'semaine', month: 'mois', year: 'an' } as Record<string,string>)[c.contract_visits_period || 'year']}
+                                {c.visits_per_period} visite{c.visits_per_period > 1 ? 's' : ''} / {periodLabel}
                               </span>
                             )}
-                            {c.city && <span>{c.city}</span>}
+                            {c.clients?.city && <span>{c.clients.city}</span>}
                           </div>
-                          {c.contract_notes && (
-                            <div className="text-sm text-muted-foreground mt-1">
-                              <span className="line-clamp-1">{c.contract_notes}</span>
-                              {c.contract_notes.length > 100 && (
-                                <button
-                                  onClick={() => navigate(`/admin/clients/${c.id}/edit`)}
-                                  className="text-primary hover:underline text-xs mt-0.5"
-                                >
-                                  Lire la suite...
-                                </button>
-                              )}
+                          {c.notes && (
+                            <div className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                              {c.notes}
                             </div>
                           )}
                         </div>
@@ -751,15 +747,20 @@ export default function MaintenanceAlerts() {
                             size="sm"
                             onClick={() => {
                               resetForm();
+                              const monthsBetween = c.visits_per_period && c.visits_per_period > 0 && c.visits_period
+                                ? (() => {
+                                    const perYear = c.visits_per_period! * ({ day: 365, week: 52, month: 12, year: 1 } as Record<string, number>)[c.visits_period!];
+                                    return Math.max(1, Math.round(12 / perYear));
+                                  })()
+                                : 12;
                               setFormData({
-                                title: c.contract_type ? `Maintenance ${c.contract_type}` : 'Maintenance contractuelle',
+                                title: `Maintenance ${c.name}`,
                                 description: '',
-                                client_id: c.id,
+                                client_id: c.client_id,
+                                contract_id: c.id,
                                 alert_date: format(new Date(), 'yyyy-MM-dd'),
                                 recurrence: 'monthly',
-                                recurrence_months: c.contract_visits_per_year && c.contract_visits_per_year > 0
-                                  ? Math.max(1, Math.round(12 / c.contract_visits_per_year))
-                                  : 12,
+                                recurrence_months: monthsBetween,
                                 day_of_month: null,
                               });
                               setIsDialogOpen(true);
@@ -774,8 +775,8 @@ export default function MaintenanceAlerts() {
                             size="sm"
                             onClick={() => {
                               const params = new URLSearchParams();
-                              params.set('client_id', c.id);
-                              params.set('title', 'Maintenance contractuelle');
+                              params.set('client_id', c.client_id);
+                              params.set('title', `Maintenance ${c.name}`);
                               navigate(`/admin/interventions/new?${params.toString()}`);
                             }}
                             className="text-xs gap-1.5"
@@ -786,7 +787,7 @@ export default function MaintenanceAlerts() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => navigate(`/admin/clients/${c.id}/edit`)}
+                            onClick={() => navigate(`/admin/clients/${c.client_id}/edit`)}
                             className="text-xs"
                           >
                             <Edit className="h-3.5 w-3.5" />
