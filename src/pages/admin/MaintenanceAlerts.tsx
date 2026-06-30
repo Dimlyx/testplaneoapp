@@ -59,6 +59,7 @@ interface AlertFormData {
   title: string;
   description: string;
   client_id: string;
+  contract_id: string;
   alert_date: string;
   recurrence: AlertRecurrence;
   recurrence_months: number;
