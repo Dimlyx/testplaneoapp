@@ -88,6 +88,7 @@ export default function MaintenanceAlerts() {
     title: '',
     description: '',
     client_id: '',
+    contract_id: '',
     alert_date: format(new Date(), 'yyyy-MM-dd'),
     recurrence: 'monthly',
     recurrence_months: 0,
@@ -119,6 +120,7 @@ export default function MaintenanceAlerts() {
       title: '',
       description: '',
       client_id: '',
+      contract_id: '',
       alert_date: format(new Date(), 'yyyy-MM-dd'),
       recurrence: 'monthly',
       recurrence_months: 0,
@@ -134,6 +136,7 @@ export default function MaintenanceAlerts() {
         title: alert.title,
         description: alert.description || '',
         client_id: alert.client_id || '',
+        contract_id: alert.contract_id || '',
         alert_date: alert.alert_date,
         recurrence: alert.recurrence,
         recurrence_months: alert.recurrence_months ?? 0,
@@ -152,6 +155,7 @@ export default function MaintenanceAlerts() {
       title: formData.title,
       description: formData.description || undefined,
       client_id: formData.client_id || undefined,
+      contract_id: formData.contract_id || null,
       alert_date: formData.alert_date,
       recurrence: formData.recurrence_months === 0 ? 'once' as AlertRecurrence : 'monthly' as AlertRecurrence,
       recurrence_months: formData.recurrence_months,
@@ -167,6 +171,7 @@ export default function MaintenanceAlerts() {
     setIsDialogOpen(false);
     resetForm();
   };
+
 
   const handleStatusChange = async (alert: MaintenanceAlert, newStatus: AlertStatus) => {
     await updateAlert.mutateAsync({ id: alert.id, status: newStatus });
