@@ -410,6 +410,28 @@ export default function MaintenanceAlerts() {
                 </div>
               </div>
 
+              {formData.client_id && contractsForSelectedClient.length > 0 && (
+                <div className="space-y-2">
+                  <Label htmlFor="contract">Contrat de maintenance (optionnel)</Label>
+                  <Select
+                    value={formData.contract_id || 'none'}
+                    onValueChange={(value) => setFormData({ ...formData, contract_id: value === 'none' ? '' : value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Aucun contrat lié" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Aucun contrat lié</SelectItem>
+                      {contractsForSelectedClient.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.name}{c.contract_type ? ` — ${c.contract_type}` : ''}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="alert_date">Date d'alerte *</Label>
