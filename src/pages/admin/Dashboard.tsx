@@ -634,7 +634,7 @@ const Dashboard = () => {
             <div className="h-[400px] rounded-lg overflow-hidden border">
               <InterventionsMap
                 interventions={interventions}
-                clients={clients.map(c => ({ id: c.id, name: c.name }))}
+                clients={clients.map(c => ({ id: c.id, name: c.name, address: c.address, postal_code: c.postal_code, city: c.city }))}
                 technicians={technicians.map(t => ({ id: t.id, full_name: t.full_name, email: t.email }))}
               />
             </div>
