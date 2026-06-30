@@ -391,7 +391,7 @@ export default function MaintenanceAlerts() {
                 <div className="flex gap-2">
                   <Select
                     value={formData.client_id}
-                    onValueChange={(value) => setFormData({ ...formData, client_id: value })}
+                    onValueChange={(value) => setFormData({ ...formData, client_id: value, contract_id: '' })}
                   >
                     <SelectTrigger className="flex-1">
                       <SelectValue placeholder="Sélectionner un client (optionnel)" />
