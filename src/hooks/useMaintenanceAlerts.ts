@@ -65,7 +65,8 @@ export function useMaintenanceAlerts() {
         .from('maintenance_alerts')
         .select(`
           *,
-          clients (id, name)
+          clients (id, name),
+          client_maintenance_contracts (id, name)
         `)
         .eq('organization_id', organizationId)
         .order('alert_date', { ascending: true });
