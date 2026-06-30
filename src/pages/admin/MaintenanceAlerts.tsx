@@ -635,7 +635,7 @@ export default function MaintenanceAlerts() {
           </TabsTrigger>
           <TabsTrigger value="contracts" className="flex items-center gap-1">
             <FileCheck className="h-4 w-4" />
-            Contrats ({contractClients.length})
+            Contrats ({sortedContracts.length})
           </TabsTrigger>
           <TabsTrigger value="completed">
             Historique ({completedAlerts.length})
