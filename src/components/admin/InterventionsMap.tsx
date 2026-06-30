@@ -61,7 +61,7 @@ interface GeocodedIntervention {
 
 interface InterventionsMapProps {
   interventions: any[];
-  clients: { id: string; name: string }[];
+  clients: { id: string; name: string; address?: string | null; postal_code?: string | null; city?: string | null }[];
   technicians: { id: string; full_name: string | null; email: string }[];
 }
 
