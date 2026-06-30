@@ -11,6 +11,7 @@ export interface MaintenanceAlert {
   title: string;
   description: string | null;
   client_id: string | null;
+  contract_id: string | null;
   equipment_id: string | null;
   alert_date: string;
   recurrence: AlertRecurrence;
@@ -24,12 +25,17 @@ export interface MaintenanceAlert {
     id: string;
     name: string;
   } | null;
+  client_maintenance_contracts?: {
+    id: string;
+    name: string;
+  } | null;
 }
 
 export interface CreateMaintenanceAlertData {
   title: string;
   description?: string;
   client_id?: string;
+  contract_id?: string | null;
   alert_date: string;
   recurrence?: AlertRecurrence;
   recurrence_months?: number;
@@ -41,6 +47,7 @@ export interface UpdateMaintenanceAlertData {
   title?: string;
   description?: string;
   client_id?: string | null;
+  contract_id?: string | null;
   alert_date?: string;
   recurrence?: AlertRecurrence;
   recurrence_months?: number;
