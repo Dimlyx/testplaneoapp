@@ -145,6 +145,7 @@ export function useCreateMaintenanceAlert() {
           title: data.title,
           description: data.description || null,
           client_id: data.client_id || null,
+          contract_id: data.contract_id || null,
           alert_date: data.alert_date,
           recurrence: data.recurrence || 'once',
           recurrence_months: data.recurrence_months ?? 0,
