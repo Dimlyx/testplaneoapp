@@ -263,12 +263,19 @@ export default function MaintenanceAlerts() {
       .sort((a, b) => new Date(a.alert_date).getTime() - new Date(b.alert_date).getTime())[0];
   }, [alerts]);
 
-  // Clients under maintenance contract
-  const contractClients = useMemo(() => {
-    return clients
-      .filter((c) => c.has_maintenance_contract)
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [clients]);
+  const { data: allContracts = [] } = useAllContracts();
+  const sortedContracts = useMemo(() => {
+    return [...allContracts].sort((a, b) => {
+      const ca = a.clients?.name || '';
+      const cb = b.clients?.name || '';
+      return ca.localeCompare(cb) || a.name.localeCompare(b.name);
+    });
+  }, [allContracts]);
+
+  const contractsForSelectedClient = useMemo(
+    () => allContracts.filter((c) => c.client_id === formData.client_id),
+    [allContracts, formData.client_id]
+  );
 
   const today = new Date();
   const getContractStatus = (endDate: string | null) => {
