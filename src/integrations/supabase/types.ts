@@ -223,6 +223,75 @@ export type Database = {
           },
         ]
       }
+      client_maintenance_contracts: {
+        Row: {
+          client_id: string
+          contract_type: string | null
+          created_at: string
+          end_date: string | null
+          file_name: string | null
+          file_url: string | null
+          id: string
+          is_active: boolean
+          name: string
+          notes: string | null
+          organization_id: string
+          start_date: string | null
+          updated_at: string
+          visits_per_period: number | null
+          visits_period: string
+        }
+        Insert: {
+          client_id: string
+          contract_type?: string | null
+          created_at?: string
+          end_date?: string | null
+          file_name?: string | null
+          file_url?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          organization_id: string
+          start_date?: string | null
+          updated_at?: string
+          visits_per_period?: number | null
+          visits_period?: string
+        }
+        Update: {
+          client_id?: string
+          contract_type?: string | null
+          created_at?: string
+          end_date?: string | null
+          file_name?: string | null
+          file_url?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          organization_id?: string
+          start_date?: string | null
+          updated_at?: string
+          visits_per_period?: number | null
+          visits_period?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_maintenance_contracts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_maintenance_contracts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_notes: {
         Row: {
           client_id: string
@@ -1096,6 +1165,7 @@ export type Database = {
         Row: {
           alert_date: string
           client_id: string | null
+          contract_id: string | null
           created_at: string
           day_of_month: number | null
           description: string | null
@@ -1112,6 +1182,7 @@ export type Database = {
         Insert: {
           alert_date: string
           client_id?: string | null
+          contract_id?: string | null
           created_at?: string
           day_of_month?: number | null
           description?: string | null
@@ -1128,6 +1199,7 @@ export type Database = {
         Update: {
           alert_date?: string
           client_id?: string | null
+          contract_id?: string | null
           created_at?: string
           day_of_month?: number | null
           description?: string | null
@@ -1147,6 +1219,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_alerts_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "client_maintenance_contracts"
             referencedColumns: ["id"]
           },
           {
