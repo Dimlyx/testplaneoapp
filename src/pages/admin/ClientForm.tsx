@@ -32,7 +32,7 @@ import { ArrowLeft, Save, AlertTriangle, FileCheck, Lock } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Switch } from "@/components/ui/switch";
-import { ContractFileUpload } from "@/components/admin/ContractFileUpload";
+import { MaintenanceContractsManager } from "@/components/admin/MaintenanceContractsManager";
 
 const clientSchema = z.object({
   name: z.string().min(1, "Le nom est requis"),
@@ -43,13 +43,6 @@ const clientSchema = z.object({
   postal_code: z.string().optional(),
   city: z.string().optional(),
   notes: z.string().optional(),
-  has_maintenance_contract: z.boolean().default(false),
-  contract_start_date: z.string().optional(),
-  contract_end_date: z.string().optional(),
-  contract_type: z.string().optional(),
-  contract_visits_per_year: z.string().optional(),
-  contract_visits_period: z.enum(["day", "week", "month", "year"]).default("year"),
-  contract_notes: z.string().optional(),
 });
 
 type ClientFormValues = z.infer<typeof clientSchema>;
