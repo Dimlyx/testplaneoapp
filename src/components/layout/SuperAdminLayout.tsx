@@ -49,14 +49,14 @@ export default function SuperAdminLayout() {
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div 
-          className="fixed inset-0 bg-foreground/50 z-40 lg:hidden"
+          className="fixed inset-0 bg-foreground/50 z-40 md:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar */}
       <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-200 ease-in-out lg:translate-x-0",
+        "fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-200 ease-in-out md:translate-x-0",
         sidebarOpen ? "translate-x-0" : "-translate-x-full",
         "bg-gradient-to-b from-purple-900 to-purple-950"
       )}>
@@ -73,7 +73,7 @@ export default function SuperAdminLayout() {
             <Button
               variant="ghost"
               size="icon"
-              className="ml-auto lg:hidden text-white hover:bg-purple-700"
+              className="ml-auto md:hidden text-white hover:bg-purple-700"
               onClick={() => setSidebarOpen(false)}
             >
               <X className="h-5 w-5" />
@@ -136,9 +136,9 @@ export default function SuperAdminLayout() {
       </aside>
 
       {/* Main content */}
-      <div className="lg:pl-64">
+      <div className="md:pl-64">
         {/* Mobile header */}
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background px-4 lg:hidden">
+        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background px-4 md:hidden">
           <Button
             variant="ghost"
             size="icon"
@@ -153,7 +153,7 @@ export default function SuperAdminLayout() {
         </header>
 
         {/* Page content */}
-        <main className="p-4 lg:p-8">
+        <main className="p-4 md:p-8">
           <Outlet />
         </main>
       </div>
