@@ -92,14 +92,14 @@ export default function AdminLayout() {
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div 
-          className="fixed inset-0 bg-foreground/50 z-40 lg:hidden"
+          className="fixed inset-0 bg-foreground/50 z-40 md:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar */}
       <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-200 ease-in-out lg:translate-x-0",
+        "fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-200 ease-in-out md:translate-x-0",
         sidebarOpen ? "translate-x-0" : "-translate-x-full",
         "bg-sidebar",
         isSuperAdminViewing && "top-10"
@@ -119,7 +119,7 @@ export default function AdminLayout() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="lg:hidden text-sidebar-foreground hover:bg-sidebar-accent"
+                className="md:hidden text-sidebar-foreground hover:bg-sidebar-accent"
                 onClick={() => setSidebarOpen(false)}
               >
                 <X className="h-5 w-5" />
@@ -284,10 +284,10 @@ export default function AdminLayout() {
       </aside>
 
       {/* Main content */}
-      <div className={cn("lg:pl-64", isSuperAdminViewing && "pt-10")}>
+      <div className={cn("md:pl-64", isSuperAdminViewing && "pt-10")}>
         {/* Mobile header */}
         <header className={cn(
-          "sticky z-30 flex h-16 items-center gap-4 border-b bg-background px-4 lg:hidden",
+          "sticky z-30 flex h-16 items-center gap-4 border-b bg-background px-4 md:hidden",
           isSuperAdminViewing ? "top-10" : "top-0"
         )}>
           <Button
@@ -307,7 +307,7 @@ export default function AdminLayout() {
         </header>
 
         {/* Page content */}
-        <main className="p-4 lg:p-8 relative">
+        <main className="p-4 md:p-8 relative">
           {isSubscriptionBlocked && !isSuperAdminViewing && (
             <div className="absolute inset-0 z-20 bg-background/80 backdrop-blur-sm flex items-start justify-center pt-24">
               <div className="text-center max-w-md p-8 rounded-xl border bg-card shadow-lg">
