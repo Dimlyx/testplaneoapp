@@ -21,7 +21,7 @@ import planeoLogoDark from '@/assets/planeo-logo-dark.png';
 import { cn } from '@/lib/utils';
 
 
-import { ThemeToggle } from '@/components/ThemeToggle';
+
 import { useTechnicianPermissions } from '@/hooks/useTechnicianPermissions';
 
 const TechnicianCreateInterventionDialog = lazy(() => import('@/components/technician/TechnicianCreateInterventionDialog'));
