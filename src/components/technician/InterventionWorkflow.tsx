@@ -1124,12 +1124,6 @@ const InterventionWorkflow = ({
                   </div>
                   <Button
                     onClick={async () => {
-                      // Phase 3 guard: block close if anything is still pending
-                      // for this intervention (photos, signatures, mutations).
-                      if (pendingForIntervention.total > 0) {
-                        setShowPreCloseGuard(true);
-                        return;
-                      }
                       await onEndIntervention();
                     }}
                     disabled={isUpdating}
