@@ -144,9 +144,6 @@ export default function TechnicianLayout() {
             <img src={planeoLogoDark} alt="PLANEO" className="h-7 dark:hidden" />
             <img src={planeoLogoWhite} alt="PLANEO" className="h-7 hidden dark:block" />
           </div>
-          <div className="ml-auto flex items-center gap-2">
-            <ThemeToggle />
-          </div>
         </header>
 
         <main className="p-4 lg:p-8">
