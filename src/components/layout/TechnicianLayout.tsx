@@ -20,7 +20,7 @@ import planeoLogoWhite from '@/assets/planeo-logo-white.png';
 import planeoLogoDark from '@/assets/planeo-logo-dark.png';
 import { cn } from '@/lib/utils';
 
-import { OfflineIndicator } from '@/components/technician/OfflineIndicator';
+
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useTechnicianPermissions } from '@/hooks/useTechnicianPermissions';
 
@@ -146,7 +146,6 @@ export default function TechnicianLayout() {
           </div>
           <div className="ml-auto flex items-center gap-2">
             <ThemeToggle />
-            <OfflineIndicator />
           </div>
         </header>
 
