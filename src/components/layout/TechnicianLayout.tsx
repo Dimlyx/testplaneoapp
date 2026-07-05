@@ -21,7 +21,7 @@ import planeoLogoDark from '@/assets/planeo-logo-dark.png';
 import { cn } from '@/lib/utils';
 
 
-import { ThemeToggle } from '@/components/ThemeToggle';
+
 import { useTechnicianPermissions } from '@/hooks/useTechnicianPermissions';
 
 const TechnicianCreateInterventionDialog = lazy(() => import('@/components/technician/TechnicianCreateInterventionDialog'));
@@ -143,9 +143,6 @@ export default function TechnicianLayout() {
           <div className="flex items-center gap-2">
             <img src={planeoLogoDark} alt="PLANEO" className="h-7 dark:hidden" />
             <img src={planeoLogoWhite} alt="PLANEO" className="h-7 hidden dark:block" />
-          </div>
-          <div className="ml-auto flex items-center gap-2">
-            <ThemeToggle />
           </div>
         </header>
 

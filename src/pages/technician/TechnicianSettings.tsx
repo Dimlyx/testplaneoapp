@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calendar, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Calendar, Loader2, CheckCircle2, AlertTriangle, Moon, Sun } from 'lucide-react';
+import { useTheme } from 'next-themes';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth-context';
 import { useToast } from '@/hooks/use-toast';
@@ -11,6 +13,7 @@ type TokenRow = { google_email: string; calendar_id: string; updated_at: string 
 export default function TechnicianSettings() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { theme, setTheme } = useTheme();
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [token, setToken] = useState<TokenRow | null>(null);
@@ -63,6 +66,36 @@ export default function TechnicianSettings() {
         <h1 className="text-2xl font-bold">Paramètres</h1>
         <p className="text-sm text-muted-foreground">Gérer vos intégrations personnelles</p>
       </div>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              {theme === 'dark' ? (
+                <Moon className="h-5 w-5 text-primary" />
+              ) : (
+                <Sun className="h-5 w-5 text-primary" />
+              )}
+            </div>
+            <div>
+              <CardTitle>Apparence</CardTitle>
+              <CardDescription>
+                Basculer entre le mode clair et le mode sombre.
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">Mode sombre</span>
+            <Switch
+              checked={theme === 'dark'}
+              onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')}
+              aria-label="Basculer le mode sombre"
+            />
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
