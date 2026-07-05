@@ -13,6 +13,7 @@ type TokenRow = { google_email: string; calendar_id: string; updated_at: string 
 export default function TechnicianSettings() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { theme, setTheme } = useTheme();
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [token, setToken] = useState<TokenRow | null>(null);
