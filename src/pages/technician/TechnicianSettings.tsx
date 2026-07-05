@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calendar, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Calendar, Loader2, CheckCircle2, AlertTriangle, Moon, Sun } from 'lucide-react';
+import { useTheme } from 'next-themes';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth-context';
 import { useToast } from '@/hooks/use-toast';
