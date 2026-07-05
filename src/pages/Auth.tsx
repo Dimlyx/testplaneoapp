@@ -153,7 +153,7 @@ export default function Auth() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-secondary p-4">
+    <div className="min-h-screen flex items-center justify-center bg-secondary p-4 py-6 overflow-y-auto">
       <div className="w-full max-w-md animate-fade-in">
         <div className="text-center mb-8">
           <img
