@@ -179,16 +179,23 @@ export default function AllUsers() {
                   return (
                     <TableRow key={user.id}>
                       <TableCell>
-                        <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setEditingUser(user as UserWithRole)}
+                          className="flex items-center gap-3 text-left"
+                        >
                           <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
                             <RoleIcon className="h-4 w-4 text-primary" />
                           </div>
                           <div>
-                            <p className="font-medium">{user.full_name || 'Sans nom'}</p>
+                            <p className="font-medium underline-offset-2 underline decoration-muted-foreground/40">
+                              {user.full_name || 'Sans nom'}
+                            </p>
                             <p className="text-sm text-muted-foreground">{user.email}</p>
                           </div>
-                        </div>
+                        </button>
                       </TableCell>
+
                       <TableCell>
                         <Badge variant={getRoleBadgeVariant(user.role) as 'default' | 'secondary' | 'destructive'}>
                           {getRoleLabel(user.role)}
