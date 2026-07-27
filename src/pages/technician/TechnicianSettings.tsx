@@ -2,11 +2,16 @@ import { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { Calendar, Loader2, CheckCircle2, AlertTriangle, Moon, Sun } from 'lucide-react';
+import { Calendar, Loader2, CheckCircle2, AlertTriangle, Moon, Sun, Bell } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth-context';
 import { useToast } from '@/hooks/use-toast';
+import {
+  getOneSignalDiagnostics,
+  repairOneSignalBinding,
+  type OneSignalDiagnostics,
+} from '@/lib/onesignal';
 
 type TokenRow = { google_email: string; calendar_id: string; updated_at: string };
 
@@ -17,6 +22,30 @@ export default function TechnicianSettings() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [token, setToken] = useState<TokenRow | null>(null);
+  const [diag, setDiag] = useState<OneSignalDiagnostics | null>(null);
+  const [pushBusy, setPushBusy] = useState(false);
+
+  const refreshDiag = async () => setDiag(await getOneSignalDiagnostics());
+  useEffect(() => { refreshDiag(); }, [user]);
+
+  const repairPush = async () => {
+    if (!user) return;
+    setPushBusy(true);
+    try {
+      const ok = await repairOneSignalBinding(user.id);
+      toast({
+        title: ok ? 'Notifications activées' : 'Activation incomplète',
+        description: ok
+          ? 'Votre appareil est bien lié à votre compte.'
+          : "Vérifiez que les notifications sont autorisées pour PLANEO dans les réglages du téléphone.",
+        variant: ok ? undefined : 'destructive',
+      });
+    } finally {
+      await refreshDiag();
+      setPushBusy(false);
+    }
+  };
+
 
   const fetchToken = async () => {
     if (!user) return;
@@ -96,6 +125,60 @@ export default function TechnicianSettings() {
           </div>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Bell className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <CardTitle>Notifications push</CardTitle>
+              <CardDescription>
+                Recevoir une alerte lors de l'assignation d'une intervention.
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {!diag?.supported ? (
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/40 border text-sm text-muted-foreground">
+              <AlertTriangle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+              Les notifications ne sont pas disponibles dans cet environnement.
+            </div>
+          ) : diag.externalId && diag.externalId === user?.id && diag.optedIn ? (
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+              <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+              <div className="text-sm">
+                <p className="font-medium">Notifications actives</p>
+                <p className="text-muted-foreground">Cet appareil est lié à votre compte.</p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/40 border text-sm text-muted-foreground">
+              <AlertTriangle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+              Cet appareil n'est pas encore lié à votre compte : vous ne recevrez pas les
+              notifications d'assignation.
+            </div>
+          )}
+
+          {diag?.supported && (
+            <>
+              <div className="text-xs text-muted-foreground space-y-1">
+                <p>• Autorisation : {diag.permission ? 'accordée' : 'non accordée'}</p>
+                <p>• Abonnement : {diag.optedIn ? 'actif' : 'inactif'}</p>
+                <p>• Compte lié : {diag.externalId ? 'oui' : 'non'}</p>
+              </div>
+              <Button onClick={repairPush} disabled={pushBusy}>
+                {pushBusy && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                Activer / réparer les notifications
+              </Button>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+
 
       <Card>
         <CardHeader>

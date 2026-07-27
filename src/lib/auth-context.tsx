@@ -29,18 +29,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .select('role')
       .eq('user_id', userId)
       .maybeSingle();
-    
+
     if (data) {
       const r = data.role as AppRole;
       setRole(r);
       // Bind the OneSignal external_id and prompt for permission only for technicians.
       if (r === 'technician') {
-        loginOneSignal(userId);
-        // Defer slightly so the UI is mounted before the native prompt appears.
-        setTimeout(() => { promptNotificationPermission(); }, 1500);
+        // Prompt first: on iOS/Android no subscription record (and therefore no
+        // external_id binding) can exist before permission is granted.
+        promptNotificationPermission().finally(() => {
+          loginOneSignal(userId);
+        });
       }
     }
   };
+
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
