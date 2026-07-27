@@ -101,6 +101,10 @@ const medianLogout = async () => {
 
 const isUnsupportedEnv = () => {
   if (typeof window === "undefined") return true;
+  // Inside the Median native wrapper the native OneSignal SDK owns the
+  // subscription. Running the web SDK too would create a SECOND subscription
+  // bound to the same external_id => duplicate push notifications.
+  if (isMedianApp()) return true;
   // Skip in iframes (Lovable preview)
   try {
     if (window.self !== window.top) return true;
