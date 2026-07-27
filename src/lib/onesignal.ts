@@ -203,12 +203,46 @@ const bindExternalId = async (userId: string, attempts = 6): Promise<boolean> =>
   return false;
 };
 
+const CLEANUP_FLAG = "onesignal_web_sub_cleaned";
+
+/**
+ * One-shot cleanup for devices that were bound with BOTH the web SDK and the
+ * native Median SDK (duplicate pushes). Unbinds/opts out the residual web
+ * subscription, once per device.
+ */
+const cleanupResidualWebSubscription = async () => {
+  try {
+    if (localStorage.getItem(CLEANUP_FLAG) === "true") return;
+    localStorage.setItem(CLEANUP_FLAG, "true");
+    if (!("serviceWorker" in navigator)) return;
+    await OneSignal.init({
+      appId: ONESIGNAL_APP_ID,
+      serviceWorkerPath: "push/onesignal/OneSignalSDKWorker.js",
+      serviceWorkerParam: { scope: "/push/onesignal/" },
+      allowLocalhostAsSecureOrigin: true,
+      autoResubscribe: false,
+    });
+    try {
+      await OneSignal.User.PushSubscription.optOut();
+    } catch {
+      /* no subscription */
+    }
+    await OneSignal.logout();
+    console.info("[OneSignal] residual web subscription cleaned up");
+  } catch (err) {
+    console.warn("[OneSignal] web cleanup skipped", err);
+  }
+};
+
 /** Login: bind the OneSignal external_id to the Supabase user id. */
 export const loginOneSignal = async (userId: string) => {
   pendingUserId = userId;
-  // Native Median wrapper: the web SDK never creates a subscription there,
-  // the binding must go through the native bridge.
-  void medianLogin(userId);
+  // Mutually exclusive: native bridge inside Median, web SDK otherwise.
+  if (isMedianApp()) {
+    void cleanupResidualWebSubscription();
+    await medianLogin(userId);
+    return;
+  }
   if (isUnsupportedEnv()) return;
   try {
     await initOneSignal();
@@ -222,7 +256,10 @@ export const loginOneSignal = async (userId: string) => {
 
 export const logoutOneSignal = async () => {
   pendingUserId = null;
-  void medianLogout();
+  if (isMedianApp()) {
+    await medianLogout();
+    return;
+  }
   if (isUnsupportedEnv()) return;
   try {
     if (!initialized) return;
