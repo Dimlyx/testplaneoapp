@@ -132,22 +132,8 @@ export interface UpdateInterventionData {
   custom_status_id?: string | null;
 }
 
-interface AssignmentPushPayload {
-  userId: string;
-  title: string;
-  message: string;
-  interventionId: string;
-}
 
-async function sendAssignmentPush(payload: AssignmentPushPayload) {
-  const { error } = await supabase.functions.invoke('send-push-notification', {
-    body: payload,
-  });
 
-  if (error) {
-    console.warn('Push notification send failed:', error);
-  }
-}
 
 export function useInterventions() {
   const { data: organizationId } = useUserOrganization();
@@ -349,14 +335,8 @@ export function useCreateIntervention(organizationId?: string | null) {
 
       if (error) throw error;
 
-      if (result?.technician_id) {
-        await sendAssignmentPush({
-          userId: result.technician_id,
-          title: 'Nouvelle intervention assignée',
-          message: `L'intervention "${result.title}" vous a été assignée.`,
-          interventionId: result.id,
-        });
-      }
+      // Push d'assignation géré exclusivement par le trigger DB (trigger_notify_technician)
+
 
       // Google Calendar sync (best effort)
       if (result?.id) {
@@ -390,11 +370,6 @@ export function useUpdateIntervention() {
 
   return useMutation({
     mutationFn: async ({ id, ...data }: UpdateInterventionData) => {
-      const { data: previousIntervention } = await supabase
-        .from('interventions')
-        .select('technician_id, title')
-        .eq('id', id)
-        .maybeSingle();
 
       const { data: result, error } = await supabase
         .from('interventions')
@@ -405,18 +380,8 @@ export function useUpdateIntervention() {
 
       if (error) throw error;
 
-      const technicianChanged =
-        !!result?.technician_id &&
-        result.technician_id !== previousIntervention?.technician_id;
+      // Push d'assignation géré exclusivement par le trigger DB (trigger_notify_technician)
 
-      if (technicianChanged) {
-        await sendAssignmentPush({
-          userId: result.technician_id,
-          title: 'Nouvelle intervention assignée',
-          message: `L'intervention "${result.title}" vous a été assignée.`,
-          interventionId: result.id,
-        });
-      }
 
       // Google Calendar sync (best effort) on any update
       if (result?.id) {
