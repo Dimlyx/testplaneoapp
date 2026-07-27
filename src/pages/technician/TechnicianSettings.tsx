@@ -130,6 +130,60 @@ export default function TechnicianSettings() {
         <CardHeader>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Bell className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <CardTitle>Notifications push</CardTitle>
+              <CardDescription>
+                Recevoir une alerte lors de l'assignation d'une intervention.
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {!diag?.supported ? (
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/40 border text-sm text-muted-foreground">
+              <AlertTriangle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+              Les notifications ne sont pas disponibles dans cet environnement.
+            </div>
+          ) : diag.externalId && diag.externalId === user?.id && diag.optedIn ? (
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+              <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+              <div className="text-sm">
+                <p className="font-medium">Notifications actives</p>
+                <p className="text-muted-foreground">Cet appareil est lié à votre compte.</p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/40 border text-sm text-muted-foreground">
+              <AlertTriangle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+              Cet appareil n'est pas encore lié à votre compte : vous ne recevrez pas les
+              notifications d'assignation.
+            </div>
+          )}
+
+          {diag?.supported && (
+            <>
+              <div className="text-xs text-muted-foreground space-y-1">
+                <p>• Autorisation : {diag.permission ? 'accordée' : 'non accordée'}</p>
+                <p>• Abonnement : {diag.optedIn ? 'actif' : 'inactif'}</p>
+                <p>• Compte lié : {diag.externalId ? 'oui' : 'non'}</p>
+              </div>
+              <Button onClick={repairPush} disabled={pushBusy}>
+                {pushBusy && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                Activer / réparer les notifications
+              </Button>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
               <Calendar className="h-5 w-5 text-primary" />
             </div>
             <div>
