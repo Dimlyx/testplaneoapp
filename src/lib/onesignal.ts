@@ -8,6 +8,97 @@ let initialized = false;
 let pendingUserId: string | null = null;
 let listenersAttached = false;
 
+/* ------------------------------------------------------------------ */
+/* Median native bridge (iOS / Android wrapper)                        */
+/* ------------------------------------------------------------------ */
+
+type MedianBridge = {
+  onReady?: (cb: () => void) => void;
+  onesignal?: {
+    login?: (id: string) => Promise<any> | any;
+    logout?: () => Promise<any> | any;
+    externalUserId?: (id: string) => Promise<any> | any;
+  };
+};
+
+const getMedian = (): MedianBridge | null => {
+  if (typeof window === "undefined") return null;
+  const w = window as any;
+  return (w.median ?? w.Median ?? w.gonative ?? w.GoNative ?? null) as MedianBridge | null;
+};
+
+/** True when the app runs inside the Median native wrapper. */
+export const isMedianApp = (): boolean => {
+  if (typeof window === "undefined") return false;
+  if (getMedian()) return true;
+  const ua = navigator.userAgent?.toLowerCase() ?? "";
+  return ua.includes("median") || ua.includes("gonative");
+};
+
+/** Wait for the Median bridge to be ready (resolves immediately if not Median). */
+const medianReady = async (timeoutMs = 8000): Promise<MedianBridge | null> => {
+  if (typeof window === "undefined") return null;
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    const m = getMedian();
+    if (m?.onesignal?.login) {
+      if (typeof m.onReady === "function") {
+        await new Promise<void>((resolve) => {
+          let done = false;
+          const finish = () => {
+            if (!done) {
+              done = true;
+              resolve();
+            }
+          };
+          try {
+            m.onReady!(finish);
+          } catch {
+            finish();
+          }
+          setTimeout(finish, 2000);
+        });
+      }
+      return m;
+    }
+    if (!isMedianApp()) return null;
+    await new Promise((r) => setTimeout(r, 300));
+  }
+  return getMedian();
+};
+
+/** Bind the external_id through the Median native bridge. */
+const medianLogin = async (userId: string): Promise<boolean> => {
+  if (!isMedianApp()) return false;
+  try {
+    const m = await medianReady();
+    if (!m?.onesignal?.login) {
+      console.warn("[Median/OneSignal] bridge unavailable");
+      return false;
+    }
+    const res = await m.onesignal.login(userId);
+    const ok = res?.success !== false;
+    console.info("[Median/OneSignal] login", userId, "->", res ?? "(no result)");
+    return ok;
+  } catch (err) {
+    console.warn("[Median/OneSignal] login failed", err);
+    return false;
+  }
+};
+
+const medianLogout = async () => {
+  if (!isMedianApp()) return;
+  try {
+    const m = await medianReady(3000);
+    if (m?.onesignal?.logout) {
+      const res = await m.onesignal.logout();
+      console.info("[Median/OneSignal] logout ->", res ?? "(no result)");
+    }
+  } catch (err) {
+    console.warn("[Median/OneSignal] logout failed", err);
+  }
+};
+
 const isUnsupportedEnv = () => {
   if (typeof window === "undefined") return true;
   // Skip in iframes (Lovable preview)
@@ -30,6 +121,7 @@ const isUnsupportedEnv = () => {
   }
   return false;
 };
+
 
 /** Attach listeners so the external_id is (re)bound as soon as a subscription exists. */
 const attachListeners = () => {
