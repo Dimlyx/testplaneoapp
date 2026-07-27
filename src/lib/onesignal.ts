@@ -201,8 +201,11 @@ const bindExternalId = async (userId: string, attempts = 6): Promise<boolean> =>
 
 /** Login: bind the OneSignal external_id to the Supabase user id. */
 export const loginOneSignal = async (userId: string) => {
-  if (isUnsupportedEnv()) return;
   pendingUserId = userId;
+  // Native Median wrapper: the web SDK never creates a subscription there,
+  // the binding must go through the native bridge.
+  void medianLogin(userId);
+  if (isUnsupportedEnv()) return;
   try {
     await initOneSignal();
     if (!initialized) return;
@@ -215,6 +218,7 @@ export const loginOneSignal = async (userId: string) => {
 
 export const logoutOneSignal = async () => {
   pendingUserId = null;
+  void medianLogout();
   if (isUnsupportedEnv()) return;
   try {
     if (!initialized) return;
@@ -223,6 +227,7 @@ export const logoutOneSignal = async () => {
     console.warn("[OneSignal] logout failed", err);
   }
 };
+
 
 /**
  * Prompt the user for notification permission.
