@@ -132,22 +132,8 @@ export interface UpdateInterventionData {
   custom_status_id?: string | null;
 }
 
-interface AssignmentPushPayload {
-  userId: string;
-  title: string;
-  message: string;
-  interventionId: string;
-}
 
-async function sendAssignmentPush(payload: AssignmentPushPayload) {
-  const { error } = await supabase.functions.invoke('send-push-notification', {
-    body: payload,
-  });
 
-  if (error) {
-    console.warn('Push notification send failed:', error);
-  }
-}
 
 export function useInterventions() {
   const { data: organizationId } = useUserOrganization();
