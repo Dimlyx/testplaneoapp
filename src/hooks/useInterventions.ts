@@ -349,14 +349,8 @@ export function useCreateIntervention(organizationId?: string | null) {
 
       if (error) throw error;
 
-      if (result?.technician_id) {
-        await sendAssignmentPush({
-          userId: result.technician_id,
-          title: 'Nouvelle intervention assignée',
-          message: `L'intervention "${result.title}" vous a été assignée.`,
-          interventionId: result.id,
-        });
-      }
+      // Push d'assignation géré exclusivement par le trigger DB (trigger_notify_technician)
+
 
       // Google Calendar sync (best effort)
       if (result?.id) {
