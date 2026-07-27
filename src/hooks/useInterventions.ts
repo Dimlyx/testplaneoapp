@@ -384,11 +384,6 @@ export function useUpdateIntervention() {
 
   return useMutation({
     mutationFn: async ({ id, ...data }: UpdateInterventionData) => {
-      const { data: previousIntervention } = await supabase
-        .from('interventions')
-        .select('technician_id, title')
-        .eq('id', id)
-        .maybeSingle();
 
       const { data: result, error } = await supabase
         .from('interventions')
