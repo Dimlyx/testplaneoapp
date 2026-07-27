@@ -405,18 +405,8 @@ export function useUpdateIntervention() {
 
       if (error) throw error;
 
-      const technicianChanged =
-        !!result?.technician_id &&
-        result.technician_id !== previousIntervention?.technician_id;
+      // Push d'assignation géré exclusivement par le trigger DB (trigger_notify_technician)
 
-      if (technicianChanged) {
-        await sendAssignmentPush({
-          userId: result.technician_id,
-          title: 'Nouvelle intervention assignée',
-          message: `L'intervention "${result.title}" vous a été assignée.`,
-          interventionId: result.id,
-        });
-      }
 
       // Google Calendar sync (best effort) on any update
       if (result?.id) {
