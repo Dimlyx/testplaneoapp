@@ -2,11 +2,16 @@ import { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { Calendar, Loader2, CheckCircle2, AlertTriangle, Moon, Sun } from 'lucide-react';
+import { Calendar, Loader2, CheckCircle2, AlertTriangle, Moon, Sun, Bell } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth-context';
 import { useToast } from '@/hooks/use-toast';
+import {
+  getOneSignalDiagnostics,
+  repairOneSignalBinding,
+  type OneSignalDiagnostics,
+} from '@/lib/onesignal';
 
 type TokenRow = { google_email: string; calendar_id: string; updated_at: string };
 
@@ -17,6 +22,30 @@ export default function TechnicianSettings() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [token, setToken] = useState<TokenRow | null>(null);
+  const [diag, setDiag] = useState<OneSignalDiagnostics | null>(null);
+  const [pushBusy, setPushBusy] = useState(false);
+
+  const refreshDiag = async () => setDiag(await getOneSignalDiagnostics());
+  useEffect(() => { refreshDiag(); }, [user]);
+
+  const repairPush = async () => {
+    if (!user) return;
+    setPushBusy(true);
+    try {
+      const ok = await repairOneSignalBinding(user.id);
+      toast({
+        title: ok ? 'Notifications activées' : 'Activation incomplète',
+        description: ok
+          ? 'Votre appareil est bien lié à votre compte.'
+          : "Vérifiez que les notifications sont autorisées pour PLANEO dans les réglages du téléphone.",
+        variant: ok ? undefined : 'destructive',
+      });
+    } finally {
+      await refreshDiag();
+      setPushBusy(false);
+    }
+  };
+
 
   const fetchToken = async () => {
     if (!user) return;
