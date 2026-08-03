@@ -184,10 +184,26 @@ export function useInterventions() {
 }
 
 export function useTechnicianInterventions(technicianId: string | undefined) {
+  const techPreview = isTechPreviewActive();
+  const { data: previewOrgId } = useUserOrganization();
+
   return useQuery({
-    queryKey: ['technician-interventions', technicianId],
+    queryKey: ['technician-interventions', technicianId, techPreview ? `preview:${previewOrgId}` : null],
     queryFn: async () => {
+      // Mode aperçu admin : on affiche les interventions de l'entreprise (lecture seule)
+      if (techPreview) {
+        if (!previewOrgId) return [];
+        const { data, error } = await supabase
+          .from('interventions')
+          .select(`*, clients (id, name, email, phone, address, city)`)
+          .eq('organization_id', previewOrgId)
+          .order('scheduled_date', { ascending: true });
+        if (error) throw error;
+        return (data || []).map(d => ({ ...d, profiles: null })) as Intervention[];
+      }
+
       if (!technicianId) return [];
+
       
       try {
         // Fetch directly assigned interventions
