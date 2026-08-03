@@ -270,6 +270,17 @@ export default function AdminLayout() {
                 </p>
               </div>
             </div>
+            {hasFeature('technician_view') && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleTechPreview}
+                className="w-full justify-start text-sidebar-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent"
+              >
+                <Smartphone className="mr-2 h-4 w-4" />
+                Vue technicien
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="sm"
