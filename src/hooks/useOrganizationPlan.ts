@@ -28,6 +28,7 @@ const PLAN_FEATURES: Record<PlanType, Set<string>> = {
     'multi_technicians',
     'email',
     'documents_extranet',
+    'technician_view',
   ]),
 };
 
@@ -95,4 +96,5 @@ export const FEATURE_LABELS: Record<string, string> = {
   export_data: 'Export des données',
   multi_technicians: 'Multi-techniciens',
   documents_extranet: 'Documents & Extranet',
+  technician_view: 'Vue technicien (aperçu admin)',
 };
