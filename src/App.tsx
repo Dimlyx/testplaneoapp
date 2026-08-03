@@ -7,6 +7,7 @@ import { isReallyOnline, shouldSkipNetwork } from "@/lib/network-status";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
 import { OrganizationProvider, useOrganizationContext } from "@/lib/organization-context";
+import { TechPreviewProvider, useTechPreview } from "@/lib/tech-preview";
 import { OfflineProvider } from "@/hooks/useOfflineSync";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { useVersionCheck } from "@/hooks/useVersionCheck";
