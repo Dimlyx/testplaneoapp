@@ -111,7 +111,15 @@ const Clients = () => {
             ) : (
               filteredClients.map((client) => (
                 <TableRow key={client.id}>
-                  <TableCell className="font-medium">{client.name}</TableCell>
+                  <TableCell className="font-medium">
+                    <button
+                      type="button"
+                      className="text-left text-primary underline-offset-2 underline"
+                      onClick={() => navigate(`/admin/clients/${client.id}`)}
+                    >
+                      {client.name}
+                    </button>
+                  </TableCell>
                   <TableCell>
                     <Badge variant={client.client_type === 'professional' ? 'default' : 'secondary'}>
                       {client.client_type === 'individual' ? 'Particulier' : 'Professionnel'}
