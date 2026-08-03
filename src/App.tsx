@@ -230,9 +230,11 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <OrganizationProvider>
-            <ThemeProvider>
-              <AppRoutes />
-            </ThemeProvider>
+            <TechPreviewProvider>
+              <ThemeProvider>
+                <AppRoutes />
+              </ThemeProvider>
+            </TechPreviewProvider>
           </OrganizationProvider>
         </AuthProvider>
       </BrowserRouter>
