@@ -42,7 +42,7 @@ export default function TechnicianLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const { data: permissions } = useTechnicianPermissions();
-  const { isTechPreview, disableTechPreview } = useTechPreview();
+  const { isTechPreview, previewTech, disableTechPreview } = useTechPreview();
 
   const handleExitPreview = () => {
     disableTechPreview();
@@ -59,7 +59,7 @@ export default function TechnicianLayout() {
       {isTechPreview && (
         <div className="fixed top-0 left-0 right-0 z-[60] bg-amber-500 text-amber-950 px-4 py-2 flex items-center justify-between gap-3">
           <span className="text-sm font-medium truncate">
-            Aperçu de l'interface technicien — lecture seule
+            Aperçu : {previewTech?.name} — lecture seule
           </span>
           <Button
             size="sm"
