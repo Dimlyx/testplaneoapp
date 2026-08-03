@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useUserOrganization } from '@/hooks/useUserOrganization';
 import { getInterventionOffline, getAllInterventionsOffline } from '@/lib/offline-db';
+import { isTechPreviewActive } from '@/lib/tech-preview';
 
 export type InterventionStatus = 'to_plan' | 'planned' | 'in_progress' | 'completed' | 'to_invoice' | 'archived' | 'cancelled';
 export type InterventionType = string;
