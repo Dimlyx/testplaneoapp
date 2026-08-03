@@ -2,43 +2,58 @@ import { createContext, useCallback, useContext, useEffect, useState } from 'rea
 
 const STORAGE_KEY = 'planeo_tech_preview';
 
+export interface TechPreviewTarget {
+  id: string;
+  name: string;
+}
+
 /** Lecture synchrone hors React (hooks de données) */
-export function isTechPreviewActive(): boolean {
+export function getTechPreviewTarget(): TechPreviewTarget | null {
   try {
-    return sessionStorage.getItem(STORAGE_KEY) === '1';
+    const raw = sessionStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed.id === 'string') return parsed as TechPreviewTarget;
+    return null;
   } catch {
-    return false;
+    return null;
   }
+}
+
+export function isTechPreviewActive(): boolean {
+  return getTechPreviewTarget() !== null;
 }
 
 interface TechPreviewContextValue {
   isTechPreview: boolean;
-  enableTechPreview: () => void;
+  previewTech: TechPreviewTarget | null;
+  enableTechPreview: (tech: TechPreviewTarget) => void;
   disableTechPreview: () => void;
 }
 
 const TechPreviewContext = createContext<TechPreviewContextValue>({
   isTechPreview: false,
+  previewTech: null,
   enableTechPreview: () => {},
   disableTechPreview: () => {},
 });
 
 export function TechPreviewProvider({ children }: { children: React.ReactNode }) {
-  const [isTechPreview, setIsTechPreview] = useState<boolean>(() => isTechPreviewActive());
+  const [previewTech, setPreviewTech] = useState<TechPreviewTarget | null>(() => getTechPreviewTarget());
 
   useEffect(() => {
-    const handler = () => setIsTechPreview(isTechPreviewActive());
+    const handler = () => setPreviewTech(getTechPreviewTarget());
     window.addEventListener('planeo-tech-preview', handler);
     return () => window.removeEventListener('planeo-tech-preview', handler);
   }, []);
 
-  const enableTechPreview = useCallback(() => {
+  const enableTechPreview = useCallback((tech: TechPreviewTarget) => {
     try {
-      sessionStorage.setItem(STORAGE_KEY, '1');
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(tech));
     } catch {
       /* ignore */
     }
-    setIsTechPreview(true);
+    setPreviewTech(tech);
     window.dispatchEvent(new Event('planeo-tech-preview'));
   }, []);
 
@@ -48,12 +63,14 @@ export function TechPreviewProvider({ children }: { children: React.ReactNode })
     } catch {
       /* ignore */
     }
-    setIsTechPreview(false);
+    setPreviewTech(null);
     window.dispatchEvent(new Event('planeo-tech-preview'));
   }, []);
 
   return (
-    <TechPreviewContext.Provider value={{ isTechPreview, enableTechPreview, disableTechPreview }}>
+    <TechPreviewContext.Provider
+      value={{ isTechPreview: previewTech !== null, previewTech, enableTechPreview, disableTechPreview }}
+    >
       {children}
     </TechPreviewContext.Provider>
   );
