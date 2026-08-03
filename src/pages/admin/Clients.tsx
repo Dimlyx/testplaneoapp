@@ -114,7 +114,7 @@ const Clients = () => {
                   <TableCell className="font-medium">
                     <button
                       type="button"
-                      className="text-left text-primary underline-offset-2 underline"
+                      className="text-left text-foreground"
                       onClick={() => navigate(`/admin/clients/${client.id}`)}
                     >
                       {client.name}
