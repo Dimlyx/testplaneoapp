@@ -23,6 +23,7 @@ import { cn } from '@/lib/utils';
 
 
 import { useTechnicianPermissions } from '@/hooks/useTechnicianPermissions';
+import { useTechPreview } from '@/lib/tech-preview';
 
 const TechnicianCreateInterventionDialog = lazy(() => import('@/components/technician/TechnicianCreateInterventionDialog'));
 
@@ -41,6 +42,12 @@ export default function TechnicianLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const { data: permissions } = useTechnicianPermissions();
+  const { isTechPreview, disableTechPreview } = useTechPreview();
+
+  const handleExitPreview = () => {
+    disableTechPreview();
+    navigate('/admin');
+  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -48,7 +55,23 @@ export default function TechnicianLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className={cn("min-h-screen bg-background", isTechPreview && "pt-11")}>
+      {isTechPreview && (
+        <div className="fixed top-0 left-0 right-0 z-[60] bg-amber-500 text-amber-950 px-4 py-2 flex items-center justify-between gap-3">
+          <span className="text-sm font-medium truncate">
+            Aperçu de l'interface technicien — lecture seule
+          </span>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={handleExitPreview}
+            className="bg-amber-600 text-white shrink-0"
+          >
+            Quitter l'aperçu
+          </Button>
+        </div>
+      )}
+
       {sidebarOpen && (
         <div 
           className="fixed inset-0 bg-foreground/50 z-40 lg:hidden"
@@ -59,7 +82,8 @@ export default function TechnicianLayout() {
       <aside className={cn(
         "fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-200 ease-in-out lg:translate-x-0",
         sidebarOpen ? "translate-x-0" : "-translate-x-full",
-        "bg-sidebar"
+        "bg-sidebar",
+        isTechPreview && "top-11"
       )}>
         <div className="flex h-full flex-col">
           <div className="flex h-16 items-center gap-3 px-6 border-b border-sidebar-border">
@@ -82,7 +106,7 @@ export default function TechnicianLayout() {
 
           <ScrollArea className="flex-1 py-4">
             <nav className="space-y-1 px-3">
-              {permissions?.can_create_intervention && (
+              {permissions?.can_create_intervention && !isTechPreview && (
                 <button
                   onClick={() => { setCreateOpen(true); setSidebarOpen(false); }}
                   className="nav-link nav-link-inactive w-full text-left mb-2"

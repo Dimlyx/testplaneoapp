@@ -7,6 +7,7 @@ import { isReallyOnline, shouldSkipNetwork } from "@/lib/network-status";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
 import { OrganizationProvider, useOrganizationContext } from "@/lib/organization-context";
+import { TechPreviewProvider, useTechPreview } from "@/lib/tech-preview";
 import { OfflineProvider } from "@/hooks/useOfflineSync";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { useVersionCheck } from "@/hooks/useVersionCheck";
@@ -93,6 +94,7 @@ const queryClient = new QueryClient({
 const ProtectedRoute = ({ children, requiredRole }: { children: React.ReactNode; requiredRole?: "admin" | "technician" | "super_admin" }) => {
   const { user, role, loading } = useAuth();
   const { viewAsOrgId } = useOrganizationContext();
+  const { isTechPreview } = useTechPreview();
 
   if (loading) {
     return (
@@ -107,6 +109,11 @@ const ProtectedRoute = ({ children, requiredRole }: { children: React.ReactNode;
   }
 
   if (requiredRole === "admin" && role === "super_admin" && viewAsOrgId) {
+    return <>{children}</>;
+  }
+
+  // Aperçu lecture seule de l'interface technicien par un admin
+  if (requiredRole === "technician" && isTechPreview && (role === "admin" || role === "super_admin")) {
     return <>{children}</>;
   }
 
@@ -230,9 +237,11 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <OrganizationProvider>
-            <ThemeProvider>
-              <AppRoutes />
-            </ThemeProvider>
+            <TechPreviewProvider>
+              <ThemeProvider>
+                <AppRoutes />
+              </ThemeProvider>
+            </TechPreviewProvider>
           </OrganizationProvider>
         </AuthProvider>
       </BrowserRouter>

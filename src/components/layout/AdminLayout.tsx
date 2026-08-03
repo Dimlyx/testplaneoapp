@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '@/lib/auth-context';
 import { useOrganizationContext } from '@/lib/organization-context';
+import { useTechPreview } from '@/lib/tech-preview';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
@@ -19,7 +20,8 @@ import {
   BarChart3,
   Settings,
   Bell,
-  ArrowLeft
+  ArrowLeft,
+  Smartphone
 } from 'lucide-react';
 import planeoLogo from '@/assets/planeo-logo-white.png';
 import { cn } from '@/lib/utils';
@@ -45,6 +47,7 @@ export default function AdminLayout() {
   const navigate = useNavigate();
   const { user, role, signOut } = useAuth();
   const { viewAsOrgId, clearViewAsOrg } = useOrganizationContext();
+  const { enableTechPreview } = useTechPreview();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [openMenu, setOpenMenu] = useState<string | null>(() => {
     const p = location.pathname;
@@ -68,6 +71,12 @@ export default function AdminLayout() {
     clearViewAsOrg();
     navigate('/super-admin');
   };
+
+  const handleTechPreview = () => {
+    enableTechPreview();
+    navigate('/technician');
+  };
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -270,6 +279,17 @@ export default function AdminLayout() {
                 </p>
               </div>
             </div>
+            {hasFeature('technician_view') && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleTechPreview}
+                className="w-full justify-start text-sidebar-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent"
+              >
+                <Smartphone className="mr-2 h-4 w-4" />
+                Vue technicien
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="sm"
