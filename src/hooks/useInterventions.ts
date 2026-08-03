@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useUserOrganization } from '@/hooks/useUserOrganization';
 import { getInterventionOffline, getAllInterventionsOffline } from '@/lib/offline-db';
-import { isTechPreviewActive } from '@/lib/tech-preview';
+import { getTechPreviewTarget } from '@/lib/tech-preview';
 
 export type InterventionStatus = 'to_plan' | 'planned' | 'in_progress' | 'completed' | 'to_invoice' | 'archived' | 'cancelled';
 export type InterventionType = string;
@@ -184,25 +184,14 @@ export function useInterventions() {
   });
 }
 
-export function useTechnicianInterventions(technicianId: string | undefined) {
-  const techPreview = isTechPreviewActive();
-  const { data: previewOrgId } = useUserOrganization();
+export function useTechnicianInterventions(technicianIdParam: string | undefined) {
+  // Mode aperçu admin : on affiche les interventions du technicien sélectionné
+  const previewTech = getTechPreviewTarget();
+  const technicianId = previewTech?.id ?? technicianIdParam;
 
   return useQuery({
-    queryKey: ['technician-interventions', technicianId, techPreview ? `preview:${previewOrgId}` : null],
+    queryKey: ['technician-interventions', technicianId],
     queryFn: async () => {
-      // Mode aperçu admin : on affiche les interventions de l'entreprise (lecture seule)
-      if (techPreview) {
-        if (!previewOrgId) return [];
-        const { data, error } = await supabase
-          .from('interventions')
-          .select(`*, clients (id, name, email, phone, address, city)`)
-          .eq('organization_id', previewOrgId)
-          .order('scheduled_date', { ascending: true });
-        if (error) throw error;
-        return (data || []).map(d => ({ ...d, profiles: null })) as Intervention[];
-      }
-
       if (!technicianId) return [];
 
       
