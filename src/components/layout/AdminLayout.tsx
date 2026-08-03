@@ -19,7 +19,8 @@ import {
   BarChart3,
   Settings,
   Bell,
-  ArrowLeft
+  ArrowLeft,
+  Smartphone
 } from 'lucide-react';
 import planeoLogo from '@/assets/planeo-logo-white.png';
 import { cn } from '@/lib/utils';
