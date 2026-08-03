@@ -3,6 +3,15 @@ import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '@/lib/auth-context';
 import { useOrganizationContext } from '@/lib/organization-context';
 import { useTechPreview } from '@/lib/tech-preview';
+import { useTechnicians } from '@/hooks/useTechnicians';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
@@ -21,7 +30,8 @@ import {
   Settings,
   Bell,
   ArrowLeft,
-  Smartphone
+  Smartphone,
+  ChevronUp
 } from 'lucide-react';
 import planeoLogo from '@/assets/planeo-logo-white.png';
 import { cn } from '@/lib/utils';
@@ -48,6 +58,7 @@ export default function AdminLayout() {
   const { user, role, signOut } = useAuth();
   const { viewAsOrgId, clearViewAsOrg } = useOrganizationContext();
   const { enableTechPreview } = useTechPreview();
+  const { data: technicians } = useTechnicians();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [openMenu, setOpenMenu] = useState<string | null>(() => {
     const p = location.pathname;
@@ -72,8 +83,8 @@ export default function AdminLayout() {
     navigate('/super-admin');
   };
 
-  const handleTechPreview = () => {
-    enableTechPreview();
+  const handleTechPreview = (id: string, name: string) => {
+    enableTechPreview({ id, name });
     navigate('/technician');
   };
 
