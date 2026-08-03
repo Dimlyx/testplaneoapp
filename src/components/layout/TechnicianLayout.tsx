@@ -106,7 +106,7 @@ export default function TechnicianLayout() {
 
           <ScrollArea className="flex-1 py-4">
             <nav className="space-y-1 px-3">
-              {permissions?.can_create_intervention && (
+              {permissions?.can_create_intervention && !isTechPreview && (
                 <button
                   onClick={() => { setCreateOpen(true); setSidebarOpen(false); }}
                   className="nav-link nav-link-inactive w-full text-left mb-2"
