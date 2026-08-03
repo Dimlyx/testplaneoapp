@@ -70,6 +70,12 @@ export default function AdminLayout() {
     navigate('/super-admin');
   };
 
+  const handleTechPreview = () => {
+    enableTechPreview();
+    navigate('/technician');
+  };
+
+
   return (
     <div className="min-h-screen bg-background">
       {/* Super Admin viewing banner */}
