@@ -8,6 +8,7 @@ import { useInterventionTypes } from "@/hooks/useInterventionTypes";
 import { useWorkflowSteps } from "@/hooks/useWorkflowSteps";
 import { useStepCompletions } from "@/hooks/useStepCompletions";
 import { useAuth } from "@/lib/auth-context";
+import { useTechPreview } from "@/lib/tech-preview";
 import { Button } from "@/components/ui/button";
 import { StatusBadge, TypeBadge } from "@/components/ui/status-badge";
 import { ArrowLeft, Calendar, Clock, Eye } from "lucide-react";
@@ -34,6 +35,7 @@ const TechnicianInterventionDetail = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const { user } = useAuth();
+  const { isTechPreview } = useTechPreview();
   const { data: intervention, isLoading } = useIntervention(id || "");
   const { data: client } = useClient(intervention?.client_id || "");
   const { data: photos = [] } = useInterventionPhotos(id || "");
@@ -260,10 +262,14 @@ const TechnicianInterventionDetail = () => {
       </div>
 
       {/* Read-only banner for team members */}
-      {isTeamMember && (
+      {(isTeamMember || isTechPreview) && (
         <div className="flex items-center gap-2 bg-muted/70 border rounded-lg p-3 text-sm text-muted-foreground">
           <Eye className="h-4 w-4" />
-          <span>Consultation seule — seul le chef d'équipe peut modifier cette intervention</span>
+          <span>
+            {isTechPreview
+              ? "Aperçu administrateur — lecture seule"
+              : "Consultation seule — seul le chef d'équipe peut modifier cette intervention"}
+          </span>
         </div>
       )}
 
@@ -304,7 +310,7 @@ const TechnicianInterventionDetail = () => {
         onTimeUpdate={handleTimeUpdate}
         onCancelIntervention={handleCancelIntervention}
         isUpdating={isUpdating}
-        readOnly={!!isTeamMember}
+        readOnly={!!isTeamMember || isTechPreview}
       />
     </div>
   );
