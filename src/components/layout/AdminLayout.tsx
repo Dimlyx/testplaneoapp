@@ -264,32 +264,56 @@ export default function AdminLayout() {
 
           {/* User section */}
           <div className="border-t border-sidebar-border p-4">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-9 h-9 rounded-full bg-sidebar-accent flex items-center justify-center">
-                <span className="text-sm font-medium text-sidebar-accent-foreground">
-                  {user?.email?.charAt(0).toUpperCase()}
-                </span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-sidebar-foreground truncate">
-                  Admin
-                </p>
-                <p className="text-xs text-sidebar-foreground truncate">
-                  {user?.email}
-                </p>
-              </div>
-            </div>
-            {hasFeature('technician_view') && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleTechPreview}
-                className="w-full justify-start text-sidebar-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent"
-              >
-                <Smartphone className="mr-2 h-4 w-4" />
-                Vue technicien
-              </Button>
-            )}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild disabled={!hasFeature('technician_view')}>
+                <button
+                  type="button"
+                  className="w-full flex items-center gap-3 mb-3 rounded-md p-1 -m-1 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+                >
+                  <div className="w-9 h-9 rounded-full bg-sidebar-accent flex items-center justify-center">
+                    <span className="text-sm font-medium text-sidebar-accent-foreground">
+                      {user?.email?.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-sidebar-foreground truncate">
+                      Admin
+                    </p>
+                    <p className="text-xs text-sidebar-foreground truncate">
+                      {user?.email}
+                    </p>
+                  </div>
+                  {hasFeature('technician_view') && (
+                    <ChevronUp className="h-4 w-4 shrink-0 text-sidebar-foreground" />
+                  )}
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" side="top" className="w-60 bg-popover z-50">
+                <DropdownMenuLabel className="flex items-center gap-2">
+                  <Smartphone className="h-4 w-4" />
+                  Voir l'interface technicien
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {(technicians ?? []).length === 0 ? (
+                  <DropdownMenuItem disabled>Aucun technicien</DropdownMenuItem>
+                ) : (
+                  (technicians ?? []).map((tech) => (
+                    <DropdownMenuItem
+                      key={tech.id}
+                      onSelect={() => handleTechPreview(tech.id, tech.full_name || tech.email)}
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate">{tech.full_name || tech.email}</p>
+                        {tech.full_name && (
+                          <p className="text-xs text-muted-foreground truncate">{tech.email}</p>
+                        )}
+                      </div>
+                    </DropdownMenuItem>
+                  ))
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             <Button
               variant="ghost"
               size="sm"
