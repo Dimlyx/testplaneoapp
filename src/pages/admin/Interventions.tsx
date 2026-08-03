@@ -467,7 +467,13 @@ const Interventions = () => {
                   </TableCell>
                   <TableCell className="font-medium">
                     <div className="flex flex-col gap-1">
-                      <span>{intervention.title}</span>
+                      <button
+                        type="button"
+                        className="text-left text-foreground"
+                        onClick={() => navigate(`/admin/interventions/${intervention.id}`)}
+                      >
+                        {intervention.title}
+                      </button>
                       {matchInfo.hint && (
                         <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                           <Search className="h-3 w-3" />
