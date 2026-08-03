@@ -94,6 +94,7 @@ const queryClient = new QueryClient({
 const ProtectedRoute = ({ children, requiredRole }: { children: React.ReactNode; requiredRole?: "admin" | "technician" | "super_admin" }) => {
   const { user, role, loading } = useAuth();
   const { viewAsOrgId } = useOrganizationContext();
+  const { isTechPreview } = useTechPreview();
 
   if (loading) {
     return (
@@ -108,6 +109,11 @@ const ProtectedRoute = ({ children, requiredRole }: { children: React.ReactNode;
   }
 
   if (requiredRole === "admin" && role === "super_admin" && viewAsOrgId) {
+    return <>{children}</>;
+  }
+
+  // Aperçu lecture seule de l'interface technicien par un admin
+  if (requiredRole === "technician" && isTechPreview && (role === "admin" || role === "super_admin")) {
     return <>{children}</>;
   }
 
