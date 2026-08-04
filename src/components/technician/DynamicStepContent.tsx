@@ -315,11 +315,17 @@ const DynamicStepContent = ({
     const resolved = await Promise.all(urls.map(async (url) => {
       const upload = pendingUploadsRef.current.get(url);
       if (!upload) return url;
-      const remote = await upload.catch(() => null);
+      // Never block the technician: if the upload isn't done almost
+      // immediately, keep the local:// URL (the retry worker patches it).
+      const remote = await Promise.race([
+        upload.catch(() => null),
+        new Promise<null>(res => setTimeout(() => res(null), RESOLVE_PHOTOS_TIMEOUT_MS)),
+      ]);
       return remote || url;
     }));
     return resolved.filter(Boolean);
   };
+
 
   const handleValidate = async () => {
     const resolvedUrls = await resolvePhotos();
