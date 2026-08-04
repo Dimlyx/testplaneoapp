@@ -334,7 +334,14 @@ const ClientDetail = () => {
                 <Paperclip className="h-4 w-4" />
                 Documents ({documents.length})
               </TabsTrigger>
+              {hasContractsFeature && (
+                <TabsTrigger value="contracts" className="gap-1.5">
+                  <FileSignature className="h-4 w-4" />
+                  Contrats ({contracts.length})
+                </TabsTrigger>
+              )}
             </TabsList>
+
 
             <TabsContent value="notes" className="space-y-4">
               <div className="flex gap-2">
