@@ -23,6 +23,12 @@ import { withTimeout } from "@/lib/supabase-with-timeout";
 import { swapLocalUrlInCompletion } from "@/lib/step-photo-retry";
 
 const SIGNATURE_UPLOAD_TIMEOUT_MS = 4000;
+// Hard cap on a step photo upload: beyond this the photo stays local://
+// and the retry worker uploads it later (never blocks the technician).
+const PHOTO_UPLOAD_TIMEOUT_MS = 20000;
+// Max time we wait for in-flight uploads when validating a step.
+const RESOLVE_PHOTOS_TIMEOUT_MS = 1200;
+
 
 interface DynamicStepContentProps {
   step: WorkflowStepType;
