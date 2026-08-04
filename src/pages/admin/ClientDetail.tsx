@@ -87,6 +87,9 @@ const ClientDetail = () => {
   const { data: contacts = [] } = useClientContacts(clientId);
   const { data: notes = [] } = useClientNotes(clientId);
   const { data: documents = [] } = useClientDocuments(clientId);
+  const { hasFeature } = useOrganizationPlan();
+  const hasContractsFeature = hasFeature("maintenance_contract");
+  const { data: contracts = [] } = useClientContracts(hasContractsFeature ? clientId : undefined);
   const createContact = useCreateClientContact();
   const deleteContact = useDeleteClientContact();
   const createNote = useCreateClientNote();
