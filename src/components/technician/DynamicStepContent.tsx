@@ -540,7 +540,8 @@ const DynamicStepContent = ({
                 <button
                   type="button"
                   onClick={() => setShowCamera(true)}
-                  disabled={isUploading || isLocked}
+                  disabled={isLocked}
+
                   className="flex-1 flex flex-col items-center justify-center h-24 border-2 border-dashed border-muted-foreground/30 rounded-lg cursor-pointer active:bg-muted/50 transition-colors disabled:opacity-50"
                 >
                   <Camera className="h-6 w-6 text-muted-foreground mb-1" />
