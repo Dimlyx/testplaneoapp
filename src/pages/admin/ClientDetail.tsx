@@ -433,6 +433,62 @@ const ClientDetail = () => {
                 </div>
               )}
             </TabsContent>
+
+            {hasContractsFeature && (
+              <TabsContent value="contracts" className="space-y-4">
+                {contracts.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-2">Aucun contrat de maintenance</p>
+                ) : (
+                  <div className="space-y-3">
+                    {contracts.map((contract) => (
+                      <div key={contract.id} className="p-3 border rounded-lg space-y-2">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0 space-y-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-medium">{contract.name}</span>
+                              <Badge variant={contract.is_active ? "default" : "secondary"} className="text-xs">
+                                {contract.is_active ? "Actif" : "Inactif"}
+                              </Badge>
+                              {contract.contract_type && (
+                                <Badge variant="outline" className="text-xs">{contract.contract_type}</Badge>
+                              )}
+                            </div>
+                            <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                              {(contract.start_date || contract.end_date) && (
+                                <span>
+                                  {contract.start_date ? format(new Date(contract.start_date), "dd/MM/yyyy") : "—"}
+                                  {" → "}
+                                  {contract.end_date ? format(new Date(contract.end_date), "dd/MM/yyyy") : "—"}
+                                </span>
+                              )}
+                              {contract.visits_per_period != null && (
+                                <span>
+                                  {contract.visits_per_period} visite{contract.visits_per_period > 1 ? "s" : ""} / {periodLabels[contract.visits_period] ?? contract.visits_period}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          {contract.file_url && (
+                            <Button variant="ghost" size="icon" asChild className="shrink-0">
+                              <a href={contract.file_url} target="_blank" rel="noopener noreferrer">
+                                <Download className="h-4 w-4" />
+                              </a>
+                            </Button>
+                          )}
+                        </div>
+                        {contract.notes && (
+                          <p className="text-sm whitespace-pre-wrap text-muted-foreground">{contract.notes}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <Button variant="outline" size="sm" onClick={() => navigate(`/admin/clients/${clientId}/edit`)}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Gérer les contrats
+                </Button>
+              </TabsContent>
+            )}
           </Tabs>
         </CardContent>
       </Card>
