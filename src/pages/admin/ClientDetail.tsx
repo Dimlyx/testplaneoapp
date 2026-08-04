@@ -46,7 +46,8 @@ import {
   FileText,
   Paperclip,
   Download,
-  Upload
+  Upload,
+  FileSignature
 } from "lucide-react";
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import { fr } from "date-fns/locale";
