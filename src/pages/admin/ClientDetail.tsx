@@ -168,6 +168,13 @@ const ClientDetail = () => {
     return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
   };
 
+  const periodLabels: Record<ContractPeriod, string> = {
+    day: "jour",
+    week: "semaine",
+    month: "mois",
+    year: "an",
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
