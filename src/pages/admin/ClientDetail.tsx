@@ -5,6 +5,8 @@ import { useInterventions, InterventionStatus } from "@/hooks/useInterventions";
 import { useClientContacts, useCreateClientContact, useDeleteClientContact } from "@/hooks/useClientContacts";
 import { useClientNotes, useCreateClientNote, useDeleteClientNote } from "@/hooks/useClientNotes";
 import { useClientDocuments, useUploadClientDocument, useDeleteClientDocument } from "@/hooks/useClientDocuments";
+import { useClientContracts, ContractPeriod } from "@/hooks/useClientContracts";
+import { useOrganizationPlan } from "@/hooks/useOrganizationPlan";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
