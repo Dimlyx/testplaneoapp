@@ -558,7 +558,7 @@ const DynamicStepContent = ({
                     accept="image/*"
                     className="hidden"
                     onChange={handlePhotoUpload}
-                    disabled={isUploading || isLocked}
+                    disabled={isLocked}
                     multiple
                   />
                 </label>
