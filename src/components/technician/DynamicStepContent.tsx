@@ -23,6 +23,12 @@ import { withTimeout } from "@/lib/supabase-with-timeout";
 import { swapLocalUrlInCompletion } from "@/lib/step-photo-retry";
 
 const SIGNATURE_UPLOAD_TIMEOUT_MS = 4000;
+// Hard cap on a step photo upload: beyond this the photo stays local://
+// and the retry worker uploads it later (never blocks the technician).
+const PHOTO_UPLOAD_TIMEOUT_MS = 20000;
+// Max time we wait for in-flight uploads when validating a step.
+const RESOLVE_PHOTOS_TIMEOUT_MS = 1200;
+
 
 interface DynamicStepContentProps {
   step: WorkflowStepType;
@@ -224,10 +230,14 @@ const DynamicStepContent = ({
             return localUrl;
           }
           const fileName = `steps/${interventionId}/${step.id}-loop${loopIndex}-${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
-          const { error: uploadError } = await supabase.storage
-            .from('intervention-photos')
-            .upload(fileName, compressed, { contentType: 'image/jpeg' });
+          const { error: uploadError } = await withTimeout(
+            supabase.storage
+              .from('intervention-photos')
+              .upload(fileName, compressed, { contentType: 'image/jpeg' }),
+            PHOTO_UPLOAD_TIMEOUT_MS,
+          );
           if (uploadError) throw uploadError;
+
 
           const { data: urlData } = supabase.storage
             .from('intervention-photos')
@@ -305,11 +315,17 @@ const DynamicStepContent = ({
     const resolved = await Promise.all(urls.map(async (url) => {
       const upload = pendingUploadsRef.current.get(url);
       if (!upload) return url;
-      const remote = await upload.catch(() => null);
+      // Never block the technician: if the upload isn't done almost
+      // immediately, keep the local:// URL (the retry worker patches it).
+      const remote = await Promise.race([
+        upload.catch(() => null),
+        new Promise<null>(res => setTimeout(() => res(null), RESOLVE_PHOTOS_TIMEOUT_MS)),
+      ]);
       return remote || url;
     }));
     return resolved.filter(Boolean);
   };
+
 
   const handleValidate = async () => {
     const resolvedUrls = await resolvePhotos();
@@ -524,7 +540,8 @@ const DynamicStepContent = ({
                 <button
                   type="button"
                   onClick={() => setShowCamera(true)}
-                  disabled={isUploading || isLocked}
+                  disabled={isLocked}
+
                   className="flex-1 flex flex-col items-center justify-center h-24 border-2 border-dashed border-muted-foreground/30 rounded-lg cursor-pointer active:bg-muted/50 transition-colors disabled:opacity-50"
                 >
                   <Camera className="h-6 w-6 text-muted-foreground mb-1" />
@@ -541,7 +558,7 @@ const DynamicStepContent = ({
                     accept="image/*"
                     className="hidden"
                     onChange={handlePhotoUpload}
-                    disabled={isUploading || isLocked}
+                    disabled={isLocked}
                     multiple
                   />
                 </label>
