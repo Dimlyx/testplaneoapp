@@ -224,10 +224,14 @@ const DynamicStepContent = ({
             return localUrl;
           }
           const fileName = `steps/${interventionId}/${step.id}-loop${loopIndex}-${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
-          const { error: uploadError } = await supabase.storage
-            .from('intervention-photos')
-            .upload(fileName, compressed, { contentType: 'image/jpeg' });
+          const { error: uploadError } = await withTimeout(
+            supabase.storage
+              .from('intervention-photos')
+              .upload(fileName, compressed, { contentType: 'image/jpeg' }),
+            PHOTO_UPLOAD_TIMEOUT_MS,
+          );
           if (uploadError) throw uploadError;
+
 
           const { data: urlData } = supabase.storage
             .from('intervention-photos')
