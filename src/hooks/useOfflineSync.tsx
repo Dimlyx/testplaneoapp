@@ -534,6 +534,16 @@ export function useOfflineSync() {
         console.warn('step-photo retry cycle (final) failed', err);
       }
 
+      // 2b. Safety net: blobs left without any queued mutation are uploaded
+      //     and re-attached to their completion row instead of being dropped.
+      try {
+        const recovered = await runOrphanBlobSafetyNet();
+        if (recovered > 0) successCount += recovered;
+      } catch (err) {
+        console.warn('step-photo safety net failed', err);
+      }
+
+
       // Confirm terminal statuses only after re-reading the queue and local
       // media stores. The dependency state captured at the beginning of the
       // cycle is no longer reliable after successful uploads and step writes.
