@@ -157,24 +157,27 @@ export async function saveStepPhoto(params: {
 }): Promise<string> {
   const id = crypto.randomUUID();
   const db = await getDB();
+  // Store raw bytes, never the Blob itself (WebKit can empty stored Blobs).
+  const data = await params.blob.arrayBuffer();
   await db.put('stepPhotos', {
     id,
     interventionId: params.interventionId,
     stepId: params.stepId,
     loopIndex: params.loopIndex,
-    blob: params.blob,
+    data,
+    mimeType: params.blob.type || 'image/jpeg',
     createdAt: Date.now(),
   });
   return `${LOCAL_PHOTO_PREFIX}${id}`;
 }
 
-/** Get the underlying blob for a local:// URL, if it still exists. */
+/** Get a freshly rebuilt blob for a local:// URL, if it still exists. */
 export async function getStepPhotoBlob(localUrl: string): Promise<Blob | null> {
   if (!isLocalPhotoUrl(localUrl)) return null;
   const id = localUrl.slice(LOCAL_PHOTO_PREFIX.length);
   const db = await getDB();
   const record = await db.get('stepPhotos', id);
-  return record?.blob ?? null;
+  return stepPhotoToBlob(record);
 }
 
 /**
