@@ -157,6 +157,9 @@ export async function resolveLocalPhotoUrlsForSync(
     try {
       const blob = await getStepPhotoBlob(u);
       if (!blob) {
+        // The blob is gone from IndexedDB although nothing uploaded it:
+        // almost always an OS/browser eviction of non-persistent storage.
+        console.warn('[step-photo] local blob missing in IndexedDB (evicted?):', u);
         const recovered = await findPreviouslyUploadedStepPhoto(interventionId, u);
         if (recovered) {
           resolved.push(recovered);
@@ -167,6 +170,7 @@ export async function resolveLocalPhotoUrlsForSync(
         }
         continue;
       }
+
       const fileName = `steps/${interventionId}/sync-${id}.jpg`;
       const { error: uploadError } = await withTimeout(
         supabase.storage
