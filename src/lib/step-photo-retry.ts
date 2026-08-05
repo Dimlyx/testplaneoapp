@@ -400,6 +400,8 @@ export async function runStepPhotoRetryCycle(): Promise<{
   let failed = 0;
 
   try {
+    // Convert any pre-update Blob records to ArrayBuffer storage first.
+    await migrateLegacyStepPhotos();
     const online = await checkNetworkNow();
     if (!online) {
       const all = await getAllPendingStepPhotos();
