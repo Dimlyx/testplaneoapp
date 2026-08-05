@@ -157,9 +157,6 @@ export async function resolveLocalPhotoUrlsForSync(
     try {
       const blob = await getStepPhotoBlob(u);
       if (!blob) {
-        // The blob is gone from IndexedDB although nothing uploaded it:
-        // almost always an OS/browser eviction of non-persistent storage.
-        console.warn('[step-photo] local blob missing in IndexedDB (evicted?):', u);
         const recovered = await findPreviouslyUploadedStepPhoto(interventionId, u);
         if (recovered) {
           resolved.push(recovered);
@@ -170,7 +167,6 @@ export async function resolveLocalPhotoUrlsForSync(
         }
         continue;
       }
-
       const fileName = `steps/${interventionId}/sync-${id}.jpg`;
       const { error: uploadError } = await withTimeout(
         supabase.storage
@@ -280,10 +276,6 @@ export async function swapLocalUrlInCompletion(params: {
 
 /** Upload one stored photo, then update the DB and delete the local copy. */
 async function uploadOne(photo: StoredStepPhoto): Promise<boolean> {
-  if (!photo.blob?.size) {
-    console.warn(`[step-photo-retry] durable payload missing for ${photo.id}`);
-    return false;
-  }
   const localUrl = `${LOCAL_PHOTO_PREFIX}${photo.id}`;
   const fileName = `steps/${photo.interventionId}/${photo.stepId}-loop${photo.loopIndex}-${photo.createdAt}-${photo.id}.jpg`;
 
