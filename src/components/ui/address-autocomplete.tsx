@@ -175,8 +175,12 @@ export function AddressAutocomplete({
         <Input
           id={id}
           value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onFocus={() => suggestions.length > 0 && setOpen(true)}
+          onChange={(e) => {
+            userTypedRef.current = true;
+            onChange(e.target.value);
+          }}
+          onFocus={() => userTypedRef.current && suggestions.length > 0 && setOpen(true)}
+
           onKeyDown={onKeyDown}
           placeholder={placeholder}
           disabled={disabled}
