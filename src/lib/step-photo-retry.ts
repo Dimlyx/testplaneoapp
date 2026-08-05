@@ -438,10 +438,13 @@ export function startStepPhotoRetryWorker(): void {
   if (intervalId !== null) return;
   // First cycle quickly after startup
   setTimeout(() => {
-    runStepPhotoRetryCycle().catch(err =>
-      console.error('[step-photo-retry] initial cycle failed', err),
-    );
+    runStepPhotoRetryCycle()
+      .then(() => runOrphanBlobSafetyNet())
+      .catch(err =>
+        console.error('[step-photo-retry] initial cycle failed', err),
+      );
   }, 3_000);
+
   intervalId = window.setInterval(() => {
     runStepPhotoRetryCycle().catch(err =>
       console.error('[step-photo-retry] cycle failed', err),
