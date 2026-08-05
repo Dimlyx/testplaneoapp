@@ -20,7 +20,7 @@ export function useOfflineInterventionUpdate() {
   const { queueInterventionUpdate } = useOffline();
 
   const updateIntervention = useCallback(
-    async ({ id, ...data }: UpdateInterventionData) => {
+    async ({ id, ...data }: UpdateInterventionData, options?: { queueOnly?: boolean }) => {
       // 1. Optimistic update: patch React Query cache immediately
       const patchCache = (old: Intervention | undefined) => {
         if (!old) return old;
@@ -46,9 +46,17 @@ export function useOfflineInterventionUpdate() {
         saveInterventionOffline({ ...cached, ...data }).catch(() => {});
       }
 
-      // 3. If offline, queue and return immediately
+      // 3. Queue-only is used for terminal status changes. It preserves the
+      // ordering behind pending steps/photos while the optimistic cache locks
+      // the intervention immediately on this device.
+      if (options?.queueOnly) {
+        await queueInterventionUpdate(id, data);
+        return;
+      }
+
+      // 4. If offline, queue and return immediately
       if (!isReallyOnline()) {
-        queueInterventionUpdate(id, data).catch(() => {});
+        await queueInterventionUpdate(id, data);
         toast({
           title: 'Enregistré hors-ligne',
           description: 'Synchronisation au retour de la connexion.',
@@ -56,7 +64,7 @@ export function useOfflineInterventionUpdate() {
         return;
       }
 
-      // 4. Online: fire-and-forget Supabase push in background, with hard timeout
+      // 5. Online: fire-and-forget Supabase push in background, with hard timeout
       withTimeout(
         Promise.resolve(
           supabase

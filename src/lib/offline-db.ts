@@ -161,6 +161,29 @@ export async function getPendingMutations(): Promise<OfflineMutation[]> {
   return all.filter(m => !m.synced).sort((a, b) => a.createdAt - b.createdAt);
 }
 
+/**
+ * Terminal statuses queued locally but not yet confirmed by the server.
+ * These are authoritative on the technician device: a closed intervention
+ * must stay locked even when a reconnect temporarily returns the older row.
+ */
+export async function getPendingTerminalInterventionStatuses(): Promise<Map<string, string>> {
+  const terminalStatuses = new Set(['completed', 'to_invoice', 'archived', 'cancelled']);
+  const pending = await getPendingMutations();
+  const statuses = new Map<string, string>();
+
+  for (const mutation of pending) {
+    if (
+      mutation.type === 'update_intervention' &&
+      typeof mutation.payload?.id === 'string' &&
+      terminalStatuses.has(mutation.payload?.status)
+    ) {
+      statuses.set(mutation.payload.id, mutation.payload.status);
+    }
+  }
+
+  return statuses;
+}
+
 export async function markMutationSynced(id: string): Promise<void> {
   const db = await getDB();
   const mutation = await db.get('mutations', id);

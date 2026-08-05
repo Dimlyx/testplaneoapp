@@ -38,6 +38,7 @@ import {
   countPendingStepPhotos,
   deleteStepPhoto,
   deleteStepPhotosForIntervention,
+  getAllPendingStepPhotos,
 } from '@/lib/step-photo-store';
 
 import { isLocalPhotoUrl } from '@/lib/step-photo-store';
@@ -456,12 +457,38 @@ export function useOfflineSync() {
       }
 
 
-      const mutations = await getPendingMutations();
+      const [mutations, photosWaiting, signaturesWaiting, stepPhotosWaiting] = await Promise.all([
+        getPendingMutations(),
+        getPendingPhotos(),
+        getPendingSignatures(),
+        getAllPendingStepPhotos(),
+      ]);
+      const blockedInterventions = new Set<string>([
+        ...photosWaiting.map((photo) => photo.interventionId),
+        ...signaturesWaiting.map((signature) => signature.interventionId),
+        ...stepPhotosWaiting.map((photo) => photo.interventionId),
+      ]);
       for (const mutation of mutations) {
         if (!isReallyOnline()) break;
+
+        const interventionId = mutation.payload?.interventionId || mutation.payload?.id;
+        const isTerminalUpdate =
+          mutation.type === 'update_intervention' &&
+          ['completed', 'to_invoice', 'archived', 'cancelled'].includes(mutation.payload?.status);
+
+        // Never confirm closure on the server before that intervention's
+        // earlier queued work has synced successfully. Other interventions
+        // can continue syncing independently.
+        if (isTerminalUpdate && interventionId && blockedInterventions.has(interventionId)) {
+          continue;
+        }
+
         const success = await syncMutation(mutation);
         if (success) successCount++;
-        else errorCount++;
+        else {
+          errorCount++;
+          if (interventionId) blockedInterventions.add(interventionId);
+        }
       }
 
       const photos = await getPendingPhotos();

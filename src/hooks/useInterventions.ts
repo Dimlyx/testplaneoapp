@@ -2,7 +2,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useUserOrganization } from '@/hooks/useUserOrganization';
-import { getInterventionOffline, getAllInterventionsOffline } from '@/lib/offline-db';
+import {
+  getInterventionOffline,
+  getAllInterventionsOffline,
+  getPendingTerminalInterventionStatuses,
+} from '@/lib/offline-db';
 import { getTechPreviewTarget } from '@/lib/tech-preview';
 
 export type InterventionStatus = 'to_plan' | 'planned' | 'in_progress' | 'completed' | 'to_invoice' | 'archived' | 'cancelled';
@@ -229,10 +233,14 @@ export function useTechnicianInterventions(technicianIdParam: string | undefined
           teamInterventions = teamData || [];
         }
 
+        const pendingTerminalStatuses = await getPendingTerminalInterventionStatuses();
         const allInterventions = [
           ...(directData || []).map(d => ({ ...d, profiles: null })),
           ...teamInterventions.map((d: any) => ({ ...d, profiles: null, _isTeamMember: true })),
-        ] as Intervention[];
+        ].map((item) => {
+          const localStatus = pendingTerminalStatuses.get(item.id);
+          return localStatus ? { ...item, status: localStatus } : item;
+        }) as Intervention[];
 
         // Sort chronologically by date then time
         allInterventions.sort((a, b) => {
@@ -287,7 +295,13 @@ export function useIntervention(id: string) {
           profiles = profile;
         }
         
-        return { ...data, profiles } as Intervention;
+        const pendingTerminalStatuses = await getPendingTerminalInterventionStatuses();
+        const localStatus = pendingTerminalStatuses.get(data.id);
+        return {
+          ...data,
+          profiles,
+          ...(localStatus ? { status: localStatus } : {}),
+        } as Intervention;
       } catch (err) {
         // Offline fallback: try IndexedDB
         if (!navigator.onLine) {
