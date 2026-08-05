@@ -134,6 +134,17 @@ async function findPreviouslyUploadedStepPhoto(
   }
 }
 
+function isAlreadyUploadedError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const candidate = error as { message?: string; statusCode?: string | number; status?: number; name?: string };
+  const message = String(candidate.message || '').toLowerCase();
+  return candidate.status === 409
+    || String(candidate.statusCode) === '409'
+    || String(candidate.name || '').toLowerCase() === 'duplicate'
+    || message.includes('already exists')
+    || message.includes('duplicate');
+}
+
 export async function resolveLocalPhotoUrlsForSync(
   photoUrl: string | null | undefined,
   interventionId: string,
@@ -178,7 +189,7 @@ export async function resolveLocalPhotoUrlsForSync(
           .upload(fileName, blob, { contentType: 'image/jpeg', cacheControl: '3600' }),
         30_000,
       );
-      if (uploadError && !String(uploadError.message || '').toLowerCase().includes('exists')) {
+      if (uploadError && !isAlreadyUploadedError(uploadError)) {
         const recovered = await findPreviouslyUploadedStepPhoto(interventionId, u);
         if (recovered) {
           resolved.push(recovered);
@@ -279,7 +290,7 @@ export async function swapLocalUrlInCompletion(params: {
 }
 
 /** Upload one stored photo, then update the DB and delete the local copy. */
-async function uploadOne(photo: StoredStepPhoto): Promise<boolean> {
+async function uploadOne(photo: StoredStepPhoto): Promise<'synced' | 'deferred'> {
   const localUrl = `${LOCAL_PHOTO_PREFIX}${photo.id}`;
   // Keep the exact same deterministic path as resolveLocalPhotoUrlsForSync.
   // If upload succeeds but the following DB update is interrupted, either
@@ -296,11 +307,7 @@ async function uploadOne(photo: StoredStepPhoto): Promise<boolean> {
       }),
     30_000,
   );
-  if (uploadError) {
-    if (!String(uploadError.message || '').toLowerCase().includes('exists')) {
-      throw uploadError;
-    }
-  }
+  if (uploadError && !isAlreadyUploadedError(uploadError)) throw uploadError;
 
   const { data: urlData } = supabase.storage
     .from('intervention-photos')
@@ -324,7 +331,7 @@ async function uploadOne(photo: StoredStepPhoto): Promise<boolean> {
     if (await isStepPhotoOrphan(photo, localUrl)) {
       await deleteStepPhoto(localUrl);
       retryStates.delete(photo.id);
-      return true;
+      return 'synced';
     }
 
     // The completion mutation may not have reached the database yet. Keep the
@@ -336,7 +343,7 @@ async function uploadOne(photo: StoredStepPhoto): Promise<boolean> {
       nextAttemptAt: Date.now() + getBackoff(attempts),
       lastError: 'completion-not-found',
     });
-    return false;
+    return 'deferred';
   }
 
   // 3. Warm the Service Worker cache.
@@ -345,7 +352,7 @@ async function uploadOne(photo: StoredStepPhoto): Promise<boolean> {
   // 4. Delete local copy
   await deleteStepPhoto(localUrl);
   retryStates.delete(photo.id);
-  return true;
+  return 'synced';
 }
 
 let cycleInFlight = false;
@@ -380,9 +387,11 @@ export async function runStepPhotoRetryCycle(): Promise<{
 
       attempted++;
       try {
-        const updated = await uploadOne(photo);
-        if (updated) succeeded++;
-        else failed++;
+        const result = await uploadOne(photo);
+        if (result === 'synced') succeeded++;
+        // "deferred" is expected when the queued completion has not reached
+        // the database yet. The mutation replay immediately below will finish
+        // it, so it must not be reported to the technician as an upload error.
       } catch (err: any) {
         failed++;
         const attempts = state.attempts + 1;
