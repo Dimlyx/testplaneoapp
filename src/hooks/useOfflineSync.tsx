@@ -16,7 +16,6 @@ import {
   savePhotoOffline,
   saveSignatureOffline,
   incrementMutationAttempts,
-  deleteMutation,
   updateLastSyncTime,
   OfflineMutation,
   OfflinePhoto,
@@ -34,7 +33,7 @@ import {
   forceStepPhotoRetry,
   resolveLocalPhotoUrlsForSync,
 } from '@/lib/step-photo-retry';
-import { countPendingStepPhotos, deleteStepPhoto, getPendingStepPhotosForIntervention } from '@/lib/step-photo-store';
+import { countPendingStepPhotos, deleteStepPhoto } from '@/lib/step-photo-store';
 
 import { isLocalPhotoUrl } from '@/lib/step-photo-store';
 
@@ -78,80 +77,6 @@ function mergePreferRemote(dbValue: string | null | undefined, queued: string | 
   }
   return merged.length === 1 ? merged[0] : JSON.stringify(merged);
 }
-
-/**
- * Drop pending items (mutations / photos / signatures / step photos) whose
- * intervention is already considered "closed" on the server.
- * These items are dead weight: the server has the data, but the local queue
- * never received an ACK (typically because the network dropped right after
- * the server commit). Returns the number of items pruned.
- */
-const CLOSED_STATUSES = new Set(['completed', 'to_invoice', 'archived', 'cancelled']);
-
-async function pruneStaleForClosedInterventions(): Promise<number> {
-  const [mutations, photos, signatures] = await Promise.all([
-    getPendingMutations(),
-    getPendingPhotos(),
-    getPendingSignatures(),
-  ]);
-
-  const ids = new Set<string>();
-  for (const m of mutations) {
-    const id = m.payload?.id || m.payload?.interventionId;
-    if (id && typeof id === 'string') ids.add(id);
-  }
-  for (const p of photos) if (p.interventionId) ids.add(p.interventionId);
-  for (const s of signatures) if (s.interventionId) ids.add(s.interventionId);
-
-  if (ids.size === 0) return 0;
-
-  const { data, error } = await supabase
-    .from('interventions')
-    .select('id, status')
-    .in('id', Array.from(ids));
-
-  if (error || !data) return 0;
-
-  const closedIds = new Set(
-    data.filter(r => CLOSED_STATUSES.has((r as any).status)).map(r => (r as any).id),
-  );
-  if (closedIds.size === 0) return 0;
-
-  let pruned = 0;
-
-  for (const m of mutations) {
-    const id = m.payload?.id || m.payload?.interventionId;
-    if (id && closedIds.has(id)) {
-      await deleteMutation(m.id);
-      pruned++;
-    }
-  }
-  for (const p of photos) {
-    if (closedIds.has(p.interventionId)) {
-      await markPhotoSynced(p.id);
-      pruned++;
-    }
-  }
-  for (const s of signatures) {
-    if (closedIds.has(s.interventionId)) {
-      await markSignatureSynced(s.id);
-      pruned++;
-    }
-  }
-  for (const interventionId of closedIds) {
-    try {
-      const stepPhotos = await getPendingStepPhotosForIntervention(interventionId);
-      for (const sp of stepPhotos) {
-        await deleteStepPhoto(`local://step-photo/${sp.id}`);
-        pruned++;
-      }
-    } catch {
-      /* ignore — best effort */
-    }
-  }
-  return pruned;
-}
-
 
 interface SyncState {
   isOnline: boolean;
