@@ -96,6 +96,17 @@ function containsLocalPhotoUrl(value: string | null | undefined): boolean {
   return isLocalPhotoUrl(value);
 }
 
+const MUTATION_RETRY_BACKOFF_MS = [0, 5_000, 30_000, 120_000, 300_000];
+
+function isMutationRetryDue(mutation: OfflineMutation, now: number): boolean {
+  const attempts = mutation.attempts || 0;
+  if (attempts === 0 || !mutation.lastAttemptAt) return true;
+  const delay = MUTATION_RETRY_BACKOFF_MS[
+    Math.min(attempts, MUTATION_RETRY_BACKOFF_MS.length - 1)
+  ];
+  return mutation.lastAttemptAt + delay <= now;
+}
+
 interface SyncState {
   isOnline: boolean;
   isSyncing: boolean;
@@ -475,6 +486,7 @@ export function useOfflineSync() {
         ...signaturesWaiting.map((signature) => signature.interventionId),
         ...stepPhotosWaiting.map((photo) => photo.interventionId),
       ]);
+      const mutationRetryTime = Date.now();
       for (const mutation of mutations) {
         if (!isReallyOnline()) break;
 
@@ -482,6 +494,13 @@ export function useOfflineSync() {
         const isTerminalUpdate =
           mutation.type === 'update_intervention' &&
           ['completed', 'to_invoice', 'archived', 'cancelled'].includes(mutation.payload?.status);
+
+        // A persistent failure (for example a temporarily unavailable local
+        // photo) must not be retried and counted again every 30 seconds.
+        if (!isMutationRetryDue(mutation, mutationRetryTime)) {
+          if (interventionId) blockedInterventions.add(interventionId);
+          continue;
+        }
 
         // Never confirm closure on the server before that intervention's
         // earlier queued work has synced successfully. Other interventions
