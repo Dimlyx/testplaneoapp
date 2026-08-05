@@ -606,6 +606,26 @@ export function useOfflineSync() {
     syncAllRef.current = syncAll;
   }, [syncAll]);
 
+  // Flush immediately when the app opens or returns to the foreground.
+  // A phone can regain connectivity while the PWA is closed; in that case
+  // there is no online-state transition for our listener to observe, and a
+  // terminal status would otherwise wait for the 30-second interval.
+  useEffect(() => {
+    const flushIfOnline = () => {
+      if (document.visibilityState === 'visible' && isReallyOnline() && !syncingRef.current) {
+        syncAll();
+      }
+    };
+
+    flushIfOnline();
+    document.addEventListener('visibilitychange', flushIfOnline);
+    window.addEventListener('pageshow', flushIfOnline);
+    return () => {
+      document.removeEventListener('visibilitychange', flushIfOnline);
+      window.removeEventListener('pageshow', flushIfOnline);
+    };
+  }, [syncAll]);
+
   // Auto-sync every 30s — only attempts if real heartbeat says online
   useEffect(() => {
     const interval = setInterval(() => {
