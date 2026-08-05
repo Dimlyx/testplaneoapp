@@ -72,13 +72,23 @@ async function isStepPhotoOrphan(
       8000,
     );
 
-    if (completion?.photo_url) {
-      // Row exists. If its photo_url does NOT contain our localUrl, the photo
-      // has been replaced by a remote URL → safe to delete the local blob.
-      return !String(completion.photo_url).includes(localUrl);
+    // The row still points at our local:// URL → the photo is definitely
+    // still needed locally.
+    if (completion?.photo_url && String(completion.photo_url).includes(localUrl)) {
+      return false;
     }
 
-    // No completion row and no queued mutation references the blob.
+    // In every other case (row without our reference, or no row at all) we
+    // only allow deletion with POSITIVE confirmation that the very same photo
+    // exists in remote storage. Without that proof the blob is preserved.
+    const remote = await findPreviouslyUploadedStepPhoto(photo.interventionId, localUrl);
+    if (!remote) {
+      console.warn(
+        '[step-photo-retry] keeping local blob (no remote copy confirmed)',
+        photo.id,
+      );
+      return false;
+    }
     return true;
   } catch (err) {
     console.warn('[step-photo-retry] orphan check failed', err);
@@ -86,6 +96,7 @@ async function isStepPhotoOrphan(
     return false;
   }
 }
+
 
 /**
  * Upload (if needed) any `local://` URL contained in a serialized photo_url
