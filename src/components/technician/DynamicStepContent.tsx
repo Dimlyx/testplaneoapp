@@ -17,7 +17,7 @@ import {
   saveStepPhoto,
   deleteStepPhoto,
   isLocalPhotoUrl,
-  tryAcquireStepPhotoUploadLock,
+  runStepPhotoUploadLocked,
 } from "@/lib/step-photo-store";
 import { isReallyOnline } from "@/lib/network-status";
 import { withTimeout } from "@/lib/supabase-with-timeout";
@@ -226,20 +226,19 @@ const DynamicStepContent = ({
       setPhotoUrls(prev => [...prev, localUrl]);
 
       const uploadPromise = (async (): Promise<string | null> => {
-        let releaseUploadLock: (() => void) | null = null;
         try {
           if (!isReallyOnline()) {
             return localUrl;
           }
-          releaseUploadLock = tryAcquireStepPhotoUploadLock(localUrl);
-          if (!releaseUploadLock) return localUrl;
           const fileName = `steps/${interventionId}/${step.id}-loop${loopIndex}-${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
-          const { error: uploadError } = await withTimeout(
-            supabase.storage
+          const lockedUpload = await withTimeout(
+            runStepPhotoUploadLocked(localUrl, () => supabase.storage
               .from('intervention-photos')
-              .upload(fileName, compressed, { contentType: 'image/jpeg' }),
+              .upload(fileName, compressed, { contentType: 'image/jpeg' })),
             PHOTO_UPLOAD_TIMEOUT_MS,
           );
+          if (!lockedUpload.started) return localUrl;
+          const uploadError = lockedUpload.result?.error;
           if (uploadError) throw uploadError;
 
           const { data: urlData } = supabase.storage
@@ -273,7 +272,6 @@ const DynamicStepContent = ({
           console.warn('Photo upload failed, keeping local copy in IndexedDB:', error?.message);
           return localUrl;
         } finally {
-          releaseUploadLock?.();
           setUploadingCount(prev => {
             const next = prev - 1;
             if (next <= 0) setIsUploading(false);
@@ -370,19 +368,19 @@ const DynamicStepContent = ({
 
       // Online → try direct upload, but cap it so a flaky connection
       // can't keep the "Suivant" button spinning indefinitely.
-      const releaseUploadLock = tryAcquireStepPhotoUploadLock(localUrl);
-      if (!releaseUploadLock) {
-        await onComplete(step.id, sName, localUrl);
-        return;
-      }
       try {
         const fileName = `steps/${interventionId}/${step.id}-signature-${Date.now()}.png`;
-        const { error: uploadError } = await withTimeout(
-          supabase.storage
+        const lockedUpload = await withTimeout(
+          runStepPhotoUploadLocked(localUrl, () => supabase.storage
             .from('intervention-photos')
-            .upload(fileName, blob, { contentType: 'image/png', upsert: false }),
+            .upload(fileName, blob, { contentType: 'image/png', upsert: false })),
           SIGNATURE_UPLOAD_TIMEOUT_MS,
         );
+        if (!lockedUpload.started) {
+          await onComplete(step.id, sName, localUrl);
+          return;
+        }
+        const uploadError = lockedUpload.result?.error;
         if (uploadError) throw uploadError;
         const { data: urlData } = supabase.storage
           .from('intervention-photos')
@@ -394,8 +392,6 @@ const DynamicStepContent = ({
         console.warn('Step signature upload failed/timed out, keeping local copy:', uploadErr);
         // Complete the step anyway with the local URL — worker will retry
         await onComplete(step.id, sName, localUrl);
-      } finally {
-        releaseUploadLock();
       }
     } catch (error) {
       console.error('Error saving step signature:', error);

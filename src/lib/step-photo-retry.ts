@@ -27,7 +27,7 @@ import {
   getStepPhotoBlob,
   isLocalPhotoUrl,
   LOCAL_PHOTO_PREFIX,
-  tryAcquireStepPhotoUploadLock,
+  runStepPhotoUploadLocked,
   type StoredStepPhoto,
 } from '@/lib/step-photo-store';
 import { precachePhoto } from '@/lib/photo-precache';
@@ -181,12 +181,6 @@ export async function resolveLocalPhotoUrlsForSync(
   for (const u of urls) {
     if (!isLocalPhotoUrl(u)) { resolved.push(u); continue; }
     const id = u.slice(LOCAL_PHOTO_PREFIX.length);
-    const releaseUploadLock = tryAcquireStepPhotoUploadLock(u);
-    if (!releaseUploadLock) {
-      unresolvedLocalUrls.push(u);
-      resolved.push(u);
-      continue;
-    }
     try {
       const blob = await getStepPhotoBlob(u);
       if (!blob) {
@@ -201,12 +195,18 @@ export async function resolveLocalPhotoUrlsForSync(
         continue;
       }
       const fileName = `steps/${interventionId}/sync-${id}.jpg`;
-      const { error: uploadError } = await withTimeout(
-        supabase.storage
+      const lockedUpload = await withTimeout(
+        runStepPhotoUploadLocked(u, () => supabase.storage
           .from('intervention-photos')
-          .upload(fileName, blob, { contentType: 'image/jpeg', cacheControl: '3600' }),
+          .upload(fileName, blob, { contentType: 'image/jpeg', cacheControl: '3600' })),
         30_000,
       );
+      if (!lockedUpload.started) {
+        unresolvedLocalUrls.push(u);
+        resolved.push(u);
+        continue;
+      }
+      const uploadError = lockedUpload.result?.error;
       if (uploadError && !isAlreadyUploadedError(uploadError)) {
         const recovered = await findPreviouslyUploadedStepPhoto(interventionId, u);
         if (recovered) {
@@ -229,8 +229,6 @@ export async function resolveLocalPhotoUrlsForSync(
       console.warn('[resolveLocalPhotoUrlsForSync] failed for', u, err);
       unresolvedLocalUrls.push(u);
       resolved.push(u);
-    } finally {
-      releaseUploadLock();
     }
   }
 
@@ -312,73 +310,69 @@ export async function swapLocalUrlInCompletion(params: {
 /** Upload one stored photo, then update the DB and delete the local copy. */
 async function uploadOne(photo: StoredStepPhoto): Promise<'synced' | 'deferred'> {
   const localUrl = `${LOCAL_PHOTO_PREFIX}${photo.id}`;
-  const releaseUploadLock = tryAcquireStepPhotoUploadLock(localUrl);
-  if (!releaseUploadLock) return 'deferred';
   // Keep the exact same deterministic path as resolveLocalPhotoUrlsForSync.
   // If upload succeeds but the following DB update is interrupted, either
   // sync path can recover the object without re-uploading or looping forever.
   const fileName = `steps/${photo.interventionId}/sync-${photo.id}.jpg`;
 
-  try {
-    // 1. Upload to storage
-    const { error: uploadError } = await withTimeout(
-      supabase.storage
-        .from('intervention-photos')
-        .upload(fileName, photo.blob, {
+  // 1. Upload to storage
+  const lockedUpload = await withTimeout(
+    runStepPhotoUploadLocked(localUrl, () => supabase.storage
+      .from('intervention-photos')
+      .upload(fileName, photo.blob, {
           contentType: 'image/jpeg',
           cacheControl: '3600',
-        }),
+        })),
       30_000,
-    );
-    if (uploadError && !isAlreadyUploadedError(uploadError)) throw uploadError;
+  );
+  if (!lockedUpload.started) return 'deferred';
+  const uploadError = lockedUpload.result?.error;
+  if (uploadError && !isAlreadyUploadedError(uploadError)) throw uploadError;
 
-    const { data: urlData } = supabase.storage
-      .from('intervention-photos')
-      .getPublicUrl(fileName);
-    const remoteUrl = urlData.publicUrl;
+  const { data: urlData } = supabase.storage
+    .from('intervention-photos')
+    .getPublicUrl(fileName);
+  const remoteUrl = urlData.publicUrl;
 
   // 2. Rewrite the completion row so future loads use the remote URL.
   // If the row is not present yet, keep the local blob: the queued step
   // mutation still needs it to rewrite local:// before its own DB write.
-    const swapResult = await swapLocalUrlInCompletion({
+  const swapResult = await swapLocalUrlInCompletion({
       interventionId: photo.interventionId,
       stepId: photo.stepId,
       loopIndex: photo.loopIndex,
       localUrl,
       remoteUrl,
     });
-    if (swapResult === 'not-found') {
+  if (swapResult === 'not-found') {
     // The completion row no longer references our local:// URL (or doesn't
     // exist and no queued mutation needs it). If it's a true orphan, drop
     // the IDB blob so it stops counting as "pending sync" forever.
-      if (await isStepPhotoOrphan(photo, localUrl)) {
+    if (await isStepPhotoOrphan(photo, localUrl)) {
         await deleteStepPhoto(localUrl);
         retryStates.delete(photo.id);
         return 'synced';
-      }
+    }
 
     // The completion mutation may not have reached the database yet. Keep the
     // blob and arm the normal backoff instead of re-uploading it every cycle.
-      const state = retryStates.get(photo.id) ?? { attempts: 0, nextAttemptAt: 0 };
-      const attempts = state.attempts + 1;
-      retryStates.set(photo.id, {
+    const state = retryStates.get(photo.id) ?? { attempts: 0, nextAttemptAt: 0 };
+    const attempts = state.attempts + 1;
+    retryStates.set(photo.id, {
         attempts,
         nextAttemptAt: Date.now() + getBackoff(attempts),
         lastError: 'completion-not-found',
-      });
-      return 'deferred';
-    }
+    });
+    return 'deferred';
+  }
 
   // 3. Warm the Service Worker cache.
-    try { precachePhoto(remoteUrl); } catch { /* best-effort */ }
+  try { precachePhoto(remoteUrl); } catch { /* best-effort */ }
 
   // 4. Delete local copy
-    await deleteStepPhoto(localUrl);
-    retryStates.delete(photo.id);
-    return 'synced';
-  } finally {
-    releaseUploadLock();
-  }
+  await deleteStepPhoto(localUrl);
+  retryStates.delete(photo.id);
+  return 'synced';
 }
 
 let cycleInFlight = false;
@@ -507,9 +501,6 @@ export async function runOrphanBlobSafetyNet(): Promise<number> {
     });
     if (stillQueued) continue;
 
-    const releaseUploadLock = tryAcquireStepPhotoUploadLock(localUrl);
-    if (!releaseUploadLock) continue;
-
     try {
       const { data: completion } = await withTimeout(
         supabase
@@ -527,12 +518,14 @@ export async function runOrphanBlobSafetyNet(): Promise<number> {
 
       // Upload (idempotent) then append the remote URL to the row.
       const fileName = `steps/${photo.interventionId}/sync-${photo.id}.jpg`;
-      const { error: uploadError } = await withTimeout(
-        supabase.storage
+      const lockedUpload = await withTimeout(
+        runStepPhotoUploadLocked(localUrl, () => supabase.storage
           .from('intervention-photos')
-          .upload(fileName, photo.blob, { contentType: 'image/jpeg', cacheControl: '3600' }),
+          .upload(fileName, photo.blob, { contentType: 'image/jpeg', cacheControl: '3600' })),
         30_000,
       );
+      if (!lockedUpload.started) continue;
+      const uploadError = lockedUpload.result?.error;
       if (uploadError && !isAlreadyUploadedError(uploadError)) continue;
 
       const { data: urlData } = supabase.storage
@@ -567,8 +560,6 @@ export async function runOrphanBlobSafetyNet(): Promise<number> {
       console.info('[step-photo-safety-net] re-attached orphan photo', photo.id);
     } catch (err) {
       console.warn('[step-photo-safety-net] failed for', photo.id, err);
-    } finally {
-      releaseUploadLock();
     }
   }
 

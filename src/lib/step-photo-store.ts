@@ -62,17 +62,25 @@ const blobUrlCache = new Map<string, string>();
 // Shared per-photo upload lock. Every step-photo upload path uses the same
 // local:// key so the direct uploader, retry worker, mutation resolver and
 // orphan safety net cannot upload the same IndexedDB record concurrently.
-const uploadsInFlight = new Set<string>();
+const uploadsInFlight = new Map<string, Promise<unknown>>();
 
-export function tryAcquireStepPhotoUploadLock(localUrl: string): (() => void) | null {
-  if (!isLocalPhotoUrl(localUrl) || uploadsInFlight.has(localUrl)) return null;
-  uploadsInFlight.add(localUrl);
-  let released = false;
-  return () => {
-    if (released) return;
-    released = true;
-    uploadsInFlight.delete(localUrl);
-  };
+export async function runStepPhotoUploadLocked<T>(
+  localUrl: string,
+  upload: () => PromiseLike<T>,
+): Promise<{ started: boolean; result?: T }> {
+  if (!isLocalPhotoUrl(localUrl) || uploadsInFlight.has(localUrl)) {
+    return { started: false };
+  }
+
+  // Keep the lock tied to the real network promise. If an outer timeout stops
+  // waiting, the lock remains active until the underlying request truly ends.
+  const request = Promise.resolve().then(upload);
+  uploadsInFlight.set(localUrl, request);
+  try {
+    return { started: true, result: await request };
+  } finally {
+    if (uploadsInFlight.get(localUrl) === request) uploadsInFlight.delete(localUrl);
+  }
 }
 
 /** True if a URL is one of our persistent local references. */
