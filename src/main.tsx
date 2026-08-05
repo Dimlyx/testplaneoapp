@@ -9,11 +9,6 @@ if (navigator.onLine) {
   initOneSignal();
 }
 
-// Protect offline step photos from being evicted by the OS/browser.
-// Without this, IndexedDB blobs are "best-effort" and can disappear before
-// the sync worker manages to upload them (→ broken photos in reports).
-
-
 // Suppress the browser's PWA install banner on desktop only
 window.addEventListener('beforeinstallprompt', (e) => {
   const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
