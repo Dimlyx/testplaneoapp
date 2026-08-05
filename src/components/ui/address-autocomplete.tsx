@@ -65,15 +65,21 @@ export function AddressAutocomplete({
   // Used to skip the next fetch right after a user picks a suggestion
   // (otherwise the controlled value change would reopen the dropdown).
   const skipNextFetchRef = useRef(false);
+  // Only fetch/open once the user has actually typed in this input.
+  // Prevents the dropdown from opening automatically when a form is
+  // pre-filled (édition d'une intervention, d'un client, etc.).
+  const userTypedRef = useRef(false);
 
   // Debounced fetch
   useEffect(() => {
+    if (!userTypedRef.current) return;
     if (skipNextFetchRef.current) {
       skipNextFetchRef.current = false;
       return;
     }
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
+
     if (abortRef.current) abortRef.current.abort();
 
     const trimmed = value.trim();
@@ -169,8 +175,12 @@ export function AddressAutocomplete({
         <Input
           id={id}
           value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onFocus={() => suggestions.length > 0 && setOpen(true)}
+          onChange={(e) => {
+            userTypedRef.current = true;
+            onChange(e.target.value);
+          }}
+          onFocus={() => userTypedRef.current && suggestions.length > 0 && setOpen(true)}
+
           onKeyDown={onKeyDown}
           placeholder={placeholder}
           disabled={disabled}
