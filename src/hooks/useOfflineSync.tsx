@@ -32,6 +32,8 @@ import { withTimeout, isTimeoutError } from '@/lib/supabase-with-timeout';
 import {
   startStepPhotoRetryWorker,
   runStepPhotoRetryCycle,
+  runOrphanBlobSafetyNet,
+
   forceStepPhotoRetry,
   resolveLocalPhotoUrlsForSync,
 } from '@/lib/step-photo-retry';
