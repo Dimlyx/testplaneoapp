@@ -23,9 +23,38 @@ const ZERO: PendingBreakdown = {
   stepPhotos: 0,
 };
 
+export async function getPendingForIntervention(
+  interventionId: string | undefined,
+): Promise<PendingBreakdown> {
+  if (!interventionId) return ZERO;
+
+  const [mutations, photos, signatures, stepPhotos] = await Promise.all([
+    getPendingMutations(),
+    getPendingPhotos(),
+    getPendingSignatures(),
+    getPendingStepPhotosForIntervention(interventionId),
+  ]);
+
+  const matchesIntervention = (payload: any) =>
+    payload?.id === interventionId || payload?.interventionId === interventionId;
+
+  const mutationCount = mutations.filter((mutation) => matchesIntervention(mutation.payload)).length;
+  const photoCount = photos.filter((photo) => photo.interventionId === interventionId).length;
+  const signatureCount = signatures.filter((signature) => signature.interventionId === interventionId).length;
+  const stepPhotoCount = stepPhotos.length;
+
+  return {
+    total: mutationCount + photoCount + signatureCount + stepPhotoCount,
+    mutations: mutationCount,
+    photos: photoCount,
+    signatures: signatureCount,
+    stepPhotos: stepPhotoCount,
+  };
+}
+
 export function usePendingForIntervention(interventionId: string | undefined): {
   pending: PendingBreakdown;
-  reload: () => Promise<void>;
+  reload: () => Promise<PendingBreakdown>;
 } {
   const [pending, setPending] = useState<PendingBreakdown>(ZERO);
   // Re-evaluate whenever the global pending count changes (worker tick, sync, etc.)
@@ -34,34 +63,15 @@ export function usePendingForIntervention(interventionId: string | undefined): {
   const reload = async () => {
     if (!interventionId) {
       setPending(ZERO);
-      return;
+      return ZERO;
     }
     try {
-      const [mutations, photos, signatures, stepPhotos] = await Promise.all([
-        getPendingMutations(),
-        getPendingPhotos(),
-        getPendingSignatures(),
-        getPendingStepPhotosForIntervention(interventionId),
-      ]);
-
-      const matchesIntervention = (payload: any) =>
-        payload?.id === interventionId ||
-        payload?.interventionId === interventionId;
-
-      const muCount = mutations.filter(m => matchesIntervention(m.payload)).length;
-      const phCount = photos.filter(p => p.interventionId === interventionId).length;
-      const sigCount = signatures.filter(s => s.interventionId === interventionId).length;
-      const stepCount = stepPhotos.length;
-
-      setPending({
-        total: muCount + phCount + sigCount + stepCount,
-        mutations: muCount,
-        photos: phCount,
-        signatures: sigCount,
-        stepPhotos: stepCount,
-      });
+      const nextPending = await getPendingForIntervention(interventionId);
+      setPending(nextPending);
+      return nextPending;
     } catch (e) {
       console.error('usePendingForIntervention: failed to load pending', e);
+      return pending;
     }
   };
 

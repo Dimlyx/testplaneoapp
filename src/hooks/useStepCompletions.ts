@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { addMutation } from "@/lib/offline-db";
+import { addMutation, markMutationSynced } from "@/lib/offline-db";
 import { precachePhotos, extractPhotoUrls } from "@/lib/photo-precache";
 import { isReallyOnline } from "@/lib/network-status";
 import { withTimeout } from "@/lib/supabase-with-timeout";
@@ -137,14 +137,14 @@ export function useCompleteStep() {
         }
       );
 
-      // 2. If offline (or boot offline / dead heartbeat), queue and return
-      if (!isReallyOnline()) {
-        await addMutation({
-          type: 'complete_step',
-          payload: { interventionId, stepId, comment, photoUrl, loopIndex, checklistData, multipleChoiceData, completedAt: now },
-        });
-        return;
-      }
+      // 2. Queue first, even online. This guarantees that the pre-close guard
+      // sees the step immediately while the server request is still in flight.
+      const queuedMutationId = await addMutation({
+        type: 'complete_step',
+        payload: { interventionId, stepId, comment, photoUrl, loopIndex, checklistData, multipleChoiceData, completedAt: now },
+      });
+
+      if (!isReallyOnline()) return;
 
       // 3. Online: fire-and-forget background sync, with a hard timeout
       //    so a flaky connection can't keep the request pending forever.
@@ -201,16 +201,14 @@ export function useCompleteStep() {
           if (error) throw error;
         }
 
+        await markMutationSynced(queuedMutationId);
+
         // Refresh from server
         queryClient.invalidateQueries({ queryKey: ["step-completions", interventionId] });
       };
 
-      syncToServer().catch(async (err) => {
-        console.warn("Step completion background sync failed, queuing:", err?.message);
-        await addMutation({
-          type: 'complete_step',
-          payload: { interventionId, stepId, comment, photoUrl, loopIndex, checklistData, multipleChoiceData, completedAt: now },
-        }).catch(() => {});
+      syncToServer().catch((err) => {
+        console.warn("Step completion background sync failed, kept in queue:", err?.message);
       });
     },
     onSuccess: () => {
@@ -272,14 +270,13 @@ export function useSaveDraft() {
         }
       );
 
-      // 2. If offline (or boot offline / dead heartbeat), queue
-      if (!isReallyOnline()) {
-        await addMutation({
-          type: 'save_draft_step',
-          payload: { interventionId, stepId, comment, photoUrl, loopIndex, checklistData, multipleChoiceData },
-        });
-        return;
-      }
+      // 2. Queue first so closing cannot race an in-flight draft save.
+      const queuedMutationId = await addMutation({
+        type: 'save_draft_step',
+        payload: { interventionId, stepId, comment, photoUrl, loopIndex, checklistData, multipleChoiceData },
+      });
+
+      if (!isReallyOnline()) return;
 
       // 3. Background sync with hard timeout
       const syncToServer = async () => {
@@ -333,15 +330,12 @@ export function useSaveDraft() {
           if (error) throw error;
         }
 
+        await markMutationSynced(queuedMutationId);
         queryClient.invalidateQueries({ queryKey: ["step-completions", interventionId] });
       };
 
-      syncToServer().catch(async (err) => {
-        console.warn("Draft save background sync failed, queuing:", err?.message);
-        await addMutation({
-          type: 'save_draft_step',
-          payload: { interventionId, stepId, comment, photoUrl, loopIndex, checklistData, multipleChoiceData },
-        }).catch(() => {});
+      syncToServer().catch((err) => {
+        console.warn("Draft save background sync failed, kept in queue:", err?.message);
       });
     },
     onSuccess: (_, variables) => {
