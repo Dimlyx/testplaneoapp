@@ -141,6 +141,17 @@ const TechnicianInterventionDetail = () => {
 
   const handleStatusChange = async (newStatus: string) => {
     if (!id) return;
+    if (['completed', 'to_invoice', 'archived'].includes(newStatus)) {
+      const currentPending = await getPendingForIntervention(id);
+      if (currentPending.total > 0) {
+        toast({
+          title: "Synchronisation en cours",
+          description: `${currentPending.total} élément(s) doivent encore être envoyés avant ce changement de statut.`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
     setIsUpdating(true);
     setStatus(newStatus);
     await offlineUpdate({
