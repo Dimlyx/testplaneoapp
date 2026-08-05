@@ -457,11 +457,28 @@ export function useOfflineSync() {
 
 
       const mutations = await getPendingMutations();
+      const blockedInterventions = new Set<string>();
       for (const mutation of mutations) {
         if (!isReallyOnline()) break;
+
+        const interventionId = mutation.payload?.interventionId || mutation.payload?.id;
+        const isTerminalUpdate =
+          mutation.type === 'update_intervention' &&
+          ['completed', 'to_invoice', 'archived', 'cancelled'].includes(mutation.payload?.status);
+
+        // Never confirm closure on the server before that intervention's
+        // earlier queued work has synced successfully. Other interventions
+        // can continue syncing independently.
+        if (isTerminalUpdate && interventionId && blockedInterventions.has(interventionId)) {
+          continue;
+        }
+
         const success = await syncMutation(mutation);
         if (success) successCount++;
-        else errorCount++;
+        else {
+          errorCount++;
+          if (interventionId) blockedInterventions.add(interventionId);
+        }
       }
 
       const photos = await getPendingPhotos();

@@ -30,7 +30,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useInterventionPhotos } from "@/hooks/useInterventionPhotos";
 import InterventionWorkflow from "@/components/technician/InterventionWorkflow";
 import { PdfGenerationOverlay } from "@/components/PdfGenerationOverlay";
-import { getPendingForIntervention } from "@/hooks/usePendingForIntervention";
 
 const TechnicianInterventionDetail = () => {
   const navigate = useNavigate();
@@ -116,15 +115,6 @@ const TechnicianInterventionDetail = () => {
 
   const handleEndIntervention = async () => {
     if (!id) return;
-    const currentPending = await getPendingForIntervention(id);
-    if (currentPending.total > 0) {
-      toast({
-        title: "Synchronisation en cours",
-        description: `${currentPending.total} élément(s) doivent encore être envoyés avant la clôture.`,
-        variant: "destructive",
-      });
-      return;
-    }
     setIsUpdating(true);
     setStatus('completed');
     const departureTime = format(new Date(), 'HH:mm:ss');
@@ -134,30 +124,19 @@ const TechnicianInterventionDetail = () => {
       report,
       client_signature_name: clientSignatureName,
       departure_time: departureTime,
-    });
+    }, { queueOnly: true });
     toast({ title: "Intervention terminée" });
     setIsUpdating(false);
   };
 
   const handleStatusChange = async (newStatus: string) => {
     if (!id) return;
-    if (['completed', 'to_invoice', 'archived'].includes(newStatus)) {
-      const currentPending = await getPendingForIntervention(id);
-      if (currentPending.total > 0) {
-        toast({
-          title: "Synchronisation en cours",
-          description: `${currentPending.total} élément(s) doivent encore être envoyés avant ce changement de statut.`,
-          variant: "destructive",
-        });
-        return;
-      }
-    }
     setIsUpdating(true);
     setStatus(newStatus);
     await offlineUpdate({
       id,
       status: newStatus as any,
-    });
+    }, { queueOnly: ['completed', 'to_invoice', 'archived', 'cancelled'].includes(newStatus) });
     toast({ title: "Statut mis à jour" });
     setIsUpdating(false);
   };

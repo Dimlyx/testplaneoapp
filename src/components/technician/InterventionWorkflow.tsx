@@ -20,7 +20,6 @@ import WorkflowStep from "./WorkflowStep";
 import { MapsChooser, useMapsChooser } from "@/components/technician/MapsChooser";
 import DynamicStepContent from "./DynamicStepContent";
 import CancelInterventionDialog from "./CancelInterventionDialog";
-import PreCloseGuardDialog from "./PreCloseGuardDialog";
 import { usePendingForIntervention } from "@/hooks/usePendingForIntervention";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -112,8 +111,7 @@ const InterventionWorkflow = ({
   const [pauseReason, setPauseReason] = useState("");
   const [showPauseHistory, setShowPauseHistory] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
-  const [showPreCloseGuard, setShowPreCloseGuard] = useState(false);
-  const { pending: pendingForIntervention, reload: reloadPendingForIntervention } = usePendingForIntervention(intervention.id);
+  const { pending: pendingForIntervention } = usePendingForIntervention(intervention.id);
   const isPaused = !!activePause;
 
   // Determine completed steps based on data
@@ -1105,7 +1103,7 @@ const InterventionWorkflow = ({
                         <div>
                           <p className="font-medium text-sm">Synchronisation en cours</p>
                           <p className="text-xs mt-1 text-amber-600 dark:text-amber-400">
-                            {pendingForIntervention.total} élément(s) en attente d'envoi. La clôture sera possible une fois tout synchronisé.
+                            {pendingForIntervention.total} élément(s) seront synchronisés en arrière-plan après la clôture.
                           </p>
                         </div>
                       </div>
@@ -1124,14 +1122,7 @@ const InterventionWorkflow = ({
                     </div>
                   )}
                   <Button
-                    onClick={async () => {
-                      const currentPending = await reloadPendingForIntervention();
-                      if (currentPending.total > 0) {
-                        setShowPreCloseGuard(true);
-                        return;
-                      }
-                      await onEndIntervention();
-                    }}
+                    onClick={onEndIntervention}
                     disabled={isUpdating}
                     className="w-full"
                   >
@@ -1225,12 +1216,6 @@ const InterventionWorkflow = ({
         onClose={() => setOpenEquipmentPanel(null)}
       />
     )}
-    <PreCloseGuardDialog
-      open={showPreCloseGuard}
-      onOpenChange={setShowPreCloseGuard}
-      pending={pendingForIntervention}
-    />
-
     </>
   );
 };
