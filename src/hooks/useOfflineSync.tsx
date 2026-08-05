@@ -38,7 +38,6 @@ import {
   countPendingStepPhotos,
   deleteStepPhoto,
   deleteStepPhotosForIntervention,
-  getAllPendingStepPhotos,
 } from '@/lib/step-photo-store';
 
 import { isLocalPhotoUrl } from '@/lib/step-photo-store';
