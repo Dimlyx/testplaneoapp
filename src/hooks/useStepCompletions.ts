@@ -154,6 +154,12 @@ export function useCompleteStep() {
           STEP_SYNC_TIMEOUT_MS,
         );
 
+        // Never write `local://` references to the server: upload the pending
+        // blobs first. If some can't be uploaded now, keep the mutation queued
+        // so the offline worker retries and patches the row later.
+        const resolved = await resolveLocalPhotoUrlsForSync(photoUrl, interventionId);
+        const serverPhotoUrl = resolved.photoUrl;
+
         const { data: existing } = await withTimeout(
           supabase
             .from("intervention_step_completions")
@@ -173,7 +179,7 @@ export function useCompleteStep() {
                 completed_at: now,
                 completed_by: user?.id || null,
                 comment: comment || null,
-                photo_url: photoUrl || null,
+                photo_url: serverPhotoUrl || null,
                 checklist_data: checklistData || null,
                 multiple_choice_data: multipleChoiceData || null,
               } as any)
@@ -191,7 +197,7 @@ export function useCompleteStep() {
                 completed_at: now,
                 completed_by: user?.id || null,
                 comment: comment || null,
-                photo_url: photoUrl || null,
+                photo_url: serverPhotoUrl || null,
                 loop_index: loopIndex,
                 checklist_data: checklistData || null,
                 multiple_choice_data: multipleChoiceData || null,
@@ -201,7 +207,15 @@ export function useCompleteStep() {
           if (error) throw error;
         }
 
-        await markMutationSynced(queuedMutationId);
+        // Local blobs that made it to Storage can be dropped.
+        await Promise.all(
+          resolved.resolvedLocalUrls.map((url) => deleteStepPhoto(url).catch(() => {})),
+        );
+
+        // Only clear the queued mutation when everything is remote.
+        if (resolved.unresolvedLocalUrls.length === 0) {
+          await markMutationSynced(queuedMutationId);
+        }
 
         // Refresh from server
         queryClient.invalidateQueries({ queryKey: ["step-completions", interventionId] });
@@ -285,6 +299,9 @@ export function useSaveDraft() {
           STEP_SYNC_TIMEOUT_MS,
         );
 
+        const resolved = await resolveLocalPhotoUrlsForSync(photoUrl, interventionId);
+        const serverPhotoUrl = resolved.photoUrl;
+
         const { data: existing } = await withTimeout(
           supabase
             .from("intervention_step_completions")
@@ -302,7 +319,7 @@ export function useSaveDraft() {
               .from("intervention_step_completions")
               .update({
                 comment: comment || null,
-                photo_url: photoUrl || null,
+                photo_url: serverPhotoUrl || null,
                 checklist_data: checklistData || null,
                 multiple_choice_data: multipleChoiceData || null,
               } as any)
@@ -320,7 +337,7 @@ export function useSaveDraft() {
                 completed_at: null,
                 completed_by: user?.id || null,
                 comment: comment || null,
-                photo_url: photoUrl || null,
+                photo_url: serverPhotoUrl || null,
                 loop_index: loopIndex,
                 checklist_data: checklistData || null,
                 multiple_choice_data: multipleChoiceData || null,
@@ -330,7 +347,13 @@ export function useSaveDraft() {
           if (error) throw error;
         }
 
-        await markMutationSynced(queuedMutationId);
+        await Promise.all(
+          resolved.resolvedLocalUrls.map((url) => deleteStepPhoto(url).catch(() => {})),
+        );
+
+        if (resolved.unresolvedLocalUrls.length === 0) {
+          await markMutationSynced(queuedMutationId);
+        }
         queryClient.invalidateQueries({ queryKey: ["step-completions", interventionId] });
       };
 

@@ -23,6 +23,12 @@ import { withTimeout } from "@/lib/supabase-with-timeout";
 import { swapLocalUrlInCompletion } from "@/lib/step-photo-retry";
 
 const SIGNATURE_UPLOAD_TIMEOUT_MS = 4000;
+// Hard cap on a single photo upload: on a flaky network the request can hang
+// forever, which used to freeze the "Suivant" button.
+const PHOTO_UPLOAD_TIMEOUT_MS = 12000;
+// How long "Suivant" waits for in-flight uploads before moving on with the
+// persistent local:// references (the sync worker patches them afterwards).
+const RESOLVE_PHOTOS_TIMEOUT_MS = 800;
 
 interface DynamicStepContentProps {
   step: WorkflowStepType;
@@ -220,13 +226,16 @@ const DynamicStepContent = ({
 
       const uploadPromise = (async (): Promise<string | null> => {
         try {
-          if (!navigator.onLine) {
+          if (!isReallyOnline()) {
             return localUrl;
           }
           const fileName = `steps/${interventionId}/${step.id}-loop${loopIndex}-${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
-          const { error: uploadError } = await supabase.storage
-            .from('intervention-photos')
-            .upload(fileName, compressed, { contentType: 'image/jpeg' });
+          const { error: uploadError } = await withTimeout(
+            supabase.storage
+              .from('intervention-photos')
+              .upload(fileName, compressed, { contentType: 'image/jpeg' }),
+            PHOTO_UPLOAD_TIMEOUT_MS,
+          );
           if (uploadError) throw uploadError;
 
           const { data: urlData } = supabase.storage
@@ -305,7 +314,12 @@ const DynamicStepContent = ({
     const resolved = await Promise.all(urls.map(async (url) => {
       const upload = pendingUploadsRef.current.get(url);
       if (!upload) return url;
-      const remote = await upload.catch(() => null);
+      // Never block the workflow: if the upload isn't done within a short
+      // window, keep the local:// reference and let the sync worker finish.
+      const remote = await Promise.race([
+        upload.catch(() => null),
+        new Promise<null>(resolve => setTimeout(() => resolve(null), RESOLVE_PHOTOS_TIMEOUT_MS)),
+      ]);
       return remote || url;
     }));
     return resolved.filter(Boolean);

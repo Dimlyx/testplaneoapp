@@ -109,22 +109,15 @@ async function findPreviouslyUploadedStepPhoto(
   if (!isLocalPhotoUrl(localUrl)) return null;
   const id = localUrl.slice(LOCAL_PHOTO_PREFIX.length);
 
+  // Storage `list()` is blocked by RLS for the `steps/<id>/...` prefix, so we
+  // probe the deterministic public URL used by resolveLocalPhotoUrlsForSync.
   try {
-    const { data, error } = await withTimeout(
-      supabase.storage
-        .from('intervention-photos')
-        .list(`steps/${interventionId}`, { limit: 20, search: id }),
-      8000,
-    );
-
-    if (error || !data?.length) return null;
-    const match = data.find((item: any) => item?.name?.includes(id));
-    if (!match?.name) return null;
-
     const { data: urlData } = supabase.storage
       .from('intervention-photos')
-      .getPublicUrl(`steps/${interventionId}/${match.name}`);
-    return urlData.publicUrl;
+      .getPublicUrl(`steps/${interventionId}/sync-${id}.jpg`);
+    const candidate = urlData.publicUrl;
+    const res = await withTimeout(fetch(candidate, { method: 'HEAD' }), 8000);
+    return res.ok ? candidate : null;
   } catch {
     return null;
   }
