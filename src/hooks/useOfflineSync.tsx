@@ -288,6 +288,11 @@ export function useOfflineSync() {
           // Resolve any local:// photo references to remote URLs (uploads pending blobs)
           // BEFORE writing the row, so we never overwrite an already-uploaded URL.
           const resolvedPhoto = await resolveLocalPhotoUrlsForSync(photoUrl, interventionId);
+          if (resolvedPhoto.unresolvedLocalUrls.length > 0) {
+            throw new Error(
+              `${resolvedPhoto.unresolvedLocalUrls.length} photo(s) locale(s) restent à envoyer`,
+            );
+          }
 
           const { data: existing } = await supabase
             .from('intervention_step_completions')
@@ -338,6 +343,11 @@ export function useOfflineSync() {
           const { data: { user } } = await supabase.auth.getUser();
 
           const resolvedPhoto = await resolveLocalPhotoUrlsForSync(photoUrl, interventionId);
+          if (resolvedPhoto.unresolvedLocalUrls.length > 0) {
+            throw new Error(
+              `${resolvedPhoto.unresolvedLocalUrls.length} photo(s) locale(s) restent à envoyer`,
+            );
+          }
 
           const { data: existing } = await supabase
             .from('intervention_step_completions')
