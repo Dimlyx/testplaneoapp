@@ -59,6 +59,22 @@ function getDB() {
 // In-memory cache of resolved blob URLs so we don't recreate them on every render
 const blobUrlCache = new Map<string, string>();
 
+// Shared per-photo upload lock. Every step-photo upload path uses the same
+// local:// key so the direct uploader, retry worker, mutation resolver and
+// orphan safety net cannot upload the same IndexedDB record concurrently.
+const uploadsInFlight = new Set<string>();
+
+export function tryAcquireStepPhotoUploadLock(localUrl: string): (() => void) | null {
+  if (!isLocalPhotoUrl(localUrl) || uploadsInFlight.has(localUrl)) return null;
+  uploadsInFlight.add(localUrl);
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    uploadsInFlight.delete(localUrl);
+  };
+}
+
 /** True if a URL is one of our persistent local references. */
 export function isLocalPhotoUrl(url: string): boolean {
   return url.startsWith(LOCAL_PHOTO_PREFIX);
