@@ -372,10 +372,11 @@ export function useOfflineSync() {
       console.error('Error syncing mutation:', error);
       const attempts = await incrementMutationAttempts(mutation.id);
       await markMutationError(mutation.id, error?.message || 'unknown');
-      // Drop mutation after 10 failed attempts to prevent infinite loops
+      // Never discard a technician's queued work after repeated failures.
+      // The mutation and its local photos must remain available for a later
+      // retry, especially after a long offline intervention.
       if (attempts >= 10) {
-        console.warn(`Dropping mutation ${mutation.id} after ${attempts} failed attempts`);
-        await deleteMutation(mutation.id);
+        console.warn(`Mutation ${mutation.id} is still pending after ${attempts} failed attempts`);
       }
       return false;
     }
@@ -488,22 +489,6 @@ export function useOfflineSync() {
     let errorCount = 0;
 
     try {
-      // 0. Prune "phantom" pending items for interventions that the server
-      //    already considers closed (completed/to_invoice/archived/cancelled).
-      //    These can survive locally when the network drops between server
-      //    success and the client receiving the response — the data is safely
-      //    on the server, but the local queue keeps re-trying and confusing
-      //    the technician with a never-empty pending counter.
-      try {
-        const prunedCount = await pruneStaleForClosedInterventions();
-        if (prunedCount > 0) {
-          successCount += prunedCount;
-          console.info(`[sync] Pruned ${prunedCount} phantom pending item(s) for closed interventions`);
-        }
-      } catch (err) {
-        console.warn('phantom prune failed', err);
-      }
-
       // 1. Upload pending local step photos FIRST so queued mutations that
       //    reference them can be rewritten to remote URLs before the DB write.
       try {

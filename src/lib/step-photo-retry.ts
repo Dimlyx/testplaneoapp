@@ -316,7 +316,18 @@ async function uploadOne(photo: StoredStepPhoto): Promise<boolean> {
     if (await isStepPhotoOrphan(photo, localUrl)) {
       await deleteStepPhoto(localUrl);
       retryStates.delete(photo.id);
+      return true;
     }
+
+    // The completion mutation may not have reached the database yet. Keep the
+    // blob and arm the normal backoff instead of re-uploading it every cycle.
+    const state = retryStates.get(photo.id) ?? { attempts: 0, nextAttemptAt: 0 };
+    const attempts = state.attempts + 1;
+    retryStates.set(photo.id, {
+      attempts,
+      nextAttemptAt: Date.now() + getBackoff(attempts),
+      lastError: 'completion-not-found',
+    });
     return false;
   }
 
@@ -363,6 +374,7 @@ export async function runStepPhotoRetryCycle(): Promise<{
       try {
         const updated = await uploadOne(photo);
         if (updated) succeeded++;
+        else failed++;
       } catch (err: any) {
         failed++;
         const attempts = state.attempts + 1;
