@@ -123,7 +123,11 @@ export function TechnicianInterventionsByCategory({ category }: { category: Cate
             if (i.status === "completed" && i.travel_return_time && !i.travel_return_arrival_time) return false;
             return i.status === "completed";
           })
-          .sort((a, b) => (b.scheduled_date || "").localeCompare(a.scheduled_date || ""))
+          .sort((a, b) => {
+            const completedAtA = a.updated_at || a.scheduled_date || "";
+            const completedAtB = b.updated_at || b.scheduled_date || "";
+            return completedAtB.localeCompare(completedAtA);
+          })
           .slice(0, 30);
     }
   }, [interventions, category]);
