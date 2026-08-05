@@ -280,6 +280,10 @@ export async function swapLocalUrlInCompletion(params: {
 
 /** Upload one stored photo, then update the DB and delete the local copy. */
 async function uploadOne(photo: StoredStepPhoto): Promise<boolean> {
+  if (!photo.blob?.size) {
+    console.warn(`[step-photo-retry] durable payload missing for ${photo.id}`);
+    return false;
+  }
   const localUrl = `${LOCAL_PHOTO_PREFIX}${photo.id}`;
   const fileName = `steps/${photo.interventionId}/${photo.stepId}-loop${photo.loopIndex}-${photo.createdAt}-${photo.id}.jpg`;
 
