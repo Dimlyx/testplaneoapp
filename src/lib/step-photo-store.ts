@@ -21,7 +21,16 @@ export interface StoredStepPhoto {
   interventionId: string;
   stepId: string;
   loopIndex: number;
-  blob: Blob;
+  /**
+   * Raw bytes of the photo. Stored as an ArrayBuffer (NOT a Blob) because
+   * WebKit/iOS can silently empty Blobs persisted in IndexedDB after the app
+   * is backgrounded, the screen sleeps or memory pressure occurs — producing
+   * 0-byte uploads ("No content provided").
+   */
+  data?: ArrayBuffer;
+  mimeType?: string;
+  /** Legacy records written before the ArrayBuffer migration. */
+  blob?: Blob;
   createdAt: number;
 }
 
@@ -37,7 +46,7 @@ interface StepPhotoDB extends DBSchema {
 }
 
 const DB_NAME = 'planeo-step-photos';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 let dbPromise: Promise<IDBPDatabase<StepPhotoDB>> | null = null;
 
@@ -55,6 +64,54 @@ function getDB() {
   }
   return dbPromise;
 }
+
+/** Rebuild a fresh Blob from a stored record, right before use. */
+export function stepPhotoToBlob(record: StoredStepPhoto | undefined | null): Blob | null {
+  if (!record) return null;
+  const type = record.mimeType || record.blob?.type || 'image/jpeg';
+  if (record.data && record.data.byteLength > 0) {
+    return new Blob([record.data], { type });
+  }
+  if (record.blob && record.blob.size > 0) return record.blob;
+  return null;
+}
+
+/**
+ * Convert any legacy Blob-based records to ArrayBuffer storage.
+ * Runs once at startup so photos already pending on a device before this
+ * update are not left stranded in the old (WebKit-fragile) format.
+ */
+let legacyMigrationPromise: Promise<void> | null = null;
+export function migrateLegacyStepPhotos(): Promise<void> {
+  if (!legacyMigrationPromise) {
+    legacyMigrationPromise = (async () => {
+      try {
+        const db = await getDB();
+        const all = await db.getAll('stepPhotos');
+        for (const record of all) {
+          if (record.data && record.data.byteLength > 0) continue;
+          if (!record.blob) continue;
+          try {
+            const buffer = await record.blob.arrayBuffer();
+            if (buffer.byteLength === 0) continue; // already emptied by WebKit, keep as-is
+            await db.put('stepPhotos', {
+              ...record,
+              data: buffer,
+              mimeType: record.blob.type || 'image/jpeg',
+              blob: undefined,
+            });
+          } catch (e) {
+            console.warn('[step-photo-store] legacy migration failed for', record.id, e);
+          }
+        }
+      } catch (e) {
+        console.warn('[step-photo-store] legacy migration skipped', e);
+      }
+    })();
+  }
+  return legacyMigrationPromise;
+}
+
 
 // In-memory cache of resolved blob URLs so we don't recreate them on every render
 const blobUrlCache = new Map<string, string>();
