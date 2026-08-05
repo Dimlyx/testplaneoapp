@@ -121,12 +121,25 @@ async function pruneStaleForClosedInterventions(): Promise<number> {
 
   let pruned = 0;
 
+  // Local blob references still carried by *pending* mutations (not yet in DB).
+  // These must never be pruned: the completion row will be written later and
+  // would otherwise point to a deleted blob.
+  const queuedLocalRefs = mutations
+    .map(m => {
+      try { return JSON.stringify(m.payload || {}); } catch { return ''; }
+    })
+    .join('|');
+
   for (const m of mutations) {
     const id = m.payload?.id || m.payload?.interventionId;
-    if (id && closedIds.has(id)) {
-      await deleteMutation(m.id);
-      pruned++;
-    }
+    if (!id || !closedIds.has(id)) continue;
+    // Keep any mutation still carrying an unresolved local:// photo reference:
+    // it is the only thing that will publish the real URL once uploaded.
+    let raw = '';
+    try { raw = JSON.stringify(m.payload || {}); } catch { raw = ''; }
+    if (raw.includes('local://')) continue;
+    await deleteMutation(m.id);
+    pruned++;
   }
   for (const p of photos) {
     if (closedIds.has(p.interventionId)) {
@@ -159,7 +172,7 @@ async function pruneStaleForClosedInterventions(): Promise<number> {
 
       const referenced = (completions || [])
         .map((r: any) => String(r.photo_url || ''))
-        .join('|');
+        .join('|') + '|' + queuedLocalRefs;
 
       for (const sp of stepPhotos) {
         const localUrl = `local://step-photo/${sp.id}`;
@@ -171,6 +184,7 @@ async function pruneStaleForClosedInterventions(): Promise<number> {
       /* ignore — best effort */
     }
   }
+
 
   return pruned;
 }
