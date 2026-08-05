@@ -281,7 +281,10 @@ export async function swapLocalUrlInCompletion(params: {
 /** Upload one stored photo, then update the DB and delete the local copy. */
 async function uploadOne(photo: StoredStepPhoto): Promise<boolean> {
   const localUrl = `${LOCAL_PHOTO_PREFIX}${photo.id}`;
-  const fileName = `steps/${photo.interventionId}/${photo.stepId}-loop${photo.loopIndex}-${photo.createdAt}-${photo.id}.jpg`;
+  // Keep the exact same deterministic path as resolveLocalPhotoUrlsForSync.
+  // If upload succeeds but the following DB update is interrupted, either
+  // sync path can recover the object without re-uploading or looping forever.
+  const fileName = `steps/${photo.interventionId}/sync-${photo.id}.jpg`;
 
   // 1. Upload to storage
   const { error: uploadError } = await withTimeout(

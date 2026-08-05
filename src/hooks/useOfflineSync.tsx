@@ -78,6 +78,17 @@ function mergePreferRemote(dbValue: string | null | undefined, queued: string | 
   return merged.length === 1 ? merged[0] : JSON.stringify(merged);
 }
 
+function containsLocalPhotoUrl(value: string | null | undefined): boolean {
+  if (!value) return false;
+  try {
+    const parsed = JSON.parse(value);
+    if (Array.isArray(parsed)) {
+      return parsed.some((url) => typeof url === 'string' && isLocalPhotoUrl(url));
+    }
+  } catch { /* single URL */ }
+  return isLocalPhotoUrl(value);
+}
+
 interface SyncState {
   isOnline: boolean;
   isSyncing: boolean;
@@ -173,13 +184,6 @@ export function useOfflineSync() {
           const { data: { user } } = await supabase.auth.getUser();
           const completedAtIso = completedAt || new Date(mutation.createdAt).toISOString();
 
-          // Resolve any local:// photo references to remote URLs (uploads pending blobs)
-          // BEFORE writing the row, so we never overwrite an already-uploaded URL.
-          const resolvedPhoto = await resolveLocalPhotoUrlsForSync(photoUrl, interventionId);
-          if (resolvedPhoto.unresolvedLocalUrls.length > 0) {
-            throw new Error('Photos locales encore en attente de téléversement');
-          }
-
           const { data: existing } = await supabase
             .from('intervention_step_completions')
             .select('id, photo_url')
@@ -188,9 +192,17 @@ export function useOfflineSync() {
             .eq('loop_index', loopIndex)
             .maybeSingle();
 
-          // Merge: if DB already holds a remote URL where the queued mutation still
-          // has a local:// (upload failed this round), keep the DB value.
+          // Resolve queued local references, then merge with the current row.
+          // The retry worker may already have uploaded a photo and replaced the
+          // row before this older queued mutation is replayed. In that case the
+          // remote database URL is authoritative even if the local blob has
+          // already been safely removed.
+          const resolvedPhoto = await resolveLocalPhotoUrlsForSync(photoUrl, interventionId);
+
           const finalPhotoUrl = mergePreferRemote((existing as any)?.photo_url, resolvedPhoto.photoUrl);
+          if (containsLocalPhotoUrl(finalPhotoUrl)) {
+            throw new Error('Photos locales encore en attente de téléversement');
+          }
 
           if (existing) {
             const { error } = await supabase
@@ -228,11 +240,6 @@ export function useOfflineSync() {
           const { interventionId, stepId, comment, photoUrl, loopIndex = 0, checklistData, multipleChoiceData } = mutation.payload;
           const { data: { user } } = await supabase.auth.getUser();
 
-          const resolvedPhoto = await resolveLocalPhotoUrlsForSync(photoUrl, interventionId);
-          if (resolvedPhoto.unresolvedLocalUrls.length > 0) {
-            throw new Error('Photos locales encore en attente de téléversement');
-          }
-
           const { data: existing } = await supabase
             .from('intervention_step_completions')
             .select('id, photo_url')
@@ -241,7 +248,11 @@ export function useOfflineSync() {
             .eq('loop_index', loopIndex)
             .maybeSingle();
 
+          const resolvedPhoto = await resolveLocalPhotoUrlsForSync(photoUrl, interventionId);
           const finalPhotoUrl = mergePreferRemote((existing as any)?.photo_url, resolvedPhoto.photoUrl);
+          if (containsLocalPhotoUrl(finalPhotoUrl)) {
+            throw new Error('Photos locales encore en attente de téléversement');
+          }
 
           if (existing) {
             const { error } = await supabase
