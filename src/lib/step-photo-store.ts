@@ -135,6 +135,15 @@ export async function getPendingStepPhotosForIntervention(
   return db.getAllFromIndex('stepPhotos', 'by-intervention', interventionId);
 }
 
+/** Delete step-photo blobs only after the parent intervention is proven deleted. */
+export async function deleteStepPhotosForIntervention(interventionId: string): Promise<void> {
+  const db = await getDB();
+  const photos = await db.getAllFromIndex('stepPhotos', 'by-intervention', interventionId);
+  await Promise.all(
+    photos.map((photo) => deleteStepPhoto(`${LOCAL_PHOTO_PREFIX}${photo.id}`)),
+  );
+}
+
 /** Count of pending local photos across the whole app. */
 export async function countPendingStepPhotos(): Promise<number> {
   const db = await getDB();

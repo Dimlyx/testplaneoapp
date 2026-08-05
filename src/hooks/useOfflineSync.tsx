@@ -20,6 +20,7 @@ import {
   OfflineMutation,
   OfflinePhoto,
   OfflineSignature,
+  deleteOfflineDataForIntervention,
 } from '@/lib/offline-db';
 import {
   isReallyOnline,
@@ -33,7 +34,12 @@ import {
   forceStepPhotoRetry,
   resolveLocalPhotoUrlsForSync,
 } from '@/lib/step-photo-retry';
-import { countPendingStepPhotos, deleteStepPhoto } from '@/lib/step-photo-store';
+import {
+  countPendingStepPhotos,
+  deleteStepPhoto,
+  deleteStepPhotosForIntervention,
+  getAllPendingStepPhotos,
+} from '@/lib/step-photo-store';
 
 import { isLocalPhotoUrl } from '@/lib/step-photo-store';
 
@@ -145,6 +151,49 @@ export function useOfflineSync() {
       console.error('Error loading sync status:', error);
     }
   }, []);
+
+  /**
+   * Purge local work only when the backend positively confirms that its parent
+   * intervention no longer exists. Completed/archived interventions are kept.
+   */
+  const pruneDeletedInterventions = async (): Promise<number> => {
+    const [mutations, photos, signatures, stepPhotos] = await Promise.all([
+      getPendingMutations(),
+      getPendingPhotos(),
+      getPendingSignatures(),
+      getAllPendingStepPhotos(),
+    ]);
+
+    const candidateIds = new Set<string>();
+    for (const mutation of mutations) {
+      if (mutation.type === 'create_intervention') continue;
+      const id = mutation.payload?.interventionId || mutation.payload?.id;
+      if (typeof id === 'string' && id) candidateIds.add(id);
+    }
+    photos.forEach((photo) => candidateIds.add(photo.interventionId));
+    signatures.forEach((signature) => candidateIds.add(signature.interventionId));
+    stepPhotos.forEach((photo) => candidateIds.add(photo.interventionId));
+    if (candidateIds.size === 0) return 0;
+
+    const ids = Array.from(candidateIds);
+    const { data, error } = await supabase.from('interventions').select('id').in('id', ids);
+    if (error) {
+      console.warn('Unable to verify deleted interventions; keeping local data:', error.message);
+      return 0;
+    }
+
+    const existingIds = new Set((data || []).map((row) => row.id));
+    const deletedIds = ids.filter((id) => !existingIds.has(id));
+    await Promise.all(
+      deletedIds.map(async (id) => {
+        await Promise.all([
+          deleteOfflineDataForIntervention(id),
+          deleteStepPhotosForIntervention(id),
+        ]);
+      }),
+    );
+    return deletedIds.length;
+  };
 
   // Sync a single mutation
   const syncMutation = async (mutation: OfflineMutation): Promise<boolean> => {
@@ -425,6 +474,10 @@ export function useOfflineSync() {
     let errorCount = 0;
 
     try {
+      // Remove queues for interventions explicitly deleted from the backend.
+      // This runs before photo retry so deleted tests cannot loop forever.
+      await pruneDeletedInterventions();
+
       // 1. Upload pending local step photos FIRST so queued mutations that
       //    reference them can be rewritten to remote URLs before the DB write.
       try {
