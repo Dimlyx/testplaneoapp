@@ -143,14 +143,35 @@ async function pruneStaleForClosedInterventions(): Promise<number> {
   for (const interventionId of closedIds) {
     try {
       const stepPhotos = await getPendingStepPhotosForIntervention(interventionId);
+      if (stepPhotos.length === 0) continue;
+
+      // NEVER drop a local blob that is still referenced by a completion row:
+      // its photo has not been uploaded yet, and deleting it would leave a
+      // permanently broken `local://` image in the report.
+      const { data: completions, error: completionsError } = await supabase
+        .from('intervention_step_completions')
+        .select('photo_url')
+        .eq('intervention_id', interventionId)
+        .not('photo_url', 'is', null);
+
+      // On error, stay conservative and keep every blob.
+      if (completionsError) continue;
+
+      const referenced = (completions || [])
+        .map((r: any) => String(r.photo_url || ''))
+        .join('|');
+
       for (const sp of stepPhotos) {
-        await deleteStepPhoto(`local://step-photo/${sp.id}`);
+        const localUrl = `local://step-photo/${sp.id}`;
+        if (referenced.includes(localUrl)) continue; // still needed → keep + retry
+        await deleteStepPhoto(localUrl);
         pruned++;
       }
     } catch {
       /* ignore — best effort */
     }
   }
+
   return pruned;
 }
 
@@ -484,7 +505,17 @@ export function useOfflineSync() {
     let errorCount = 0;
 
     try {
-      // 0. Prune "phantom" pending items for interventions that the server
+      // 0. Upload pending local step photos FIRST — before any pruning — so
+      //    no blob can be discarded while a completion row still points at it.
+      try {
+        const photoCycle0 = await runStepPhotoRetryCycle();
+        successCount += photoCycle0.succeeded;
+        errorCount += photoCycle0.failed;
+      } catch (err) {
+        console.warn('step-photo retry cycle (pre-prune) failed', err);
+      }
+
+      // 0bis. Prune "phantom" pending items for interventions that the server
       //    already considers closed (completed/to_invoice/archived/cancelled).
       //    These can survive locally when the network drops between server
       //    success and the client receiving the response — the data is safely
@@ -499,6 +530,8 @@ export function useOfflineSync() {
       } catch (err) {
         console.warn('phantom prune failed', err);
       }
+
+
 
       // 1. Upload pending local step photos FIRST so queued mutations that
       //    reference them can be rewritten to remote URLs before the DB write.
