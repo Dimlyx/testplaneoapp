@@ -32,7 +32,9 @@ function groupByDate(interventions: Intervention[], useCompletionDate = false): 
     const completedDate = useCompletionDate && i.updated_at
       ? new Date(i.updated_at).toISOString().split("T")[0]
       : null;
-    const key = i.scheduled_date || completedDate || "no-date";
+    const key = useCompletionDate
+      ? completedDate || i.scheduled_date || "no-date"
+      : i.scheduled_date || "no-date";
     if (!groups[key]) groups[key] = [];
     groups[key].push(i);
   });
