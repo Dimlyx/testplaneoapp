@@ -93,6 +93,7 @@ const AttachmentsList = ({ interventionId, isReadOnly = false }: AttachmentsList
                     </div>
                     <div className="flex items-center gap-1">
                       <Button
+                        type="button"
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8"
@@ -104,10 +105,14 @@ const AttachmentsList = ({ interventionId, isReadOnly = false }: AttachmentsList
                       </Button>
                       {!isReadOnly && (
                         <Button
+                          type="button"
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8 text-destructive hover:text-destructive"
-                          onClick={() => handleDelete(attachment.id, attachment.file_url)}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handleDelete(attachment.id, attachment.file_url);
+                          }}
                           disabled={deleteAttachment.isPending}
                         >
                           <X className="h-4 w-4" />
@@ -133,9 +138,13 @@ const AttachmentsList = ({ interventionId, isReadOnly = false }: AttachmentsList
             multiple
           />
           <Button
+            type="button"
             variant="outline"
             className="w-full"
-            onClick={() => fileInputRef.current?.click()}
+            onClick={(e) => {
+              e.preventDefault();
+              fileInputRef.current?.click();
+            }}
             disabled={addAttachment.isPending}
           >
             {addAttachment.isPending ? (
