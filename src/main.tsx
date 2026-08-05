@@ -2,12 +2,19 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import { initOneSignal } from "./lib/onesignal";
+import { requestPersistentStorage, logStorageEstimate } from "./lib/persistent-storage";
 
 // Initialize OneSignal Web SDK (PWA push). Safely no-ops in iframes,
 // Lovable preview hosts, and offline boots.
 if (navigator.onLine) {
   initOneSignal();
 }
+
+// Protect offline step photos from being evicted by the OS/browser.
+// Without this, IndexedDB blobs are "best-effort" and can disappear before
+// the sync worker manages to upload them (→ broken photos in reports).
+requestPersistentStorage().then(() => logStorageEstimate());
+
 
 // Suppress the browser's PWA install banner on desktop only
 window.addEventListener('beforeinstallprompt', (e) => {
