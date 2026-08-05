@@ -21,10 +21,15 @@ export function useOfflineInterventionUpdate() {
 
   const updateIntervention = useCallback(
     async ({ id, ...data }: UpdateInterventionData, options?: { queueOnly?: boolean }) => {
+      const isTerminalStatus = ['completed', 'to_invoice', 'archived', 'cancelled'].includes(String(data.status));
+      const optimisticData = isTerminalStatus
+        ? { ...data, updated_at: new Date().toISOString() }
+        : data;
+
       // 1. Optimistic update: patch React Query cache immediately
       const patchCache = (old: Intervention | undefined) => {
         if (!old) return old;
-        return { ...old, ...data } as Intervention;
+        return { ...old, ...optimisticData } as Intervention;
       };
 
       queryClient.setQueryData<Intervention>(
@@ -36,14 +41,14 @@ export function useOfflineInterventionUpdate() {
         { queryKey: ['technician-interventions'] },
         (old) => {
           if (!old) return old;
-          return old.map((i) => (i.id === id ? { ...i, ...data } : i));
+          return old.map((i) => (i.id === id ? { ...i, ...optimisticData } : i));
         }
       );
 
       // 2. Save to IndexedDB (fast, non-blocking for UI)
       const cached = queryClient.getQueryData<Intervention>(['intervention', id]);
       if (cached) {
-        saveInterventionOffline({ ...cached, ...data }).catch(() => {});
+        saveInterventionOffline({ ...cached, ...optimisticData }).catch(() => {});
       }
 
       // 3. Queue-only is used for terminal status changes. It preserves the
