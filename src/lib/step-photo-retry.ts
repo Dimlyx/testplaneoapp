@@ -25,6 +25,8 @@ import {
   getAllPendingStepPhotos,
   deleteStepPhoto,
   getStepPhotoBlob,
+  stepPhotoToBlob,
+  migrateLegacyStepPhotos,
   isLocalPhotoUrl,
   LOCAL_PHOTO_PREFIX,
   runStepPhotoUploadLocked,
@@ -315,12 +317,19 @@ async function uploadOne(photo: StoredStepPhoto): Promise<'synced' | 'deferred'>
   // sync path can recover the object without re-uploading or looping forever.
   const fileName = `steps/${photo.interventionId}/sync-${photo.id}.jpg`;
 
+  // Rebuild a fresh Blob from the stored bytes right before uploading.
+  const uploadBlob = stepPhotoToBlob(photo);
+  if (!uploadBlob || uploadBlob.size === 0) {
+    console.warn('[step-photo-retry] empty stored photo, skipping upload', photo.id);
+    return 'deferred';
+  }
+
   // 1. Upload to storage
   const lockedUpload = await withTimeout(
     runStepPhotoUploadLocked(localUrl, () => supabase.storage
       .from('intervention-photos')
-      .upload(fileName, photo.blob, {
-          contentType: 'image/jpeg',
+      .upload(fileName, uploadBlob, {
+          contentType: uploadBlob.type || 'image/jpeg',
           cacheControl: '3600',
         })),
       30_000,
@@ -391,6 +400,8 @@ export async function runStepPhotoRetryCycle(): Promise<{
   let failed = 0;
 
   try {
+    // Convert any pre-update Blob records to ArrayBuffer storage first.
+    await migrateLegacyStepPhotos();
     const online = await checkNetworkNow();
     if (!online) {
       const all = await getAllPendingStepPhotos();
@@ -518,10 +529,12 @@ export async function runOrphanBlobSafetyNet(): Promise<number> {
 
       // Upload (idempotent) then append the remote URL to the row.
       const fileName = `steps/${photo.interventionId}/sync-${photo.id}.jpg`;
+      const safetyBlob = stepPhotoToBlob(photo);
+      if (!safetyBlob || safetyBlob.size === 0) continue;
       const lockedUpload = await withTimeout(
         runStepPhotoUploadLocked(localUrl, () => supabase.storage
           .from('intervention-photos')
-          .upload(fileName, photo.blob, { contentType: 'image/jpeg', cacheControl: '3600' })),
+          .upload(fileName, safetyBlob, { contentType: safetyBlob.type || 'image/jpeg', cacheControl: '3600' })),
         30_000,
       );
       if (!lockedUpload.started) continue;
