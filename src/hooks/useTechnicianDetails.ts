@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserOrganization } from './useUserOrganization';
+import { sanitizeFileName } from "@/lib/sanitize-filename";
 
 export interface TechnicianDetail {
   id: string;
@@ -138,7 +139,7 @@ export function useTechnicianDetails() {
       file: File;
       expiration_date?: string | null;
     }) => {
-      const filePath = `technician-docs/${organizationId}/${data.user_id}/${Date.now()}_${data.file.name}`;
+      const filePath = `technician-docs/${organizationId}/${data.user_id}/${Date.now()}_${sanitizeFileName(data.file.name)}`;
       const { error: uploadError } = await supabase.storage
         .from('intervention-photos')
         .upload(filePath, data.file);

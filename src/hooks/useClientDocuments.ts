@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useUserOrganization } from '@/hooks/useUserOrganization';
+import { sanitizeFileName } from "@/lib/sanitize-filename";
 
 export interface ClientDocument {
   id: string;
@@ -39,7 +40,7 @@ export function useUploadClientDocument() {
   return useMutation({
     mutationFn: async ({ clientId, file }: { clientId: string; file: File }) => {
       const { data: { user } } = await supabase.auth.getUser();
-      const filePath = `${clientId}/${Date.now()}_${file.name}`;
+      const filePath = `${clientId}/${Date.now()}_${sanitizeFileName(file.name)}`;
 
       const { error: uploadError } = await supabase.storage
         .from('client-documents')
