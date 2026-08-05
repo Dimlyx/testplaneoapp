@@ -72,13 +72,23 @@ async function isStepPhotoOrphan(
       8000,
     );
 
-    if (completion?.photo_url) {
-      // Row exists. If its photo_url does NOT contain our localUrl, the photo
-      // has been replaced by a remote URL → safe to delete the local blob.
-      return !String(completion.photo_url).includes(localUrl);
+    // The row still points at our local:// URL → the photo is definitely
+    // still needed locally.
+    if (completion?.photo_url && String(completion.photo_url).includes(localUrl)) {
+      return false;
     }
 
-    // No completion row and no queued mutation references the blob.
+    // In every other case (row without our reference, or no row at all) we
+    // only allow deletion with POSITIVE confirmation that the very same photo
+    // exists in remote storage. Without that proof the blob is preserved.
+    const remote = await findPreviouslyUploadedStepPhoto(photo.interventionId, localUrl);
+    if (!remote) {
+      console.warn(
+        '[step-photo-retry] keeping local blob (no remote copy confirmed)',
+        photo.id,
+      );
+      return false;
+    }
     return true;
   } catch (err) {
     console.warn('[step-photo-retry] orphan check failed', err);
@@ -86,6 +96,7 @@ async function isStepPhotoOrphan(
     return false;
   }
 }
+
 
 /**
  * Upload (if needed) any `local://` URL contained in a serialized photo_url
@@ -427,10 +438,13 @@ export function startStepPhotoRetryWorker(): void {
   if (intervalId !== null) return;
   // First cycle quickly after startup
   setTimeout(() => {
-    runStepPhotoRetryCycle().catch(err =>
-      console.error('[step-photo-retry] initial cycle failed', err),
-    );
+    runStepPhotoRetryCycle()
+      .then(() => runOrphanBlobSafetyNet())
+      .catch(err =>
+        console.error('[step-photo-retry] initial cycle failed', err),
+      );
   }, 3_000);
+
   intervalId = window.setInterval(() => {
     runStepPhotoRetryCycle().catch(err =>
       console.error('[step-photo-retry] cycle failed', err),
@@ -443,4 +457,100 @@ export function stopStepPhotoRetryWorker(): void {
     clearInterval(intervalId);
     intervalId = null;
   }
+}
+
+/**
+ * Safety net for blobs that no longer have any local mutation AND are not
+ * referenced by their completion row (typically after a lost/compacted
+ * mutation). Instead of dropping them, we upload the blob and re-attach the
+ * remote URL to the completion row so the photo is never lost.
+ *
+ * Returns the number of photos re-attached.
+ */
+export async function runOrphanBlobSafetyNet(): Promise<number> {
+  if (!(await checkNetworkNow())) return 0;
+
+  const photos = await getAllPendingStepPhotos();
+  if (photos.length === 0) return 0;
+
+  const mutations = await getPendingMutations();
+  let recovered = 0;
+
+  for (const photo of photos) {
+    const localUrl = `${LOCAL_PHOTO_PREFIX}${photo.id}`;
+
+    const stillQueued = mutations.some((m) => {
+      if (m.type !== 'complete_step' && m.type !== 'save_draft_step') return false;
+      const p: any = m.payload || {};
+      return (
+        p.interventionId === photo.interventionId &&
+        p.stepId === photo.stepId &&
+        (p.loopIndex ?? 0) === photo.loopIndex &&
+        typeof p.photoUrl === 'string' &&
+        p.photoUrl.includes(localUrl)
+      );
+    });
+    if (stillQueued) continue;
+
+    try {
+      const { data: completion } = await withTimeout(
+        supabase
+          .from('intervention_step_completions')
+          .select('id, photo_url')
+          .eq('intervention_id', photo.interventionId)
+          .eq('step_id', photo.stepId)
+          .eq('loop_index', photo.loopIndex)
+          .maybeSingle(),
+        8000,
+      );
+      // No row yet → the step has not been pushed; uploadOne/backoff handles it.
+      if (!completion) continue;
+      if (completion.photo_url && String(completion.photo_url).includes(localUrl)) continue;
+
+      // Upload (idempotent) then append the remote URL to the row.
+      const fileName = `steps/${photo.interventionId}/sync-${photo.id}.jpg`;
+      const { error: uploadError } = await withTimeout(
+        supabase.storage
+          .from('intervention-photos')
+          .upload(fileName, photo.blob, { contentType: 'image/jpeg', cacheControl: '3600' }),
+        30_000,
+      );
+      if (uploadError && !isAlreadyUploadedError(uploadError)) continue;
+
+      const { data: urlData } = supabase.storage
+        .from('intervention-photos')
+        .getPublicUrl(fileName);
+      const remoteUrl = urlData.publicUrl;
+
+      let urls: string[] = [];
+      if (completion.photo_url) {
+        try {
+          const parsed = JSON.parse(completion.photo_url);
+          urls = Array.isArray(parsed) ? parsed : [completion.photo_url];
+        } catch {
+          urls = [completion.photo_url];
+        }
+      }
+      if (!urls.includes(remoteUrl)) urls.push(remoteUrl);
+
+      const serialized = urls.length === 1 ? urls[0] : JSON.stringify(urls);
+      const { error: updErr } = await withTimeout(
+        supabase
+          .from('intervention_step_completions')
+          .update({ photo_url: serialized })
+          .eq('id', completion.id),
+        8000,
+      );
+      if (updErr) continue;
+
+      try { precachePhoto(remoteUrl); } catch { /* best-effort */ }
+      await deleteStepPhoto(localUrl);
+      recovered += 1;
+      console.info('[step-photo-safety-net] re-attached orphan photo', photo.id);
+    } catch (err) {
+      console.warn('[step-photo-safety-net] failed for', photo.id, err);
+    }
+  }
+
+  return recovered;
 }
