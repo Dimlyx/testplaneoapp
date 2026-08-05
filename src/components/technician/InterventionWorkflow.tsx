@@ -113,7 +113,7 @@ const InterventionWorkflow = ({
   const [showPauseHistory, setShowPauseHistory] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [showPreCloseGuard, setShowPreCloseGuard] = useState(false);
-  const { pending: pendingForIntervention } = usePendingForIntervention(intervention.id);
+  const { pending: pendingForIntervention, reload: reloadPendingForIntervention } = usePendingForIntervention(intervention.id);
   const isPaused = !!activePause;
 
   // Determine completed steps based on data
@@ -1125,7 +1125,8 @@ const InterventionWorkflow = ({
                   )}
                   <Button
                     onClick={async () => {
-                      if (pendingForIntervention.total > 0) {
+                      const currentPending = await reloadPendingForIntervention();
+                      if (currentPending.total > 0) {
                         setShowPreCloseGuard(true);
                         return;
                       }

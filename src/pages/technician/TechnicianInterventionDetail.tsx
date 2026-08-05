@@ -30,6 +30,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useInterventionPhotos } from "@/hooks/useInterventionPhotos";
 import InterventionWorkflow from "@/components/technician/InterventionWorkflow";
 import { PdfGenerationOverlay } from "@/components/PdfGenerationOverlay";
+import { getPendingForIntervention } from "@/hooks/usePendingForIntervention";
 
 const TechnicianInterventionDetail = () => {
   const navigate = useNavigate();
@@ -101,15 +102,12 @@ const TechnicianInterventionDetail = () => {
         id,
         client_signature_name: signerName,
         client_signature_url: signatureUrl,
-        status: 'completed' as any,
-        departure_time: departureTime,
         report,
       });
       
       setClientSignatureUrl(signatureUrl);
       setClientSignatureName(signerName);
-      setStatus('completed');
-      toast({ title: "Signature enregistrée - Intervention terminée" });
+       toast({ title: "Signature enregistrée" });
     } catch (error) {
       console.error('Error uploading signature:', error);
       toast({ title: "Erreur lors de l'enregistrement de la signature", variant: "destructive" });
@@ -120,6 +118,15 @@ const TechnicianInterventionDetail = () => {
 
   const handleEndIntervention = async () => {
     if (!id) return;
+    const currentPending = await getPendingForIntervention(id);
+    if (currentPending.total > 0) {
+      toast({
+        title: "Synchronisation en cours",
+        description: `${currentPending.total} élément(s) doivent encore être envoyés avant la clôture.`,
+        variant: "destructive",
+      });
+      return;
+    }
     setIsUpdating(true);
     setStatus('completed');
     const departureTime = format(new Date(), 'HH:mm:ss');
