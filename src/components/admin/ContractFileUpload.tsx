@@ -4,6 +4,7 @@ import { Upload, FileText, Trash2, Download, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
+import { sanitizeFileName } from "@/lib/sanitize-filename";
 
 interface ContractFileUploadProps {
   clientId: string | undefined;
@@ -36,7 +37,7 @@ export function ContractFileUpload({ clientId, fileUrl, fileName }: ContractFile
     }
     setUploading(true);
     try {
-      const path = `${clientId}/contract_${Date.now()}_${file.name}`;
+      const path = `${clientId}/contract_${Date.now()}_${sanitizeFileName(file.name)}`;
       const { error: upErr } = await supabase.storage.from('client-documents').upload(path, file);
       if (upErr) throw upErr;
       const { data: urlData } = supabase.storage.from('client-documents').getPublicUrl(path);

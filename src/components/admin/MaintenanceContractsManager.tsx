@@ -52,6 +52,7 @@ import {
 } from '@/hooks/useClientContracts';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { sanitizeFileName } from "@/lib/sanitize-filename";
 
 interface Props {
   clientId?: string;
@@ -135,7 +136,7 @@ export function MaintenanceContractsManager({ clientId, disabled }: Props) {
     }
     setUploading(true);
     try {
-      const path = `${clientId}/contract_${Date.now()}_${file.name}`;
+      const path = `${clientId}/contract_${Date.now()}_${sanitizeFileName(file.name)}`;
       const { error: upErr } = await supabase.storage.from('client-documents').upload(path, file);
       if (upErr) throw upErr;
       const { data: urlData } = supabase.storage.from('client-documents').getPublicUrl(path);
