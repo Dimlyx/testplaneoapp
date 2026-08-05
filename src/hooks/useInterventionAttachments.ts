@@ -43,9 +43,15 @@ export function useAddInterventionAttachment() {
       interventionId: string;
       file: File;
     }) => {
-      // Upload file to storage
+      // Upload file to storage (sanitize key: Supabase refuse accents/espaces/apostrophes)
       const fileExt = file.name.split('.').pop();
-      const fileName = `${interventionId}/${Date.now()}-${file.name}`;
+      const safeName = file.name
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9._-]/g, '_')
+        .replace(/_{2,}/g, '_')
+        .slice(-100);
+      const fileName = `${interventionId}/${Date.now()}-${safeName}`;
       
       const { error: uploadError } = await supabase.storage
         .from('intervention-photos')
