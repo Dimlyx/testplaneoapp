@@ -96,8 +96,6 @@ const TechnicianInterventionDetail = () => {
       
       const signatureUrl = urlData.publicUrl;
       
-      const departureTime = format(new Date(), 'HH:mm:ss');
-      
       await offlineUpdate({
         id,
         client_signature_name: signerName,
