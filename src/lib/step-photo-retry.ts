@@ -47,6 +47,20 @@ async function isStepPhotoOrphan(
   localUrl: string,
 ): Promise<boolean> {
   try {
+    // A queued mutation is the authoritative local record. Never delete its
+    // blob merely because an older/partial server row no longer contains the
+    // local URL: the mutation still needs that blob to finish safely.
+    const mutations = await getPendingMutations();
+    const referenced = mutations.some(m => {
+      if (m.type !== 'complete_step' && m.type !== 'save_draft_step') return false;
+      const p: any = m.payload || {};
+      if (p.interventionId !== photo.interventionId) return false;
+      if (p.stepId !== photo.stepId) return false;
+      if ((p.loopIndex ?? 0) !== photo.loopIndex) return false;
+      return typeof p.photoUrl === 'string' && p.photoUrl.includes(localUrl);
+    });
+    if (referenced) return false;
+
     const { data: completion } = await withTimeout(
       supabase
         .from('intervention_step_completions')
@@ -64,17 +78,8 @@ async function isStepPhotoOrphan(
       return !String(completion.photo_url).includes(localUrl);
     }
 
-    // No completion row → check pending mutations.
-    const mutations = await getPendingMutations();
-    const referenced = mutations.some(m => {
-      if (m.type !== 'complete_step' && m.type !== 'save_draft_step') return false;
-      const p: any = m.payload || {};
-      if (p.interventionId !== photo.interventionId) return false;
-      if (p.stepId !== photo.stepId) return false;
-      if ((p.loopIndex ?? 0) !== photo.loopIndex) return false;
-      return typeof p.photoUrl === 'string' && p.photoUrl.includes(localUrl);
-    });
-    return !referenced;
+    // No completion row and no queued mutation references the blob.
+    return true;
   } catch (err) {
     console.warn('[step-photo-retry] orphan check failed', err);
     // On error, don't risk losing data — keep the blob.
