@@ -209,20 +209,21 @@ export async function compactPendingStepMutations(): Promise<number> {
     const latest = group[group.length - 1];
     const latestCompletion = [...group].reverse().find((mutation) => mutation.type === 'complete_step');
     const firstCreatedAt = group[0].createdAt;
+    const mergedPhotoUrl = mergeGroupPhotoUrls(group);
     const compacted: OfflineMutation = {
       ...latest,
       type: latestCompletion ? 'complete_step' : 'save_draft_step',
-      payload: latestCompletion
-        ? {
-            ...latest.payload,
-            completedAt: latestCompletion.payload?.completedAt,
-          }
-        : latest.payload,
+      payload: {
+        ...latest.payload,
+        ...(latestCompletion ? { completedAt: latestCompletion.payload?.completedAt } : {}),
+        ...(mergedPhotoUrl !== undefined ? { photoUrl: mergedPhotoUrl } : {}),
+      },
       createdAt: firstCreatedAt,
       attempts: undefined,
       lastAttemptAt: undefined,
       error: undefined,
     };
+
 
     await store.put(compacted);
     for (const obsolete of group.slice(0, -1)) {
