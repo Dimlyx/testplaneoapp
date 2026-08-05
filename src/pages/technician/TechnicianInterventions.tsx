@@ -26,10 +26,13 @@ function formatTimeRange(time: string, duration?: number | null): string {
 
 type Category = "planning" | "en-cours" | "non-planifie" | "terminees";
 
-function groupByDate(interventions: Intervention[]): Record<string, Intervention[]> {
+function groupByDate(interventions: Intervention[], useCompletionDate = false): Record<string, Intervention[]> {
   const groups: Record<string, Intervention[]> = {};
   interventions.forEach((i) => {
-    const key = i.scheduled_date || "no-date";
+    const completedDate = useCompletionDate && i.updated_at
+      ? new Date(i.updated_at).toISOString().split("T")[0]
+      : null;
+    const key = i.scheduled_date || completedDate || "no-date";
     if (!groups[key]) groups[key] = [];
     groups[key].push(i);
   });
@@ -125,7 +128,10 @@ export function TechnicianInterventionsByCategory({ category }: { category: Cate
 
   const needsDayGroup = category === "planning" || category === "terminees";
 
-  const groups = useMemo(() => (needsDayGroup ? groupByDate(filtered) : {}), [filtered, needsDayGroup]);
+  const groups = useMemo(
+    () => (needsDayGroup ? groupByDate(filtered, category === "terminees") : {}),
+    [filtered, needsDayGroup, category],
+  );
   const sortedKeys = useMemo(() => {
     const keys = Object.keys(groups);
     return category === "terminees"
@@ -193,7 +199,7 @@ export function TechnicianInterventionsByCategory({ category }: { category: Cate
               interventions={groups[dateKey]}
               getClientName={getClientName}
               getInterventionAddress={getInterventionAddress}
-              defaultOpen={category === "planning" && dateKey === today}
+              defaultOpen={dateKey === today && (category === "planning" || category === "terminees")}
             />
           ))}
         </div>

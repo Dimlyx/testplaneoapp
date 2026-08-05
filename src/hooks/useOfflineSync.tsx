@@ -475,17 +475,10 @@ export function useOfflineSync() {
       }
 
 
-      const [mutations, photosWaiting, signaturesWaiting, stepPhotosWaiting] = await Promise.all([
+      const [mutations] = await Promise.all([
         getPendingMutations(),
-        getPendingPhotos(),
-        getPendingSignatures(),
-        getAllPendingStepPhotos(),
       ]);
-      const blockedInterventions = new Set<string>([
-        ...photosWaiting.map((photo) => photo.interventionId),
-        ...signaturesWaiting.map((signature) => signature.interventionId),
-        ...stepPhotosWaiting.map((photo) => photo.interventionId),
-      ]);
+      const blockedInterventions = new Set<string>();
       const mutationRetryTime = Date.now();
       for (const mutation of mutations) {
         if (!isReallyOnline()) break;
@@ -495,17 +488,15 @@ export function useOfflineSync() {
           mutation.type === 'update_intervention' &&
           ['completed', 'to_invoice', 'archived', 'cancelled'].includes(mutation.payload?.status);
 
+        // Terminal updates are handled after every step/photo/signature pass.
+        // This avoids keeping a closure blocked by a stale snapshot of photos
+        // that were successfully resolved during this same sync cycle.
+        if (isTerminalUpdate) continue;
+
         // A persistent failure (for example a temporarily unavailable local
         // photo) must not be retried and counted again every 30 seconds.
         if (!isMutationRetryDue(mutation, mutationRetryTime)) {
           if (interventionId) blockedInterventions.add(interventionId);
-          continue;
-        }
-
-        // Never confirm closure on the server before that intervention's
-        // earlier queued work has synced successfully. Other interventions
-        // can continue syncing independently.
-        if (isTerminalUpdate && interventionId && blockedInterventions.has(interventionId)) {
           continue;
         }
 
@@ -541,6 +532,42 @@ export function useOfflineSync() {
         errorCount += photoCycle2.failed;
       } catch (err) {
         console.warn('step-photo retry cycle (final) failed', err);
+      }
+
+      // Confirm terminal statuses only after re-reading the queue and local
+      // media stores. The dependency state captured at the beginning of the
+      // cycle is no longer reliable after successful uploads and step writes.
+      const [remainingMutations, remainingPhotos, remainingSignatures, remainingStepPhotos] = await Promise.all([
+        getPendingMutations(),
+        getPendingPhotos(),
+        getPendingSignatures(),
+        getAllPendingStepPhotos(),
+      ]);
+      const terminalMutations = remainingMutations.filter((mutation) =>
+        mutation.type === 'update_intervention'
+        && ['completed', 'to_invoice', 'archived', 'cancelled'].includes(mutation.payload?.status),
+      );
+
+      for (const mutation of terminalMutations) {
+        if (!isReallyOnline()) break;
+        const interventionId = mutation.payload?.id;
+        if (!interventionId || !isMutationRetryDue(mutation, Date.now())) continue;
+
+        const hasPendingWork =
+          blockedInterventions.has(interventionId)
+          || remainingMutations.some((candidate) =>
+            candidate.id !== mutation.id
+            && candidate.type !== 'update_intervention'
+            && candidate.payload?.interventionId === interventionId,
+          )
+          || remainingPhotos.some((photo) => photo.interventionId === interventionId)
+          || remainingSignatures.some((signature) => signature.interventionId === interventionId)
+          || remainingStepPhotos.some((photo) => photo.interventionId === interventionId);
+
+        if (hasPendingWork) continue;
+        const success = await syncMutation(mutation);
+        if (success) successCount++;
+        else errorCount++;
       }
 
       await queryClient.invalidateQueries({ queryKey: ['technician-interventions'] });
