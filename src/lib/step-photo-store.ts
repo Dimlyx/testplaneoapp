@@ -68,9 +68,12 @@ export async function runStepPhotoUploadLocked<T>(
   localUrl: string,
   upload: () => PromiseLike<T>,
 ): Promise<{ started: boolean; result?: T }> {
-  if (!isLocalPhotoUrl(localUrl) || uploadsInFlight.has(localUrl)) {
+  if (!isLocalPhotoUrl(localUrl)) return { started: false };
+  if (uploadsInFlight.has(localUrl)) {
+    console.log(`[step-photo-lock] skip ${localUrl}, already in progress`);
     return { started: false };
   }
+
 
   // Keep the lock tied to the real network promise. If an outer timeout stops
   // waiting, the lock remains active until the underlying request truly ends.
