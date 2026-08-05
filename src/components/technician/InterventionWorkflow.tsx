@@ -1098,19 +1098,37 @@ const InterventionWorkflow = ({
             <CardContent className="p-4 space-y-4">
               {!isCompleted && isStarted && (
                 <>
-                  <div className="p-3 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg">
-                    <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
-                      <CheckCircle className="h-5 w-5" />
-                      <div>
-                        <p className="font-medium text-sm">Prêt à clôturer</p>
-                        <p className="text-xs mt-1 text-green-600 dark:text-green-400">
-                          Vous pouvez clôturer l'intervention.
-                        </p>
+                  {pendingForIntervention.total > 0 ? (
+                    <div className="p-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg">
+                      <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300">
+                        <CheckCircle className="h-5 w-5" />
+                        <div>
+                          <p className="font-medium text-sm">Synchronisation en cours</p>
+                          <p className="text-xs mt-1 text-amber-600 dark:text-amber-400">
+                            {pendingForIntervention.total} élément(s) en attente d'envoi. La clôture sera possible une fois tout synchronisé.
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="p-3 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg">
+                      <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
+                        <CheckCircle className="h-5 w-5" />
+                        <div>
+                          <p className="font-medium text-sm">Prêt à clôturer</p>
+                          <p className="text-xs mt-1 text-green-600 dark:text-green-400">
+                            Vous pouvez clôturer l'intervention.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   <Button
                     onClick={async () => {
+                      if (pendingForIntervention.total > 0) {
+                        setShowPreCloseGuard(true);
+                        return;
+                      }
                       await onEndIntervention();
                     }}
                     disabled={isUpdating}
@@ -1121,6 +1139,7 @@ const InterventionWorkflow = ({
                   </Button>
                 </>
               )}
+
               
               {isCompleted && (
                 <div className="text-center space-y-4">
