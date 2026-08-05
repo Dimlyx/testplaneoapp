@@ -21,7 +21,16 @@ export interface StoredStepPhoto {
   interventionId: string;
   stepId: string;
   loopIndex: number;
-  blob: Blob;
+  /**
+   * Raw bytes are the durable source of truth. Some Android WebViews report a
+   * successful IndexedDB write for Blob values, then return an empty/missing
+   * value after a cold offline restart. ArrayBuffer uses IndexedDB's native
+   * structured-clone path and survives that scenario reliably.
+   */
+  data?: ArrayBuffer;
+  mimeType?: string;
+  /** Backward compatibility for photos saved by earlier app versions. */
+  blob?: Blob;
   createdAt: number;
 }
 
@@ -73,14 +82,25 @@ export async function saveStepPhoto(params: {
 }): Promise<string> {
   const id = crypto.randomUUID();
   const db = await getDB();
+  const data = await params.blob.arrayBuffer();
   await db.put('stepPhotos', {
     id,
     interventionId: params.interventionId,
     stepId: params.stepId,
     loopIndex: params.loopIndex,
-    blob: params.blob,
+    data,
+    mimeType: params.blob.type || 'image/jpeg',
     createdAt: Date.now(),
   });
+
+  // Verify the durable payload before allowing the workflow to reference it.
+  // A failed/partial write must be surfaced now, not after the intervention is
+  // closed and the technician has left the site.
+  const saved = await db.get('stepPhotos', id);
+  if (!saved?.data?.byteLength && !saved?.blob?.size) {
+    await db.delete('stepPhotos', id).catch(() => {});
+    throw new Error('La photo n’a pas pu être enregistrée hors ligne');
+  }
   return `${LOCAL_PHOTO_PREFIX}${id}`;
 }
 
@@ -90,7 +110,11 @@ export async function getStepPhotoBlob(localUrl: string): Promise<Blob | null> {
   const id = localUrl.slice(LOCAL_PHOTO_PREFIX.length);
   const db = await getDB();
   const record = await db.get('stepPhotos', id);
-  return record?.blob ?? null;
+  if (!record) return null;
+  if (record.data?.byteLength) {
+    return new Blob([record.data], { type: record.mimeType || 'image/jpeg' });
+  }
+  return record.blob ?? null;
 }
 
 /**
@@ -132,7 +156,9 @@ export async function getPendingStepPhotosForIntervention(
   interventionId: string,
 ): Promise<StoredStepPhoto[]> {
   const db = await getDB();
-  return db.getAllFromIndex('stepPhotos', 'by-intervention', interventionId);
+  return hydrateStoredPhotos(
+    await db.getAllFromIndex('stepPhotos', 'by-intervention', interventionId),
+  );
 }
 
 /** Count of pending local photos across the whole app. */
@@ -144,5 +170,16 @@ export async function countPendingStepPhotos(): Promise<number> {
 /** All locally-stored step photos (across every intervention). */
 export async function getAllPendingStepPhotos(): Promise<StoredStepPhoto[]> {
   const db = await getDB();
-  return db.getAll('stepPhotos');
+  return hydrateStoredPhotos(await db.getAll('stepPhotos'));
+}
+
+function hydrateStoredPhotos(records: StoredStepPhoto[]): StoredStepPhoto[] {
+  return records.flatMap((record) => {
+    if (record.blob?.size) return [record];
+    if (!record.data?.byteLength) return [];
+    return [{
+      ...record,
+      blob: new Blob([record.data], { type: record.mimeType || 'image/jpeg' }),
+    }];
+  });
 }
