@@ -138,9 +138,13 @@ const AttachmentsList = ({ interventionId, isReadOnly = false }: AttachmentsList
             multiple
           />
           <Button
+            type="button"
             variant="outline"
             className="w-full"
-            onClick={() => fileInputRef.current?.click()}
+            onClick={(e) => {
+              e.preventDefault();
+              fileInputRef.current?.click();
+            }}
             disabled={addAttachment.isPending}
           >
             {addAttachment.isPending ? (
