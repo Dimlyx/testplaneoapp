@@ -151,7 +151,10 @@ export async function addMutation(mutation: Omit<OfflineMutation, 'id' | 'create
     createdAt: Date.now(),
     synced: false,
   });
-  await updatePendingCount();
+  // Draft auto-save can enqueue many snapshots of the same step while the
+  // device is offline. Keep the queue bounded instead of replaying every
+  // obsolete snapshot (which also multiplied the displayed error count).
+  await compactPendingStepMutations();
   return id;
 }
 
@@ -159,6 +162,78 @@ export async function getPendingMutations(): Promise<OfflineMutation[]> {
   const db = await getDB();
   const all = await db.getAll('mutations');
   return all.filter(m => !m.synced).sort((a, b) => a.createdAt - b.createdAt);
+}
+
+/**
+ * Collapse consecutive pending draft/completion snapshots for the same step.
+ *
+ * The latest snapshot owns the content, while any completion in the sequence
+ * keeps the resulting mutation as `complete_step`. An `uncomplete_step`
+ * creates a hard boundary so an intentional reset is never discarded.
+ */
+export async function compactPendingStepMutations(): Promise<number> {
+  const db = await getDB();
+  const pending = (await db.getAll('mutations'))
+    .filter((mutation) => !mutation.synced)
+    .sort((a, b) => a.createdAt - b.createdAt);
+
+  const generations = new Map<string, number>();
+  const groups = new Map<string, OfflineMutation[]>();
+
+  for (const mutation of pending) {
+    const interventionId = mutation.payload?.interventionId;
+    const stepId = mutation.payload?.stepId;
+    if (typeof interventionId !== 'string' || typeof stepId !== 'string') continue;
+
+    const loopIndex = mutation.payload?.loopIndex ?? 0;
+    const baseKey = `${interventionId}:${stepId}:${loopIndex}`;
+    if (mutation.type === 'uncomplete_step') {
+      generations.set(baseKey, (generations.get(baseKey) || 0) + 1);
+      continue;
+    }
+    if (mutation.type !== 'complete_step' && mutation.type !== 'save_draft_step') continue;
+
+    const groupKey = `${baseKey}:${generations.get(baseKey) || 0}`;
+    const group = groups.get(groupKey) || [];
+    group.push(mutation);
+    groups.set(groupKey, group);
+  }
+
+  const transaction = db.transaction('mutations', 'readwrite');
+  const store = transaction.objectStore('mutations');
+  let removed = 0;
+
+  for (const group of groups.values()) {
+    if (group.length < 2) continue;
+
+    const latest = group[group.length - 1];
+    const latestCompletion = [...group].reverse().find((mutation) => mutation.type === 'complete_step');
+    const firstCreatedAt = group[0].createdAt;
+    const compacted: OfflineMutation = {
+      ...latest,
+      type: latestCompletion ? 'complete_step' : 'save_draft_step',
+      payload: latestCompletion
+        ? {
+            ...latest.payload,
+            completedAt: latestCompletion.payload?.completedAt,
+          }
+        : latest.payload,
+      createdAt: firstCreatedAt,
+      attempts: undefined,
+      lastAttemptAt: undefined,
+      error: undefined,
+    };
+
+    await store.put(compacted);
+    for (const obsolete of group.slice(0, -1)) {
+      await store.delete(obsolete.id);
+      removed += 1;
+    }
+  }
+
+  await transaction.done;
+  await updatePendingCount();
+  return removed;
 }
 
 /**

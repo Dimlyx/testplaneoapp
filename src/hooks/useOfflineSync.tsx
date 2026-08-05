@@ -16,6 +16,7 @@ import {
   savePhotoOffline,
   saveSignatureOffline,
   incrementMutationAttempts,
+  compactPendingStepMutations,
   updateLastSyncTime,
   OfflineMutation,
   OfflinePhoto,
@@ -445,6 +446,12 @@ export function useOfflineSync() {
       // Remove only the queue for the test intervention explicitly deleted by
       // the administrator. Never purge from a missing RLS-filtered result.
       await purgeDeletedTestIntervention();
+
+      // A step draft is auto-saved repeatedly while offline. Replaying every
+      // historical snapshot creates dozens of false failures and can let an
+      // old local:// photo reference overwrite the latest state. Keep only the
+      // effective latest state of each step before starting the sync pass.
+      await compactPendingStepMutations();
 
       // 1. Upload pending local step photos FIRST so queued mutations that
       //    reference them can be rewritten to remote URLs before the DB write.
