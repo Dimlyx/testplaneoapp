@@ -557,8 +557,11 @@ export function useOfflineSync() {
           blockedInterventions.has(interventionId)
           || remainingMutations.some((candidate) =>
             candidate.id !== mutation.id
-            && candidate.type !== 'update_intervention'
-            && candidate.payload?.interventionId === interventionId,
+            && !(
+              candidate.type === 'update_intervention'
+              && ['completed', 'to_invoice', 'archived', 'cancelled'].includes(candidate.payload?.status)
+            )
+            && (candidate.payload?.interventionId || candidate.payload?.id) === interventionId,
           )
           || remainingPhotos.some((photo) => photo.interventionId === interventionId)
           || remainingSignatures.some((signature) => signature.interventionId === interventionId)
