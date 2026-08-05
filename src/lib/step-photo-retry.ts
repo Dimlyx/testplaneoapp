@@ -116,8 +116,14 @@ async function findPreviouslyUploadedStepPhoto(
       .from('intervention-photos')
       .getPublicUrl(`steps/${interventionId}/sync-${id}.jpg`);
     const candidate = urlData.publicUrl;
-    const res = await withTimeout(fetch(candidate, { method: 'HEAD' }), 8000);
-    return res.ok ? candidate : null;
+    // The public storage endpoint can reject HEAD with 400 even when the
+    // object exists. A one-byte ranged GET reliably verifies the object
+    // without downloading the whole photo.
+    const res = await withTimeout(
+      fetch(candidate, { method: 'GET', headers: { Range: 'bytes=0-0' }, cache: 'no-store' }),
+      8000,
+    );
+    return (res.ok || res.status === 206) ? candidate : null;
   } catch {
     return null;
   }
