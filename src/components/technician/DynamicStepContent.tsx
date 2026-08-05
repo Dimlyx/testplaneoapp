@@ -23,6 +23,12 @@ import { withTimeout } from "@/lib/supabase-with-timeout";
 import { swapLocalUrlInCompletion } from "@/lib/step-photo-retry";
 
 const SIGNATURE_UPLOAD_TIMEOUT_MS = 4000;
+// Hard cap on a single photo upload: on a flaky network the request can hang
+// forever, which used to freeze the "Suivant" button.
+const PHOTO_UPLOAD_TIMEOUT_MS = 12000;
+// How long "Suivant" waits for in-flight uploads before moving on with the
+// persistent local:// references (the sync worker patches them afterwards).
+const RESOLVE_PHOTOS_TIMEOUT_MS = 800;
 
 interface DynamicStepContentProps {
   step: WorkflowStepType;
