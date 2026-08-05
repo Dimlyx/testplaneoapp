@@ -244,6 +244,36 @@ export async function deletePhotoOffline(id: string): Promise<void> {
   await updatePendingCount();
 }
 
+/** Remove every queued record for an intervention proven deleted remotely. */
+export async function deleteOfflineDataForIntervention(interventionId: string): Promise<void> {
+  const db = await getDB();
+  const transaction = db.transaction(
+    ['interventions', 'mutations', 'photos', 'signatures'],
+    'readwrite',
+  );
+
+  await transaction.objectStore('interventions').delete(interventionId);
+
+  const mutations = await transaction.objectStore('mutations').getAll();
+  await Promise.all(
+    mutations
+      .filter((mutation) =>
+        mutation.type !== 'create_intervention' &&
+        (mutation.payload?.id === interventionId || mutation.payload?.interventionId === interventionId),
+      )
+      .map((mutation) => transaction.objectStore('mutations').delete(mutation.id)),
+  );
+
+  const photos = await transaction.objectStore('photos').index('by-intervention').getAllKeys(interventionId);
+  await Promise.all(photos.map((id) => transaction.objectStore('photos').delete(id)));
+
+  const signatures = await transaction.objectStore('signatures').index('by-intervention').getAllKeys(interventionId);
+  await Promise.all(signatures.map((id) => transaction.objectStore('signatures').delete(id)));
+
+  await transaction.done;
+  await updatePendingCount();
+}
+
 // Signature operations
 export async function saveSignatureOffline(signature: Omit<OfflineSignature, 'id' | 'createdAt' | 'synced'>): Promise<string> {
   const db = await getDB();

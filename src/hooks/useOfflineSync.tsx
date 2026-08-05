@@ -20,6 +20,7 @@ import {
   OfflineMutation,
   OfflinePhoto,
   OfflineSignature,
+  deleteOfflineDataForIntervention,
 } from '@/lib/offline-db';
 import {
   isReallyOnline,
@@ -33,7 +34,11 @@ import {
   forceStepPhotoRetry,
   resolveLocalPhotoUrlsForSync,
 } from '@/lib/step-photo-retry';
-import { countPendingStepPhotos, deleteStepPhoto } from '@/lib/step-photo-store';
+import {
+  countPendingStepPhotos,
+  deleteStepPhoto,
+  deleteStepPhotosForIntervention,
+} from '@/lib/step-photo-store';
 
 import { isLocalPhotoUrl } from '@/lib/step-photo-store';
 
@@ -145,6 +150,17 @@ export function useOfflineSync() {
       console.error('Error loading sync status:', error);
     }
   }, []);
+
+  // One-time cleanup for the explicitly deleted test intervention. Do not
+  // infer deletion from an empty RLS-filtered query: a reassigned intervention
+  // or a new offline-created intervention may also be temporarily invisible.
+  const purgeDeletedTestIntervention = async (): Promise<void> => {
+    const deletedTestId = 'c426737a-cda1-4933-80f2-2bb3dd703a4e';
+    await Promise.all([
+      deleteOfflineDataForIntervention(deletedTestId),
+      deleteStepPhotosForIntervention(deletedTestId),
+    ]);
+  };
 
   // Sync a single mutation
   const syncMutation = async (mutation: OfflineMutation): Promise<boolean> => {
@@ -425,6 +441,10 @@ export function useOfflineSync() {
     let errorCount = 0;
 
     try {
+      // Remove only the queue for the test intervention explicitly deleted by
+      // the administrator. Never purge from a missing RLS-filtered result.
+      await purgeDeletedTestIntervention();
+
       // 1. Upload pending local step photos FIRST so queued mutations that
       //    reference them can be rewritten to remote URLs before the DB write.
       try {
