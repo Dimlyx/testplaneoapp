@@ -171,7 +171,45 @@ export async function getPendingMutations(): Promise<OfflineMutation[]> {
  * keeps the resulting mutation as `complete_step`. An `uncomplete_step`
  * creates a hard boundary so an intentional reset is never discarded.
  */
+function parsePhotoUrlValue(value: unknown): string[] {
+  if (typeof value !== 'string' || value.length === 0) return [];
+  try {
+    const parsed = JSON.parse(value);
+    if (Array.isArray(parsed)) return parsed.filter((u) => typeof u === 'string');
+  } catch {
+    /* plain string */
+  }
+  return [value];
+}
+
+/**
+ * Compaction must never drop a photo that is still only stored locally.
+ * We keep the latest snapshot's ordering and re-append any `local://`
+ * reference present in an older snapshot of the same step.
+ */
+function mergeGroupPhotoUrls(group: OfflineMutation[]): string | undefined {
+  const latest = group[group.length - 1];
+  const hasPhotoField = group.some((m) => typeof m.payload?.photoUrl === 'string');
+  if (!hasPhotoField) return undefined;
+
+  const merged = parsePhotoUrlValue(latest.payload?.photoUrl);
+  const seen = new Set(merged);
+
+  for (const mutation of group.slice(0, -1)) {
+    for (const url of parsePhotoUrlValue(mutation.payload?.photoUrl)) {
+      if (!url.startsWith('local://')) continue; // remote deletions stay deleted
+      if (seen.has(url)) continue;
+      seen.add(url);
+      merged.push(url);
+    }
+  }
+
+  if (merged.length === 0) return latest.payload?.photoUrl ?? undefined;
+  return merged.length === 1 ? merged[0] : JSON.stringify(merged);
+}
+
 export async function compactPendingStepMutations(): Promise<number> {
+
   const db = await getDB();
   const pending = (await db.getAll('mutations'))
     .filter((mutation) => !mutation.synced)
