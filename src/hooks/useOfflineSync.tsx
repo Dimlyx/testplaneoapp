@@ -288,6 +288,11 @@ export function useOfflineSync() {
           // Resolve any local:// photo references to remote URLs (uploads pending blobs)
           // BEFORE writing the row, so we never overwrite an already-uploaded URL.
           const resolvedPhoto = await resolveLocalPhotoUrlsForSync(photoUrl, interventionId);
+          if (resolvedPhoto.unresolvedLocalUrls.length > 0) {
+            throw new Error(
+              `${resolvedPhoto.unresolvedLocalUrls.length} photo(s) locale(s) restent à envoyer`,
+            );
+          }
 
           const { data: existing } = await supabase
             .from('intervention_step_completions')
@@ -338,6 +343,11 @@ export function useOfflineSync() {
           const { data: { user } } = await supabase.auth.getUser();
 
           const resolvedPhoto = await resolveLocalPhotoUrlsForSync(photoUrl, interventionId);
+          if (resolvedPhoto.unresolvedLocalUrls.length > 0) {
+            throw new Error(
+              `${resolvedPhoto.unresolvedLocalUrls.length} photo(s) locale(s) restent à envoyer`,
+            );
+          }
 
           const { data: existing } = await supabase
             .from('intervention_step_completions')
@@ -404,7 +414,16 @@ export function useOfflineSync() {
       const attempts = await incrementMutationAttempts(mutation.id);
       await markMutationError(mutation.id, error?.message || 'unknown');
       // Drop mutation after 10 failed attempts to prevent infinite loops
-      if (attempts >= 10) {
+      // except photo-bearing steps: their queue entry is the last durable link
+      // between the completion and its local files, so it must be retried until
+      // every photo has a confirmed remote URL.
+      let containsLocalPhoto = false;
+      try {
+        containsLocalPhoto = JSON.stringify(mutation.payload || {}).includes('local://step-photo/');
+      } catch {
+        containsLocalPhoto = false;
+      }
+      if (attempts >= 10 && !containsLocalPhoto) {
         console.warn(`Dropping mutation ${mutation.id} after ${attempts} failed attempts`);
         await deleteMutation(mutation.id);
       }
