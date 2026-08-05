@@ -38,6 +38,7 @@ import {
   countPendingStepPhotos,
   deleteStepPhoto,
   deleteStepPhotosForIntervention,
+  getAllPendingStepPhotos,
 } from '@/lib/step-photo-store';
 
 import { isLocalPhotoUrl } from '@/lib/step-photo-store';
@@ -456,8 +457,17 @@ export function useOfflineSync() {
       }
 
 
-      const mutations = await getPendingMutations();
-      const blockedInterventions = new Set<string>();
+      const [mutations, photosWaiting, signaturesWaiting, stepPhotosWaiting] = await Promise.all([
+        getPendingMutations(),
+        getPendingPhotos(),
+        getPendingSignatures(),
+        getAllPendingStepPhotos(),
+      ]);
+      const blockedInterventions = new Set<string>([
+        ...photosWaiting.map((photo) => photo.interventionId),
+        ...signaturesWaiting.map((signature) => signature.interventionId),
+        ...stepPhotosWaiting.map((photo) => photo.interventionId),
+      ]);
       for (const mutation of mutations) {
         if (!isReallyOnline()) break;
 
