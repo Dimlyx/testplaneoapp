@@ -34,7 +34,7 @@ import {
   forceStepPhotoRetry,
   resolveLocalPhotoUrlsForSync,
 } from '@/lib/step-photo-retry';
-import { countPendingStepPhotos, deleteStepPhoto, getAllPendingStepPhotos, getPendingStepPhotosForIntervention } from '@/lib/step-photo-store';
+import { countPendingStepPhotos, deleteStepPhoto, getPendingStepPhotosForIntervention } from '@/lib/step-photo-store';
 
 import { isLocalPhotoUrl } from '@/lib/step-photo-store';
 
@@ -89,11 +89,10 @@ function mergePreferRemote(dbValue: string | null | undefined, queued: string | 
 const CLOSED_STATUSES = new Set(['completed', 'to_invoice', 'archived', 'cancelled']);
 
 async function pruneStaleForClosedInterventions(): Promise<number> {
-  const [mutations, photos, signatures, stepPhotos] = await Promise.all([
+  const [mutations, photos, signatures] = await Promise.all([
     getPendingMutations(),
     getPendingPhotos(),
     getPendingSignatures(),
-    getAllPendingStepPhotos(),
   ]);
 
   const ids = new Set<string>();
@@ -103,7 +102,6 @@ async function pruneStaleForClosedInterventions(): Promise<number> {
   }
   for (const p of photos) if (p.interventionId) ids.add(p.interventionId);
   for (const s of signatures) if (s.interventionId) ids.add(s.interventionId);
-  for (const sp of stepPhotos) if (sp.interventionId) ids.add(sp.interventionId);
 
   if (ids.size === 0) return 0;
 
@@ -121,25 +119,12 @@ async function pruneStaleForClosedInterventions(): Promise<number> {
 
   let pruned = 0;
 
-  // Local blob references still carried by *pending* mutations (not yet in DB).
-  // These must never be pruned: the completion row will be written later and
-  // would otherwise point to a deleted blob.
-  const queuedLocalRefs = mutations
-    .map(m => {
-      try { return JSON.stringify(m.payload || {}); } catch { return ''; }
-    })
-    .join('|');
-
   for (const m of mutations) {
     const id = m.payload?.id || m.payload?.interventionId;
-    if (!id || !closedIds.has(id)) continue;
-    // Keep any mutation still carrying an unresolved local:// photo reference:
-    // it is the only thing that will publish the real URL once uploaded.
-    let raw = '';
-    try { raw = JSON.stringify(m.payload || {}); } catch { raw = ''; }
-    if (raw.includes('local://')) continue;
-    await deleteMutation(m.id);
-    pruned++;
+    if (id && closedIds.has(id)) {
+      await deleteMutation(m.id);
+      pruned++;
+    }
   }
   for (const p of photos) {
     if (closedIds.has(p.interventionId)) {
@@ -156,36 +141,14 @@ async function pruneStaleForClosedInterventions(): Promise<number> {
   for (const interventionId of closedIds) {
     try {
       const stepPhotos = await getPendingStepPhotosForIntervention(interventionId);
-      if (stepPhotos.length === 0) continue;
-
-      // NEVER drop a local blob that is still referenced by a completion row:
-      // its photo has not been uploaded yet, and deleting it would leave a
-      // permanently broken `local://` image in the report.
-      const { data: completions, error: completionsError } = await supabase
-        .from('intervention_step_completions')
-        .select('photo_url')
-        .eq('intervention_id', interventionId)
-        .not('photo_url', 'is', null);
-
-      // On error, stay conservative and keep every blob.
-      if (completionsError) continue;
-
-      const referenced = (completions || [])
-        .map((r: any) => String(r.photo_url || ''))
-        .join('|') + '|' + queuedLocalRefs;
-
       for (const sp of stepPhotos) {
-        const localUrl = `local://step-photo/${sp.id}`;
-        if (referenced.includes(localUrl)) continue; // still needed → keep + retry
-        await deleteStepPhoto(localUrl);
+        await deleteStepPhoto(`local://step-photo/${sp.id}`);
         pruned++;
       }
     } catch {
       /* ignore — best effort */
     }
   }
-
-
   return pruned;
 }
 
@@ -288,11 +251,6 @@ export function useOfflineSync() {
           // Resolve any local:// photo references to remote URLs (uploads pending blobs)
           // BEFORE writing the row, so we never overwrite an already-uploaded URL.
           const resolvedPhoto = await resolveLocalPhotoUrlsForSync(photoUrl, interventionId);
-          if (resolvedPhoto.unresolvedLocalUrls.length > 0) {
-            throw new Error(
-              `${resolvedPhoto.unresolvedLocalUrls.length} photo(s) locale(s) restent à envoyer`,
-            );
-          }
 
           const { data: existing } = await supabase
             .from('intervention_step_completions')
@@ -343,11 +301,6 @@ export function useOfflineSync() {
           const { data: { user } } = await supabase.auth.getUser();
 
           const resolvedPhoto = await resolveLocalPhotoUrlsForSync(photoUrl, interventionId);
-          if (resolvedPhoto.unresolvedLocalUrls.length > 0) {
-            throw new Error(
-              `${resolvedPhoto.unresolvedLocalUrls.length} photo(s) locale(s) restent à envoyer`,
-            );
-          }
 
           const { data: existing } = await supabase
             .from('intervention_step_completions')
@@ -414,16 +367,7 @@ export function useOfflineSync() {
       const attempts = await incrementMutationAttempts(mutation.id);
       await markMutationError(mutation.id, error?.message || 'unknown');
       // Drop mutation after 10 failed attempts to prevent infinite loops
-      // except photo-bearing steps: their queue entry is the last durable link
-      // between the completion and its local files, so it must be retried until
-      // every photo has a confirmed remote URL.
-      let containsLocalPhoto = false;
-      try {
-        containsLocalPhoto = JSON.stringify(mutation.payload || {}).includes('local://step-photo/');
-      } catch {
-        containsLocalPhoto = false;
-      }
-      if (attempts >= 10 && !containsLocalPhoto) {
+      if (attempts >= 10) {
         console.warn(`Dropping mutation ${mutation.id} after ${attempts} failed attempts`);
         await deleteMutation(mutation.id);
       }
@@ -538,17 +482,7 @@ export function useOfflineSync() {
     let errorCount = 0;
 
     try {
-      // 0. Upload pending local step photos FIRST — before any pruning — so
-      //    no blob can be discarded while a completion row still points at it.
-      try {
-        const photoCycle0 = await runStepPhotoRetryCycle();
-        successCount += photoCycle0.succeeded;
-        errorCount += photoCycle0.failed;
-      } catch (err) {
-        console.warn('step-photo retry cycle (pre-prune) failed', err);
-      }
-
-      // 0bis. Prune "phantom" pending items for interventions that the server
+      // 0. Prune "phantom" pending items for interventions that the server
       //    already considers closed (completed/to_invoice/archived/cancelled).
       //    These can survive locally when the network drops between server
       //    success and the client receiving the response — the data is safely
@@ -563,8 +497,6 @@ export function useOfflineSync() {
       } catch (err) {
         console.warn('phantom prune failed', err);
       }
-
-
 
       // 1. Upload pending local step photos FIRST so queued mutations that
       //    reference them can be rewritten to remote URLs before the DB write.
