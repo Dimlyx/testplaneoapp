@@ -143,14 +143,35 @@ async function pruneStaleForClosedInterventions(): Promise<number> {
   for (const interventionId of closedIds) {
     try {
       const stepPhotos = await getPendingStepPhotosForIntervention(interventionId);
+      if (stepPhotos.length === 0) continue;
+
+      // NEVER drop a local blob that is still referenced by a completion row:
+      // its photo has not been uploaded yet, and deleting it would leave a
+      // permanently broken `local://` image in the report.
+      const { data: completions, error: completionsError } = await supabase
+        .from('intervention_step_completions')
+        .select('photo_url')
+        .eq('intervention_id', interventionId)
+        .not('photo_url', 'is', null);
+
+      // On error, stay conservative and keep every blob.
+      if (completionsError) continue;
+
+      const referenced = (completions || [])
+        .map((r: any) => String(r.photo_url || ''))
+        .join('|');
+
       for (const sp of stepPhotos) {
-        await deleteStepPhoto(`local://step-photo/${sp.id}`);
+        const localUrl = `local://step-photo/${sp.id}`;
+        if (referenced.includes(localUrl)) continue; // still needed → keep + retry
+        await deleteStepPhoto(localUrl);
         pruned++;
       }
     } catch {
       /* ignore — best effort */
     }
   }
+
   return pruned;
 }
 
